@@ -53,7 +53,7 @@ struct SessionView: View {
                 }
                 
                 // THIS SESSION'S MATCHES
-                    NavigationLink(destination: SeasonView()) {
+                    NavigationLink(destination: MatchView()) {
                         HStack {
                             HStack {
                                 VStack(alignment: .leading) {
