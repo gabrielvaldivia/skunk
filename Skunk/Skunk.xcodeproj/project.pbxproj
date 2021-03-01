@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		40D9258825EC7B7200CE6F0D /* SeasonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40D9258725EC7B7200CE6F0D /* SeasonView.swift */; };
+		40D9258D25EC7B7900CE6F0D /* SessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40D9258C25EC7B7900CE6F0D /* SessionView.swift */; };
+		40D9259225EC7BAE00CE6F0D /* MatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40D9259125EC7BAE00CE6F0D /* MatchView.swift */; };
 		40EB338125EC4A0000836BE5 /* Skunk WatchKit App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 40EB338025EC4A0000836BE5 /* Skunk WatchKit App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		40EB338625EC4A0100836BE5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 40EB338525EC4A0100836BE5 /* Assets.xcassets */; };
 		40EB338D25EC4A0100836BE5 /* Skunk WatchKit Extension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 40EB338C25EC4A0100836BE5 /* Skunk WatchKit Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -62,6 +65,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		40D9258725EC7B7200CE6F0D /* SeasonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonView.swift; sourceTree = "<group>"; };
+		40D9258C25EC7B7900CE6F0D /* SessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionView.swift; sourceTree = "<group>"; };
+		40D9259125EC7BAE00CE6F0D /* MatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatchView.swift; sourceTree = "<group>"; };
 		40EB337C25EC4A0000836BE5 /* Skunk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Skunk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		40EB338025EC4A0000836BE5 /* Skunk WatchKit App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Skunk WatchKit App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		40EB338525EC4A0100836BE5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -122,6 +128,9 @@
 			children = (
 				40EB339125EC4A0100836BE5 /* SkunkApp.swift */,
 				40EB339325EC4A0100836BE5 /* ContentView.swift */,
+				40D9258725EC7B7200CE6F0D /* SeasonView.swift */,
+				40D9259125EC7BAE00CE6F0D /* MatchView.swift */,
+				40D9258C25EC7B7900CE6F0D /* SessionView.swift */,
 				40EB339525EC4A0100836BE5 /* NotificationController.swift */,
 				40EB339725EC4A0100836BE5 /* NotificationView.swift */,
 				40EB339925EC4A0100836BE5 /* ComplicationController.swift */,
@@ -267,9 +276,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				40D9258D25EC7B7900CE6F0D /* SessionView.swift in Sources */,
 				40EB339625EC4A0100836BE5 /* NotificationController.swift in Sources */,
+				40D9259225EC7BAE00CE6F0D /* MatchView.swift in Sources */,
 				40EB339425EC4A0100836BE5 /* ContentView.swift in Sources */,
 				40EB339A25EC4A0100836BE5 /* ComplicationController.swift in Sources */,
+				40D9258825EC7B7200CE6F0D /* SeasonView.swift in Sources */,
 				40EB339225EC4A0100836BE5 /* SkunkApp.swift in Sources */,
 				40EB339825EC4A0100836BE5 /* NotificationView.swift in Sources */,
 			);
@@ -411,6 +423,7 @@
 				ASSETCATALOG_COMPILER_COMPLICATION_NAME = Complication;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"Skunk WatchKit Extension/Preview Content\"";
+				DEVELOPMENT_TEAM = RWC965TCNN;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = "Skunk WatchKit Extension/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -434,6 +447,7 @@
 				ASSETCATALOG_COMPILER_COMPLICATION_NAME = Complication;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"Skunk WatchKit Extension/Preview Content\"";
+				DEVELOPMENT_TEAM = RWC965TCNN;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = "Skunk WatchKit Extension/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -458,6 +472,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = RWC965TCNN;
 				IBSC_MODULE = Skunk_WatchKit_Extension;
 				INFOPLIST_FILE = "Skunk WatchKit App/Info.plist";
 				PRODUCT_BUNDLE_IDENTIFIER = skunkgames.Skunk.watchkitapp;
@@ -477,6 +492,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = RWC965TCNN;
 				IBSC_MODULE = Skunk_WatchKit_Extension;
 				INFOPLIST_FILE = "Skunk WatchKit App/Info.plist";
 				PRODUCT_BUNDLE_IDENTIFIER = skunkgames.Skunk.watchkitapp;
@@ -494,6 +510,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RWC965TCNN;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = skunkgames.Skunk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -506,6 +523,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RWC965TCNN;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = skunkgames.Skunk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
