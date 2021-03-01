@@ -25,7 +25,7 @@ struct ContentView: View {
                                     .font(.system(size: 12))
                                     .textCase(.uppercase)
                                     .opacity(0.5)
-                                Text ("3/12")
+                                Text ("12 - 8")
                                     .font(.system(size: 20))
                             }.frame(maxWidth: .infinity, alignment: .leading)
                             Image ("gabe")

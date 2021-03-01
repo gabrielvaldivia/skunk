@@ -13,9 +13,8 @@ struct MatchView: View {
     
     var body: some View {
         VStack (spacing:10){
-            Text ("Claudio Sux")
             HStack (spacing:10){
-                Picker(selection: $scoreGabe, label: Text("Gabe")) {
+                Picker(selection: $scoreGabe, label: Text("GABE")) {
                     Group {
                         /*@START_MENU_TOKEN@*/Text("1").tag(1)/*@END_MENU_TOKEN@*/
                         /*@START_MENU_TOKEN@*/Text("2").tag(2)/*@END_MENU_TOKEN@*/
@@ -54,7 +53,7 @@ struct MatchView: View {
                     }
                 }
                 
-                Picker(selection: $scoreClaudio, label: Text("Claudio")) {
+                Picker(selection: $scoreClaudio, label: Text("CLAUDIO")) {
                     Group {
                         /*@START_MENU_TOKEN@*/Text("1").tag(1)/*@END_MENU_TOKEN@*/
                         /*@START_MENU_TOKEN@*/Text("2").tag(2)/*@END_MENU_TOKEN@*/
