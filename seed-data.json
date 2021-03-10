@@ -13,12 +13,92 @@
       "game": "-Jffkelnfaskdfjeud192B",
       "sessions": [],
       "players": ["-Jldh4123jjfsJHusdvbd", "-JllaskfefnJFASjf12nf"],
-      "total_matches": 0,
-      "season_champ": null
+      "seasonPlayerScores": [1, 0],
+      "seasonChamp": "-Jldh4123jjfsJHusdvbd"
     }
   },
-  "sessions": {},
-  "matches": {},
+  "sessions": {
+    "-JafjdufDJA664gfasdf": {
+      "dateTime": "2021-03-10T11:07:07+0000",
+      "season": "JkiBF9fADv7FDJ789",
+      "players": ["-Jldh4123jjfsJHusdvbd", "-JllaskfefnJFASjf12nf"],
+      "matches": ["-Jfujdelfasj66fhas824n"],
+      "sessionPlayerScores": [7, 3],
+      "sessionWinningPlayer": "-Jldh4123jjfsJHusdvbd"
+    }
+  },
+  "matches": {
+    "-Jfujdelfasj66fhas824n": {
+      "dateTime": "2021-03-10T11:21:21+0000",
+      "session": "-JafjdufDJA664gfasdf",
+      "players": ["-Jldh4123jjfsJHusdvbd", "-JllaskfefnJFASjf12nf"],
+      "matchPlayerScores": [21, 17],
+      "matchWinningPlayer": "-Jldh4123jjfsJHusdvbd"
+    },
+    "-J7yha5d6fVVDHasj25fjk": {
+      "dateTime": "2021-03-10T11:27:00+0000",
+      "session": "-JafjdufDJA664gfasdf",
+      "players": ["-Jldh4123jjfsJHusdvbd", "-JllaskfefnJFASjf12nf"],
+      "matchPlayerScores": [23, 21],
+      "matchWinningPlayer": "-Jldh4123jjfsJHusdvbd"
+    },
+    "-J76Fthy65TRkiLL97": {
+      "dateTime": "2021-03-10T11:28:59+0000",
+      "session": "-JafjdufDJA664gfasdf",
+      "players": ["-Jldh4123jjfsJHusdvbd", "-JllaskfefnJFASjf12nf"],
+      "matchPlayerScores": [21, 19],
+      "matchWinningPlayer": "-Jldh4123jjfsJHusdvbd"
+    },
+    "-J76hdtTGbHVf417": {
+      "dateTime": "2021-03-10T11:34:09+0000",
+      "session": "-JafjdufDJA664gfasdf",
+      "players": ["-Jldh4123jjfsJHusdvbd", "-JllaskfefnJFASjf12nf"],
+      "matchPlayerScores": [17, 21],
+      "matchWinningPlayer": "-JllaskfefnJFASjf12nf"
+    },
+    "-J9o098IKJuujHyf65": {
+      "dateTime": "2021-03-10T11:39:08+0000",
+      "session": "-JafjdufDJA664gfasdf",
+      "players": ["-Jldh4123jjfsJHusdvbd", "-JllaskfefnJFASjf12nf"],
+      "matchPlayerScores": [12, 21],
+      "matchWinningPlayer": "-JllaskfefnJFASjf12nf"
+    },
+    "-J1gFajJfanh6Y77ya": {
+      "dateTime": "2021-03-10T11:45:52+0000",
+      "session": "-JafjdufDJA664gfasdf",
+      "players": ["-Jldh4123jjfsJHusdvbd", "-JllaskfefnJFASjf12nf"],
+      "matchPlayerScores": [19, 21],
+      "matchWinningPlayer": "-JllaskfefnJFASjf12nf"
+    },
+    "-JafjJju875gYhytga": {
+      "dateTime": "2021-03-10T11:52:03+0000",
+      "session": "-JafjdufDJA664gfasdf",
+      "players": ["-Jldh4123jjfsJHusdvbd", "-JllaskfefnJFASjf12nf"],
+      "matchPlayerScores": [21, 17],
+      "matchWinningPlayer": "-Jldh4123jjfsJHusdvbd"
+    },
+    "-Juy7YYgtGvblxX312": {
+      "dateTime": "2021-03-10T11:59:33+0000",
+      "session": "-JafjdufDJA664gfasdf",
+      "players": ["-Jldh4123jjfsJHusdvbd", "-JllaskfefnJFASjf12nf"],
+      "matchPlayerScores": [21, 14],
+      "matchWinningPlayer": "-Jldh4123jjfsJHusdvbd"
+    },
+    "-Ji112FAd14hyGGtyhe": {
+      "dateTime": "2021-03-10T12:02:17+0000",
+      "session": "-JafjdufDJA664gfasdf",
+      "players": ["-Jldh4123jjfsJHusdvbd", "-JllaskfefnJFASjf12nf"],
+      "matchPlayerScores": [21, 14],
+      "matchWinningPlayer": "-Jldh4123jjfsJHusdvbd"
+    },
+    "-Jfj89FAcfas78899fa": {
+      "dateTime": "2021-03-10T12:26:49+0000",
+      "session": "-JafjdufDJA664gfasdf",
+      "players": ["-Jldh4123jjfsJHusdvbd", "-JllaskfefnJFASjf12nf"],
+      "matchPlayerScores": [21, 19],
+      "matchWinningPlayer": "-Jldh4123jjfsJHusdvbd"
+    }
+  },
   "players": {
     "-Jldh4123jjfsJHusdvbd": {
       "firstName": "Gabriel",
