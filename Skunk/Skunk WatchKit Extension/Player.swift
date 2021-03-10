@@ -10,11 +10,11 @@ import Foundation
 struct Player: Hashable, Identifiable {
     public var id: String
     public var name: String!
-    public var profileImageUrl: String!
+    public var imageUrl: String!
     
-    init(name: String!, profileImageUrl: String!) {
+    init(name: String!, imageUrl: String!) {
         self.id = UUID().uuidString
         self.name = name
-        self.profileImageUrl = profileImageUrl
+        self.imageUrl = imageUrl
     }
 }
