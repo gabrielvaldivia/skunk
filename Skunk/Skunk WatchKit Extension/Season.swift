@@ -9,17 +9,20 @@ import Foundation
 
 struct Season: Hashable, Identifiable {
     public var id: String
-    public var name: String?
-    public var gameId: String!
-    public var totalMatches: Int!
-    public var seasonChamp: Player?
+    public var name: String!
+    public var game: String!
     public var players: [String]!
-    public var sessions: [Session]!
-}
-
-init(name: String, gameId: String, totalMatches: Int, seasonChamp: Player, playerIds: [String], sessions: []) {
-    self.id = UUID().uuidString
-    self.name = name
-    self.gameId = gameId
-    self.totalMatches = totalMatches
+    public var seasonChamp: String!
+    public var seasonPlayerScores: [Int]!
+    public var sessions: [String]!
+    
+    init(name: String!, game: String!, players: [String]!, seasonChamp: String!, seasonPlayerScores: [Int]!, sessions: [String]!) {
+        self.id = UUID().uuidString
+        self.name = name
+        self.game = game
+        self.players = players
+        self.seasonChamp = seasonChamp
+        self.seasonPlayerScores = seasonPlayerScores
+        self.sessions = sessions
+    }
 }
