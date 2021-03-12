@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -24,6 +24,9 @@
 		40EB339F25EC4A0200836BE5 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 40EB339E25EC4A0200836BE5 /* Preview Assets.xcassets */; };
 		A131A1BE25F7A3CD00476754 /* Season.swift in Sources */ = {isa = PBXBuildFile; fileRef = A131A1BD25F7A3CD00476754 /* Season.swift */; };
 		A131A1C325F7A60900476754 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = A131A1C225F7A60900476754 /* Player.swift */; };
+		A1797B8025FAFA2600D9C5B6 /* Game.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1797B7F25FAFA2600D9C5B6 /* Game.swift */; };
+		A1797B8525FAFAC500D9C5B6 /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1797B8425FAFAC500D9C5B6 /* Session.swift */; };
+		A1797B8A25FAFB6F00D9C5B6 /* Match.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1797B8925FAFB6F00D9C5B6 /* Match.swift */; };
 		A1DFF82A25F3C4A70068E03F /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A1DFF82925F3C4A70068E03F /* GoogleService-Info.plist */; };
 		A1DFF82B25F3C4A70068E03F /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A1DFF82925F3C4A70068E03F /* GoogleService-Info.plist */; };
 		A1DFF82C25F3C4A70068E03F /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A1DFF82925F3C4A70068E03F /* GoogleService-Info.plist */; };
@@ -99,6 +102,9 @@
 		76FADF9E02090D1B80B51209 /* Pods-Skunk.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Skunk.debug.xcconfig"; path = "Target Support Files/Pods-Skunk/Pods-Skunk.debug.xcconfig"; sourceTree = "<group>"; };
 		A131A1BD25F7A3CD00476754 /* Season.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Season.swift; sourceTree = "<group>"; };
 		A131A1C225F7A60900476754 /* Player.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
+		A1797B7F25FAFA2600D9C5B6 /* Game.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Game.swift; sourceTree = "<group>"; };
+		A1797B8425FAFAC500D9C5B6 /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
+		A1797B8925FAFB6F00D9C5B6 /* Match.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Match.swift; sourceTree = "<group>"; };
 		A1DFF82925F3C4A70068E03F /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "../../../../Downloads/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		D5C969868E8350ED51FE4A2C /* Pods-Skunk WatchKit App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Skunk WatchKit App.debug.xcconfig"; path = "Target Support Files/Pods-Skunk WatchKit App/Pods-Skunk WatchKit App.debug.xcconfig"; sourceTree = "<group>"; };
 		EBF95DF255E7910E1E94CEA0 /* Pods-Skunk WatchKit App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Skunk WatchKit App.release.xcconfig"; path = "Target Support Files/Pods-Skunk WatchKit App/Pods-Skunk WatchKit App.release.xcconfig"; sourceTree = "<group>"; };
@@ -169,7 +175,10 @@
 				40EB339325EC4A0100836BE5 /* ContentView.swift */,
 				40D9258725EC7B7200CE6F0D /* SeasonView.swift */,
 				A131A1BD25F7A3CD00476754 /* Season.swift */,
+				A1797B7F25FAFA2600D9C5B6 /* Game.swift */,
 				A131A1C225F7A60900476754 /* Player.swift */,
+				A1797B8425FAFAC500D9C5B6 /* Session.swift */,
+				A1797B8925FAFB6F00D9C5B6 /* Match.swift */,
 				40D9259125EC7BAE00CE6F0D /* MatchView.swift */,
 				40D9258C25EC7B7900CE6F0D /* SessionView.swift */,
 				40EB339525EC4A0100836BE5 /* NotificationController.swift */,
@@ -442,7 +451,10 @@
 				40D9259225EC7BAE00CE6F0D /* MatchView.swift in Sources */,
 				40EB339425EC4A0100836BE5 /* ContentView.swift in Sources */,
 				40EB339A25EC4A0100836BE5 /* ComplicationController.swift in Sources */,
+				A1797B8025FAFA2600D9C5B6 /* Game.swift in Sources */,
 				40D9258825EC7B7200CE6F0D /* SeasonView.swift in Sources */,
+				A1797B8525FAFAC500D9C5B6 /* Session.swift in Sources */,
+				A1797B8A25FAFB6F00D9C5B6 /* Match.swift in Sources */,
 				40EB339225EC4A0100836BE5 /* SkunkApp.swift in Sources */,
 				A131A1C325F7A60900476754 /* Player.swift in Sources */,
 				40EB339825EC4A0100836BE5 /* NotificationView.swift in Sources */,
