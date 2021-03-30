@@ -5,6 +5,7 @@ import App from './App';
 import Airtable from 'airtable';
 import axios from 'axios';
 import reportWebVitals from './reportWebVitals';
+import './fonts/big-noodle-too-oblique.ttf'; 
 
 const BASE_ID = 'app3ZX4aIHsHbq1Z4';
 const TABLE_NAME = 'SKUNK';
