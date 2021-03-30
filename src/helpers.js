@@ -29,7 +29,6 @@ const generateSessionHistory = (records) => {
 
 export const generateOverview = (records) => {
   return {
-    sessionsWon: calculateSessionsWon(),
     sessionHistory: generateSessionHistory(records),
   };
 };
