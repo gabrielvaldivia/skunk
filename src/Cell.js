@@ -4,10 +4,10 @@ import './App.css';
 
 function Cell({ title, col1, col2 }) {
 	return (
-		<div>
-			<div>{title}</div>
-			<div>{col1}</div>
-			<div>{col2}</div>
+		<div className="cell">
+			<div className="title">{title}</div>
+			<div className="col">{col1}</div>
+			<div className="col">{col2}</div>
 		</div>
 	);
 }

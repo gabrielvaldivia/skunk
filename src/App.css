@@ -1,4 +1,42 @@
 .body {
-  background-color: red;
-  padding: 40px;
+  font-family: big-noodle-too-oblique;
+  background-color: #2B0072;
+  width:100%;
+  max-width: 400px;
+  margin:0 auto;
+  font-size: 24px;
+  color: white;
+}
+
+.container {
+  margin-bottom: 40px;
+}
+
+.cell {
+  width:100%;
+  display: flex;
+  margin-bottom: 20px; 
+
+}
+
+.title {
+  width:100%;
+  opacity: 50%;
+}
+
+.col {
+/*  flex-flow: 1;  */  
+  width:20%;
+  text-align: right;
+}
+
+h1 {
+  font-weight: normal;
+  font-size: 60px;
+}
+
+h2 {
+  font-weight: normal;
+  font-size: 40px;
+  margin-bottom:20px;
 }
