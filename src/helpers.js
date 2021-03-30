@@ -28,7 +28,9 @@ const generateSessionHistory = (records) => {
 };
 
 export const generateOverview = (records) => {
+  const sessionHistory = generateSessionHistory(records);
+
   return {
-    sessionHistory: generateSessionHistory(records),
+    sessionHistory,
   };
 };
