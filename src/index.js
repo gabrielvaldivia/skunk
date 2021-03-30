@@ -2,7 +2,13 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
+import Airtable from 'airtable';
+import axios from 'axios';
 import reportWebVitals from './reportWebVitals';
+
+const BASE_ID = 'app3ZX4aIHsHbq1Z4';
+const TABLE_NAME = 'SKUNK';
+
 
 ReactDOM.render(
   <React.StrictMode>

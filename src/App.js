@@ -1,25 +1,34 @@
-import logo from './logo.svg';
+import React, { useState, useEffect } from 'react';
+import { base, BASE_NAME, VIEW_NAME } from './airtable';
+import { generateOverview } from './helpers';
+
 import './App.css';
 
 function App() {
+  const [overview, setOverview] = useState({});
+
+  useEffect(() => {
+    async function getData() {
+      await base(BASE_NAME)
+        .select({ view: VIEW_NAME })
+        .firstPage()
+        .then(response => {
+          console.log(response);
+          setOverview(generateOverview(response));
+        });
+    };
+
+    getData();
+  }, []);
+
+  console.log(overview);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      SKUNK
+      {overview && <div>YAY!</div>}
     </div>
-  );
+  )
 }
 
 export default App;
