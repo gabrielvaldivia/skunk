@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { base, BASE_NAME, VIEW_NAME } from './airtable';
 import { generateOverview } from './helpers';
 
+import Cell from './Cell';
+
 import './App.css';
 
 function App() {
@@ -13,7 +15,6 @@ function App() {
         .select({ view: VIEW_NAME })
         .firstPage()
         .then(response => {
-          console.log(response);
           setOverview(generateOverview(response));
         });
     };
@@ -24,9 +25,17 @@ function App() {
   console.log(overview);
 
   return (
-    <div>
-      SKUNK
-      {overview && <div>YAY!</div>}
+    <div className="body">
+      <Cell
+        title="MON, MAR 29"
+        col1="6"
+        col2="4"
+      />
+      <Cell
+        title="TUE, MAR 30"
+        col1="16"
+        col2="5"
+      />
     </div>
   )
 }
