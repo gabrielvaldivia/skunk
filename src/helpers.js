@@ -4,7 +4,7 @@ const setMatchWinner = (sessionObject, winnerName) => {
   if (winnerName === 'Claudio') {
     sessionObject['claudioMatchesWon'] += 1;
   }
-  else if (winnerName === 'Gabriel') {
+  else {
     sessionObject['gabrielMatchesWon'] += 1;
   }
 };
@@ -27,10 +27,30 @@ const generateSessionHistory = (records) => {
   return sessionHistory;
 };
 
+const generateSessionWins = (sessionHistory) => {
+  const sessionsWon = {
+    claudioSessionsWon: 0,
+    gabrielSessionsWon: 0,
+  };
+
+  Object.entries(sessionHistory).forEach(([date, session]) => {
+    if (session['claudioMatchesWon'] > session['gabrielMatchesWon']) {
+      sessionsWon['claudioSessionsWon'] += 1;
+    }
+    else {
+      sessionsWon['gabrielSessionsWon'] += 1;
+    }
+  });
+
+  return sessionsWon;
+};
+
 export const generateOverview = (records) => {
   const sessionHistory = generateSessionHistory(records);
+  const sessionsWon = generateSessionWins(sessionHistory);
 
   return {
     sessionHistory,
+    sessionsWon,
   };
 };
