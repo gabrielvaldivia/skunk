@@ -5,6 +5,9 @@
   margin:0 auto;
   font-size: 24px;
   color: white;
+  padding-right: 40px;
+  padding-left: 20px;
+  box-sizing: border-box;
 }
 
 .container {
@@ -43,7 +46,7 @@
 }
 
 .player-image {
-  width: 35px;
+  width: 40px;
   height: 40px;
   position: absolute;
   right: -10px;
