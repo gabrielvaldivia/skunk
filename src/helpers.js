@@ -59,14 +59,28 @@ const calculateMatchesWon = (sessionHistory) => {
   return matchesWon;
 };
 
+const calculateLongestSessionStreak = (sessionHistory) => {
+  let currentStreak = 0;
+  let previousSessionWinner = '';
+  const claudioStreaks = [];
+  const gabrielStreaks = [];
+
+  return {
+    claudio: "TEST",
+    gabriel: "TEST",
+  };
+};
+
 export const generateOverview = (records) => {
   const sessionHistory = generateSessionHistory(records);
   const sessionsWon = calculateSessionWins(sessionHistory);
   const matchesWon = calculateMatchesWon(sessionHistory);
+  const longestSessionStreak = calculateLongestSessionStreak(sessionHistory);
 
   return {
     sessionsWon,
     matchesWon,
+    longestSessionStreak,
     sessionHistory,
   };
 };
