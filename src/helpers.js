@@ -27,7 +27,7 @@ const generateSessionHistory = (records) => {
   return sessionHistory;
 };
 
-const generateSessionWins = (sessionHistory) => {
+const calculateSessionWins = (sessionHistory) => {
   const sessionsWon = {
     claudioSessionsWon: 0,
     gabrielSessionsWon: 0,
@@ -45,12 +45,28 @@ const generateSessionWins = (sessionHistory) => {
   return sessionsWon;
 };
 
+const calculateMatchesWon = (sessionHistory) => {
+  const matchesWon = {
+    claudioMatchesWon: 0,
+    gabrielMatchesWon: 0,
+  };
+
+  Object.entries(sessionHistory).forEach(([date, session]) => {
+    matchesWon['claudioMatchesWon'] += session['claudioMatchesWon'];
+    matchesWon['gabrielMatchesWon'] += session['gabrielMatchesWon'];
+  });
+
+  return matchesWon;
+};
+
 export const generateOverview = (records) => {
   const sessionHistory = generateSessionHistory(records);
-  const sessionsWon = generateSessionWins(sessionHistory);
+  const sessionsWon = calculateSessionWins(sessionHistory);
+  const matchesWon = calculateMatchesWon(sessionHistory);
 
   return {
-    sessionHistory,
     sessionsWon,
+    matchesWon,
+    sessionHistory,
   };
 };
