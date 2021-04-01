@@ -9,7 +9,7 @@ function Cell({ title, col1, col2 }) {
   if (col1 > col2) {
     col2ClassNames += " loser";
   }
-  else {
+  else if (col1 < col2) {
     col1ClassNames += " loser";
   }
 
