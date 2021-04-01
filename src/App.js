@@ -40,7 +40,7 @@ function App() {
       <h1>Ping Pong</h1>
       <div className="container">
         <Header
-          header="Players"
+          header="Global"
           img1={Player1Image}
           img2={Player2Image}
         />
@@ -56,7 +56,11 @@ function App() {
         />
       </div>
       <div className="container">
-        <h2>Sessions</h2>
+        <Header
+          header="Sessions"
+          img1=""
+          img2=""
+        />
         {overview.sessionHistory.map(session => (
           <Cell
             title={session.date}
