@@ -66,3 +66,7 @@ h2 {
   font-size: 40px;
   margin-bottom:20px;
 }
+
+.loser {
+  opacity: 0.5;
+}

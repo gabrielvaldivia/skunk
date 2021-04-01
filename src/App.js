@@ -10,7 +10,17 @@ import Player2Image from './assets/claudio.jpg';
 import './App.css';
 
 function App() {
-  const [overview, setOverview] = useState({});
+  const [overview, setOverview] = useState({
+    sessionsWon: {
+      claudioSessionsWon: 0,
+      gabrielSessionsWon: 0,
+    },
+    matchesWon: {
+      claudioMatchesWon: 0,
+      gabrielMatchesWon: 0,
+    },
+    sessionHistory: []
+  });
 
   useEffect(() => {
     async function getData() {
@@ -25,8 +35,6 @@ function App() {
     getData();
   }, []);
 
-  console.log(overview);
-
   return (
     <div className="body">
       <h1>Ping Pong</h1>
@@ -38,43 +46,24 @@ function App() {
         />
         <Cell
           title="Sessions won"
-          col1="16"
-          col2="5"
+          col1={overview.sessionsWon.gabrielSessionsWon}
+          col2={overview.sessionsWon.claudioSessionsWon}
         />
         <Cell
           title="Matches won"
-          col1="6"
-          col2="4"
-        />
-        <Cell
-          title="Longest streak"
-          col1="6"
-          col2="4"
-        />
-        <Cell
-          title="Biggest win"
-          col1="6"
-          col2="4"
-        />
-        <Cell
-          title="Skunks"
-          col1="6"
-          col2="4"
+          col1={overview.matchesWon.gabrielMatchesWon}
+          col2={overview.matchesWon.claudioMatchesWon}
         />
       </div>
-
       <div className="container">
         <h2>Sessions</h2>
-        <Cell
-          title="TUE, MAR 30"
-          col1="16"
-          col2="5"
-        />
-        <Cell
-          title="MON, MAR 29"
-          col1="6"
-          col2="4"
-        />
+        {overview.sessionHistory.map(session => (
+          <Cell
+            title={session.date}
+            col1={session.gabrielMatchesWon}
+            col2={session.claudioMatchesWon}
+          />
+        ))}
       </div>
     </div>
   )

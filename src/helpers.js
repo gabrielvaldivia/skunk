@@ -24,7 +24,15 @@ const generateSessionHistory = (records) => {
     setMatchWinner(sessionHistory[date], record.fields.matchWinner);
   });
 
-  return sessionHistory;
+  const sessionHistoryArray = Object.keys(sessionHistory).map(key => {
+    return {
+      date: key,
+      claudioMatchesWon: sessionHistory[key]['claudioMatchesWon'],
+      gabrielMatchesWon: sessionHistory[key]['gabrielMatchesWon'],
+    };
+  });
+
+  return sessionHistoryArray;
 };
 
 const calculateSessionWins = (sessionHistory) => {
