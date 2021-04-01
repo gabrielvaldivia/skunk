@@ -19,7 +19,11 @@ function App() {
       claudioMatchesWon: 0,
       gabrielMatchesWon: 0,
     },
-    sessionHistory: []
+    sessionHistory: [],
+    skunks: {
+      claudio: 0,
+      gabriel: 0,
+    },
   });
 
   useEffect(() => {
@@ -53,6 +57,11 @@ function App() {
           title="Matches won"
           col1={overview.matchesWon.gabrielMatchesWon}
           col2={overview.matchesWon.claudioMatchesWon}
+        />
+        <Cell
+          title="Skunks"
+          col1={overview.skunks.gabriel}
+          col2={overview.skunks.claudio}
         />
       </div>
       <div className="container">

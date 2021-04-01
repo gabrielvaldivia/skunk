@@ -69,14 +69,34 @@ const calculateMatchesWon = (sessionHistory) => {
   return matchesWon;
 };
 
+const calculateTotalSkunks = (records) => {
+  const skunks = {
+    claudio: 0,
+    gabriel: 0,
+  };
+
+  records.forEach(record => {
+    if (record.fields.claudioPoints === 7 && record.fields.gabrielPoints === 0) {
+      skunks.claudio += 1;
+    }
+    else if (record.fields.gabrielPoints === 7 && record.fields.claudioPoints === 0) {
+      skunks.gabriel += 1;
+    }
+  });
+
+  return skunks;
+};
+
 export const generateOverview = (records) => {
   const sessionHistory = generateSessionHistory(records);
   const sessionsWon = calculateSessionWins(sessionHistory);
   const matchesWon = calculateMatchesWon(sessionHistory);
+  const skunks = calculateTotalSkunks(records);
 
   return {
     sessionsWon,
     matchesWon,
     sessionHistory,
+    skunks,
   };
 };
