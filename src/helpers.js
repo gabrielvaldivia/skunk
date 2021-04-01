@@ -32,6 +32,8 @@ const generateSessionHistory = (records) => {
     };
   });
 
+  sessionHistoryArray.sort((a, b) => moment(b.date).valueOf() - moment(a.date).valueOf());
+
   return sessionHistoryArray;
 };
 
