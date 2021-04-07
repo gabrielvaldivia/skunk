@@ -6,11 +6,16 @@ import Cell from './Cell';
 import Header from './Header';
 import Player1Image from './assets/gabe.jpg';
 import Player2Image from './assets/claudio.jpg';
+import PlaceholderImage from './assets/placeholder.png';
 
 import './App.css';
+import ViewHeader from './ViewHeader';
 
 function App() {
   const [overview, setOverview] = useState({
+    currentChamp: {
+      name: '...',
+    },
     sessionsWon: {
       claudioSessionsWon: 0,
       gabrielSessionsWon: 0,
@@ -39,9 +44,26 @@ function App() {
     getData();
   }, []);
 
+  let currentChampImg = '';
+  if (overview.currentChamp.name === 'Claudio') {
+    currentChampImg = Player2Image;
+  }
+  else if (overview.currentChamp.name === 'Gabriel') {
+    currentChampImg = Player1Image;
+  }
+  else {
+    currentChampImg = PlaceholderImage;
+  }
+
   return (
     <div className="body">
-      <h1>Ping Pong</h1>
+      <div className="view-title">
+        <h1>Ping Pong</h1>
+      </div>
+      <ViewHeader
+        title={overview.currentChamp.name}
+        img={currentChampImg}
+      />
       <div className="container">
         <Header
           header="Stats"

@@ -87,13 +87,30 @@ const calculateTotalSkunks = (records) => {
   return skunks;
 };
 
+const setCurrentChamp = (sessionsWon) => {
+  const currentChamp = {
+    name: '',
+  };
+
+  if (sessionsWon.claudioSessionsWon > sessionsWon.gabrielSessionsWon) {
+    currentChamp.name = 'Claudio';
+  }
+  else if (sessionsWon.gabrielSessionsWon > sessionsWon.claudioSessionsWon) {
+    currentChamp.name = 'Gabriel';
+  }
+
+  return currentChamp;
+};
+
 export const generateOverview = (records) => {
   const sessionHistory = generateSessionHistory(records);
   const sessionsWon = calculateSessionWins(sessionHistory);
   const matchesWon = calculateMatchesWon(sessionHistory);
   const skunks = calculateTotalSkunks(records);
+  const currentChamp = setCurrentChamp(sessionsWon);
 
   return {
+    currentChamp,
     sessionsWon,
     matchesWon,
     sessionHistory,

@@ -44,14 +44,29 @@
   background-size: cover;
 }
 
+.player-image-lg {
+  width: 112px;
+  height: 112px;
+  -webkit-clip-path: polygon(20% 0, 100% 0, 80% 100%, 0 100%); 
+  clip-path: polygon(20% 0, 100% 0, 80% 100%, 0 100%); 
+  background-size: cover;
+}
+
 h1 {
   font-weight: normal;
   font-size: 60px;
+  margin: 0;
 }
 
 h2 {
   font-weight: normal;
   font-size: 40px;
+  margin: 0;
+}
+
+h3 {
+  opacity: 0.5;
+  font-weight: normal;
   margin: 0;
 }
 
@@ -66,3 +81,20 @@ h2 {
 .pr-16 {
   padding-right: 16px;
 }
+
+.view-title {
+  margin-top: 24px;
+}
+
+.view-header-container {
+  display: flex;
+  align-items: center;
+  margin-top: 50px;
+  margin-bottom: 50px;
+}
+
+.view-header-content {
+  margin-left: 24px;
+}
+
+.mb-1 { margin-bottom: 2px; }

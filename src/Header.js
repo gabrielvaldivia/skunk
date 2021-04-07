@@ -8,10 +8,10 @@ function Header({ header, img1, img2 }) {
 			<h2 className="flex-1">{header}</h2>
       <div className="values">
         <div className="col">
-          <div className= "player-image" style={{ backgroundImage: 'url(' + img1 + ')'}}></div>
+          <div className="player-image" style={{ backgroundImage: 'url(' + img1 + ')'}}></div>
         </div>
         <div className="col">
-          <div className= "player-image" style={{ backgroundImage: 'url(' + img2 + ')'}}></div>
+          <div className="player-image" style={{ backgroundImage: 'url(' + img2 + ')'}}></div>
         </div>
       </div>
 		</div>
