@@ -44,7 +44,7 @@ function App() {
       <h1>Ping Pong</h1>
       <div className="container">
         <Header
-          header="Global"
+          header="Stats"
           img1={Player1Image}
           img2={Player2Image}
         />
