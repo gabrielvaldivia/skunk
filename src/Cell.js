@@ -12,6 +12,10 @@ function Cell({ title, col1, col2 }) {
   else if (col1 < col2) {
     col1ClassNames += " loser";
   }
+  else {
+    col1ClassNames += " loser";
+    col2ClassNames += " loser";
+  }
 
 	return (
 		<div className="cell">
