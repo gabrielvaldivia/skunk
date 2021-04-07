@@ -72,6 +72,7 @@ function App() {
         />
         {overview.sessionHistory.map(session => (
           <Cell
+            key={session.date}
             title={session.date}
             col1={session.gabrielMatchesWon}
             col2={session.claudioMatchesWon}
