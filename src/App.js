@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base, BASE_NAME, VIEW_NAME } from './airtable';
 import { generateOverview } from './helpers';
 
+import Nav from './Nav';
 import Cell from './Cell';
 import Header from './Header';
 import Player1Image from './assets/gabe.jpg';
@@ -56,50 +57,51 @@ function App() {
   }
 
   return (
-    <div className="body">
-      <div className="view-title">
-        <h1>Ping Pong</h1>
-      </div>
-      <ViewHeader
-        title={overview.currentChamp.name}
-        img={currentChampImg}
-      />
-      <div className="container">
-        <Header
-          header="Stats"
-          img1={Player1Image}
-          img2={Player2Image}
+    <div className="h-100p bc-orange">
+      <Nav />
+      <div className="mw-400px mh-auto ph-24px">
+        <ViewHeader
+          title={overview.currentChamp.name}
+          subtitle="Current champ"
+          img={currentChampImg}
         />
-        <Cell
-          title="Sessions won"
-          col1={overview.sessionsWon.gabrielSessionsWon}
-          col2={overview.sessionsWon.claudioSessionsWon}
-        />
-        <Cell
-          title="Matches won"
-          col1={overview.matchesWon.gabrielMatchesWon}
-          col2={overview.matchesWon.claudioMatchesWon}
-        />
-        <Cell
-          title="Skunks"
-          col1={overview.skunks.gabriel}
-          col2={overview.skunks.claudio}
-        />
-      </div>
-      <div className="container">
-        <Header
-          header="Sessions"
-          img1=""
-          img2=""
-        />
-        {overview.sessionHistory.map(session => (
-          <Cell
-            key={session.date}
-            title={session.date}
-            col1={session.gabrielMatchesWon}
-            col2={session.claudioMatchesWon}
+        <div className="mb-40px">
+          <Header
+            header="Stats"
+            img1={Player1Image}
+            img2={Player2Image}
           />
-        ))}
+          <Cell
+            title="Sessions won"
+            col1={overview.sessionsWon.gabrielSessionsWon}
+            col2={overview.sessionsWon.claudioSessionsWon}
+          />
+          <Cell
+            title="Matches won"
+            col1={overview.matchesWon.gabrielMatchesWon}
+            col2={overview.matchesWon.claudioMatchesWon}
+          />
+          <Cell
+            title="Skunks"
+            col1={overview.skunks.gabriel}
+            col2={overview.skunks.claudio}
+          />
+        </div>
+        <div className="mb-40px">
+          <Header
+            header="Sessions"
+            img1=""
+            img2=""
+          />
+          {overview.sessionHistory.map(session => (
+            <Cell
+              key={session.date}
+              title={session.date}
+              col1={session.gabrielMatchesWon}
+              col2={session.claudioMatchesWon}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )
