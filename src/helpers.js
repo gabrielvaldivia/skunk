@@ -10,7 +10,7 @@ const setMatchWinner = (sessionObject, winnerName) => {
 };
 
 const generateSessionHistory = (records) => {
-  const sessionHistory = {}; 
+  const sessionHistory = {};
 
   records.forEach(record => {
     const date = moment(record.fields.date).format('ddd, MMM DD');
