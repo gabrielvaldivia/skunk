@@ -9,6 +9,7 @@
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .o-0_5 { opacity: 0.5; }
+.o-1 { opacity: 1; }
 .bs-cover { background-size: cover; }
 .cp-polygon {
   -webkit-clip-path: polygon(20% 0, 100% 0, 80% 100%, 0 100%); 
@@ -43,4 +44,5 @@
 .fs-40px { font-size: 40px; }
 .fs-60px { font-size: 60px; }
 .c-white { color: white; }
+.td-none { text-decoration: none; }
 .bc-orange { background-color: #ae0000; }
