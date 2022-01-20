@@ -5,6 +5,7 @@
 .jc-flex-end { justify-content: flex-end; }
 /* DISPLAY */
 .ox-scroll { overflow-x: scroll; }
+.oy-scroll { overflow-y: scroll; }
 .ws-nowrap { white-space: nowrap; }
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

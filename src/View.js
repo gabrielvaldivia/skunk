@@ -53,7 +53,7 @@ function View({ airtableBase, airtableView, skunkScore, backgroundColorClassName
   }
 
   return (
-    <div className={`h-100p ${backgroundColorClassName}`}>
+    <div className={`h-100p oy-scroll ${backgroundColorClassName}`}>
       <Nav />
       <div className="mw-400px mh-auto ph-24px">
         <ViewHeader
