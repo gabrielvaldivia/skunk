@@ -40,8 +40,6 @@ function View({ airtableBase, airtableView, skunkScore, backgroundColorClassName
     currentChampImage = PlaceholderImage;
   }
 
-  console.log(overview.currentChamp);
-
   return (
     <div className={`h-100p ${backgroundColorClassName}`}>
       <Nav />
