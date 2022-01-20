@@ -1,7 +1,7 @@
 import React from 'react';
 import { useEffect,useState } from 'react/cjs/react.development';
 import { base } from './airtable';
-import { generateOverview, STATE_OBJECT } from './helpers';
+import { generateOverview } from './helpers';
 
 import Nav from './Nav';
 import Cell from './Cell';
@@ -14,7 +14,20 @@ import GabrielImage from './assets/gabriel.jpg';
 import PlaceholderImage from './assets/placeholder.png';
 
 function View({ airtableBase, airtableView, skunkScore, backgroundColorClassName }) {
-  const [overview, setOverview] = useState(STATE_OBJECT);
+  const [overview, setOverview] = useState({
+    currentChamp: "",
+    claudio: {
+      sessionsWon: 0,
+      matchesWon: 0,
+      skunks: 0,
+    },
+    gabriel: {
+      sessionsWon: 0,
+      matchesWon: 0,
+      skunks: 0,
+    },
+    sessionHistory: []
+  });
 
   useEffect(() => {
     async function getData() {

@@ -2,20 +2,6 @@ import moment from 'moment';
 
 export const PING_PONG_SKUNK_SCORE = { max: 7, min: 0 };
 export const SMASH_BROS_SKUNK_SCORE = { max: 3, min: 0 };
-export const STATE_OBJECT = {
-  currentChamp: "",
-  claudio: {
-    sessionsWon: 0,
-    matchesWon: 0,
-    skunks: 0,
-  },
-  gabriel: {
-    sessionsWon: 0,
-    matchesWon: 0,
-    skunks: 0,
-  },
-  sessionHistory: []
-};
 
 const setMatchWinner = (sessionObject, winnerName) => {
   if (winnerName === 'Claudio') {
