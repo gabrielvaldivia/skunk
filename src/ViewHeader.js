@@ -15,7 +15,7 @@ function ViewHeader({ img, title, subtitle }) {
           {subtitle}
         </h3>
         <h1 className="ff-big-noodle fw-normal fs-60px c-white m-0px mr-32px">
-          {title}
+          {title ? title : "Loading..."}
         </h1>
       </div>
     </div>
