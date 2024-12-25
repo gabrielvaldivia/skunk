@@ -7,6 +7,15 @@ struct PlayerDetailView: View {
     @State private var isImagePickerPresented = false
     @State private var selectedImage: UIImage?
     @Environment(\.modelContext) private var modelContext
+    @Query private var games: [Game]
+
+    private var championedGames: [Game] {
+        games.filter { game in
+            let playerWins = Dictionary(grouping: game.matches.compactMap { $0.winner }) { $0 }
+                .mapValues { $0.count }
+            return playerWins.max(by: { $0.value < $1.value })?.key == player
+        }
+    }
 
     var body: some View {
         List {
@@ -31,6 +40,21 @@ struct PlayerDetailView: View {
                 .listRowBackground(Color.clear)
             }
 
+            if !championedGames.isEmpty {
+                Section("Current Champion Of") {
+                    ForEach(championedGames) { game in
+                        NavigationLink(destination: GameDetailView(game: game)) {
+                            HStack {
+                                Text(game.title)
+                                Spacer()
+                                Text("\(game.matches.filter { $0.winner == player }.count) wins")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+
             Section("Stats") {
                 StatsRow(title: "Matches Played", value: player.matches.count)
                 StatsRow(
@@ -48,21 +72,7 @@ struct PlayerDetailView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(sortedMatches.prefix(5)) { match in
-                        VStack(alignment: .leading) {
-                            if let game = match.game {
-                                Text(game.title)
-                                    .font(.headline)
-                            }
-
-                            if let winner = match.winner {
-                                Text(winner == player ? "Won" : "Lost")
-                                    .foregroundStyle(winner == player ? .green : .red)
-                            }
-
-                            Text(match.date, style: .date)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                        MatchRow(match: match)
                     }
                 }
             }

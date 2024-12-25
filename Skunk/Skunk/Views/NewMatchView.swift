@@ -15,45 +15,36 @@ struct NewMatchView: View {
     @Query(sort: \Match.date, order: .reverse) private var matches: [Match]
     @Query private var players: [Player]
 
-    init(game: Game) {
-        self.game = game
-        // Get the most recent match for this game
+    // Get the default players from the last match
+    private var defaultPlayers: (Player?, Player?) {
         if let lastMatch = game.matches.sorted(by: { $0.date > $1.date }).first,
             lastMatch.players.count >= 2
         {
-            _player1 = State(initialValue: lastMatch.players[0])
-            _player2 = State(initialValue: lastMatch.players[1])
+            return (lastMatch.players[0], lastMatch.players[1])
         }
-    }
-
-    private var recentPlayers: [Player] {
-        // Get unique players from recent matches, ordered by most recent
-        let allRecentPlayers = game.matches
-            .sorted(by: { $0.date > $1.date })
-            .flatMap { $0.players }
-        return Array(NSOrderedSet(array: allRecentPlayers)) as? [Player] ?? []
-    }
-
-    private var availablePlayers: [Player] {
-        players.filter { player in
-            player != player1 && player != player2
-        }
-    }
-
-    private var canSave: Bool {
-        player1 != nil && player2 != nil && player1 != player2
+        return (nil, nil)
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Players") {
-                    playerPicker(selection: $player1, excludingPlayer: player2, label: "Player 1")
+                    Picker("Player 1", selection: $player1) {
+                        Text("Select Player").tag(nil as Player?)
+                        ForEach(players.filter { $0 != player2 }) { player in
+                            Text(player.name).tag(player as Player?)
+                        }
+                    }
                     if !game.isBinaryScore {
                         scoreField(score: $score1)
                     }
 
-                    playerPicker(selection: $player2, excludingPlayer: player1, label: "Player 2")
+                    Picker("Player 2", selection: $player2) {
+                        Text("Select Player").tag(nil as Player?)
+                        ForEach(players.filter { $0 != player1 }) { player in
+                            Text(player.name).tag(player as Player?)
+                        }
+                    }
                     if !game.isBinaryScore {
                         scoreField(score: $score2)
                     }
@@ -105,58 +96,17 @@ struct NewMatchView: View {
                     .disabled(!canSave || (game.isBinaryScore && score1 == score2))
                 }
             }
-        }
-    }
-
-    private func playerPicker(selection: Binding<Player?>, excludingPlayer: Player?, label: String)
-        -> some View
-    {
-        HStack {
-            Text(label)
-            Spacer()
-            if let selectedPlayer = selection.wrappedValue {
-                NavigationLink(destination: PlayerDetailView(player: selectedPlayer)) {
-                    Text(selectedPlayer.name)
-                }
-            } else {
-                Menu {
-                    ForEach(players.filter { $0 != excludingPlayer }) { player in
-                        Button {
-                            selection.wrappedValue = player
-                        } label: {
-                            Text(player.name)
-                        }
-                    }
-                } label: {
-                    Text(label)
-                        .foregroundStyle(.secondary)
-                }
+            .onAppear {
+                // Set default players on appear
+                let (p1, p2) = defaultPlayers
+                if player1 == nil { player1 = p1 }
+                if player2 == nil { player2 = p2 }
             }
         }
     }
 
-    private func playerRow(_ player: Player) -> some View {
-        HStack {
-            if let photoData = player.photoData,
-                let uiImage = UIImage(data: photoData)
-            {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 30, height: 30)
-                    .clipShape(Circle())
-            } else {
-                PlayerInitialsView(name: player.name, size: 30)
-            }
-            Text(player.name)
-                .padding(.leading, 8)
-        }
-    }
-
-    private func playerColor(name: String) -> Color {
-        let hash = abs(name.hashValue)
-        let hue = Double(hash % 255) / 255.0
-        return Color(hue: hue, saturation: 0.8, brightness: 0.7)
+    private var canSave: Bool {
+        player1 != nil && player2 != nil && player1 != player2
     }
 
     private func scoreField(score: Binding<Int>) -> some View {
@@ -178,13 +128,18 @@ struct NewMatchView: View {
         guard let player1 = player1, let player2 = player2 else { return }
 
         let match = Match(game: game)
+        modelContext.insert(match)
+
+        // Set up relationships
         match.players = [player1, player2]
+        match.game = game  // Ensure the game relationship is set
+        game.matches.append(match)
 
         // Set winner based on scores
         if score1 > score2 {
-            match.winner = player1
+            match.winnerID = "\(player1.persistentModelID)"
         } else if score2 > score1 {
-            match.winner = player2
+            match.winnerID = "\(player2.persistentModelID)"
         }
 
         // Save scores for point-based games
@@ -195,9 +150,6 @@ struct NewMatchView: View {
             modelContext.insert(score1Obj)
             modelContext.insert(score2Obj)
         }
-
-        modelContext.insert(match)
-        game.matches.append(match)
 
         // Update player relationships
         player1.matches.append(match)

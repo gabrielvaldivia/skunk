@@ -6,11 +6,14 @@ struct GameDetailView: View {
     let game: Game
     @State private var showingNewMatch = false
     @State private var showingNewTournament = false
+    @Environment(\.modelContext) private var modelContext
 
     private var champion: Player? {
-        let playerWins = Dictionary(grouping: game.matches.compactMap { $0.winner }) { $0 }
+        let matches = game.matches
+        let winners = matches.compactMap { $0.winner }
+        let winCounts = Dictionary(grouping: winners) { $0 }
             .mapValues { $0.count }
-        return playerWins.max(by: { $0.value < $1.value })?.key
+        return winCounts.max(by: { $0.value < $1.value })?.key
     }
 
     var body: some View {
@@ -48,7 +51,8 @@ struct GameDetailView: View {
                                             hostingController, animated: true)
                                     }
                                 }
-                            Text("\(game.matches.filter { $0.winner == champion }.count) wins")
+                            let winCount = game.matches.filter { $0.winner == champion }.count
+                            Text("\(winCount) wins")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -63,7 +67,30 @@ struct GameDetailView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(sortedMatches.prefix(5)) { match in
-                        MatchRow(match: match)
+                        NavigationLink(destination: MatchDetailView(match: match)) {
+                            MatchRow(match: match, showGameTitle: false)
+                        }
+                    }
+                    .onDelete { indexSet in
+                        let sortedMatches = game.matches.sorted(by: { $0.date > $1.date })
+                        indexSet.forEach { index in
+                            if index < sortedMatches.count {
+                                let match = sortedMatches[index]
+                                // Remove match from players
+                                match.players.forEach { player in
+                                    player.matches.removeAll { $0.id == match.id }
+                                }
+                                // Remove match from game
+                                game.matches.removeAll { $0.id == match.id }
+                                // Delete scores
+                                match.scores.forEach { score in
+                                    modelContext.delete(score)
+                                }
+                                // Delete the match
+                                modelContext.delete(match)
+                            }
+                        }
+                        try? modelContext.save()
                     }
                 }
             }
@@ -98,44 +125,6 @@ struct GameDetailView: View {
         }
         .sheet(isPresented: $showingNewTournament) {
             NewTournamentView(game: game)
-        }
-    }
-}
-
-struct MatchRow: View {
-    let match: Match
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                if let winner = match.winner {
-                    NavigationLink(destination: PlayerDetailView(player: winner)) {
-                        Text(winner.name)
-                            .font(.headline)
-                    }
-                    Text("won")
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            let players = match.players
-            HStack {
-                ForEach(players.indices, id: \.self) { index in
-                    if index > 0 {
-                        Text("vs")
-                            .foregroundStyle(.secondary)
-                    }
-                    NavigationLink(destination: PlayerDetailView(player: players[index])) {
-                        Text(players[index].name)
-                    }
-                }
-            }
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-
-            Text(match.date, style: .date)
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 }

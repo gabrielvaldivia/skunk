@@ -5,8 +5,8 @@ import SwiftData
 class Player {
     var name: String
     var photoData: Data?
-    var matches: [Match]
-    var tournaments: [Tournament]
+    @Relationship(deleteRule: .cascade) var matches: [Match]
+    @Relationship(deleteRule: .cascade) var tournaments: [Tournament]
 
     init(name: String, photoData: Data? = nil) {
         self.name = name
@@ -21,8 +21,8 @@ class Game {
     var title: String
     var isBinaryScore: Bool  // true for win/lose, false for point-based
     @Attribute private var _supportedPlayerCountsData: Data?
-    var matches: [Match]
-    var tournaments: [Tournament]
+    @Relationship(deleteRule: .cascade) var matches: [Match]
+    @Relationship(deleteRule: .cascade) var tournaments: [Tournament]
 
     var supportedPlayerCounts: Set<Int> {
         get {
@@ -49,12 +49,16 @@ class Game {
 
 @Model
 class Match {
-    var game: Game?
-    var tournament: Tournament?
+    @Relationship(inverse: \Game.matches) var game: Game?
+    @Relationship var tournament: Tournament?
     var date: Date
-    var players: [Player]
-    var scores: [Score]
-    var winner: Player?
+    @Relationship(inverse: \Player.matches) var players: [Player]
+    @Relationship(deleteRule: .cascade) var scores: [Score]
+    @Attribute var winnerID: String?
+
+    var winner: Player? {
+        players.first { "\($0.persistentModelID)" == winnerID }
+    }
 
     init(game: Game? = nil, tournament: Tournament? = nil, date: Date = Date()) {
         self.game = game
@@ -62,17 +66,22 @@ class Match {
         self.date = date
         self.players = []
         self.scores = []
+        self.winnerID = nil
     }
 }
 
 @Model
 class Tournament {
-    var game: Game?
+    @Relationship(inverse: \Game.tournaments) var game: Game?
     var name: String
     var date: Date
-    var matches: [Match]
-    var players: [Player]
-    var winner: Player?
+    @Relationship(deleteRule: .cascade, inverse: \Match.tournament) var matches: [Match]
+    @Relationship(inverse: \Player.tournaments) var players: [Player]
+    @Attribute var winnerID: String?
+
+    var winner: Player? {
+        players.first { "\($0.persistentModelID)" == winnerID }
+    }
 
     init(game: Game? = nil, name: String, date: Date = Date()) {
         self.game = game
@@ -80,13 +89,14 @@ class Tournament {
         self.date = date
         self.matches = []
         self.players = []
+        self.winnerID = nil
     }
 }
 
 @Model
 class Score {
-    var player: Player?
-    var match: Match?
+    @Relationship(inverse: \Match.scores) var match: Match?
+    @Relationship var player: Player?
     var points: Int
 
     init(player: Player? = nil, match: Match? = nil, points: Int) {

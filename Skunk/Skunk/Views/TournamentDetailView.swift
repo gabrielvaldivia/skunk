@@ -19,29 +19,25 @@ struct TournamentDetailView: View {
             }
 
             Section("Players") {
-                let players = tournament.players
-                if players.isEmpty {
+                if tournament.players.isEmpty {
                     Text("No players yet")
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(players) { player in
-                        NavigationLink(destination: PlayerDetailView(player: player)) {
-                            HStack {
-                                if let photoData = player.photoData,
-                                    let uiImage = UIImage(data: photoData)
-                                {
-                                    Image(uiImage: uiImage)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 30, height: 30)
-                                        .clipShape(Circle())
-                                } else {
-                                    PlayerInitialsView(name: player.name, size: 30)
-                                }
-
-                                Text(player.name)
-                                    .padding(.leading, 8)
+                    ForEach(tournament.players) { player in
+                        HStack {
+                            if let photoData = player.photoData,
+                                let uiImage = UIImage(data: photoData)
+                            {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 30, height: 30)
+                                    .clipShape(Circle())
+                            } else {
+                                PlayerInitialsView(name: player.name, size: 30)
                             }
+                            Text(player.name)
+                                .padding(.leading, 8)
                         }
                     }
                 }
@@ -104,7 +100,7 @@ struct TournamentDetailView: View {
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Tournament.self, configurations: config)
+    let container = try! ModelContainer(for: Tournament.self, Game.self, configurations: config)
     let game = Game(title: "Chess", isBinaryScore: true, supportedPlayerCounts: [2])
     let tournament = Tournament(game: game, name: "Chess Championship")
     container.mainContext.insert(game)
