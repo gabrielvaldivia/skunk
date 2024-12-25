@@ -9,6 +9,12 @@ struct MatchRow: View {
     @Environment(\.self) private var environment
     @Environment(\.modelContext) private var modelContext
 
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d 'at' h:mm a"
+        return formatter
+    }()
+
     init(match: Match, showGameTitle: Bool = true) {
         self.match = match
         self.showGameTitle = showGameTitle
@@ -21,28 +27,34 @@ struct MatchRow: View {
     }
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading) {
-                if showGameTitle, let game = match.game {
-                    Text(game.title)
-                        .font(.headline)
+        NavigationLink(destination: MatchDetailView(match: match)) {
+            HStack {
+                VStack(alignment: .leading) {
+                    if showGameTitle, let game = match.game {
+                        Text(game.title)
+                            .font(.headline)
+                        Text(Self.dateFormatter.string(from: match.date))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text(Self.dateFormatter.string(from: match.date))
+                            .font(.headline)
+                    }
                 }
-                Text(match.date, style: .date)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
 
-            Spacer()
+                Spacer()
 
-            // Player photos
-            ZStack {
-                ForEach(Array(match.players.enumerated()), id: \.element.id) { index, player in
-                    playerView(for: player)
-                        .offset(x: Double(index) * -20)
-                        .zIndex("\(player.persistentModelID)" == match.winnerID ? 1 : 0)
+                // Player photos
+                ZStack {
+                    ForEach(Array(match.orderedPlayers.enumerated()), id: \.element.id) {
+                        index, player in
+                        playerView(for: player)
+                            .offset(x: Double(index) * -20)
+                            .zIndex("\(player.persistentModelID)" == match.winnerID ? 1 : 0)
+                    }
                 }
+                .padding(.leading)
             }
-            .padding(.leading)
         }
     }
 
@@ -75,39 +87,28 @@ struct MatchRow: View {
     }
 }
 
-struct MatchRow_Previews: PreviewProvider {
-    static var container: ModelContainer {
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try! ModelContainer(
-            for: Game.self, Match.self, Player.self,
-            configurations: config
-        )
+#Preview {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(
+        for: Game.self, Match.self, Player.self,
+        configurations: config
+    )
 
-        let game = Game(title: "Chess", isBinaryScore: true, supportedPlayerCounts: [2])
-        let player1 = Player(name: "Alice")
-        let player2 = Player(name: "Bob")
-        let match = Match(game: game)
+    let game = Game(title: "Chess", isBinaryScore: true, supportedPlayerCounts: [2])
+    let player1 = Player(name: "Alice")
+    let player2 = Player(name: "Bob")
+    let match = Match(game: game)
 
-        container.mainContext.insert(game)
-        container.mainContext.insert(player1)
-        container.mainContext.insert(player2)
-        container.mainContext.insert(match)
+    container.mainContext.insert(game)
+    container.mainContext.insert(player1)
+    container.mainContext.insert(player2)
+    container.mainContext.insert(match)
 
-        match.players = [player1, player2]
-        match.winnerID = "\(player1.persistentModelID)"
+    match.players = [player1, player2]
+    match.winnerID = "\(player1.persistentModelID)"
 
-        return container
+    return NavigationStack {
+        MatchRow(match: match, showGameTitle: true)
     }
-
-    static var match: Match {
-        let descriptor = FetchDescriptor<Match>()
-        return try! container.mainContext.fetch(descriptor).first!
-    }
-
-    static var previews: some View {
-        NavigationStack {
-            MatchRow(match: match, showGameTitle: true)
-        }
-        .modelContainer(container)
-    }
+    .modelContainer(container)
 }

@@ -5,21 +5,33 @@ import UIKit
 struct GameDetailView: View {
     let game: Game
     @State private var showingNewMatch = false
-    @State private var showingNewTournament = false
     @Environment(\.modelContext) private var modelContext
 
-    private var champion: Player? {
+    private var championshipStatus: (winner: Player?, isDraw: Bool) {
         let matches = game.matches
         let winners = matches.compactMap { $0.winner }
         let winCounts = Dictionary(grouping: winners) { $0 }
             .mapValues { $0.count }
-        return winCounts.max(by: { $0.value < $1.value })?.key
+
+        if let maxCount = winCounts.values.max() {
+            let topPlayers = winCounts.filter { $0.value == maxCount }
+            if topPlayers.count > 1 {
+                return (nil, true)  // Draw
+            } else {
+                return (topPlayers.first?.key, false)  // Clear winner
+            }
+        }
+        return (nil, false)  // No games played
     }
 
     var body: some View {
         List {
-            if let champion = champion {
-                Section("Current Champion") {
+            Section("Champion") {
+                if championshipStatus.isDraw {
+                    Text("Draw")
+                        .font(.headline)
+                        .foregroundStyle(.orange)
+                } else if let champion = championshipStatus.winner {
                     HStack {
                         if let photoData = champion.photoData,
                             let uiImage = UIImage(data: photoData)
@@ -31,7 +43,9 @@ struct GameDetailView: View {
                                 .clipShape(Circle())
                         } else {
                             PlayerInitialsView(
-                                name: champion.name, size: 40, colorHue: champion.colorHue)
+                                name: champion.name,
+                                size: 40,
+                                colorHue: champion.colorHue)
                         }
 
                         VStack(alignment: .leading) {
@@ -68,42 +82,7 @@ struct GameDetailView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(sortedMatches.prefix(5)) { match in
-                        NavigationLink(destination: MatchDetailView(match: match)) {
-                            MatchRow(match: match, showGameTitle: false)
-                        }
-                    }
-                    .onDelete { indexSet in
-                        let sortedMatches = game.matches.sorted(by: { $0.date > $1.date })
-                        indexSet.forEach { index in
-                            if index < sortedMatches.count {
-                                let match = sortedMatches[index]
-                                // Remove match from players
-                                match.players.forEach { player in
-                                    player.matches.removeAll { $0.id == match.id }
-                                }
-                                // Remove match from game
-                                game.matches.removeAll { $0.id == match.id }
-                                // Delete scores
-                                match.scores.forEach { score in
-                                    modelContext.delete(score)
-                                }
-                                // Delete the match
-                                modelContext.delete(match)
-                            }
-                        }
-                        try? modelContext.save()
-                    }
-                }
-            }
-
-            Section("Tournaments") {
-                let sortedTournaments = game.tournaments.sorted(by: { $0.date > $1.date })
-                if sortedTournaments.isEmpty {
-                    Text("No tournaments yet")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(sortedTournaments) { tournament in
-                        TournamentRow(tournament: tournament)
+                        MatchRow(match: match, showGameTitle: false)
                     }
                 }
             }
@@ -116,28 +95,6 @@ struct GameDetailView: View {
         }
         .sheet(isPresented: $showingNewMatch) {
             NewMatchView(game: game)
-        }
-        .sheet(isPresented: $showingNewTournament) {
-            NewTournamentView(game: game)
-        }
-    }
-}
-
-struct TournamentRow: View {
-    let tournament: Tournament
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text(tournament.name)
-                .font(.headline)
-            if let winner = tournament.winner {
-                Text("Winner: \(winner.name)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            Text(tournament.date, style: .date)
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 }

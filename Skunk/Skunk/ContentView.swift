@@ -11,33 +11,36 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         TabView {
-            GamesView()
-                .tabItem {
-                    Label("Games", systemImage: "gamecontroller")
-                }
+            NavigationStack {
+                GamesView()
+            }
+            .tabItem {
+                Label("Games", systemImage: "gamecontroller")
+            }
 
-            PlayersView()
-                .tabItem {
-                    Label("Players", systemImage: "person.2")
-                }
-
-            TournamentsView()
-                .tabItem {
-                    Label("Tournaments", systemImage: "trophy")
-                }
+            NavigationStack {
+                PlayersView()
+            }
+            .tabItem {
+                Label("Players", systemImage: "person.2")
+            }
         }
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(
-            for: [
-                Player.self,
-                Game.self,
-                Match.self,
-                Tournament.self,
-                Score.self,
-            ],
-            inMemory: true)
+        .modelContainer(previewContainer)
 }
+
+private let previewContainer: ModelContainer = {
+    let schema = Schema([
+        Player.self,
+        Game.self,
+        Match.self,
+        Score.self,
+    ])
+    let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: schema, configurations: [modelConfiguration])
+    return container
+}()

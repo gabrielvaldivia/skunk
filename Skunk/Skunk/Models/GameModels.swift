@@ -7,7 +7,6 @@ class Player {
     var photoData: Data?
     var colorHue: Double?  // Store the hue value for consistent color
     @Relationship(deleteRule: .cascade) var matches: [Match]
-    @Relationship(deleteRule: .cascade) var tournaments: [Tournament]
 
     init(name: String, photoData: Data? = nil) {
         self.name = name
@@ -16,17 +15,15 @@ class Player {
         let hash = abs(name.hashValue)
         self.colorHue = Double(hash % 255) / 255.0
         self.matches = []
-        self.tournaments = []
     }
 }
 
 @Model
 class Game {
     var title: String
-    var isBinaryScore: Bool  // true for win/lose, false for point-based
+    var isBinaryScore: Bool
     @Attribute private var _supportedPlayerCountsData: Data?
     @Relationship(deleteRule: .cascade) var matches: [Match]
-    @Relationship(deleteRule: .cascade) var tournaments: [Tournament]
 
     var supportedPlayerCounts: Set<Int> {
         get {
@@ -47,53 +44,64 @@ class Game {
         self.isBinaryScore = isBinaryScore
         self._supportedPlayerCountsData = try? JSONEncoder().encode(Array(supportedPlayerCounts))
         self.matches = []
-        self.tournaments = []
     }
 }
 
 @Model
 class Match {
-    @Relationship(inverse: \Game.matches) var game: Game?
-    @Relationship var tournament: Tournament?
+    @Relationship var game: Game?
     var date: Date
     @Relationship(inverse: \Player.matches) var players: [Player]
+    @Attribute private var _playerOrderData: Data?
     @Relationship(deleteRule: .cascade) var scores: [Score]
     @Attribute var winnerID: String?
 
+    private var playerOrder: [String] {
+        get {
+            if let data = _playerOrderData,
+                let order = try? JSONDecoder().decode([String].self, from: data)
+            {
+                return order
+            }
+            return players.map { "\($0.persistentModelID)" }
+        }
+        set {
+            _playerOrderData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    var orderedPlayers: [Player] {
+        let order = playerOrder
+        return players.sorted { player1, player2 in
+            let id1 = "\(player1.persistentModelID)"
+            let id2 = "\(player2.persistentModelID)"
+            let index1 = order.firstIndex(of: id1) ?? Int.max
+            let index2 = order.firstIndex(of: id2) ?? Int.max
+            return index1 < index2
+        }
+    }
+
     var winner: Player? {
         players.first { "\($0.persistentModelID)" == winnerID }
     }
 
-    init(game: Game? = nil, tournament: Tournament? = nil, date: Date = Date()) {
+    init(game: Game? = nil, date: Date = Date()) {
         self.game = game
-        self.tournament = tournament
         self.date = date
         self.players = []
+        self._playerOrderData = nil
         self.scores = []
         self.winnerID = nil
     }
-}
 
-@Model
-class Tournament {
-    @Relationship(inverse: \Game.tournaments) var game: Game?
-    var name: String
-    var date: Date
-    @Relationship(deleteRule: .cascade, inverse: \Match.tournament) var matches: [Match]
-    @Relationship(inverse: \Player.tournaments) var players: [Player]
-    @Attribute var winnerID: String?
-
-    var winner: Player? {
-        players.first { "\($0.persistentModelID)" == winnerID }
-    }
-
-    init(game: Game? = nil, name: String, date: Date = Date()) {
-        self.game = game
-        self.name = name
-        self.date = date
-        self.matches = []
-        self.players = []
-        self.winnerID = nil
+    func addPlayer(_ player: Player) {
+        if !players.contains(player) {
+            players.append(player)
+            let id = "\(player.persistentModelID)"
+            if !playerOrder.contains(id) {
+                playerOrder.append(id)
+            }
+        }
     }
 }
 

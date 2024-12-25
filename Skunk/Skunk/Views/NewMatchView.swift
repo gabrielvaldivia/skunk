@@ -131,7 +131,8 @@ struct NewMatchView: View {
         modelContext.insert(match)
 
         // Set up relationships
-        match.players = [player1, player2]
+        match.addPlayer(player1)
+        match.addPlayer(player2)
         match.game = game  // Ensure the game relationship is set
         game.matches.append(match)
 

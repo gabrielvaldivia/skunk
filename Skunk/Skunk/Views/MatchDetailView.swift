@@ -1,43 +1,50 @@
 import SwiftData
 import SwiftUI
+import UIKit
 
 struct MatchDetailView: View {
     let match: Match
     @Environment(\.modelContext) private var modelContext
 
     private func playerView(_ player: Player) -> some View {
-        HStack {
-            if let photoData = player.photoData,
-                let uiImage = UIImage(data: photoData)
-            {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 40, height: 40)
-                    .clipShape(Circle())
-            } else {
-                PlayerInitialsView(name: player.name, size: 40, colorHue: player.colorHue)
-            }
+        Button(action: {
+            match.winnerID = "\(player.persistentModelID)"
+            try? modelContext.save()
+        }) {
+            HStack {
+                if let photoData = player.photoData,
+                    let uiImage = UIImage(data: photoData)
+                {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 40, height: 40)
+                        .clipShape(Circle())
+                } else {
+                    PlayerInitialsView(name: player.name, size: 40, colorHue: player.colorHue)
+                }
 
-            VStack(alignment: .leading) {
                 Text(player.name)
                     .font(.headline)
+
+                Spacer()
+
                 if "\(player.persistentModelID)" == match.winnerID {
                     Text("Winner")
-                        .font(.caption)
+                        .font(.subheadline)
                         .foregroundStyle(.green)
                 }
-            }
 
-            if let game = match.game, !game.isBinaryScore {
-                Spacer()
-                if let score = match.scores.first(where: { $0.player == player }) {
+                if let game = match.game, !game.isBinaryScore,
+                    let score = match.scores.first(where: { $0.player == player })
+                {
                     Text("\(score.points) points")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
             }
         }
+        .buttonStyle(.plain)
     }
 
     var body: some View {
@@ -50,7 +57,7 @@ struct MatchDetailView: View {
             }
 
             Section("Players") {
-                ForEach(match.players) { player in
+                ForEach(match.orderedPlayers) { player in
                     playerView(player)
                 }
             }

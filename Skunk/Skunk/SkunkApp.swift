@@ -18,7 +18,6 @@ struct SkunkApp: App {
                 Player.self,
                 Game.self,
                 Match.self,
-                Tournament.self,
                 Score.self,
             ])
 
