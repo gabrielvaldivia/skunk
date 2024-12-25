@@ -8,15 +8,22 @@ struct NewMatchView: View {
     let game: Game
     @State private var players: [Player?]
     @State private var scores: [Int]
+    @State private var currentPlayerCount: Int
 
     @Query(sort: \Match.date, order: .reverse) private var matches: [Match]
     @Query private var allPlayers: [Player]
 
     init(game: Game) {
         self.game = game
-        let playerCount = game.supportedPlayerCounts.first ?? 2
-        _players = State(initialValue: Array(repeating: nil, count: playerCount))
-        _scores = State(initialValue: Array(repeating: 0, count: playerCount))
+        // Get the last used player count or minimum supported count
+        let lastMatch = game.matches.sorted(by: { $0.date > $1.date }).first
+        let lastPlayerCount = lastMatch?.players.count
+        let minPlayerCount = game.supportedPlayerCounts.min() ?? 2
+        let initialPlayerCount = lastPlayerCount ?? minPlayerCount
+
+        _currentPlayerCount = State(initialValue: initialPlayerCount)
+        _players = State(initialValue: Array(repeating: nil, count: initialPlayerCount))
+        _scores = State(initialValue: Array(repeating: 0, count: initialPlayerCount))
     }
 
     // Get the default players from the last match
@@ -31,7 +38,7 @@ struct NewMatchView: View {
         NavigationStack {
             Form {
                 ForEach(players.indices, id: \.self) { index in
-                    HStack {
+                    HStack(spacing: 0) {
                         Picker("Player \(index + 1)", selection: $players[index]) {
                             Text("Select Player").tag(nil as Player?)
                             ForEach(
@@ -44,6 +51,7 @@ struct NewMatchView: View {
                             }
                         }
                         .labelsHidden()
+                        .padding(.leading, -12)
 
                         Spacer()
 
@@ -71,6 +79,25 @@ struct NewMatchView: View {
                             .multilineTextAlignment(.trailing)
                             .frame(width: 80)
                         }
+                    }
+                }
+                .onDelete { indexSet in
+                    guard currentPlayerCount > (game.supportedPlayerCounts.min() ?? 2) else {
+                        return
+                    }
+                    players.remove(atOffsets: indexSet)
+                    scores.remove(atOffsets: indexSet)
+                    currentPlayerCount -= 1
+                }
+
+                if players.count > 1 && currentPlayerCount < (game.supportedPlayerCounts.max() ?? 2)
+                {
+                    Button(action: {
+                        currentPlayerCount += 1
+                        players.append(nil)
+                        scores.append(0)
+                    }) {
+                        Text("Add Player")
                     }
                 }
             }

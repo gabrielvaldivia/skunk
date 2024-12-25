@@ -160,64 +160,32 @@ struct PlayerDetailView: View {
         }
         .sheet(isPresented: $isEditing) {
             NavigationStack {
-                VStack(spacing: 20) {
-                    Button(action: { isImagePickerPresented.toggle() }) {
-                        if let image = selectedImage {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 120, height: 120)
-                                .clipShape(Circle())
-                        } else if let photoData = player.photoData,
-                            let uiImage = UIImage(data: photoData)
-                        {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 120, height: 120)
-                                .clipShape(Circle())
-                        } else {
-                            PlayerInitialsView(
-                                name: editedName.isEmpty ? player.name : editedName,
-                                size: 120,
-                                colorData: player.colorData)
-                        }
-                    }
-                    .padding(.top, 40)
-
-                    TextField("Player Name", text: $editedName)
-                        .textFieldStyle(.roundedBorder)
-                        .padding(.horizontal)
-                        .multilineTextAlignment(.center)
-
-                    ColorPicker(
-                        "Player Color",
-                        selection: .init(
-                            get: {
-                                if let colorData = player.colorData,
-                                    let uiColor = try? NSKeyedUnarchiver.unarchivedObject(
-                                        ofClass: UIColor.self, from: colorData)
-                                {
-                                    Color(uiColor: uiColor)
-                                } else {
-                                    .blue
-                                }
-                            },
-                            set: { newColor in
-                                if let colorData = try? NSKeyedArchiver.archivedData(
-                                    withRootObject: UIColor(newColor), requiringSecureCoding: true)
-                                {
-                                    player.colorData = colorData
-                                }
+                PlayerFormView(
+                    name: $editedName,
+                    selectedImage: $selectedImage,
+                    color: Binding(
+                        get: {
+                            if let colorData = player.colorData,
+                                let uiColor = try? NSKeyedUnarchiver.unarchivedObject(
+                                    ofClass: UIColor.self, from: colorData)
+                            {
+                                Color(uiColor: uiColor)
+                            } else {
+                                .blue
                             }
-                        )
-                    )
-                    .padding(.horizontal)
-
-                    Spacer()
-                }
-                .navigationTitle("Edit Player")
-                .navigationBarTitleDisplayMode(.inline)
+                        },
+                        set: { newColor in
+                            if let colorData = try? NSKeyedArchiver.archivedData(
+                                withRootObject: UIColor(newColor), requiringSecureCoding: true)
+                            {
+                                player.colorData = colorData
+                            }
+                        }
+                    ),
+                    existingPhotoData: player.photoData,
+                    existingColorData: player.colorData,
+                    title: "Edit Player"
+                )
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Cancel") {

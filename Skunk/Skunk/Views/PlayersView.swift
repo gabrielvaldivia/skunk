@@ -2,13 +2,75 @@ import SwiftData
 import SwiftUI
 import UIKit
 
+struct PlayerFormView: View {
+    @Binding var name: String
+    @Binding var selectedImage: UIImage?
+    @Binding var color: Color
+    @State private var isImagePickerPresented = false
+    let existingPhotoData: Data?
+    let existingColorData: Data?
+    let title: String
+
+    var body: some View {
+        Form {
+            Section {
+                Button(action: { isImagePickerPresented.toggle() }) {
+                    if let image = selectedImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 120, height: 120)
+                            .clipShape(Circle())
+                    } else if let photoData = existingPhotoData,
+                        let uiImage = UIImage(data: photoData)
+                    {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 120, height: 120)
+                            .clipShape(Circle())
+                    } else if name.isEmpty {
+                        Circle()
+                            .fill(Color(.tertiarySystemFill))
+                            .frame(width: 120, height: 120)
+                            .overlay {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 40))
+                                    .foregroundStyle(.primary)
+                            }
+                    } else {
+                        let colorData = try? NSKeyedArchiver.archivedData(
+                            withRootObject: UIColor(color),
+                            requiringSecureCoding: true)
+                        PlayerInitialsView(
+                            name: name,
+                            size: 120,
+                            colorData: colorData)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+            }
+
+            Section {
+                TextField("Name", text: $name)
+                ColorPicker("Color", selection: $color)
+            }
+        }
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $isImagePickerPresented) {
+            ImagePicker(image: $selectedImage)
+        }
+    }
+}
+
 struct PlayersView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var players: [Player]
 
     @State private var showingAddPlayer = false
     @State private var newPlayerName = ""
-    @State private var isImagePickerPresented = false
     @State private var selectedImage: UIImage?
     @State private var newPlayerColor = Color.blue
 
@@ -52,47 +114,14 @@ struct PlayersView: View {
             }
             .sheet(isPresented: $showingAddPlayer) {
                 NavigationStack {
-                    VStack(spacing: 20) {
-                        Button(action: { isImagePickerPresented.toggle() }) {
-                            if let image = selectedImage {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 120, height: 120)
-                                    .clipShape(Circle())
-                            } else if newPlayerName.isEmpty {
-                                Circle()
-                                    .fill(Color(.tertiarySystemFill))
-                                    .frame(width: 120, height: 120)
-                                    .overlay {
-                                        Image(systemName: "plus")
-                                            .font(.system(size: 40))
-                                            .foregroundStyle(.secondary)
-                                    }
-                            } else {
-                                let colorData = try? NSKeyedArchiver.archivedData(
-                                    withRootObject: UIColor(newPlayerColor),
-                                    requiringSecureCoding: true)
-                                PlayerInitialsView(
-                                    name: newPlayerName,
-                                    size: 120,
-                                    colorData: colorData)
-                            }
-                        }
-                        .padding(.top, 40)
-
-                        TextField("Player Name", text: $newPlayerName)
-                            .textFieldStyle(.roundedBorder)
-                            .padding(.horizontal)
-                            .multilineTextAlignment(.center)
-
-                        ColorPicker("Player Color", selection: $newPlayerColor)
-                            .padding(.horizontal)
-
-                        Spacer()
-                    }
-                    .navigationTitle("New Player")
-                    .navigationBarTitleDisplayMode(.inline)
+                    PlayerFormView(
+                        name: $newPlayerName,
+                        selectedImage: $selectedImage,
+                        color: $newPlayerColor,
+                        existingPhotoData: nil,
+                        existingColorData: nil,
+                        title: "New Player"
+                    )
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
                             Button("Cancel") {
@@ -108,9 +137,6 @@ struct PlayersView: View {
                             .disabled(newPlayerName.isEmpty)
                         }
                     }
-                }
-                .sheet(isPresented: $isImagePickerPresented) {
-                    ImagePicker(image: $selectedImage)
                 }
             }
         }

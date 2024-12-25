@@ -32,13 +32,14 @@ struct MatchRow: View {
                 VStack(alignment: .leading) {
                     if showGameTitle, let game = match.game {
                         Text(game.title)
-                            .font(.headline)
+                            .font(.body)
                         Text(Self.dateFormatter.string(from: match.date))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } else {
                         Text(Self.dateFormatter.string(from: match.date))
-                            .font(.headline)
+                            .font(showGameTitle ? .caption : .body)
+                            .foregroundStyle(showGameTitle ? .secondary : .primary)
                     }
                 }
 

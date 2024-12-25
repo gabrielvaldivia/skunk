@@ -9,7 +9,8 @@ struct AddGameView: View {
     @State private var isBinaryScore = true
     @State private var showingError = false
     @State private var errorMessage = ""
-    @State private var numberOfPlayers = 2
+    @State private var minPlayers = 2
+    @State private var maxPlayers = 4
 
     var body: some View {
         NavigationStack {
@@ -25,8 +26,11 @@ struct AddGameView: View {
                 )
                 .toggleStyle(.switch)
 
-                Section("Number of Players") {
-                    Stepper("\(numberOfPlayers) Players", value: $numberOfPlayers, in: 2...99)
+                Section("Player Count") {
+                    Stepper(
+                        "Minimum \(minPlayers) Players", value: $minPlayers, in: 1...maxPlayers)
+                    Stepper(
+                        "Maximum \(maxPlayers) Players", value: $maxPlayers, in: minPlayers...99)
                 }
             }
             .navigationTitle("New Game")
@@ -53,10 +57,11 @@ struct AddGameView: View {
     }
 
     private func addGame() {
+        let supportedCounts = Set(minPlayers...maxPlayers)
         let game = Game(
             title: title,
             isBinaryScore: isBinaryScore,
-            supportedPlayerCounts: [numberOfPlayers]
+            supportedPlayerCounts: supportedCounts
         )
         modelContext.insert(game)
 
