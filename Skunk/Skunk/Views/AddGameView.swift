@@ -11,11 +11,13 @@ struct AddGameView: View {
     @State private var errorMessage = ""
     @State private var minPlayers = 2
     @State private var maxPlayers = 4
+    @FocusState private var isTitleFocused: Bool
 
     var body: some View {
         NavigationStack {
             Form {
                 TextField("Game Title", text: $title)
+                    .focused($isTitleFocused)
 
                 Toggle(
                     "Track Score",
@@ -52,6 +54,9 @@ struct AddGameView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(errorMessage)
+            }
+            .onAppear {
+                isTitleFocused = true
             }
         }
     }

@@ -22,8 +22,10 @@ struct PlayerDetailView: View {
 
     private var championedGames: [Game] {
         games.filter { game in
+            guard !game.matches.isEmpty else { return false }
             let playerWins = Dictionary(grouping: game.matches.compactMap { $0.winner }) { $0 }
                 .mapValues { $0.count }
+            guard !playerWins.isEmpty else { return false }
             return playerWins.max(by: { $0.value < $1.value })?.key == player
         }
     }
@@ -49,7 +51,8 @@ struct PlayerDetailView: View {
         let totalMatches = player.matches.count
         guard totalMatches > 0 else { return 0 }
         let wins = player.matches.filter { $0.winner == player }.count
-        return Double(wins) / Double(totalMatches) * 100
+        let rate = Double(wins) / Double(totalMatches) * 100
+        return rate.isFinite ? rate : 0
     }
 
     private var mostPlayedGame: (game: Game, count: Int)? {
@@ -118,7 +121,7 @@ struct PlayerDetailView: View {
                     StatCard(
                         title: "Matches Won",
                         value: player.matches.filter { $0.winner == player }.count)
-                    StatCard(title: "Win Rate", value: "\(Int(winRate))%")
+                    StatCard(title: "Win Rate", value: "\(max(0, min(100, Int(winRate))))%")
                     StatCard(title: "Longest Streak", value: longestStreak)
                 }
                 .padding(.vertical, 8)
@@ -274,8 +277,10 @@ struct WinLossTimelineView: View {
                 cumulativeWins += 1
             }
             cumulativeGames += 1
+            let rate = Double(cumulativeWins) / Double(cumulativeGames) * 100
+            let safeRate = rate.isFinite ? rate : 0
             return (
-                match.date, Int((Double(cumulativeWins) / Double(cumulativeGames) * 100).rounded())
+                match.date, max(0, min(100, Int(safeRate)))
             )
         }
     }
@@ -379,7 +384,9 @@ struct WinRateProgressionView: View {
                 wins += 1
             }
             games += 1
-            return (match.date, Int((Double(wins) / Double(games) * 100).rounded()))
+            let rate = Double(wins) / Double(games) * 100
+            let safeRate = rate.isFinite ? rate : 0
+            return (match.date, max(0, min(100, Int(safeRate))))
         }
     }
 
@@ -423,7 +430,7 @@ struct HeadToHeadDetailView: View {
         }
     }
 
-    private var stats: (wins: Int, losses: Int) {
+    private var stats: (wins: Int, losses: Int, winRate: Int) {
         var wins = 0
         var losses = 0
         for match in relevantMatches {
@@ -433,7 +440,10 @@ struct HeadToHeadDetailView: View {
                 losses += 1
             }
         }
-        return (wins, losses)
+        let total = wins + losses
+        let rate = total > 0 ? (Double(wins) / Double(total) * 100) : 0
+        let safeRate = rate.isFinite ? rate : 0
+        return (wins, losses, max(0, min(100, Int(safeRate))))
     }
 
     var body: some View {

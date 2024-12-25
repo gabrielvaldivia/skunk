@@ -5,6 +5,7 @@ import UIKit
 struct MatchDetailView: View {
     let match: Match
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     private func playerView(_ player: Player) -> some View {
         Button(action: {
@@ -62,6 +63,33 @@ struct MatchDetailView: View {
             Section("Players") {
                 ForEach(match.orderedPlayers) { player in
                     playerView(player)
+                }
+            }
+
+            Section {
+                Button(role: .destructive) {
+                    // Remove match from game's matches array
+                    if let game = match.game {
+                        game.matches.removeAll { $0.id == match.id }
+                    }
+
+                    // Remove match from all players' matches arrays
+                    for player in match.players {
+                        player.matches.removeAll { $0.id == match.id }
+                    }
+
+                    // Delete all associated scores
+                    for score in match.scores {
+                        modelContext.delete(score)
+                    }
+
+                    // Finally delete the match
+                    modelContext.delete(match)
+                    try? modelContext.save()
+                    dismiss()
+                } label: {
+                    Text("Delete Match")
+                        .frame(maxWidth: .infinity)
                 }
             }
         }

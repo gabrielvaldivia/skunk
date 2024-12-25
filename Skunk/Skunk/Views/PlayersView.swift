@@ -7,6 +7,7 @@ struct PlayerFormView: View {
     @Binding var selectedImage: UIImage?
     @Binding var color: Color
     @State private var isImagePickerPresented = false
+    @FocusState private var isNameFocused: Bool
     let existingPhotoData: Data?
     let existingColorData: Data?
     let title: String
@@ -54,6 +55,7 @@ struct PlayerFormView: View {
 
             Section {
                 TextField("Name", text: $name)
+                    .focused($isNameFocused)
                 ColorPicker("Color", selection: $color)
             }
         }
@@ -61,6 +63,9 @@ struct PlayerFormView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $isImagePickerPresented) {
             ImagePicker(image: $selectedImage)
+        }
+        .onAppear {
+            isNameFocused = true
         }
     }
 }
@@ -75,67 +80,65 @@ struct PlayersView: View {
     @State private var newPlayerColor = Color.blue
 
     var body: some View {
-        NavigationStack {
-            List {
-                ForEach(players) { player in
-                    NavigationLink(destination: PlayerDetailView(player: player)) {
-                        HStack {
-                            if let photoData = player.photoData,
-                                let uiImage = UIImage(data: photoData)
-                            {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 40, height: 40)
-                                    .clipShape(Circle())
-                            } else {
-                                PlayerInitialsView(
-                                    name: player.name,
-                                    size: 40,
-                                    colorData: player.colorData)
-                            }
-
-                            Text(player.name)
-                                .padding(.leading, 8)
+        List {
+            ForEach(players) { player in
+                NavigationLink(destination: PlayerDetailView(player: player)) {
+                    HStack {
+                        if let photoData = player.photoData,
+                            let uiImage = UIImage(data: photoData)
+                        {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 40, height: 40)
+                                .clipShape(Circle())
+                        } else {
+                            PlayerInitialsView(
+                                name: player.name,
+                                size: 40,
+                                colorData: player.colorData)
                         }
+
+                        Text(player.name)
+                            .padding(.leading, 8)
                     }
                 }
-                .onDelete(perform: deletePlayers)
             }
-            .navigationTitle("Players")
-            .toolbar {
-                Button(action: {
-                    newPlayerColor = Color(
-                        hue: Double.random(in: 0...1), saturation: 0.7, brightness: 0.9)
-                    showingAddPlayer.toggle()
-                }) {
-                    Label("Add Player", systemImage: "plus")
-                }
+            .onDelete(perform: deletePlayers)
+        }
+        .navigationTitle("Players")
+        .toolbar {
+            Button(action: {
+                newPlayerColor = Color(
+                    hue: Double.random(in: 0...1), saturation: 0.7, brightness: 0.9)
+                showingAddPlayer.toggle()
+            }) {
+                Label("Add Player", systemImage: "plus")
             }
-            .sheet(isPresented: $showingAddPlayer) {
-                NavigationStack {
-                    PlayerFormView(
-                        name: $newPlayerName,
-                        selectedImage: $selectedImage,
-                        color: $newPlayerColor,
-                        existingPhotoData: nil,
-                        existingColorData: nil,
-                        title: "New Player"
-                    )
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") {
-                                newPlayerName = ""
-                                selectedImage = nil
-                                showingAddPlayer = false
-                            }
+        }
+        .sheet(isPresented: $showingAddPlayer) {
+            NavigationStack {
+                PlayerFormView(
+                    name: $newPlayerName,
+                    selectedImage: $selectedImage,
+                    color: $newPlayerColor,
+                    existingPhotoData: nil,
+                    existingColorData: nil,
+                    title: "New Player"
+                )
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            newPlayerName = ""
+                            selectedImage = nil
+                            showingAddPlayer = false
                         }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Add") {
-                                addPlayer()
-                            }
-                            .disabled(newPlayerName.isEmpty)
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Add") {
+                            addPlayer()
                         }
+                        .disabled(newPlayerName.isEmpty)
                     }
                 }
             }

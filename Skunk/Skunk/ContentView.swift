@@ -10,19 +10,21 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        TabView {
-            NavigationStack {
-                GamesView()
-            }
-            .tabItem {
-                Label("Games", systemImage: "gamecontroller")
-            }
+        NavigationStack {
+            TabView {
+                NavigationView {
+                    GamesView()
+                }
+                .tabItem {
+                    Label("Games", systemImage: "gamecontroller")
+                }
 
-            NavigationStack {
-                PlayersView()
-            }
-            .tabItem {
-                Label("Players", systemImage: "person.2")
+                NavigationView {
+                    PlayersView()
+                }
+                .tabItem {
+                    Label("Players", systemImage: "person.2")
+                }
             }
         }
     }
