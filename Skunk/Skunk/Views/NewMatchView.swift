@@ -30,8 +30,8 @@ struct NewMatchView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Players") {
-                    ForEach(players.indices, id: \.self) { index in
+                ForEach(players.indices, id: \.self) { index in
+                    HStack {
                         Picker("Player \(index + 1)", selection: $players[index]) {
                             Text("Select Player").tag(nil as Player?)
                             ForEach(
@@ -43,44 +43,34 @@ struct NewMatchView: View {
                                 Text(player.name).tag(player as Player?)
                             }
                         }
-                        if !game.isBinaryScore {
-                            scoreField(score: $scores[index], index: index)
-                        }
-                    }
-                }
+                        .labelsHidden()
 
-                if game.isBinaryScore {
-                    Section("Winner") {
-                        Picker(
-                            "Winner",
-                            selection: .init(
-                                get: {
-                                    let maxScore = scores.max() ?? 0
-                                    if maxScore > 0,
-                                        let winnerIndex = scores.firstIndex(of: maxScore)
-                                    {
-                                        return players[winnerIndex]
+                        Spacer()
+
+                        if game.isBinaryScore {
+                            Toggle(
+                                "",
+                                isOn: Binding(
+                                    get: { scores[index] == 1 },
+                                    set: { isWinner in
+                                        scores = Array(repeating: 0, count: scores.count)
+                                        if isWinner {
+                                            scores[index] = 1
+                                        }
                                     }
-                                    return nil
-                                },
-                                set: { winner in
-                                    scores = Array(repeating: 0, count: scores.count)
-                                    if let winnerIndex = players.firstIndex(where: {
-                                        $0?.id == winner?.id
-                                    }) {
-                                        scores[winnerIndex] = 1
-                                    }
-                                }
+                                )
                             )
-                        ) {
-                            Text("Select Winner").tag(nil as Player?)
-                            ForEach(players.indices, id: \.self) { index in
-                                if let player = players[index] {
-                                    Text(player.name).tag(player as Player?)
-                                }
-                            }
+                            .labelsHidden()
+                        } else {
+                            TextField(
+                                "Score",
+                                value: $scores[index],
+                                format: .number
+                            )
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 80)
                         }
-                        .disabled(players.contains(nil))
                     }
                 }
             }
@@ -111,21 +101,6 @@ struct NewMatchView: View {
 
     private var canSave: Bool {
         !players.contains(nil) && Set(players.compactMap { $0?.id }).count == players.count
-    }
-
-    private func scoreField(score: Binding<Int>, index: Int) -> some View {
-        HStack {
-            Text("Score")
-            Spacer()
-            TextField(
-                "Score",
-                value: score,
-                format: .number
-            )
-            .keyboardType(.numberPad)
-            .multilineTextAlignment(.trailing)
-            .frame(width: 80)
-        }
     }
 
     private func saveMatch() {
