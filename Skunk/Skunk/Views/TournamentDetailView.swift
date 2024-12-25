@@ -34,7 +34,8 @@ struct TournamentDetailView: View {
                                     .frame(width: 30, height: 30)
                                     .clipShape(Circle())
                             } else {
-                                PlayerInitialsView(name: player.name, size: 30)
+                                PlayerInitialsView(
+                                    name: player.name, size: 30, colorHue: player.colorHue)
                             }
                             Text(player.name)
                                 .padding(.leading, 8)

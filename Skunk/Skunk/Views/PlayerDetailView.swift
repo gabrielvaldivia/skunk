@@ -32,7 +32,8 @@ struct PlayerDetailView: View {
                                 .frame(width: 100, height: 100)
                                 .clipShape(Circle())
                         } else {
-                            PlayerInitialsView(name: player.name, size: 100)
+                            PlayerInitialsView(
+                                name: player.name, size: 100, colorHue: player.colorHue)
                         }
                     }
                     Spacer()

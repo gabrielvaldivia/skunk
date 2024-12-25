@@ -30,7 +30,8 @@ struct GameDetailView: View {
                                 .frame(width: 40, height: 40)
                                 .clipShape(Circle())
                         } else {
-                            PlayerInitialsView(name: champion.name, size: 40)
+                            PlayerInitialsView(
+                                name: champion.name, size: 40, colorHue: champion.colorHue)
                         }
 
                         VStack(alignment: .leading) {
@@ -109,15 +110,8 @@ struct GameDetailView: View {
         }
         .navigationTitle(game.title)
         .toolbar {
-            Menu {
-                Button(action: { showingNewMatch.toggle() }) {
-                    Label("New Match", systemImage: "flag")
-                }
-                Button(action: { showingNewTournament.toggle() }) {
-                    Label("New Tournament", systemImage: "trophy")
-                }
-            } label: {
-                Image(systemName: "plus")
+            Button(action: { showingNewMatch.toggle() }) {
+                Label("New Match", systemImage: "plus")
             }
         }
         .sheet(isPresented: $showingNewMatch) {

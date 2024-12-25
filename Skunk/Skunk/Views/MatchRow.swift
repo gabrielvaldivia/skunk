@@ -57,7 +57,7 @@ struct MatchRow: View {
                     .frame(width: 32, height: 32)
                     .clipShape(Circle())
             } else {
-                PlayerInitialsView(name: player.name, size: 32)
+                PlayerInitialsView(name: player.name, size: 32, colorHue: player.colorHue)
             }
         }
         .opacity("\(player.persistentModelID)" == match.winnerID ? 1.0 : 0.5)

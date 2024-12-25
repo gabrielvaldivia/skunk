@@ -10,6 +10,7 @@ struct PlayersView: View {
     @State private var newPlayerName = ""
     @State private var isImagePickerPresented = false
     @State private var selectedImage: UIImage?
+    @State private var newPlayerColorHue = 0.0
 
     var body: some View {
         NavigationStack {
@@ -26,7 +27,8 @@ struct PlayersView: View {
                                     .frame(width: 40, height: 40)
                                     .clipShape(Circle())
                             } else {
-                                PlayerInitialsView(name: player.name, size: 40)
+                                PlayerInitialsView(
+                                    name: player.name, size: 40, colorHue: player.colorHue)
                             }
 
                             Text(player.name)
@@ -38,32 +40,47 @@ struct PlayersView: View {
             }
             .navigationTitle("Players")
             .toolbar {
-                Button(action: { showingAddPlayer.toggle() }) {
+                Button(action: {
+                    newPlayerColorHue = Double.random(in: 0...1)
+                    showingAddPlayer.toggle()
+                }) {
                     Label("Add Player", systemImage: "plus")
                 }
             }
             .sheet(isPresented: $showingAddPlayer) {
                 NavigationStack {
-                    Form {
-                        TextField("Player Name", text: $newPlayerName)
-
+                    VStack(spacing: 20) {
                         Button(action: { isImagePickerPresented.toggle() }) {
-                            HStack {
-                                Text("Add Photo")
-                                Spacer()
-                                if let image = selectedImage {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 40, height: 40)
-                                        .clipShape(Circle())
-                                } else {
-                                    PlayerInitialsView(
-                                        name: newPlayerName.isEmpty ? "New" : newPlayerName,
-                                        size: 40)
-                                }
+                            if let image = selectedImage {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 120, height: 120)
+                                    .clipShape(Circle())
+                            } else if newPlayerName.isEmpty {
+                                Circle()
+                                    .fill(Color(.tertiarySystemFill))
+                                    .frame(width: 120, height: 120)
+                                    .overlay {
+                                        Image(systemName: "plus")
+                                            .font(.system(size: 40))
+                                            .foregroundStyle(.secondary)
+                                    }
+                            } else {
+                                PlayerInitialsView(
+                                    name: newPlayerName,
+                                    size: 120,
+                                    colorHue: newPlayerColorHue)
                             }
                         }
+                        .padding(.top, 40)
+
+                        TextField("Player Name", text: $newPlayerName)
+                            .textFieldStyle(.roundedBorder)
+                            .padding(.horizontal)
+                            .multilineTextAlignment(.center)
+
+                        Spacer()
                     }
                     .navigationTitle("New Player")
                     .navigationBarTitleDisplayMode(.inline)
@@ -93,6 +110,7 @@ struct PlayersView: View {
     private func addPlayer() {
         let imageData = selectedImage?.jpegData(compressionQuality: 0.8)
         let player = Player(name: newPlayerName, photoData: imageData)
+        player.colorHue = newPlayerColorHue
         modelContext.insert(player)
         newPlayerName = ""
         selectedImage = nil

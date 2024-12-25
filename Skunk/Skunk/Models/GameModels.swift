@@ -5,12 +5,16 @@ import SwiftData
 class Player {
     var name: String
     var photoData: Data?
+    var colorHue: Double?  // Store the hue value for consistent color
     @Relationship(deleteRule: .cascade) var matches: [Match]
     @Relationship(deleteRule: .cascade) var tournaments: [Tournament]
 
     init(name: String, photoData: Data? = nil) {
         self.name = name
         self.photoData = photoData
+        // Generate a consistent color based on the name
+        let hash = abs(name.hashValue)
+        self.colorHue = Double(hash % 255) / 255.0
         self.matches = []
         self.tournaments = []
     }
