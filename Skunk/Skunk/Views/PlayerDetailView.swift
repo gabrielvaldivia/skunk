@@ -39,8 +39,7 @@ struct PlayerDetailView: View {
     var body: some View {
         List {
             Section {
-                HStack {
-                    Spacer()
+                VStack(spacing: 12) {
                     if let photoData = player.photoData,
                         let uiImage = UIImage(data: photoData)
                     {
@@ -53,8 +52,12 @@ struct PlayerDetailView: View {
                         PlayerInitialsView(
                             name: player.name, size: 100, colorHue: player.colorHue)
                     }
-                    Spacer()
+
+                    Text(player.name)
+                        .font(.title)
+                        .bold()
                 }
+                .frame(maxWidth: .infinity)
                 .listRowBackground(Color.clear)
             }
 
@@ -93,7 +96,7 @@ struct PlayerDetailView: View {
                 }
             }
         }
-        .navigationTitle(player.name)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             Button(action: {
                 editedName = player.name
