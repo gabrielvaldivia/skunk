@@ -21,7 +21,10 @@ struct MatchDetailView: View {
                         .frame(width: 40, height: 40)
                         .clipShape(Circle())
                 } else {
-                    PlayerInitialsView(name: player.name, size: 40, colorHue: player.colorHue)
+                    PlayerInitialsView(
+                        name: player.name,
+                        size: 40,
+                        colorData: player.colorData)
                 }
 
                 Text(player.name)

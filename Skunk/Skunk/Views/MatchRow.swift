@@ -57,7 +57,10 @@ struct MatchRow: View {
                             .frame(width: 32, height: 32)
                             .clipShape(Circle())
                     } else {
-                        PlayerInitialsView(name: winner.name, size: 32, colorHue: winner.colorHue)
+                        PlayerInitialsView(
+                            name: winner.name,
+                            size: 32,
+                            colorData: winner.colorData)
                     }
                 }
             }

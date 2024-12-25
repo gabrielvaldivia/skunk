@@ -1,6 +1,18 @@
+import Charts
 import SwiftData
 import SwiftUI
 import UIKit
+
+private func playerColor(_ player: Player) -> Color {
+    if let colorData = player.colorData,
+        let uiColor = try? NSKeyedUnarchiver.unarchivedObject(
+            ofClass: UIColor.self, from: colorData)
+    {
+        return Color(uiColor: uiColor)
+    } else {
+        return Color(hue: 0.5, saturation: 0.7, brightness: 0.9)
+    }
+}
 
 struct PieChartView: View {
     let winCounts: [(player: Player, count: Int)]
@@ -29,7 +41,7 @@ struct PieChartView: View {
                         endAngle: .degrees(endDegrees),
                         clockwise: false)
                 }
-                .fill(Color(hue: entry.player.colorHue ?? 0.0, saturation: 0.7, brightness: 0.9))
+                .fill(playerColor(entry.player))
             }
         }
         .frame(width: 150, height: 150)
@@ -79,32 +91,34 @@ struct GameDetailView: View {
                         .font(.headline)
                         .foregroundStyle(.orange)
                 } else if let champion = championshipStatus.winner {
-                    HStack {
-                        if let photoData = champion.photoData,
-                            let uiImage = UIImage(data: photoData)
-                        {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 40, height: 40)
-                                .clipShape(Circle())
-                        } else {
-                            PlayerInitialsView(
-                                name: champion.name,
-                                size: 40,
-                                colorHue: champion.colorHue ?? 0.0)
-                        }
+                    NavigationLink(destination: PlayerDetailView(player: champion)) {
+                        HStack {
+                            if let photoData = champion.photoData,
+                                let uiImage = UIImage(data: photoData)
+                            {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 40, height: 40)
+                                    .clipShape(Circle())
+                            } else {
+                                PlayerInitialsView(
+                                    name: champion.name,
+                                    size: 40,
+                                    colorData: champion.colorData)
+                            }
 
-                        VStack(alignment: .leading) {
-                            Text(champion.name)
-                                .font(.headline)
-                                .foregroundStyle(.blue)
-                            let winCount = game.matches.filter { $0.winner == champion }.count
-                            Text("\(winCount) wins")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                            VStack(alignment: .leading) {
+                                Text(champion.name)
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
+                                let winCount = game.matches.filter { $0.winner == champion }.count
+                                Text("\(winCount) wins")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
                         }
-                        Spacer()
                     }
                 }
             }
@@ -118,11 +132,7 @@ struct GameDetailView: View {
                         ForEach(winCounts, id: \.player.id) { entry in
                             HStack {
                                 Circle()
-                                    .fill(
-                                        Color(
-                                            hue: entry.player.colorHue ?? 0.0, saturation: 0.7,
-                                            brightness: 0.9)
-                                    )
+                                    .fill(playerColor(entry.player))
                                     .frame(width: 12, height: 12)
                                 Text(entry.player.name)
                                 Spacer()

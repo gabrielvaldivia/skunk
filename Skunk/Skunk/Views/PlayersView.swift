@@ -10,7 +10,7 @@ struct PlayersView: View {
     @State private var newPlayerName = ""
     @State private var isImagePickerPresented = false
     @State private var selectedImage: UIImage?
-    @State private var newPlayerColorHue = 0.0
+    @State private var newPlayerColor = Color.blue
 
     var body: some View {
         NavigationStack {
@@ -28,7 +28,9 @@ struct PlayersView: View {
                                     .clipShape(Circle())
                             } else {
                                 PlayerInitialsView(
-                                    name: player.name, size: 40, colorHue: player.colorHue)
+                                    name: player.name,
+                                    size: 40,
+                                    colorData: player.colorData)
                             }
 
                             Text(player.name)
@@ -41,7 +43,8 @@ struct PlayersView: View {
             .navigationTitle("Players")
             .toolbar {
                 Button(action: {
-                    newPlayerColorHue = Double.random(in: 0...1)
+                    newPlayerColor = Color(
+                        hue: Double.random(in: 0...1), saturation: 0.7, brightness: 0.9)
                     showingAddPlayer.toggle()
                 }) {
                     Label("Add Player", systemImage: "plus")
@@ -67,10 +70,13 @@ struct PlayersView: View {
                                             .foregroundStyle(.secondary)
                                     }
                             } else {
+                                let colorData = try? NSKeyedArchiver.archivedData(
+                                    withRootObject: UIColor(newPlayerColor),
+                                    requiringSecureCoding: true)
                                 PlayerInitialsView(
                                     name: newPlayerName,
                                     size: 120,
-                                    colorHue: newPlayerColorHue)
+                                    colorData: colorData)
                             }
                         }
                         .padding(.top, 40)
@@ -80,6 +86,9 @@ struct PlayersView: View {
                             .padding(.horizontal)
                             .multilineTextAlignment(.center)
 
+                        ColorPicker("Player Color", selection: $newPlayerColor)
+                            .padding(.horizontal)
+
                         Spacer()
                     }
                     .navigationTitle("New Player")
@@ -87,9 +96,9 @@ struct PlayersView: View {
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
                             Button("Cancel") {
-                                showingAddPlayer = false
                                 newPlayerName = ""
                                 selectedImage = nil
+                                showingAddPlayer = false
                             }
                         }
                         ToolbarItem(placement: .confirmationAction) {
@@ -110,7 +119,11 @@ struct PlayersView: View {
     private func addPlayer() {
         let imageData = selectedImage?.jpegData(compressionQuality: 0.8)
         let player = Player(name: newPlayerName, photoData: imageData)
-        player.colorHue = newPlayerColorHue
+        if let colorData = try? NSKeyedArchiver.archivedData(
+            withRootObject: UIColor(newPlayerColor), requiringSecureCoding: true)
+        {
+            player.colorData = colorData
+        }
         modelContext.insert(player)
         newPlayerName = ""
         selectedImage = nil

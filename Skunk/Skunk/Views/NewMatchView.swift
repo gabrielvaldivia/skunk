@@ -28,28 +28,6 @@ struct NewMatchView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Players") {
-                    Picker("Player 1", selection: $player1) {
-                        Text("Select Player").tag(nil as Player?)
-                        ForEach(players.filter { $0 != player2 }) { player in
-                            Text(player.name).tag(player as Player?)
-                        }
-                    }
-                    if !game.isBinaryScore {
-                        scoreField(score: $score1)
-                    }
-
-                    Picker("Player 2", selection: $player2) {
-                        Text("Select Player").tag(nil as Player?)
-                        ForEach(players.filter { $0 != player1 }) { player in
-                            Text(player.name).tag(player as Player?)
-                        }
-                    }
-                    if !game.isBinaryScore {
-                        scoreField(score: $score2)
-                    }
-                }
-
                 if game.isBinaryScore {
                     Section("Winner") {
                         Picker(

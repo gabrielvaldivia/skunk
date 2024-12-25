@@ -1,11 +1,12 @@
 import Foundation
 import SwiftData
+import UIKit
 
 @Model
 class Player {
     var name: String
     var photoData: Data?
-    var colorHue: Double?  // Store the hue value for consistent color
+    var colorData: Data?  // Store the full color data
     @Relationship(deleteRule: .cascade) var matches: [Match]
 
     init(name: String, photoData: Data? = nil) {
@@ -13,7 +14,10 @@ class Player {
         self.photoData = photoData
         // Generate a consistent color based on the name
         let hash = abs(name.hashValue)
-        self.colorHue = Double(hash % 255) / 255.0
+        let hue = Double(hash % 255) / 255.0
+        let color = UIColor(hue: CGFloat(hue), saturation: 0.7, brightness: 0.9, alpha: 1.0)
+        self.colorData = try? NSKeyedArchiver.archivedData(
+            withRootObject: color, requiringSecureCoding: true)
         self.matches = []
     }
 }
