@@ -45,43 +45,21 @@ struct MatchRow: View {
                 Spacer()
 
                 // Player photos
-                ZStack {
-                    ForEach(Array(match.orderedPlayers.enumerated()), id: \.element.id) {
-                        index, player in
-                        playerView(for: player)
-                            .offset(x: Double(index) * -20)
-                            .zIndex("\(player.persistentModelID)" == match.winnerID ? 1 : 0)
+                if let winner = match.orderedPlayers.first(where: {
+                    "\($0.persistentModelID)" == match.winnerID
+                }) {
+                    if let photoData = winner.photoData,
+                        let uiImage = UIImage(data: photoData)
+                    {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 32, height: 32)
+                            .clipShape(Circle())
+                    } else {
+                        PlayerInitialsView(name: winner.name, size: 32, colorHue: winner.colorHue)
                     }
                 }
-                .padding(.leading)
-            }
-        }
-    }
-
-    private func playerView(for player: Player) -> some View {
-        Group {
-            if let photoData = player.photoData,
-                let uiImage = UIImage(data: photoData)
-            {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 32, height: 32)
-                    .clipShape(Circle())
-            } else {
-                PlayerInitialsView(name: player.name, size: 32, colorHue: player.colorHue)
-            }
-        }
-        .opacity("\(player.persistentModelID)" == match.winnerID ? 1.0 : 0.5)
-        .overlay(
-            Circle()
-                .stroke(backgroundColor, lineWidth: 2)
-        )
-        .overlay(alignment: .top) {
-            if "\(player.persistentModelID)" == match.winnerID {
-                Text("👑")
-                    .font(.system(size: 12))
-                    .offset(y: -8)
             }
         }
     }

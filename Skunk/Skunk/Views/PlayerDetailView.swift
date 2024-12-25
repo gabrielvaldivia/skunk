@@ -36,6 +36,30 @@ struct PlayerDetailView: View {
         return maxStreak
     }
 
+    private var winRate: Double {
+        let totalMatches = player.matches.count
+        guard totalMatches > 0 else { return 0 }
+        let wins = player.matches.filter { $0.winner == player }.count
+        return Double(wins) / Double(totalMatches) * 100
+    }
+
+    private var mostPlayedGame: (game: Game, count: Int)? {
+        let gameMatches = Dictionary(grouping: player.matches) { $0.game }
+        return gameMatches.map { ($0.key!, $0.value.count) }
+            .max(by: { $0.1 < $1.1 })
+    }
+
+    private var mostFrequentOpponent: (player: Player, count: Int)? {
+        var opponentCounts: [Player: Int] = [:]
+        for match in player.matches {
+            for opponent in match.players where opponent != player {
+                opponentCounts[opponent, default: 0] += 1
+            }
+        }
+        return opponentCounts.map { ($0.key, $0.value) }
+            .max(by: { $0.1 < $1.1 })
+    }
+
     var body: some View {
         List {
             Section {
@@ -81,7 +105,21 @@ struct PlayerDetailView: View {
                 StatsRow(
                     title: "Matches Won",
                     value: player.matches.filter { $0.winner == player }.count)
+                StatsRow(title: "Win Rate", value: String(format: "%.1f%%", winRate))
                 StatsRow(title: "Longest Streak", value: longestStreak)
+
+                if let (game, count) = mostPlayedGame {
+                    NavigationLink(destination: GameDetailView(game: game)) {
+                        StatsRow(title: "Most Played Game", value: "\(game.title) (\(count))")
+                    }
+                }
+
+                if let (opponent, count) = mostFrequentOpponent {
+                    NavigationLink(destination: PlayerDetailView(player: opponent)) {
+                        StatsRow(
+                            title: "Most Frequent Opponent", value: "\(opponent.name) (\(count))")
+                    }
+                }
             }
 
             Section("Recent Matches") {
@@ -180,13 +218,18 @@ struct PlayerDetailView: View {
 
 struct StatsRow: View {
     let title: String
-    let value: Int
+    let value: CustomStringConvertible
+
+    init(title: String, value: CustomStringConvertible) {
+        self.title = title
+        self.value = value
+    }
 
     var body: some View {
         HStack {
             Text(title)
             Spacer()
-            Text("\(value)")
+            Text("\(value.description)")
                 .bold()
         }
     }
