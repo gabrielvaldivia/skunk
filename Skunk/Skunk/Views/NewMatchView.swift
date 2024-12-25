@@ -1,61 +1,86 @@
 import SwiftData
 import SwiftUI
-import UIKit
 
 struct NewMatchView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
     let game: Game
-    @State private var player1: Player?
-    @State private var player2: Player?
-    @State private var score1: Int = 0
-    @State private var score2: Int = 0
+    @State private var players: [Player?]
+    @State private var scores: [Int]
 
     @Query(sort: \Match.date, order: .reverse) private var matches: [Match]
-    @Query private var players: [Player]
+    @Query private var allPlayers: [Player]
+
+    init(game: Game) {
+        self.game = game
+        let playerCount = game.supportedPlayerCounts.first ?? 2
+        _players = State(initialValue: Array(repeating: nil, count: playerCount))
+        _scores = State(initialValue: Array(repeating: 0, count: playerCount))
+    }
 
     // Get the default players from the last match
-    private var defaultPlayers: (Player?, Player?) {
-        if let lastMatch = game.matches.sorted(by: { $0.date > $1.date }).first,
-            lastMatch.players.count >= 2
-        {
-            return (lastMatch.players[0], lastMatch.players[1])
+    private var defaultPlayers: [Player?] {
+        if let lastMatch = game.matches.sorted(by: { $0.date > $1.date }).first {
+            return Array(lastMatch.players.prefix(players.count))
         }
-        return (nil, nil)
+        return Array(repeating: nil, count: players.count)
     }
 
     var body: some View {
         NavigationStack {
             Form {
+                Section("Players") {
+                    ForEach(players.indices, id: \.self) { index in
+                        Picker("Player \(index + 1)", selection: $players[index]) {
+                            Text("Select Player").tag(nil as Player?)
+                            ForEach(
+                                allPlayers.filter { player in
+                                    !players.contains { $0?.id == player.id }
+                                        || players[index]?.id == player.id
+                                }
+                            ) { player in
+                                Text(player.name).tag(player as Player?)
+                            }
+                        }
+                        if !game.isBinaryScore {
+                            scoreField(score: $scores[index], index: index)
+                        }
+                    }
+                }
+
                 if game.isBinaryScore {
                     Section("Winner") {
                         Picker(
                             "Winner",
                             selection: .init(
                                 get: {
-                                    score1 > score2 ? player1 : (score2 > score1 ? player2 : nil)
+                                    let maxScore = scores.max() ?? 0
+                                    if maxScore > 0,
+                                        let winnerIndex = scores.firstIndex(of: maxScore)
+                                    {
+                                        return players[winnerIndex]
+                                    }
+                                    return nil
                                 },
                                 set: { winner in
-                                    if winner == player1 {
-                                        score1 = 1
-                                        score2 = 0
-                                    } else if winner == player2 {
-                                        score1 = 0
-                                        score2 = 1
+                                    scores = Array(repeating: 0, count: scores.count)
+                                    if let winnerIndex = players.firstIndex(where: {
+                                        $0?.id == winner?.id
+                                    }) {
+                                        scores[winnerIndex] = 1
                                     }
                                 }
                             )
                         ) {
                             Text("Select Winner").tag(nil as Player?)
-                            if let player1 = player1 {
-                                Text(player1.name).tag(player1 as Player?)
-                            }
-                            if let player2 = player2 {
-                                Text(player2.name).tag(player2 as Player?)
+                            ForEach(players.indices, id: \.self) { index in
+                                if let player = players[index] {
+                                    Text(player.name).tag(player as Player?)
+                                }
                             }
                         }
-                        .disabled(player1 == nil || player2 == nil)
+                        .disabled(players.contains(nil))
                     }
                 }
             }
@@ -71,23 +96,24 @@ struct NewMatchView: View {
                     Button("Save") {
                         saveMatch()
                     }
-                    .disabled(!canSave || (game.isBinaryScore && score1 == score2))
+                    .disabled(!canSave || (game.isBinaryScore && Set(scores).count == 1))
                 }
             }
             .onAppear {
                 // Set default players on appear
-                let (p1, p2) = defaultPlayers
-                if player1 == nil { player1 = p1 }
-                if player2 == nil { player2 = p2 }
+                let defaults = defaultPlayers
+                for (index, player) in defaults.enumerated() where players[index] == nil {
+                    players[index] = player
+                }
             }
         }
     }
 
     private var canSave: Bool {
-        player1 != nil && player2 != nil && player1 != player2
+        !players.contains(nil) && Set(players.compactMap { $0?.id }).count == players.count
     }
 
-    private func scoreField(score: Binding<Int>) -> some View {
+    private func scoreField(score: Binding<Int>, index: Int) -> some View {
         HStack {
             Text("Score")
             Spacer()
@@ -103,36 +129,37 @@ struct NewMatchView: View {
     }
 
     private func saveMatch() {
-        guard let player1 = player1, let player2 = player2 else { return }
+        guard !players.contains(nil) else { return }
 
         let match = Match(game: game)
         modelContext.insert(match)
 
         // Set up relationships
-        match.addPlayer(player1)
-        match.addPlayer(player2)
-        match.game = game  // Ensure the game relationship is set
+        for player in players.compactMap({ $0 }) {
+            match.addPlayer(player)
+            player.matches.append(match)
+        }
+        match.game = game
         game.matches.append(match)
 
         // Set winner based on scores
-        if score1 > score2 {
-            match.winnerID = "\(player1.persistentModelID)"
-        } else if score2 > score1 {
-            match.winnerID = "\(player2.persistentModelID)"
+        if let maxScore = scores.max(),
+            let winnerIndex = scores.firstIndex(of: maxScore),
+            let winner = players[winnerIndex]
+        {
+            match.winnerID = "\(winner.persistentModelID)"
         }
 
         // Save scores for point-based games
         if !game.isBinaryScore {
-            let score1Obj = Score(player: player1, match: match, points: score1)
-            let score2Obj = Score(player: player2, match: match, points: score2)
-            match.scores = [score1Obj, score2Obj]
-            modelContext.insert(score1Obj)
-            modelContext.insert(score2Obj)
+            for (index, player) in players.enumerated() {
+                if let player = player {
+                    let scoreObj = Score(player: player, match: match, points: scores[index])
+                    match.scores.append(scoreObj)
+                    modelContext.insert(scoreObj)
+                }
+            }
         }
-
-        // Update player relationships
-        player1.matches.append(match)
-        player2.matches.append(match)
 
         try? modelContext.save()
         dismiss()
