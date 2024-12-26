@@ -72,6 +72,29 @@ struct PlayerDetailView: View {
             .max(by: { $0.1 < $1.1 })
     }
 
+    private var gameStats: [(game: Game, played: Int, wins: Int, winRate: Double)] {
+        let gameMatches = Dictionary(grouping: player.matches) { $0.game }
+        return gameMatches.compactMap { game, matches in
+            guard let game = game else { return nil }
+            let wins = matches.filter { $0.winner == player }.count
+            let winRate = Double(wins) / Double(matches.count) * 100
+            return (game, matches.count, wins, winRate)
+        }.sorted { $0.played > $1.played }
+    }
+
+    private var averageScores: [(game: Game, average: Double)] {
+        let gameMatches = Dictionary(grouping: player.matches) { $0.game }
+        return gameMatches.compactMap { game, matches in
+            guard let game = game, !game.isBinaryScore else { return nil }
+            let scores = matches.compactMap { match in
+                match.scores.first(where: { $0.player == player })?.points
+            }
+            guard !scores.isEmpty else { return nil }
+            let average = Double(scores.reduce(0, +)) / Double(scores.count)
+            return (game, average)
+        }
+    }
+
     var body: some View {
         List {
             Section {
@@ -127,9 +150,48 @@ struct PlayerDetailView: View {
                 .padding(.vertical, 8)
             }
 
+            if !gameStats.isEmpty {
+                Section("Game Performance") {
+                    ForEach(gameStats, id: \.game.id) { stat in
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text(stat.game.title)
+                                    .font(.headline)
+                                Text("\(stat.played) matches, \(stat.wins) wins")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            Text("\(Int(stat.winRate))%")
+                                .font(.title3.bold())
+                                .foregroundStyle(stat.winRate >= 50 ? .green : .red)
+                        }
+                    }
+                }
+            }
+
+            if !averageScores.isEmpty {
+                Section("Average Scores") {
+                    ForEach(averageScores, id: \.game.id) { stat in
+                        HStack {
+                            Text(stat.game.title)
+                            Spacer()
+                            Text(String(format: "%.1f pts", stat.average))
+                                .font(.headline)
+                        }
+                    }
+                }
+            }
+
             if !player.matches.isEmpty {
                 Section("Win Rate Over Time") {
                     WinLossTimelineView(matches: player.matches, player: player)
+                }
+
+                Section("Performance by Time of Day") {
+                    TimeOfDayPerformanceView(matches: player.matches, player: player)
                 }
 
                 Section("Head-to-Head Records") {
@@ -547,6 +609,75 @@ struct HeadToHeadView: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+}
+
+struct TimeOfDayPerformanceView: View {
+    let matches: [Match]
+    let player: Player
+
+    private var timeBlockStats: [(block: String, winRate: Double, matches: Int)] {
+        // Define time blocks (4-hour periods)
+        let blocks = [
+            (name: "🌅", range: 0..<6),
+            (name: "☀️", range: 6..<10),
+            (name: "🌞", range: 10..<14),
+            (name: "🌤️", range: 14..<18),
+            (name: "🌆", range: 18..<22),
+            (name: "🌙", range: 22..<24),
+        ]
+
+        var blockStats: [(String, wins: Int, total: Int)] = blocks.map { ($0.name, 0, 0) }
+
+        for match in matches {
+            let hour = Calendar.current.component(.hour, from: match.date)
+            let blockIndex = blocks.firstIndex { $0.range.contains(hour) } ?? 0
+            blockStats[blockIndex].2 += 1
+            if match.winner == player {
+                blockStats[blockIndex].1 += 1
+            }
+        }
+
+        return blockStats.map { name, wins, total in
+            let winRate = total > 0 ? Double(wins) / Double(total) * 100 : 0
+            return (name, winRate, total)
+        }
+    }
+
+    var body: some View {
+        Chart {
+            ForEach(timeBlockStats, id: \.block) { stat in
+                BarMark(
+                    x: .value("Time", stat.block),
+                    y: .value("Win Rate", stat.winRate)
+                )
+                .foregroundStyle(
+                    Color.blue.opacity(stat.matches > 0 ? 1 : 0.3)
+                )
+                .annotation(position: .top) {
+                    if stat.matches > 0 {
+                        Text("\(stat.matches)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .chartYScale(domain: 0...100)
+        .chartYAxis {
+            AxisMarks(values: [0, 25, 50, 75, 100]) { value in
+                AxisGridLine()
+                AxisValueLabel {
+                    Text("\(Int(value.as(Double.self) ?? 0))%")
+                }
+            }
+        }
+        .chartXAxis {
+            AxisMarks { _ in
+                AxisValueLabel()
+            }
+        }
+        .frame(height: 200)
     }
 }
 

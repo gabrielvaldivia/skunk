@@ -170,6 +170,96 @@ struct EditGameView: View {
     }
 }
 
+struct ActivityGridView: View {
+    let matches: [Match]
+    private let columns = 16
+    private let weeks = 6
+
+    private struct DayActivity: Identifiable {
+        let id = UUID()
+        let date: Date
+        let count: Int
+    }
+
+    private var activities: [DayActivity] {
+        let calendar = Calendar.current
+        let endDate = calendar.startOfDay(for: Date())  // End of today
+        let startDate = calendar.date(byAdding: .day, value: -(weeks * columns - 1), to: endDate)!  // Include today
+
+        // Initialize all days with 0 count
+        var dayActivities: [Date: Int] = [:]
+        var currentDate = startDate
+
+        // Only create exactly 4 rows worth of squares (4 * 16 = 64 days)
+        let totalDays = weeks * columns
+        for _ in 0..<totalDays {
+            dayActivities[currentDate] = 0
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
+        }
+
+        // Count matches per day
+        for match in matches {
+            let matchDate = calendar.startOfDay(for: match.date)
+            if matchDate >= startDate && matchDate <= endDate {
+                dayActivities[matchDate, default: 0] += 1
+            }
+        }
+
+        // Convert to array and ensure we only have exactly 64 items
+        return dayActivities.map { DayActivity(date: $0.key, count: $0.value) }
+            .sorted { $0.date < $1.date }
+            .prefix(weeks * columns)
+            .map { $0 }
+    }
+
+    private func activityColor(_ count: Int) -> Color {
+        if count == 0 { return Color.black.opacity(0.1) }
+        if count < 3 { return Color.blue.opacity(0.3) }  // 1-3 matches
+        if count < 6 { return Color.blue.opacity(0.7) }  // 3-6 matches
+        return Color.blue.opacity(1)  // 6+ matches
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.fixed(20), spacing: 2), count: columns),
+                spacing: 2
+            ) {
+                ForEach(activities) { activity in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(activityColor(activity.count))
+                        .frame(height: 20)
+                }
+            }
+            .padding(.top, 10)
+
+            HStack {
+                Text("Less")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(activityColor(0))
+                    .frame(width: 20, height: 20)
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(activityColor(2))
+                    .frame(width: 20, height: 20)
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(activityColor(4))
+                    .frame(width: 20, height: 20)
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(activityColor(6))
+                    .frame(width: 20, height: 20)
+                Text("More")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.top, 4)
+            .padding(.horizontal)
+            .padding(.bottom, 10)
+        }
+    }
+}
+
 struct GameDetailView: View {
     let game: Game
     @State private var showingNewMatch = false
@@ -270,46 +360,51 @@ struct GameDetailView: View {
                 }
             } else {
                 List {
-                    Section("Champion") {
-                        if championshipStatus.isDraw {
-                            Text("Draw")
-                                .font(.headline)
-                                .foregroundStyle(.orange)
-                        } else if let champion = championshipStatus.winner {
-                            NavigationLink(destination: PlayerDetailView(player: champion)) {
-                                HStack {
-                                    if let photoData = champion.photoData,
-                                        let uiImage = UIImage(data: photoData)
-                                    {
-                                        Image(uiImage: uiImage)
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(width: 40, height: 40)
-                                            .clipShape(Circle())
-                                    } else {
-                                        PlayerInitialsView(
-                                            name: champion.name,
-                                            size: 40,
-                                            colorData: champion.colorData)
-                                    }
+                    if !game.matches.isEmpty {
 
-                                    VStack(alignment: .leading) {
-                                        Text(champion.name)
+                        Section("Leaderboard") {
+                            ForEach(Array(winCounts.enumerated()), id: \.element.player.id) {
+                                index, entry in
+                                NavigationLink(destination: PlayerDetailView(player: entry.player))
+                                {
+                                    HStack(spacing: 16) {
+                                        Text("#\(index + 1)")
                                             .font(.headline)
-                                            .foregroundStyle(.primary)
-                                        let winCount = game.matches.filter { $0.winner == champion }
-                                            .count
-                                        Text("\(winCount) wins")
-                                            .font(.subheadline)
                                             .foregroundStyle(.secondary)
+                                            .frame(width: 40)
+
+                                        if let photoData = entry.player.photoData,
+                                            let uiImage = UIImage(data: photoData)
+                                        {
+                                            Image(uiImage: uiImage)
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: 40, height: 40)
+                                                .clipShape(Circle())
+                                        } else {
+                                            PlayerInitialsView(
+                                                name: entry.player.name,
+                                                size: 40,
+                                                colorData: entry.player.colorData)
+                                        }
+
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(entry.player.name)
+                                                .font(.headline)
+
+                                            HStack {
+                                                Text("\(entry.count) wins")
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                            .font(.subheadline)
+                                        }
+
+                                        Spacer()
                                     }
-                                    Spacer()
                                 }
                             }
                         }
-                    }
 
-                    if !game.matches.isEmpty {
                         Section("Win Distribution") {
                             VStack(alignment: .center, spacing: 16) {
                                 PieChartView(winCounts: winCounts, totalWins: totalWins)
@@ -336,12 +431,17 @@ struct GameDetailView: View {
                             .frame(maxWidth: .infinity)
                             .listRowInsets(EdgeInsets())
                         }
-                    }
 
-                    Section("Match History") {
-                        let sortedMatches = game.matches.sorted(by: { $0.date > $1.date })
-                        ForEach(sortedMatches) { match in
-                            MatchRow(match: match, showGameTitle: false)
+                        Section("Activity") {
+                            ActivityGridView(matches: Array(game.matches))
+                                .listRowInsets(EdgeInsets())
+                        }
+
+                        Section("Match History") {
+                            let sortedMatches = game.matches.sorted(by: { $0.date > $1.date })
+                            ForEach(sortedMatches) { match in
+                                MatchRow(match: match, showGameTitle: false)
+                            }
                         }
                     }
                 }
