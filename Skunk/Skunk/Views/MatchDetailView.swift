@@ -1,6 +1,11 @@
 import SwiftData
 import SwiftUI
-import UIKit
+
+#if canImport(UIKit)
+    import UIKit
+#else
+    import AppKit
+#endif
 
 struct MatchDetailView: View {
     let match: Match
@@ -23,12 +28,12 @@ struct MatchDetailView: View {
                         .clipShape(Circle())
                 } else {
                     PlayerInitialsView(
-                        name: player.name,
+                        name: player.name ?? "",
                         size: 40,
                         colorData: player.colorData)
                 }
 
-                Text(player.name)
+                Text(player.name ?? "")
                     .font(.headline)
 
                 Spacer()
@@ -40,7 +45,7 @@ struct MatchDetailView: View {
                 }
 
                 if let game = match.game, !game.isBinaryScore,
-                    let score = match.scores.first(where: { $0.player == player })
+                    let score = match.scores?.first(where: { $0.player == player })
                 {
                     Text("\(score.points) points")
                         .font(.subheadline)
@@ -55,7 +60,7 @@ struct MatchDetailView: View {
         List {
             Section {
                 if let game = match.game {
-                    LabeledContent("Game", value: game.title)
+                    LabeledContent("Game", value: game.title ?? "")
                 }
                 LabeledContent("Date", value: match.date, format: .dateTime)
             }
@@ -69,18 +74,28 @@ struct MatchDetailView: View {
             Section {
                 Button(role: .destructive) {
                     // Remove match from game's matches array
-                    if let game = match.game {
-                        game.matches.removeAll { $0.id == match.id }
+                    if let game = match.game,
+                        var matches = game.matches
+                    {
+                        matches.removeAll { $0.id == match.id }
+                        game.matches = matches
                     }
 
                     // Remove match from all players' matches arrays
-                    for player in match.players {
-                        player.matches.removeAll { $0.id == match.id }
+                    if let players = match.players {
+                        for player in players {
+                            if var matches = player.matches {
+                                matches.removeAll { $0.id == match.id }
+                                player.matches = matches
+                            }
+                        }
                     }
 
                     // Delete all associated scores
-                    for score in match.scores {
-                        modelContext.delete(score)
+                    if let scores = match.scores {
+                        for score in scores {
+                            modelContext.delete(score)
+                        }
                     }
 
                     // Finally delete the match
@@ -95,30 +110,4 @@ struct MatchDetailView: View {
         }
         .navigationTitle("Match Details")
     }
-}
-
-#Preview {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(
-        for: Game.self, Match.self, Player.self,
-        configurations: config
-    )
-
-    let game = Game(title: "Chess", isBinaryScore: true, supportedPlayerCounts: [2])
-    let player1 = Player(name: "Alice")
-    let player2 = Player(name: "Bob")
-    let match = Match(game: game)
-
-    container.mainContext.insert(game)
-    container.mainContext.insert(player1)
-    container.mainContext.insert(player2)
-    container.mainContext.insert(match)
-
-    match.players = [player1, player2]
-    match.winnerID = "\(player1.persistentModelID)"
-
-    return NavigationStack {
-        MatchDetailView(match: match)
-    }
-    .modelContainer(container)
 }

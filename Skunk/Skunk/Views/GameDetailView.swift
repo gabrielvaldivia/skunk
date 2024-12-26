@@ -2,8 +2,14 @@ import Charts
 import SwiftData
 import SwiftUI
 
+// Import local models and views
+@preconcurrency import class UIKit.UIColor
+@preconcurrency import class UIKit.UIImage
+
 #if canImport(UIKit)
     import UIKit
+#else
+    import AppKit
 #endif
 
 private func playerColor(_ player: Player) -> Color {
@@ -66,7 +72,7 @@ struct EditGameView: View {
 
     init(game: Game) {
         self.game = game
-        _title = State(initialValue: game.title)
+        _title = State(initialValue: game.title ?? "")
         _isBinaryScore = State(initialValue: game.isBinaryScore)
         _minPlayers = State(initialValue: game.supportedPlayerCounts.min() ?? 2)
         _maxPlayers = State(initialValue: game.supportedPlayerCounts.max() ?? 4)
@@ -151,16 +157,22 @@ struct EditGameView: View {
 
     private func deleteGame() {
         // Delete all matches associated with this game
-        for match in game.matches {
-            // Remove match from all players' matches arrays
-            for player in match.players {
-                player.matches.removeAll { $0.id == match.id }
+        if let matches = game.matches {
+            for match in matches {
+                // Remove match from all players' matches arrays
+                if let players = match.players {
+                    for player in players {
+                        player.matches?.removeAll { $0.id == match.id }
+                    }
+                }
+                // Delete all associated scores
+                if let scores = match.scores {
+                    for score in scores {
+                        modelContext.delete(score)
+                    }
+                }
+                modelContext.delete(match)
             }
-            // Delete all associated scores
-            for score in match.scores {
-                modelContext.delete(score)
-            }
-            modelContext.delete(match)
         }
 
         // Finally delete the game
@@ -268,11 +280,11 @@ struct GameDetailView: View {
 
     private var championshipStatus: (winner: Player?, isDraw: Bool) {
         // Return early if no matches
-        if game.matches.isEmpty { return (nil, false) }
+        guard let matches = game.matches, !matches.isEmpty else { return (nil, false) }
 
         // Get all winners
         var winners: [Player] = []
-        for match in game.matches {
+        for match in matches {
             if let winner = match.winner {
                 winners.append(winner)
             }
@@ -310,11 +322,11 @@ struct GameDetailView: View {
 
     private var winCounts: [(player: Player, count: Int)] {
         // Return empty array if no matches or winners
-        if game.matches.isEmpty { return [] }
+        guard let matches = game.matches, !matches.isEmpty else { return [] }
 
         // Get all winners
         var winners: [Player] = []
-        for match in game.matches {
+        for match in matches {
             if let winner = match.winner {
                 winners.append(winner)
             }
@@ -349,7 +361,7 @@ struct GameDetailView: View {
 
     var body: some View {
         ZStack {
-            if game.matches.isEmpty {
+            if let matches = game.matches, matches.isEmpty {
                 VStack(spacing: 8) {
                     Text("No Matches")
                         .font(.headline)
@@ -360,8 +372,7 @@ struct GameDetailView: View {
                 }
             } else {
                 List {
-                    if !game.matches.isEmpty {
-
+                    if let matches = game.matches, !matches.isEmpty {
                         Section("Leaderboard") {
                             ForEach(Array(winCounts.enumerated()), id: \.element.player.id) {
                                 index, entry in
@@ -383,13 +394,13 @@ struct GameDetailView: View {
                                                 .clipShape(Circle())
                                         } else {
                                             PlayerInitialsView(
-                                                name: entry.player.name,
+                                                name: entry.player.name ?? "",
                                                 size: 40,
                                                 colorData: entry.player.colorData)
                                         }
 
                                         VStack(alignment: .leading, spacing: 4) {
-                                            Text(entry.player.name)
+                                            Text(entry.player.name ?? "")
                                                 .font(.headline)
 
                                             HStack {
@@ -415,7 +426,7 @@ struct GameDetailView: View {
                                         Circle()
                                             .fill(playerColor(entry.player))
                                             .frame(width: 12, height: 12)
-                                        Text(entry.player.name)
+                                        Text(entry.player.name ?? "")
                                         Spacer()
                                         let winCount = entry.count
                                         let winPercentage =
@@ -433,12 +444,12 @@ struct GameDetailView: View {
                         }
 
                         Section("Activity") {
-                            ActivityGridView(matches: Array(game.matches))
+                            ActivityGridView(matches: Array(matches))
                                 .listRowInsets(EdgeInsets())
                         }
 
                         Section("Match History") {
-                            let sortedMatches = game.matches.sorted(by: { $0.date > $1.date })
+                            let sortedMatches = matches.sorted(by: { $0.date > $1.date })
                             ForEach(sortedMatches) { match in
                                 MatchRow(match: match, showGameTitle: false)
                             }
@@ -465,7 +476,7 @@ struct GameDetailView: View {
                 .padding(.bottom, 20)
             }
         }
-        .navigationTitle(game.title)
+        .navigationTitle(game.title ?? "")
         .toolbar {
             Button(action: { showingEditGame.toggle() }) {
                 Text("Edit")
@@ -478,16 +489,4 @@ struct GameDetailView: View {
             EditGameView(game: game)
         }
     }
-}
-
-#Preview {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Game.self, configurations: config)
-    let game = Game(title: "Chess", isBinaryScore: true, supportedPlayerCounts: [2])
-    container.mainContext.insert(game)
-
-    return NavigationStack {
-        GameDetailView(game: game)
-    }
-    .modelContainer(container)
 }

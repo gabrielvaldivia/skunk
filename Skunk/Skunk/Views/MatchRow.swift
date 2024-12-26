@@ -1,6 +1,11 @@
 import SwiftData
 import SwiftUI
-import UIKit
+
+#if canImport(UIKit)
+    import UIKit
+#else
+    import AppKit
+#endif
 
 struct MatchRow: View {
     let match: Match
@@ -21,9 +26,14 @@ struct MatchRow: View {
     }
 
     private var backgroundColor: Color {
-        Color(
-            uiColor: environment.colorScheme == .dark
-                ? .secondarySystemGroupedBackground : .systemGroupedBackground)
+        #if canImport(UIKit)
+            Color(
+                uiColor: environment.colorScheme == .dark
+                    ? .secondarySystemGroupedBackground : .systemGroupedBackground)
+        #else
+            environment.colorScheme == .dark
+                ? Color(.windowBackgroundColor) : Color(.controlBackgroundColor)
+        #endif
     }
 
     var body: some View {
@@ -31,7 +41,7 @@ struct MatchRow: View {
             HStack {
                 VStack(alignment: .leading) {
                     if showGameTitle, let game = match.game {
-                        Text(game.title)
+                        Text(game.title ?? "")
                             .font(.body)
                         Text(Self.dateFormatter.string(from: match.date))
                             .font(.caption)
@@ -49,48 +59,34 @@ struct MatchRow: View {
                 if let winner = match.orderedPlayers.first(where: {
                     "\($0.persistentModelID)" == match.winnerID
                 }) {
-                    if let photoData = winner.photoData,
-                        let uiImage = UIImage(data: photoData)
-                    {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 32, height: 32)
-                            .clipShape(Circle())
-                    } else {
-                        PlayerInitialsView(
-                            name: winner.name,
-                            size: 32,
-                            colorData: winner.colorData)
+                    Group {
+                        if let photoData = winner.photoData {
+                            #if canImport(UIKit)
+                                if let uiImage = UIImage(data: photoData) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 32, height: 32)
+                                        .clipShape(Circle())
+                                }
+                            #else
+                                if let nsImage = NSImage(data: photoData) {
+                                    Image(nsImage: nsImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 32, height: 32)
+                                        .clipShape(Circle())
+                                }
+                            #endif
+                        } else {
+                            PlayerInitialsView(
+                                name: winner.name ?? "",
+                                size: 32,
+                                colorData: winner.colorData)
+                        }
                     }
                 }
             }
         }
     }
-}
-
-#Preview {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(
-        for: Game.self, Match.self, Player.self,
-        configurations: config
-    )
-
-    let game = Game(title: "Chess", isBinaryScore: true, supportedPlayerCounts: [2])
-    let player1 = Player(name: "Alice")
-    let player2 = Player(name: "Bob")
-    let match = Match(game: game)
-
-    container.mainContext.insert(game)
-    container.mainContext.insert(player1)
-    container.mainContext.insert(player2)
-    container.mainContext.insert(match)
-
-    match.players = [player1, player2]
-    match.winnerID = "\(player1.persistentModelID)"
-
-    return NavigationStack {
-        MatchRow(match: match, showGameTitle: true)
-    }
-    .modelContainer(container)
 }

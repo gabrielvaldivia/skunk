@@ -1,33 +1,42 @@
 import Foundation
 import SwiftData
-import UIKit
+
+#if canImport(UIKit)
+    import UIKit
+#else
+    import AppKit
+#endif
 
 @Model
-class Player {
-    var name: String
+final class Player {
+    var name: String?
     var photoData: Data?
-    var colorData: Data?  // Store the full color data
-    @Relationship(deleteRule: .cascade) var matches: [Match]
+    var colorData: Data?
+    @Relationship(deleteRule: .nullify) var matches: [Match]?
 
     init(name: String, photoData: Data? = nil) {
         self.name = name
         self.photoData = photoData
+        self.matches = []
         // Generate a consistent color based on the name
         let hash = abs(name.hashValue)
         let hue = Double(hash % 255) / 255.0
-        let color = UIColor(hue: CGFloat(hue), saturation: 0.7, brightness: 0.9, alpha: 1.0)
+        #if canImport(UIKit)
+            let color = UIColor(hue: CGFloat(hue), saturation: 0.7, brightness: 0.9, alpha: 1.0)
+        #else
+            let color = NSColor(hue: CGFloat(hue), saturation: 0.7, brightness: 0.9, alpha: 1.0)
+        #endif
         self.colorData = try? NSKeyedArchiver.archivedData(
             withRootObject: color, requiringSecureCoding: true)
-        self.matches = []
     }
 }
 
 @Model
-class Game {
-    var title: String
-    var isBinaryScore: Bool
+final class Game {
+    var title: String?
+    var isBinaryScore: Bool = false
     @Attribute private var _supportedPlayerCountsData: Data?
-    @Relationship(deleteRule: .cascade) var matches: [Match]
+    @Relationship(deleteRule: .nullify) var matches: [Match]?
 
     var supportedPlayerCounts: Set<Int> {
         get {
@@ -52,12 +61,12 @@ class Game {
 }
 
 @Model
-class Match {
-    @Relationship var game: Game?
-    var date: Date
-    @Relationship(inverse: \Player.matches) var players: [Player]
+final class Match {
+    @Relationship(deleteRule: .nullify) var game: Game?
+    var date: Date = Date()
+    @Relationship(deleteRule: .nullify) var players: [Player]?
     @Attribute private var _playerOrderData: Data?
-    @Relationship(deleteRule: .cascade) var scores: [Score]
+    @Relationship(deleteRule: .nullify) var scores: [Score]?
     @Attribute var winnerID: String?
 
     private var playerOrder: [String] {
@@ -67,7 +76,7 @@ class Match {
             {
                 return order
             }
-            return players.map { "\($0.persistentModelID)" }
+            return players?.map { "\($0.persistentModelID)" } ?? []
         }
         set {
             _playerOrderData = try? JSONEncoder().encode(newValue)
@@ -75,6 +84,7 @@ class Match {
     }
 
     var orderedPlayers: [Player] {
+        guard let players = players else { return [] }
         let order = playerOrder
         return players.sorted { player1, player2 in
             let id1 = "\(player1.persistentModelID)"
@@ -86,7 +96,7 @@ class Match {
     }
 
     var winner: Player? {
-        players.first { "\($0.persistentModelID)" == winnerID }
+        players?.first { "\($0.persistentModelID)" == winnerID }
     }
 
     init(game: Game? = nil, date: Date = Date()) {
@@ -99,8 +109,11 @@ class Match {
     }
 
     func addPlayer(_ player: Player) {
-        if !players.contains(player) {
-            players.append(player)
+        if players == nil {
+            players = []
+        }
+        if !players!.contains(player) {
+            players!.append(player)
             let id = "\(player.persistentModelID)"
             if !playerOrder.contains(id) {
                 playerOrder.append(id)
@@ -110,12 +123,12 @@ class Match {
 }
 
 @Model
-class Score {
-    @Relationship(inverse: \Match.scores) var match: Match?
-    @Relationship var player: Player?
-    var points: Int
+final class Score {
+    @Relationship(deleteRule: .nullify) var match: Match?
+    @Relationship(deleteRule: .nullify) var player: Player?
+    var points: Int = 0
 
-    init(player: Player? = nil, match: Match? = nil, points: Int) {
+    init(player: Player? = nil, match: Match? = nil, points: Int = 0) {
         self.player = player
         self.match = match
         self.points = points

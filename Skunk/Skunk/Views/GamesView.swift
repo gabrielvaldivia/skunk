@@ -1,6 +1,12 @@
 import SwiftData
 import SwiftUI
 
+#if canImport(UIKit)
+    import UIKit
+#else
+    import AppKit
+#endif
+
 struct GamesView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Game.title) private var games: [Game]
@@ -11,7 +17,7 @@ struct GamesView: View {
         List {
             ForEach(games) { game in
                 NavigationLink(destination: GameDetailView(game: game)) {
-                    Text(game.title)
+                    Text(game.title ?? "Untitled Game")
                 }
             }
             .onDelete(perform: deleteGames)
@@ -26,7 +32,7 @@ struct GamesView: View {
             AddGameView()
         }
         .onAppear {
-            print("Current games: \(games.map { $0.title })")
+            print("Current games: \(games.map { $0.title ?? "Untitled Game" })")
         }
     }
 
@@ -43,9 +49,4 @@ struct GamesView: View {
             }
         }
     }
-}
-
-#Preview {
-    GamesView()
-        .modelContainer(for: Game.self, inMemory: true)
 }

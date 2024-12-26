@@ -33,30 +33,3 @@ struct PlayerInitialsView: View {
         .frame(width: size, height: size)
     }
 }
-
-#Preview {
-    VStack {
-        let color1 = UIColor(hue: 0.1, saturation: 0.8, brightness: 0.7, alpha: 1.0)
-        let color2 = UIColor(hue: 0.3, saturation: 0.8, brightness: 0.7, alpha: 1.0)
-        let color3 = UIColor(hue: 0.6, saturation: 0.8, brightness: 0.7, alpha: 1.0)
-
-        PlayerInitialsView(
-            name: "John Doe",
-            size: 40,
-            colorData: try? NSKeyedArchiver.archivedData(
-                withRootObject: color1, requiringSecureCoding: true)
-        )
-        PlayerInitialsView(
-            name: "Alice Smith",
-            size: 60,
-            colorData: try? NSKeyedArchiver.archivedData(
-                withRootObject: color2, requiringSecureCoding: true)
-        )
-        PlayerInitialsView(
-            name: "Bob Wilson",
-            size: 80,
-            colorData: try? NSKeyedArchiver.archivedData(
-                withRootObject: color3, requiringSecureCoding: true)
-        )
-    }
-}

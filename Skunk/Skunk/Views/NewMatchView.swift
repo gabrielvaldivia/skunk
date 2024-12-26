@@ -16,8 +16,8 @@ struct NewMatchView: View {
     init(game: Game) {
         self.game = game
         // Get the last used player count or minimum supported count
-        let lastMatch = game.matches.sorted(by: { $0.date > $1.date }).first
-        let lastPlayerCount = lastMatch?.players.count
+        let lastMatch = game.matches?.sorted(by: { $0.date > $1.date }).first
+        let lastPlayerCount = lastMatch?.players?.count
         let minPlayerCount = game.supportedPlayerCounts.min() ?? 2
         let initialPlayerCount = lastPlayerCount ?? minPlayerCount
 
@@ -28,8 +28,8 @@ struct NewMatchView: View {
 
     // Get the default players from the last match
     private var defaultPlayers: [Player?] {
-        if let lastMatch = game.matches.sorted(by: { $0.date > $1.date }).first {
-            return Array(lastMatch.players.prefix(players.count))
+        if let lastMatch = game.matches?.sorted(by: { $0.date > $1.date }).first {
+            return Array((lastMatch.players ?? []).prefix(players.count))
         }
         return Array(repeating: nil, count: players.count)
     }
@@ -47,7 +47,7 @@ struct NewMatchView: View {
                                         || players[index]?.id == player.id
                                 }
                             ) { player in
-                                Text(player.name).tag(player as Player?)
+                                Text(player.name ?? "").tag(player as Player?)
                             }
                         }
                         .labelsHidden()
@@ -139,10 +139,16 @@ struct NewMatchView: View {
         // Set up relationships
         for player in players.compactMap({ $0 }) {
             match.addPlayer(player)
-            player.matches.append(match)
+            if player.matches == nil {
+                player.matches = []
+            }
+            player.matches?.append(match)
         }
         match.game = game
-        game.matches.append(match)
+        if game.matches == nil {
+            game.matches = []
+        }
+        game.matches?.append(match)
 
         // Set winner based on scores
         if let maxScore = scores.max(),
@@ -157,7 +163,10 @@ struct NewMatchView: View {
             for (index, player) in players.enumerated() {
                 if let player = player {
                     let scoreObj = Score(player: player, match: match, points: scores[index])
-                    match.scores.append(scoreObj)
+                    if match.scores == nil {
+                        match.scores = []
+                    }
+                    match.scores?.append(scoreObj)
                     modelContext.insert(scoreObj)
                 }
             }
@@ -166,21 +175,4 @@ struct NewMatchView: View {
         try? modelContext.save()
         dismiss()
     }
-}
-
-#Preview {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Game.self, configurations: config)
-    let game = Game(title: "Chess", isBinaryScore: true, supportedPlayerCounts: [2])
-    let player1 = Player(name: "Alice")
-    let player2 = Player(name: "Bob")
-
-    container.mainContext.insert(game)
-    container.mainContext.insert(player1)
-    container.mainContext.insert(player2)
-
-    return NavigationStack {
-        NewMatchView(game: game)
-    }
-    .modelContainer(container)
 }

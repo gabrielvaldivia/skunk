@@ -1,15 +1,10 @@
-//
-//  SkunkApp.swift
-//  Skunk
-//
-//  Created by Gabriel Valdivia on 12/24/24.
-//
-
+import AuthenticationServices
 import SwiftData
 import SwiftUI
 
 @main
 struct SkunkApp: App {
+    @StateObject private var authManager = AuthenticationManager.shared
     let container: ModelContainer
 
     init() {
@@ -24,7 +19,8 @@ struct SkunkApp: App {
             let modelConfiguration = ModelConfiguration(
                 schema: schema,
                 isStoredInMemoryOnly: false,
-                allowsSave: true
+                allowsSave: true,
+                cloudKitDatabase: .automatic
             )
 
             container = try ModelContainer(
@@ -40,6 +36,14 @@ struct SkunkApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .sheet(
+                    isPresented: .init(
+                        get: { !authManager.isAuthenticated },
+                        set: { _ in }
+                    )
+                ) {
+                    SignInView()
+                }
         }
         .modelContainer(container)
     }

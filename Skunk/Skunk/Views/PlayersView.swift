@@ -1,6 +1,9 @@
+import Foundation
+import PhotosUI
 import SwiftData
 import SwiftUI
-import UIKit
+
+typealias Context = UIViewControllerRepresentableContext<ImagePicker>
 
 struct PlayerFormView: View {
     @Binding var name: String
@@ -94,12 +97,12 @@ struct PlayersView: View {
                                 .clipShape(Circle())
                         } else {
                             PlayerInitialsView(
-                                name: player.name,
+                                name: player.name ?? "",
                                 size: 40,
                                 colorData: player.colorData)
                         }
 
-                        Text(player.name)
+                        Text(player.name ?? "")
                             .padding(.leading, 8)
                     }
                 }
@@ -149,8 +152,9 @@ struct PlayersView: View {
         let imageData = selectedImage?.jpegData(compressionQuality: 0.8)
         let player = Player(name: newPlayerName, photoData: imageData)
         if let colorData = try? NSKeyedArchiver.archivedData(
-            withRootObject: UIColor(newPlayerColor), requiringSecureCoding: true)
-        {
+            withRootObject: UIColor(newPlayerColor),
+            requiringSecureCoding: true
+        ) {
             player.colorData = colorData
         }
         modelContext.insert(player)
@@ -178,7 +182,9 @@ struct ImagePicker: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    func updateUIViewController(
+        _ uiViewController: UIImagePickerController, context: Context
+    ) {}
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -201,9 +207,4 @@ struct ImagePicker: UIViewControllerRepresentable {
             parent.dismiss()
         }
     }
-}
-
-#Preview {
-    PlayersView()
-        .modelContainer(for: Player.self, inMemory: true)
 }

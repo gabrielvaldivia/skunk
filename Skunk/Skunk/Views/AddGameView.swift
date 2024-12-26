@@ -81,8 +81,3 @@ struct AddGameView: View {
         }
     }
 }
-
-#Preview {
-    AddGameView()
-        .modelContainer(for: Game.self, inMemory: true)
-}

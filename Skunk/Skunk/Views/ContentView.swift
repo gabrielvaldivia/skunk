@@ -29,20 +29,3 @@ struct ContentView: View {
         }
     }
 }
-
-#Preview {
-    ContentView()
-        .modelContainer(previewContainer)
-}
-
-private let previewContainer: ModelContainer = {
-    let schema = Schema([
-        Player.self,
-        Game.self,
-        Match.self,
-        Score.self,
-    ])
-    let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: schema, configurations: [modelConfiguration])
-    return container
-}()
