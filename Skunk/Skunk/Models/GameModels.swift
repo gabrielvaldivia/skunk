@@ -13,11 +13,13 @@ final class Player {
     var photoData: Data?
     var colorData: Data?
     @Relationship(deleteRule: .nullify) var matches: [Match]?
+    @Relationship(deleteRule: .nullify) var scores: [Score]?
 
     init(name: String, photoData: Data? = nil) {
         self.name = name
         self.photoData = photoData
         self.matches = []
+        self.scores = []
         // Generate a consistent color based on the name
         let hash = abs(name.hashValue)
         let hue = Double(hash % 255) / 255.0
@@ -124,8 +126,8 @@ final class Match {
 
 @Model
 final class Score {
-    @Relationship(deleteRule: .nullify) var match: Match?
-    @Relationship(deleteRule: .nullify) var player: Player?
+    @Relationship(deleteRule: .nullify, inverse: \Player.scores) var player: Player?
+    @Relationship(deleteRule: .nullify, inverse: \Match.scores) var match: Match?
     var points: Int = 0
 
     init(player: Player? = nil, match: Match? = nil, points: Int = 0) {
