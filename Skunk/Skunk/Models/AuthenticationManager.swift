@@ -16,26 +16,34 @@ class AuthenticationManager: ObservableObject {
     static let shared = AuthenticationManager()
 
     private init() {
-        // Check for existing credentials
-        checkExistingCredentials()
+        // No-op, use create() instead
     }
 
-    private func checkExistingCredentials() {
+    static func create() async -> AuthenticationManager {
+        let manager = AuthenticationManager.shared
+        await manager.checkExistingCredentials()
+        return manager
+    }
+
+    private func checkExistingCredentials() async {
         let appleIDProvider = ASAuthorizationAppleIDProvider()
         if let userID = UserDefaults.standard.string(forKey: "userID") {
-            appleIDProvider.getCredentialState(forUserID: userID) {
-                [weak self] credentialState, error in
-                DispatchQueue.main.async {
-                    switch credentialState {
-                    case .authorized:
-                        self?.isAuthenticated = true
-                        self?.userID = userID
-                    default:
-                        self?.isAuthenticated = false
-                        self?.userID = nil
-                        UserDefaults.standard.removeObject(forKey: "userID")
-                    }
+            do {
+                let credentialState = try await appleIDProvider.credentialState(forUserID: userID)
+                switch credentialState {
+                case .authorized:
+                    isAuthenticated = true
+                    self.userID = userID
+                default:
+                    isAuthenticated = false
+                    self.userID = nil
+                    UserDefaults.standard.removeObject(forKey: "userID")
                 }
+            } catch {
+                isAuthenticated = false
+                self.userID = nil
+                UserDefaults.standard.removeObject(forKey: "userID")
+                print("Error checking credentials: \(error.localizedDescription)")
             }
         }
     }
@@ -57,23 +65,27 @@ class AuthenticationManager: ObservableObject {
             }
 
             if let appleIDCredential = result as? ASAuthorizationAppleIDCredential {
-                self.userID = appleIDCredential.user
-                UserDefaults.standard.set(appleIDCredential.user, forKey: "userID")
-                self.isAuthenticated = true
+                DispatchQueue.main.async {
+                    self.userID = appleIDCredential.user
+                    UserDefaults.standard.set(appleIDCredential.user, forKey: "userID")
+                    self.isAuthenticated = true
 
-                // Store user info if this is the first sign in
-                if let fullName = appleIDCredential.fullName {
-                    let givenName = fullName.givenName ?? ""
-                    let familyName = fullName.familyName ?? ""
-                    UserDefaults.standard.set("\(givenName) \(familyName)", forKey: "userName")
-                }
-                if let email = appleIDCredential.email {
-                    UserDefaults.standard.set(email, forKey: "userEmail")
+                    // Store user info if this is the first sign in
+                    if let fullName = appleIDCredential.fullName {
+                        let givenName = fullName.givenName ?? ""
+                        let familyName = fullName.familyName ?? ""
+                        UserDefaults.standard.set("\(givenName) \(familyName)", forKey: "userName")
+                    }
+                    if let email = appleIDCredential.email {
+                        UserDefaults.standard.set(email, forKey: "userEmail")
+                    }
                 }
             }
         } catch {
-            self.error = error
-            print("Sign in failed: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                self.error = error
+                print("Sign in failed: \(error.localizedDescription)")
+            }
         }
     }
 

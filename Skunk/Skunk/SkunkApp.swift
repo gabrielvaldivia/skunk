@@ -4,7 +4,8 @@ import SwiftUI
 
 @main
 struct SkunkApp: App {
-    @StateObject private var authManager = AuthenticationManager.shared
+    @State private var authManager: AuthenticationManager?
+    @State private var showSignIn = false
     let container: ModelContainer
 
     init() {
@@ -35,15 +36,30 @@ struct SkunkApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .sheet(
-                    isPresented: .init(
-                        get: { !authManager.isAuthenticated },
-                        set: { _ in }
-                    )
-                ) {
-                    SignInView()
+            Group {
+                if let authManager = authManager {
+                    ContentView()
+                        .onAppear {
+                            showSignIn = !authManager.isAuthenticated
+                        }
+                        .sheet(
+                            isPresented: $showSignIn,
+                            onDismiss: {
+                                // Force refresh the view when sheet is dismissed
+                                if authManager.isAuthenticated {
+                                    try? container.mainContext.save()
+                                }
+                            }
+                        ) {
+                            SignInView(isPresented: $showSignIn)
+                        }
+                } else {
+                    ProgressView()
+                        .task {
+                            authManager = await AuthenticationManager.create()
+                        }
                 }
+            }
         }
         .modelContainer(container)
     }

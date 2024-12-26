@@ -3,7 +3,7 @@ import SwiftUI
 
 struct SignInView: View {
     @StateObject private var authManager = AuthenticationManager.shared
-    @Environment(\.dismiss) private var dismiss
+    @Binding var isPresented: Bool
 
     var body: some View {
         VStack(spacing: 20) {
@@ -32,9 +32,16 @@ struct SignInView: View {
                 request.requestedScopes = [.fullName, .email]
             } onCompletion: { result in
                 Task {
-                    await authManager.signIn()
-                    if authManager.isAuthenticated {
-                        dismiss()
+                    switch result {
+                    case .success(let authorization):
+                        if let appleIDCredential = authorization.credential
+                            as? ASAuthorizationAppleIDCredential
+                        {
+                            await authManager.signIn()
+                            isPresented = false
+                        }
+                    case .failure(let error):
+                        print("Sign in failed: \(error.localizedDescription)")
                     }
                 }
             }
@@ -43,11 +50,13 @@ struct SignInView: View {
             .padding(.horizontal)
 
             Button("Skip for Now") {
-                dismiss()
+                authManager.isAuthenticated = true
+                isPresented = false
             }
             .foregroundColor(.secondary)
             .padding(.bottom)
         }
         .padding()
+        .interactiveDismissDisabled(!authManager.isAuthenticated)
     }
 }
