@@ -4,7 +4,7 @@ import SwiftUI
 
 @main
 struct SkunkApp: App {
-    @State private var authManager: AuthenticationManager?
+    @StateObject private var authManager = AuthenticationManager.shared
     @State private var showSignIn = false
     let container: ModelContainer
 
@@ -36,31 +36,28 @@ struct SkunkApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Group {
-                if let authManager = authManager {
-                    ContentView()
-                        .onAppear {
-                            showSignIn = !authManager.isAuthenticated
-                        }
-                        .sheet(
-                            isPresented: $showSignIn,
-                            onDismiss: {
-                                // Force refresh the view when sheet is dismissed
-                                if authManager.isAuthenticated {
-                                    try? container.mainContext.save()
-                                }
-                            }
-                        ) {
-                            SignInView(isPresented: $showSignIn)
-                        }
-                } else {
-                    ProgressView()
-                        .task {
-                            authManager = await AuthenticationManager.create()
-                        }
+            ContentView()
+                .task {
+                    await authManager.checkExistingCredentials()
                 }
-            }
+                .sheet(
+                    isPresented: .init(
+                        get: { !authManager.isAuthenticated },
+                        set: { _ in }
+                    )
+                ) {
+                    SignInView()
+                }
+                .modelContainer(container)
+                .onChange(of: authManager.isAuthenticated) { _, isAuthenticated in
+                    if isAuthenticated {
+                        // Give CloudKit time to sync before allowing further actions
+                        Task {
+                            try? await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
+                            try? container.mainContext.save()
+                        }
+                    }
+                }
         }
-        .modelContainer(container)
     }
 }

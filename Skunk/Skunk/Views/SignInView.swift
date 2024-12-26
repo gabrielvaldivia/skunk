@@ -3,7 +3,8 @@ import SwiftUI
 
 struct SignInView: View {
     @StateObject private var authManager = AuthenticationManager.shared
-    @Binding var isPresented: Bool
+    @Environment(\.dismiss) private var dismiss
+    @State private var isSigningIn = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -28,17 +29,26 @@ struct SignInView: View {
 
             Spacer()
 
+            if authManager.isSyncing {
+                ProgressView("Syncing...")
+                    .padding()
+            }
+
             SignInWithAppleButton(.signIn) { request in
                 request.requestedScopes = [.fullName, .email]
             } onCompletion: { result in
                 Task {
+                    guard !isSigningIn else { return }
+                    isSigningIn = true
+                    defer { isSigningIn = false }
+
                     switch result {
                     case .success(let authorization):
                         if let appleIDCredential = authorization.credential
                             as? ASAuthorizationAppleIDCredential
                         {
-                            await authManager.signIn()
-                            isPresented = false
+                            await authManager.handleSignInWithAppleCompletion(
+                                credential: appleIDCredential)
                         }
                     case .failure(let error):
                         print("Sign in failed: \(error.localizedDescription)")
@@ -48,15 +58,16 @@ struct SignInView: View {
             .signInWithAppleButtonStyle(.black)
             .frame(height: 50)
             .padding(.horizontal)
+            .disabled(isSigningIn || authManager.isSyncing)
 
             Button("Skip for Now") {
                 authManager.isAuthenticated = true
-                isPresented = false
             }
             .foregroundColor(.secondary)
             .padding(.bottom)
+            .disabled(isSigningIn || authManager.isSyncing)
         }
         .padding()
-        .interactiveDismissDisabled(!authManager.isAuthenticated)
+        .interactiveDismissDisabled(isSigningIn || authManager.isSyncing)
     }
 }

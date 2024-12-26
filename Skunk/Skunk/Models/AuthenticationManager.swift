@@ -9,27 +9,36 @@ import SwiftUI
 
 @MainActor
 class AuthenticationManager: ObservableObject {
-    @Published var isAuthenticated = false
-    @Published var userID: String?
+    @Published var isAuthenticated = false {
+        didSet {
+            print("🔐 Authentication state changed: \(isAuthenticated)")
+        }
+    }
+    @Published var userID: String? {
+        didSet {
+            print("👤 UserID changed: \(userID ?? "nil")")
+        }
+    }
     @Published var error: Error?
+    @Published private(set) var isSyncing = false {
+        didSet {
+            print("🔄 Sync state changed: \(isSyncing)")
+        }
+    }
 
     static let shared = AuthenticationManager()
 
     private init() {
-        // No-op, use create() instead
+        print("📱 AuthenticationManager initialized")
     }
 
-    static func create() async -> AuthenticationManager {
-        let manager = AuthenticationManager.shared
-        await manager.checkExistingCredentials()
-        return manager
-    }
-
-    private func checkExistingCredentials() async {
+    func checkExistingCredentials() async {
+        print("🔍 Checking existing credentials...")
         let appleIDProvider = ASAuthorizationAppleIDProvider()
         if let userID = UserDefaults.standard.string(forKey: "userID") {
             do {
                 let credentialState = try await appleIDProvider.credentialState(forUserID: userID)
+                print("📍 Credential state for userID \(userID): \(credentialState.rawValue)")
                 switch credentialState {
                 case .authorized:
                     isAuthenticated = true
@@ -43,58 +52,48 @@ class AuthenticationManager: ObservableObject {
                 isAuthenticated = false
                 self.userID = nil
                 UserDefaults.standard.removeObject(forKey: "userID")
-                print("Error checking credentials: \(error.localizedDescription)")
+                print("❌ Error checking credentials: \(error.localizedDescription)")
             }
+        } else {
+            print("ℹ️ No existing userID found")
         }
     }
 
-    func signIn() async {
-        let request = ASAuthorizationAppleIDProvider().createRequest()
-        request.requestedScopes = [.fullName, .email]
+    func handleSignInWithAppleCompletion(credential: ASAuthorizationAppleIDCredential) async {
+        print("🎯 Handling Sign In with Apple completion...")
+        isSyncing = true
+        defer { isSyncing = false }
 
-        do {
-            let result = try await withCheckedThrowingContinuation { continuation in
-                let controller = ASAuthorizationController(authorizationRequests: [request])
-                let delegate = SignInDelegate(continuation: continuation)
-                controller.delegate = delegate
-                controller.presentationContextProvider = delegate
-                controller.performRequests()
+        // Store user info
+        self.userID = credential.user
+        UserDefaults.standard.set(credential.user, forKey: "userID")
 
-                // Store delegate to prevent it from being deallocated
-                objc_setAssociatedObject(controller, "delegate", delegate, .OBJC_ASSOCIATION_RETAIN)
-            }
-
-            if let appleIDCredential = result as? ASAuthorizationAppleIDCredential {
-                DispatchQueue.main.async {
-                    self.userID = appleIDCredential.user
-                    UserDefaults.standard.set(appleIDCredential.user, forKey: "userID")
-                    self.isAuthenticated = true
-
-                    // Store user info if this is the first sign in
-                    if let fullName = appleIDCredential.fullName {
-                        let givenName = fullName.givenName ?? ""
-                        let familyName = fullName.familyName ?? ""
-                        UserDefaults.standard.set("\(givenName) \(familyName)", forKey: "userName")
-                    }
-                    if let email = appleIDCredential.email {
-                        UserDefaults.standard.set(email, forKey: "userEmail")
-                    }
-                }
-            }
-        } catch {
-            DispatchQueue.main.async {
-                self.error = error
-                print("Sign in failed: \(error.localizedDescription)")
-            }
+        if let fullName = credential.fullName {
+            let givenName = fullName.givenName ?? ""
+            let familyName = fullName.familyName ?? ""
+            let userName = "\(givenName) \(familyName)"
+            UserDefaults.standard.set(userName, forKey: "userName")
+            print("📝 Stored user name: \(userName)")
         }
+        if let email = credential.email {
+            UserDefaults.standard.set(email, forKey: "userEmail")
+            print("📧 Stored email: \(email)")
+        }
+
+        print("⏳ Waiting for CloudKit sync...")
+        try? await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
+        isAuthenticated = true
+        print("✅ Sign in complete!")
     }
 
     func signOut() {
+        print("👋 Signing out...")
         isAuthenticated = false
         userID = nil
         UserDefaults.standard.removeObject(forKey: "userID")
         UserDefaults.standard.removeObject(forKey: "userName")
         UserDefaults.standard.removeObject(forKey: "userEmail")
+        print("✅ Sign out complete!")
     }
 }
 
