@@ -36,6 +36,7 @@ struct SignInView: View {
 
             SignInWithAppleButton(.signIn) { request in
                 request.requestedScopes = [.fullName, .email]
+                request.requestedOperation = .operationImplicit
             } onCompletion: { result in
                 Task {
                     guard !isSigningIn else { return }
@@ -49,6 +50,7 @@ struct SignInView: View {
                         {
                             await authManager.handleSignInWithAppleCompletion(
                                 credential: appleIDCredential)
+                            dismiss()
                         }
                     case .failure(let error):
                         print("Sign in failed: \(error.localizedDescription)")
@@ -60,8 +62,8 @@ struct SignInView: View {
             .padding(.horizontal)
             .disabled(isSigningIn || authManager.isSyncing)
 
-            Button("Skip for Now") {
-                authManager.isAuthenticated = true
+            Button("Cancel") {
+                dismiss()
             }
             .foregroundColor(.secondary)
             .padding(.bottom)

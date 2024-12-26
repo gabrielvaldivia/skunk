@@ -40,14 +40,6 @@ struct SkunkApp: App {
                 .task {
                     await authManager.checkExistingCredentials()
                 }
-                .sheet(
-                    isPresented: .init(
-                        get: { !authManager.isAuthenticated },
-                        set: { _ in }
-                    )
-                ) {
-                    SignInView()
-                }
                 .modelContainer(container)
                 .onChange(of: authManager.isAuthenticated) { _, isAuthenticated in
                     if isAuthenticated {

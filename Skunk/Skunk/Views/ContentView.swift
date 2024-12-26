@@ -25,6 +25,13 @@ struct ContentView: View {
                 .tabItem {
                     Label("Players", systemImage: "person.2")
                 }
+
+                NavigationView {
+                    SettingsView()
+                }
+                .tabItem {
+                    Label("Settings", systemImage: "gear")
+                }
             }
         }
     }
