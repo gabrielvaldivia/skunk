@@ -1,10 +1,9 @@
 #if canImport(UIKit)
-    import SwiftData
     import SwiftUI
 
     struct AddGameView: View {
-        @Environment(\.modelContext) private var modelContext
         @Environment(\.dismiss) private var dismiss
+        @EnvironmentObject private var cloudKitManager: CloudKitManager
         @EnvironmentObject private var authManager: AuthenticationManager
 
         @State private var title = ""
@@ -66,22 +65,23 @@
 
         private func addGame() {
             let supportedCounts = Set(minPlayers...maxPlayers)
-            let game = Game(
+            var game = Game(
                 title: title,
                 isBinaryScore: isBinaryScore,
-                supportedPlayerCounts: supportedCounts
+                supportedPlayerCounts: supportedCounts,
+                createdByID: authManager.userID
             )
-            game.createdByID = authManager.userID
-            modelContext.insert(game)
 
-            do {
-                try modelContext.save()
-                print("Successfully added game: \(title)")
-                dismiss()
-            } catch {
-                errorMessage = error.localizedDescription
-                showingError = true
-                print("Failed to save game: \(error)")
+            Task {
+                do {
+                    try await cloudKitManager.saveGame(game)
+                    print("Successfully added game: \(title)")
+                    dismiss()
+                } catch {
+                    errorMessage = error.localizedDescription
+                    showingError = true
+                    print("Failed to save game: \(error)")
+                }
             }
         }
     }

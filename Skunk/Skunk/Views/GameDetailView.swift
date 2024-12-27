@@ -1,41 +1,48 @@
 import Charts
-import SwiftData
 import SwiftUI
 
 #if canImport(UIKit)
     import UIKit
 
     struct GameDetailView: View {
+        @Environment(\.dismiss) private var dismiss
+        @EnvironmentObject private var cloudKitManager: CloudKitManager
         let game: Game
-        @Environment(\.modelContext) private var modelContext
         @State private var showingNewMatch = false
         @State private var showingEditGame = false
+        @State private var showingDeleteConfirmation = false
+        @State private var matches: [Match] = []
+        @State private var isLoading = false
+        @State private var error: Error?
+        @State private var showingError = false
 
         private var winCounts: [(player: Player, count: Int)] {
             // Get all players who have participated in matches
             var allPlayers = Set<Player>()
             var counts: [Player: Int] = [:]
 
-            if let matches = game.matches {
-                // First collect all players who have participated
-                for match in matches {
-                    if let players = match.players {
-                        allPlayers.formUnion(players)
+            // First collect all players who have participated
+            for match in matches {
+                for playerID in match.playerIDs {
+                    if let player = cloudKitManager.players.first(where: { $0.id == playerID }) {
+                        allPlayers.insert(player)
                     }
                 }
+            }
 
-                // Then count wins
-                for match in matches {
-                    if let winner = match.winner {
-                        counts[winner, default: 0] += 1
-                    }
+            // Then count wins
+            for match in matches {
+                if let winnerID = match.winnerID,
+                    let winner = cloudKitManager.players.first(where: { $0.id == winnerID })
+                {
+                    counts[winner, default: 0] += 1
                 }
+            }
 
-                // Ensure all players are in counts, even with 0 wins
-                for player in allPlayers {
-                    if counts[player] == nil {
-                        counts[player] = 0
-                    }
+            // Ensure all players are in counts, even with 0 wins
+            for player in allPlayers {
+                if counts[player] == nil {
+                    counts[player] = 0
                 }
             }
 
@@ -50,7 +57,7 @@ import SwiftUI
                 if pair1.count != pair2.count {
                     return pair1.count > pair2.count
                 }
-                return pair1.player.name ?? "" < pair2.player.name ?? ""
+                return pair1.player.name < pair2.player.name
             }
             return pairs
         }
@@ -68,9 +75,9 @@ import SwiftUI
         private func playerStatsView(_ entry: (player: Player, count: Int)) -> some View {
             HStack {
                 Circle()
-                    .fill(playerColor(entry.player))
+                    .fill(entry.player.color)
                     .frame(width: 12, height: 12)
-                Text(entry.player.name ?? "")
+                Text(entry.player.name)
                 Spacer()
                 Text("\(calculateWinPercentage(count: entry.count))%")
                     .foregroundStyle(.secondary)
@@ -90,7 +97,7 @@ import SwiftUI
                     PlayerAvatar(player: entry.player)
 
                     VStack(alignment: .leading) {
-                        Text(entry.player.name ?? "")
+                        Text(entry.player.name)
                             .font(.headline)
                     }
 
@@ -143,7 +150,9 @@ import SwiftUI
 
         var body: some View {
             ZStack {
-                if let matches = game.matches, matches.isEmpty {
+                if isLoading {
+                    ProgressView()
+                } else if matches.isEmpty {
                     VStack(spacing: 8) {
                         Text("No Matches")
                             .font(.headline)
@@ -152,7 +161,7 @@ import SwiftUI
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
-                } else if let matches = game.matches, !matches.isEmpty {
+                } else {
                     List {
                         Section("Leaderboard") {
                             ForEach(Array(winCounts.enumerated()), id: \.element.player.id) {
@@ -187,7 +196,7 @@ import SwiftUI
                     .padding(.bottom, 20)
                 }
             }
-            .navigationTitle(game.title ?? "")
+            .navigationTitle(game.title)
             .toolbar {
                 Button(action: { showingEditGame.toggle() }) {
                     Text("Edit")
@@ -205,6 +214,44 @@ import SwiftUI
             .navigationDestination(for: Player.self) { player in
                 PlayerDetailView(player: player)
             }
+            .task {
+                await loadMatches()
+            }
+            .refreshable {
+                await loadMatches()
+            }
+            .alert("Error", isPresented: $showingError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(error?.localizedDescription ?? "An unknown error occurred")
+            }
+            .alert("Delete Game", isPresented: $showingDeleteConfirmation) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) {
+                    Task {
+                        do {
+                            try await cloudKitManager.deleteGame(game)
+                            dismiss()
+                        } catch {
+                            self.error = error
+                            showingError = true
+                        }
+                    }
+                }
+            } message: {
+                Text("Are you sure you want to delete this game? This action cannot be undone.")
+            }
+        }
+
+        private func loadMatches() async {
+            isLoading = true
+            do {
+                matches = try await cloudKitManager.fetchMatches(for: game)
+            } catch {
+                self.error = error
+                showingError = true
+            }
+            isLoading = false
         }
     }
 
@@ -222,25 +269,12 @@ import SwiftUI
                     .clipShape(Circle())
             } else {
                 PlayerInitialsView(
-                    name: player.name ?? "",
+                    name: player.name,
                     size: 40,
-                    color: playerColor(player)
+                    color: player.color
                 )
             }
         }
-    }
-
-    private func playerColor(_ player: Player) -> Color {
-        if let colorData = player.colorData,
-            let uiColor = try? NSKeyedUnarchiver.unarchivedObject(
-                ofClass: UIColor.self, from: colorData)
-        {
-            return Color(uiColor: uiColor)
-        }
-        // Generate a consistent color based on the name
-        let hash = abs(player.name?.hashValue ?? 0)
-        let hue = Double(hash % 255) / 255.0
-        return Color(hue: hue, saturation: 0.7, brightness: 0.9)
     }
 
     struct PieChartView: View {
@@ -270,7 +304,7 @@ import SwiftUI
                             endAngle: .degrees(endDegrees),
                             clockwise: false)
                     }
-                    .fill(playerColor(entry.player))
+                    .fill(entry.player.color)
                 }
             }
             .frame(width: 150, height: 150)
@@ -365,132 +399,6 @@ import SwiftUI
                 .padding(.horizontal)
                 .padding(.bottom, 10)
             }
-        }
-    }
-
-    struct EditGameView: View {
-        @Environment(\.modelContext) private var modelContext
-        @Environment(\.dismiss) private var dismiss
-
-        let game: Game
-        @State private var title: String
-        @State private var isBinaryScore: Bool
-        @State private var showingError = false
-        @State private var errorMessage = ""
-        @State private var minPlayers: Int
-        @State private var maxPlayers: Int
-        @State private var showingDeleteConfirmation = false
-
-        init(game: Game) {
-            self.game = game
-            _title = State(initialValue: game.title ?? "")
-            _isBinaryScore = State(initialValue: game.isBinaryScore)
-            _minPlayers = State(initialValue: game.supportedPlayerCounts.min() ?? 2)
-            _maxPlayers = State(initialValue: game.supportedPlayerCounts.max() ?? 4)
-        }
-
-        var body: some View {
-            NavigationStack {
-                Form {
-                    TextField("Game Title", text: $title)
-
-                    Toggle(
-                        "Track Score",
-                        isOn: Binding(
-                            get: { !isBinaryScore },
-                            set: { isBinaryScore = !$0 }
-                        )
-                    )
-                    .toggleStyle(.switch)
-
-                    Section("Player Count") {
-                        Stepper(
-                            "Minimum \(minPlayers) Players", value: $minPlayers, in: 1...maxPlayers)
-                        Stepper(
-                            "Maximum \(maxPlayers) Players", value: $maxPlayers, in: minPlayers...99
-                        )
-                    }
-
-                    Section {
-                        Button(role: .destructive) {
-                            showingDeleteConfirmation = true
-                        } label: {
-                            Text("Delete Game")
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-                }
-                .navigationTitle("Edit Game")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            dismiss()
-                        }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
-                            saveGame()
-                        }
-                        .disabled(title.isEmpty)
-                    }
-                }
-                .alert("Error", isPresented: $showingError) {
-                    Button("OK", role: .cancel) {}
-                } message: {
-                    Text(errorMessage)
-                }
-                .alert("Delete Game", isPresented: $showingDeleteConfirmation) {
-                    Button("Cancel", role: .cancel) {}
-                    Button("Delete", role: .destructive) {
-                        deleteGame()
-                    }
-                } message: {
-                    Text("Are you sure you want to delete this game? This action cannot be undone.")
-                }
-            }
-        }
-
-        private func saveGame() {
-            game.title = title
-            game.isBinaryScore = isBinaryScore
-            game.supportedPlayerCounts = Set(minPlayers...maxPlayers)
-
-            do {
-                try modelContext.save()
-                print("Successfully updated game: \(title)")
-                dismiss()
-            } catch {
-                errorMessage = error.localizedDescription
-                showingError = true
-                print("Failed to save game: \(error)")
-            }
-        }
-
-        private func deleteGame() {
-            // Delete all matches associated with this game
-            if let matches = game.matches {
-                for match in matches {
-                    // Remove match from all players' matches arrays
-                    if let players = match.players {
-                        for player in players {
-                            player.matches?.removeAll { $0.id == match.id }
-                        }
-                    }
-                    // Delete all associated scores
-                    if let scores = match.scores {
-                        for score in scores {
-                            modelContext.delete(score)
-                        }
-                    }
-                    modelContext.delete(match)
-                }
-            }
-
-            // Finally delete the game
-            modelContext.delete(game)
-            try? modelContext.save()
-            dismiss()
         }
     }
 #endif

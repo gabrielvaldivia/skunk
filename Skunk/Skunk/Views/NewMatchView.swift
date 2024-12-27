@@ -1,120 +1,71 @@
-import SwiftData
+import CloudKit
 import SwiftUI
 
 #if canImport(UIKit)
-    import UIKit
-
     struct NewMatchView: View {
-        @Environment(\.modelContext) private var modelContext
         @Environment(\.dismiss) private var dismiss
+        @EnvironmentObject private var cloudKitManager: CloudKitManager
         @EnvironmentObject private var authManager: AuthenticationManager
 
         let game: Game
         @State private var players: [Player?]
         @State private var scores: [Int]
         @State private var currentPlayerCount: Int
-
-        @Query(sort: \Match.date, order: .reverse) private var matches: [Match]
-        @Query private var allPlayers: [Player]
+        @State private var allPlayers: [Player] = []
+        @State private var isLoading = false
+        @State private var error: Error?
+        @State private var showingError = false
 
         init(game: Game) {
             self.game = game
-            let lastMatch = game.matches?.sorted(by: { $0.date > $1.date }).first
-            let lastPlayerCount = lastMatch?.players?.count
             let minPlayerCount = game.supportedPlayerCounts.min() ?? 2
-            let initialPlayerCount = lastPlayerCount ?? minPlayerCount
-
-            _currentPlayerCount = State(initialValue: initialPlayerCount)
-            _players = State(initialValue: Array(repeating: nil, count: initialPlayerCount))
-            _scores = State(initialValue: Array(repeating: 0, count: initialPlayerCount))
-        }
-
-        // Get the default players from the last match, with current user as player 1
-        private var defaultPlayers: [Player?] {
-            var players = Array(repeating: nil as Player?, count: self.players.count)
-
-            // Set current user as player 1
-            if let userID = authManager.userID {
-                players[0] = allPlayers.first { "\($0.persistentModelID)" == userID }
-            }
-
-            // Fill remaining slots with players from last match
-            if let lastMatch = game.matches?.sorted(by: { $0.date > $1.date }).first {
-                let lastMatchPlayers = lastMatch.players ?? []
-                // Skip any player that matches the current user to avoid duplicates
-                let remainingPlayers = lastMatchPlayers.filter { player in
-                    guard let userID = authManager.userID else { return true }
-                    return "\(player.persistentModelID)" != userID
-                }
-
-                // Fill remaining slots starting from index 1
-                for (index, player) in remainingPlayers.prefix(players.count - 1).enumerated() {
-                    players[index + 1] = player
-                }
-            }
-
-            return players
+            _currentPlayerCount = State(initialValue: minPlayerCount)
+            _players = State(initialValue: Array(repeating: nil, count: minPlayerCount))
+            _scores = State(initialValue: Array(repeating: 0, count: minPlayerCount))
         }
 
         var body: some View {
             NavigationStack {
                 Form {
-                    ForEach(players.indices, id: \.self) { index in
-                        HStack(spacing: 0) {
-                            Picker("Player \(index + 1)", selection: $players[index]) {
-                                Text("Select Player").tag(nil as Player?)
-                                ForEach(
-                                    allPlayers.filter { player in
-                                        !players.contains { $0?.id == player.id }
-                                            || players[index]?.id == player.id
+                    Section("Players") {
+                        ForEach(Array(players.enumerated()), id: \.offset) { index, player in
+                            HStack {
+                                if let player = player {
+                                    Text(player.name)
+                                } else {
+                                    Menu {
+                                        ForEach(availablePlayers) { player in
+                                            Button(player.name) {
+                                                players[index] = player
+                                            }
+                                        }
+                                    } label: {
+                                        Text("Select Player")
+                                            .foregroundStyle(.secondary)
                                     }
-                                ) { player in
-                                    Text(player.name ?? "").tag(player as Player?)
+                                }
+
+                                Spacer()
+
+                                if index >= game.supportedPlayerCounts.min() ?? 2 {
+                                    Button(role: .destructive) {
+                                        players.remove(at: index)
+                                        scores.remove(at: index)
+                                    } label: {
+                                        Image(systemName: "minus.circle.fill")
+                                            .foregroundStyle(.red)
+                                    }
                                 }
                             }
-                            .labelsHidden()
-                            .padding(.leading, -12)
+                        }
 
-                            Spacer()
-
-                            if game.isBinaryScore {
-                                Toggle(
-                                    "",
-                                    isOn: Binding(
-                                        get: { scores[index] == 1 },
-                                        set: { scores[index] = $0 ? 1 : 0 }
-                                    )
-                                )
-                            } else {
-                                Stepper(
-                                    "",
-                                    value: $scores[index],
-                                    in: 0...Int.max
-                                )
-                                Text("\(scores[index])")
-                                    .frame(width: 40)
+                        if game.supportedPlayerCounts.contains(players.count + 1) {
+                            Button(action: {
+                                players.append(nil)
+                                scores.append(0)
+                            }) {
+                                Text("Add Player")
                             }
-                        }
-                    }
-                    .onDelete { indexSet in
-                        guard let minPlayers = game.supportedPlayerCounts.min(),
-                            players.count > minPlayers,
-                            !indexSet.contains(0),  // Prevent deleting player 1
-                            indexSet.max() ?? 0 < players.count  // Ensure all indices are valid
-                        else { return }
-
-                        withAnimation {
-                            players.remove(atOffsets: indexSet)
-                            scores.remove(atOffsets: indexSet)
-                        }
-                    }
-
-                    if game.supportedPlayerCounts.contains(players.count + 1) {
-                        Button(action: {
-                            players.append(nil)
-                            scores.append(0)
-                        }) {
-                            Text("Add Player")
                         }
                     }
                 }
@@ -133,68 +84,64 @@ import SwiftUI
                         .disabled(!canSave)
                     }
                 }
-                .onAppear {
-                    // Set default players on appear
-                    let defaults = defaultPlayers
-                    for (index, player) in defaults.enumerated() where players[index] == nil {
-                        players[index] = player
-                    }
+                .task {
+                    await loadPlayers()
                 }
+                .alert("Error", isPresented: $showingError) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(error?.localizedDescription ?? "An unknown error occurred")
+                }
+            }
+        }
+
+        private var availablePlayers: [Player] {
+            allPlayers.filter { player in
+                !players.compactMap { $0 }.contains { $0.id == player.id }
             }
         }
 
         private var canSave: Bool {
-            return !players.contains(nil)
-                && Set(players.compactMap { $0?.id }).count == players.count
-                && (!game.isBinaryScore || Set(scores).count > 1)
+            let filledPlayers = players.compactMap { $0 }
+            return !filledPlayers.isEmpty
+                && filledPlayers.count >= (game.supportedPlayerCounts.min() ?? 2)
+        }
+
+        private func loadPlayers() async {
+            isLoading = true
+            do {
+                allPlayers = try await cloudKitManager.fetchPlayers()
+
+                // Set default players
+                if let currentUser = allPlayers.first(where: {
+                    $0.appleUserID == authManager.userID
+                }) {
+                    players[0] = currentUser
+                }
+            } catch {
+                self.error = error
+                showingError = true
+            }
+            isLoading = false
         }
 
         private func saveMatch() {
-            let match = Match(game: game)
-            match.createdByID = authManager.userID
-            match.status = "completed"
-            modelContext.insert(match)
-
-            // Set up relationships
-            for player in players.compactMap({ $0 }) {
-                match.addPlayer(player)
-                if player.matches == nil {
-                    player.matches = []
-                }
-                player.matches?.append(match)
-            }
-
-            // Set winner based on scores
-            if let maxScore = scores.max(),
-                let winnerIndex = scores.firstIndex(of: maxScore),
-                let winner = players[winnerIndex]
-            {
-                match.winnerID = "\(winner.persistentModelID)"
-            }
-
-            // Save scores for point-based games
-            if !game.isBinaryScore {
-                for (index, player) in players.enumerated() {
-                    if let player = player {
-                        let scoreObj = Score(
-                            player: player, match: match, points: scores[index])
-                        if match.scores == nil {
-                            match.scores = []
-                        }
-                        match.scores?.append(scoreObj)
-                        modelContext.insert(scoreObj)
+            Task {
+                do {
+                    var match = Match(date: Date(), createdByID: authManager.userID, game: game)
+                    match.playerIDs = players.compactMap { $0?.id }
+                    match.playerOrder = match.playerIDs
+                    try await cloudKitManager.saveMatch(match)
+                    await MainActor.run {
+                        dismiss()
+                    }
+                } catch {
+                    await MainActor.run {
+                        self.error = error
+                        showingError = true
                     }
                 }
             }
-
-            match.game = game
-            if game.matches == nil {
-                game.matches = []
-            }
-            game.matches?.append(match)
-
-            try? modelContext.save()
-            dismiss()
         }
     }
 #endif

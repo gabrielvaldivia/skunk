@@ -1,81 +1,54 @@
-import SwiftData
+import CloudKit
 import SwiftUI
 
 #if canImport(UIKit)
-    import UIKit
-
     struct MatchRow: View {
         let match: Match
-        var hideGameTitle: Bool = false
+        let hideGameTitle: Bool
 
-        private func playerColor(for player: Player) -> Color {
-            if let colorData = player.colorData,
-                let uiColor = try? NSKeyedUnarchiver.unarchivedObject(
-                    ofClass: UIColor.self, from: colorData)
-            {
-                return Color(uiColor: uiColor)
-            }
-            // Generate a consistent color based on the name
-            let hash = abs(player.name?.hashValue ?? 0)
-            let hue = Double(hash % 255) / 255.0
-            return Color(hue: hue, saturation: 0.7, brightness: 0.9)
-        }
-
-        private func playerImage(_ player: Player) -> AnyView {
-            if let photoData = player.photoData,
-                let uiImage = UIImage(data: photoData)
-            {
-                return AnyView(
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 30, height: 30)
-                        .clipShape(Circle())
-                )
-            } else {
-                return AnyView(
-                    PlayerInitialsView(
-                        name: player.name ?? "",
-                        size: 30,
-                        color: playerColor(for: player)
-                    )
-                )
-            }
+        init(match: Match, hideGameTitle: Bool = false) {
+            self.match = match
+            self.hideGameTitle = hideGameTitle
         }
 
         var body: some View {
-            HStack {
-                VStack(alignment: .leading, spacing: 6) {
-                    if let game = match.game, !hideGameTitle {
-                        Text(game.title ?? "")
-                            .font(.body)
-                    }
-                    Text(match.date.formatted(date: .abbreviated, time: .shortened))
-                        .font(hideGameTitle ? .body : .caption)
-                        .foregroundStyle(hideGameTitle ? .primary : .secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                if !hideGameTitle, let game = match.game {
+                    Text(game.title)
+                        .font(.headline)
                 }
 
-                Spacer()
+                Text(match.date.formatted(date: .abbreviated, time: .shortened))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
 
-                if let winner = match.winner {
-                    HStack(spacing: 4) {
-                        if let photoData = winner.photoData,
-                            let uiImage = UIImage(data: photoData)
-                        {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 24, height: 24)
-                                .clipShape(Circle())
-                        } else {
-                            PlayerInitialsView(
-                                name: winner.name ?? "",
-                                size: 24,
-                                color: playerColor(for: winner)
-                            )
-                        }
+                if !match.playerIDs.isEmpty {
+                    Text("\(match.playerIDs.count) players")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack {
+                    Text(match.status)
+                        .font(.caption)
+                        .foregroundStyle(statusColor)
+
+                    if let winner = match.winnerID {
+                        Text("• Winner: \(winner)")
+                            .font(.caption)
+                            .foregroundStyle(.green)
                     }
                 }
+            }
+        }
+
+        private var statusColor: Color {
+            switch match.status {
+            case "pending": return .orange
+            case "active": return .blue
+            case "completed": return .green
+            case "cancelled": return .red
+            default: return .secondary
             }
         }
     }

@@ -5,99 +5,59 @@ import SwiftUI
     import UIKit
 
     struct PlayerDetailView: View {
-        let player: Player
-        @Environment(\.modelContext) private var modelContext
         @Environment(\.dismiss) private var dismiss
+        @EnvironmentObject private var cloudKitManager: CloudKitManager
+        @EnvironmentObject private var authManager: AuthenticationManager
+        let player: Player
+
         @State private var showingEditSheet = false
-        @State private var editingName: String
-        @State private var editingColor: Color
+        @State private var editingName = ""
+        @State private var editingColor = Color.blue
+        @State private var playerMatches: [Match] = []
 
-        init(player: Player) {
-            self.player = player
-            _editingName = State(initialValue: player.name ?? "")
-            _editingColor = State(
-                initialValue: {
-                    if let colorData = player.colorData,
-                        let uiColor = try? NSKeyedUnarchiver.unarchivedObject(
-                            ofClass: UIColor.self, from: colorData)
-                    {
-                        return Color(uiColor: uiColor)
-                    }
-                    // Generate a consistent color based on the name
-                    let hash = abs(player.name?.hashValue ?? 0)
-                    let hue = Double(hash % 255) / 255.0
-                    return Color(hue: hue, saturation: 0.7, brightness: 0.9)
-                }())
+        var isCurrentUserProfile: Bool {
+            player.appleUserID == authManager.userID
         }
 
-        private var playerColor: Color {
-            if let colorData = player.colorData,
-                let uiColor = try? NSKeyedUnarchiver.unarchivedObject(
-                    ofClass: UIColor.self, from: colorData)
-            {
-                return Color(uiColor: uiColor)
-            }
-            // Generate a consistent color based on the name
-            let hash = abs(player.name?.hashValue ?? 0)
-            let hue = Double(hash % 255) / 255.0
-            return Color(hue: hue, saturation: 0.7, brightness: 0.9)
-        }
-
-        private func playerImage() -> AnyView {
-            if let photoData = player.photoData,
-                let uiImage = UIImage(data: photoData)
-            {
-                return AnyView(
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 120, height: 120)
-                        .clipShape(Circle())
-                )
-            } else {
-                return AnyView(
-                    PlayerInitialsView(
-                        name: player.name ?? "",
-                        size: 120,
-                        color: playerColor
-                    )
-                )
-            }
-        }
-
-        private func matchHistorySection() -> some View {
-            Group {
-                if let matches = player.matches?.sorted(by: { $0.date > $1.date }) {
-                    Section("Match History") {
-                        ForEach(matches) { match in
-                            NavigationLink {
-                                MatchDetailView(match: match)
-                            } label: {
-                                MatchRow(match: match)
-                            }
-                        }
-                    }
-                }
-            }
+        var canDelete: Bool {
+            !isCurrentUserProfile && player.ownerID == authManager.userID
         }
 
         var body: some View {
             List {
                 Section {
                     HStack {
-                        Spacer()
-                        playerImage()
-                        Spacer()
+                        if let photoData = player.photoData,
+                            let uiImage = UIImage(data: photoData)
+                        {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 80, height: 80)
+                                .clipShape(Circle())
+                        } else {
+                            PlayerInitialsView(
+                                name: player.name,
+                                size: 80,
+                                color: player.color
+                            )
+                        }
+
+                        Text(player.name)
+                            .font(.headline)
                     }
-                    .listRowBackground(Color.clear)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical)
                 }
 
-                matchHistorySection()
+                matchHistorySection(playerMatches)
             }
-            .navigationTitle(player.name ?? "")
+            .navigationTitle(player.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 Button("Edit") {
+                    editingName = player.name
+                    editingColor = player.color
                     showingEditSheet = true
                 }
             }
@@ -110,6 +70,34 @@ import SwiftUI
                         title: "Edit Player",
                         player: player
                     )
+                }
+            }
+            .task {
+                // Fetch matches for this player
+                if let games = try? await cloudKitManager.fetchGames() {
+                    for game in games {
+                        if let matches = try? await cloudKitManager.fetchMatches(for: game) {
+                            playerMatches.append(
+                                contentsOf: matches.filter { $0.playerIDs.contains(player.id) })
+                        }
+                    }
+                }
+            }
+        }
+
+        private func matchHistorySection(_ matches: [Match]) -> some View {
+            Section("Match History") {
+                if matches.isEmpty {
+                    Text("No matches played")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(matches) { match in
+                        NavigationLink {
+                            MatchDetailView(match: match)
+                        } label: {
+                            MatchRow(match: match)
+                        }
+                    }
                 }
             }
         }

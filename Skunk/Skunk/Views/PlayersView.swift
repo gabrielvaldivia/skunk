@@ -1,15 +1,14 @@
 import Foundation
 import PhotosUI
-import SwiftData
 import SwiftUI
 
 #if canImport(UIKit)
     import UIKit
 
     struct PlayerFormView: View {
-        @Environment(\.modelContext) private var modelContext
         @Environment(\.dismiss) private var dismiss
         @EnvironmentObject private var authManager: AuthenticationManager
+        @EnvironmentObject private var cloudKitManager: CloudKitManager
         @Binding var name: String
         @State private var selectedItem: PhotosPickerItem?
         @State private var selectedImageData: Data?
@@ -117,42 +116,36 @@ import SwiftUI
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(player == nil ? "Add" : "Save") {
-                        if let player = player {
-                            // Update existing player
-                            player.name = name
-                            player.photoData = selectedImageData ?? existingPhotoData
-                            if let color = try? NSKeyedArchiver.archivedData(
-                                withRootObject: UIColor(color), requiringSecureCoding: true)
-                            {
-                                player.colorData = color
+                        Task {
+                            if let player = player {
+                                // Update existing player
+                                var updatedPlayer = player
+                                updatedPlayer.name = name
+                                updatedPlayer.photoData = selectedImageData ?? existingPhotoData
+                                try? await cloudKitManager.updatePlayer(updatedPlayer)
+                            } else {
+                                // Create new player
+                                let newPlayer = Player(
+                                    name: name,
+                                    photoData: selectedImageData,
+                                    ownerID: authManager.userID
+                                )
+                                try? await cloudKitManager.savePlayer(newPlayer)
                             }
-                        } else {
-                            // Create new player
-                            let newPlayer = Player(
-                                name: name,
-                                photoData: selectedImageData,
-                                ownerID: authManager.userID  // Set the current user as the owner
-                            )
-                            if let color = try? NSKeyedArchiver.archivedData(
-                                withRootObject: UIColor(color), requiringSecureCoding: true)
-                            {
-                                newPlayer.colorData = color
-                            }
-                            modelContext.insert(newPlayer)
+                            dismiss()
                         }
-                        try? modelContext.save()
-                        dismiss()
                     }
                     .disabled(name.isEmpty)
                 }
             }
             .alert("Delete Player", isPresented: $showingDeleteConfirmation) {
                 Button("Delete", role: .destructive) {
-                    if let player = player, canDelete {
-                        modelContext.delete(player)
-                        try? modelContext.save()
+                    Task {
+                        if let player = player, canDelete {
+                            try? await cloudKitManager.deletePlayer(player)
+                        }
+                        dismiss()
                     }
-                    dismiss()
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
@@ -165,28 +158,27 @@ import SwiftUI
     }
 
     struct PlayersView: View {
-        @Environment(\.modelContext) private var modelContext
-        @Query(sort: \Player.name) private var allPlayers: [Player]
         @EnvironmentObject private var authManager: AuthenticationManager
+        @EnvironmentObject private var cloudKitManager: CloudKitManager
         @State private var showingAddPlayer = false
         @State private var newPlayerName = ""
         @State private var newPlayerColor = Color.blue
 
         private var currentUser: Player? {
             guard let userID = authManager.userID else { return nil }
-            return allPlayers.first { $0.appleUserID == userID }
+            return cloudKitManager.players.first { $0.appleUserID == userID }
         }
 
         private var managedPlayers: [Player] {
             guard let userID = authManager.userID else { return [] }
-            return allPlayers.filter { player in
+            return cloudKitManager.players.filter { player in
                 player.ownerID == userID && player.appleUserID != userID
             }
         }
 
         private var otherUsers: [Player] {
             guard let userID = authManager.userID else { return [] }
-            return allPlayers.filter { player in
+            return cloudKitManager.players.filter { player in
                 player.appleUserID != nil  // Has an Apple ID (is a real user)
                     && player.appleUserID != userID  // Not the current user
                     && player.ownerID != userID  // Not managed by current user
@@ -263,10 +255,12 @@ import SwiftUI
                     }
                 }
                 .refreshable {
-                    // This will trigger a SwiftData refresh
+                    Task {
+                        await cloudKitManager.refreshPlayers()
+                    }
                 }
-                .onAppear {
-                    authManager.setModelContext(modelContext)
+                .task {
+                    await cloudKitManager.refreshPlayers()
                 }
             }
         }

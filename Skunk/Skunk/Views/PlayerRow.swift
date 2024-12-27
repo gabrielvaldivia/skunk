@@ -6,37 +6,6 @@ import SwiftUI
 
     struct PlayerRow: View {
         let player: Player
-        @EnvironmentObject private var authManager: AuthenticationManager
-
-        private var playerColor: Color {
-            if let colorData = player.colorData,
-                let uiColor = try? NSKeyedUnarchiver.unarchivedObject(
-                    ofClass: UIColor.self, from: colorData)
-            {
-                return Color(uiColor: uiColor)
-            }
-            // Generate a consistent color based on the name
-            let hash = abs(player.name?.hashValue ?? 0)
-            let hue = Double(hash % 255) / 255.0
-            return Color(hue: hue, saturation: 0.7, brightness: 0.9)
-        }
-
-        private var isCurrentUser: Bool {
-            guard let currentUserID = authManager.userID else {
-                return false
-            }
-
-            guard let playerID = player.appleUserID else {
-                return false
-            }
-
-            return currentUserID == playerID
-        }
-
-        private var isManagedPlayer: Bool {
-            guard let currentUserID = authManager.userID else { return false }
-            return player.ownerID == currentUserID && player.appleUserID != currentUserID
-        }
 
         var body: some View {
             HStack {
@@ -50,26 +19,14 @@ import SwiftUI
                         .clipShape(Circle())
                 } else {
                     PlayerInitialsView(
-                        name: player.name ?? "",
+                        name: player.name,
                         size: 40,
-                        color: playerColor
+                        color: player.color
                     )
                 }
 
-                VStack(alignment: .leading) {
-                    Text(player.name ?? "")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    if isCurrentUser {
-                        Text("(you)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    } else if isManagedPlayer {
-                        Text("(managed)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+                Text(player.name)
+                    .font(.body)
             }
         }
     }
