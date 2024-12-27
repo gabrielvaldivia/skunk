@@ -14,9 +14,6 @@ import SwiftData
 
         // Multiplayer properties
         var appleUserID: String?
-        var isOnline: Bool = false
-        var lastSeen: Date?
-        var deviceToken: String?
 
         init(name: String, photoData: Data? = nil, appleUserID: String? = nil) {
             self.name = name

@@ -43,14 +43,14 @@ struct MatchDetailView: View {
             }
         }) {
             HStack {
-                if player.photoData != nil {
-                    Circle()
-                        .fill(playerColor(for: player))
+                if let photoData = player.photoData,
+                    let uiImage = UIImage(data: photoData)
+                {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
                         .frame(width: 40, height: 40)
-                        .overlay {
-                            Image(systemName: "person.fill")
-                                .foregroundStyle(.white)
-                        }
+                        .clipShape(Circle())
                 } else {
                     PlayerInitialsView(
                         name: player.name ?? "",
@@ -62,12 +62,6 @@ struct MatchDetailView: View {
                 VStack(alignment: .leading) {
                     Text(player.name ?? "")
                         .font(.headline)
-
-                    if player.appleUserID != nil {
-                        Text(player.isOnline ? "Online" : "Offline")
-                            .font(.caption)
-                            .foregroundStyle(player.isOnline ? .green : .secondary)
-                    }
                 }
 
                 Spacer()

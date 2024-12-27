@@ -146,49 +146,14 @@ import SwiftUI
         @State private var newPlayerName = ""
         @State private var newPlayerColor = Color.blue
 
-        private func playersByStatus() -> (online: [Player], offline: [Player]) {
-            let onlinePlayers = players.filter { $0.isOnline }
-            let offlinePlayers = players.filter { !$0.isOnline }
-            return (online: onlinePlayers, offline: offlinePlayers)
-        }
-
-        private func timeAgoString(from date: Date) -> String {
-            let formatter = RelativeDateTimeFormatter()
-            formatter.unitsStyle = .short
-            return formatter.localizedString(for: date, relativeTo: Date())
-        }
-
         var body: some View {
             NavigationStack {
                 List {
-                    let status = playersByStatus()
-                    if !status.online.isEmpty {
-                        Section("Online") {
-                            ForEach(status.online) { player in
-                                Button {
-                                    showingPlayerDetail = player
-                                } label: {
-                                    PlayerRow(player: player)
-                                        .badge("Online")
-                                }
-                            }
-                        }
-                    }
-
-                    if !status.offline.isEmpty {
-                        Section("Offline") {
-                            ForEach(status.offline) { player in
-                                Button {
-                                    showingPlayerDetail = player
-                                } label: {
-                                    PlayerRow(player: player)
-                                        .badge(
-                                            player.lastSeen.map {
-                                                "Last seen \(timeAgoString(from: $0))"
-                                            }
-                                        )
-                                }
-                            }
+                    ForEach(players) { player in
+                        Button {
+                            showingPlayerDetail = player
+                        } label: {
+                            PlayerRow(player: player)
                         }
                     }
                 }
@@ -226,9 +191,9 @@ import SwiftUI
                 .refreshable {
                     // This will trigger a SwiftData refresh
                 }
-            }
-            .onAppear {
-                authManager.setModelContext(modelContext)
+                .onAppear {
+                    authManager.setModelContext(modelContext)
+                }
             }
         }
     }

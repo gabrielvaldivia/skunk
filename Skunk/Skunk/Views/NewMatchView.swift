@@ -23,7 +23,6 @@ import SwiftUI
             allPlayers.filter { player in
                 player.appleUserID != nil  // Only show players with Apple ID
                     && player.appleUserID != authManager.userID  // Don't show current user
-                    && player.isOnline  // Only show online players
             }
         }
 

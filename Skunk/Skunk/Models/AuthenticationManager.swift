@@ -1,4 +1,6 @@
 import AuthenticationServices
+import Foundation
+import ObjectiveC
 import SwiftData
 import SwiftUI
 import UserNotifications
@@ -113,56 +115,29 @@ class AuthenticationManager: ObservableObject {
         }
     }
 
-    private func syncPlayers() async {
-        guard let modelContext, let userID else { return }
-        isSyncing = true
-        defer { isSyncing = false }
+    private func syncPlayers() {
+        guard let modelContext = modelContext else { return }
 
         do {
-            // Fetch current user's player record
-            let descriptor = FetchDescriptor<Player>(
-                predicate: #Predicate<Player> { player in
-                    player.appleUserID == userID
-                }
+            // Find current user's player
+            let currentPlayers = try modelContext.fetch(
+                FetchDescriptor<Player>(
+                    predicate: #Predicate<Player> { $0.appleUserID == userID }
+                )
             )
-            let currentPlayers = try modelContext.fetch(descriptor)
 
             // Create or update current user's player
             if let currentPlayer = currentPlayers.first {
-                currentPlayer.isOnline = isAuthenticated
-                currentPlayer.lastSeen = Date()
+                // Nothing to update since we removed online status
             } else {
                 let newPlayer = Player(name: "Player")
                 newPlayer.appleUserID = userID
-                newPlayer.isOnline = isAuthenticated
-                newPlayer.lastSeen = Date()
                 modelContext.insert(newPlayer)
             }
 
             try modelContext.save()
         } catch {
             print("❌ Error syncing players: \(error)")
-            self.error = error
-        }
-    }
-
-    private func updateOnlineStatus(_ isOnline: Bool) async {
-        guard let modelContext, let userID else { return }
-        do {
-            // Update current user's online status
-            let descriptor = FetchDescriptor<Player>(
-                predicate: #Predicate<Player> { player in
-                    player.appleUserID == userID
-                }
-            )
-            let currentPlayers = try modelContext.fetch(descriptor)
-            if let currentPlayer = currentPlayers.first {
-                currentPlayer.isOnline = isOnline
-                currentPlayer.lastSeen = isOnline ? Date() : currentPlayer.lastSeen
-                try modelContext.save()
-            }
-        } catch {
-            print("❌ Error updating online status: \(error)")
             self.error = error
         }
     }
@@ -190,10 +165,37 @@ class AuthenticationManager: ObservableObject {
     }
 
     func signOut() async {
-        await updateOnlineStatus(false)
         UserDefaults.standard.removeObject(forKey: "userID")
         userID = nil
         isAuthenticated = false
+    }
+
+    func signIn() async {
+        do {
+            let appleIDProvider = ASAuthorizationAppleIDProvider()
+            let request = appleIDProvider.createRequest()
+            request.requestedScopes = [.fullName]
+
+            let authorization = try await withCheckedThrowingContinuation { continuation in
+                let controller = ASAuthorizationController(authorizationRequests: [request])
+                let delegate = AuthorizationDelegate(continuation: continuation)
+                controller.delegate = delegate
+                controller.presentationContextProvider = delegate
+                controller.performRequests()
+                // Keep the delegate alive until the request completes
+                objc_setAssociatedObject(
+                    controller,
+                    "delegate",
+                    delegate,
+                    .OBJC_ASSOCIATION_RETAIN
+                )
+            }
+
+            try await handleSignInWithApple(authorization)
+        } catch {
+            print("❌ Error signing in: \(error)")
+            self.error = error
+        }
     }
 }
 
