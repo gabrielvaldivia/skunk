@@ -1,35 +1,25 @@
-import AuthenticationServices
 import SwiftData
 import SwiftUI
 
 @main
 struct SkunkApp: App {
-    @StateObject private var authManager = AuthenticationManager.shared
-
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Player.self,
-            Game.self,
-            Match.self,
-            Score.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    @StateObject private var authManager = AuthenticationManager()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(authManager)
-                .task {
-                    await authManager.checkExistingCredentials()
+            Group {
+                if authManager.isAuthenticated {
+                    ContentView()
+                        .environmentObject(authManager)
+                        .modelContainer(for: [Game.self, Match.self, Player.self, Score.self])
+                } else {
+                    SignInView()
+                        .environmentObject(authManager)
                 }
+            }
+            .task {
+                await authManager.checkExistingCredentials()
+            }
         }
-        .modelContainer(sharedModelContainer)
     }
 }

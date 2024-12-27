@@ -2,74 +2,56 @@ import AuthenticationServices
 import SwiftUI
 
 struct SignInView: View {
-    @StateObject private var authManager = AuthenticationManager.shared
-    @Environment(\.dismiss) private var dismiss
-    @State private var isSigningIn = false
+    @EnvironmentObject private var authManager: AuthenticationManager
+    @State private var showError = false
+    @State private var errorMessage = ""
 
     var body: some View {
         VStack(spacing: 20) {
-            Spacer()
+            Image(systemName: "dice.fill")
+                .font(.system(size: 60))
+                .foregroundStyle(.tint)
 
-            Image(systemName: "person.crop.circle.badge.checkmark")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 100, height: 100)
-                .foregroundColor(.accentColor)
-
-            Text("Sign in to Sync Your Data")
-                .font(.title2)
+            Text("Welcome to Skunk")
+                .font(.title)
                 .fontWeight(.bold)
 
-            Text(
-                "Sign in with your Apple ID to sync your games, matches, and players across all your devices."
-            )
-            .multilineTextAlignment(.center)
-            .foregroundColor(.secondary)
-            .padding(.horizontal)
+            Text("Sign in to play with friends")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
-            Spacer()
-
-            if authManager.isSyncing {
-                ProgressView("Syncing...")
-                    .padding()
-            }
-
-            SignInWithAppleButton(.signIn) { request in
-                request.requestedScopes = [.fullName, .email]
-                request.requestedOperation = .operationImplicit
-            } onCompletion: { result in
-                Task {
-                    guard !isSigningIn else { return }
-                    isSigningIn = true
-                    defer { isSigningIn = false }
-
+            if authManager.isCheckingCredentials {
+                ProgressView("Checking credentials...")
+            } else {
+                SignInWithAppleButton { request in
+                    request.requestedScopes = [.fullName]
+                } onCompletion: { result in
                     switch result {
                     case .success(let authorization):
-                        if let appleIDCredential = authorization.credential
-                            as? ASAuthorizationAppleIDCredential
-                        {
-                            await authManager.handleSignInWithAppleCompletion(
-                                credential: appleIDCredential)
-                            dismiss()
+                        Task {
+                            do {
+                                try await authManager.handleSignInWithApple(authorization)
+                            } catch {
+                                showError = true
+                                errorMessage = error.localizedDescription
+                            }
                         }
                     case .failure(let error):
-                        print("Sign in failed: \(error.localizedDescription)")
+                        showError = true
+                        errorMessage = error.localizedDescription
                     }
                 }
+                .signInWithAppleButtonStyle(.black)
+                .frame(height: 45)
+                .padding(.horizontal, 40)
             }
-            .signInWithAppleButtonStyle(.black)
-            .frame(height: 50)
-            .padding(.horizontal)
-            .disabled(isSigningIn || authManager.isSyncing)
-
-            Button("Cancel") {
-                dismiss()
-            }
-            .foregroundColor(.secondary)
-            .padding(.bottom)
-            .disabled(isSigningIn || authManager.isSyncing)
         }
-        .padding()
-        .interactiveDismissDisabled(isSigningIn || authManager.isSyncing)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.background)
+        .alert("Sign In Error", isPresented: $showError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorMessage)
+        }
     }
 }

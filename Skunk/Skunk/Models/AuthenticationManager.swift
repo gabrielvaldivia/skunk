@@ -11,233 +11,184 @@ import UserNotifications
 
 @MainActor
 class AuthenticationManager: ObservableObject {
-    @Published var isAuthenticated = false {
-        didSet {
-            print("🔐 Authentication state changed: \(isAuthenticated)")
-        }
-    }
-    @Published var userID: String? {
-        didSet {
-            print("👤 UserID changed: \(userID ?? "nil")")
-            Task {
-                await updateOnlineStatus(isAuthenticated)
-            }
-        }
-    }
+    @Published var isAuthenticated = false
+    @Published var userID: String?
     @Published var error: Error?
-    @Published private(set) var isSyncing = false {
-        didSet {
-            print("🔄 Sync state changed: \(isSyncing)")
-        }
-    }
+    @Published private(set) var isSyncing = false
+    @Published private(set) var isCheckingCredentials = false
 
     private var modelContext: ModelContext?
-
-    static let shared = AuthenticationManager()
-
-    private init() {
-        print("📱 AuthenticationManager initialized")
-        setupNotifications()
-    }
+    private var isSigningIn = false
 
     func setModelContext(_ context: ModelContext) {
-        self.modelContext = context
-    }
-
-    private func setupNotifications() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) {
-            granted, error in
-            if granted {
-                print("✅ Notification permission granted")
-                DispatchQueue.main.async {
-                    UIApplication.shared.registerForRemoteNotifications()
-                }
-            } else if let error = error {
-                print("❌ Notification permission error: \(error.localizedDescription)")
-            }
+        modelContext = context
+        Task {
+            await checkExistingCredentials()
         }
     }
 
     func checkExistingCredentials() async {
-        print("🔍 Checking existing credentials...")
-        let appleIDProvider = ASAuthorizationAppleIDProvider()
-        if let userID = UserDefaults.standard.string(forKey: "userID") {
+        guard !isCheckingCredentials && !isSigningIn else { return }
+
+        isCheckingCredentials = true
+
+        if let storedID = UserDefaults.standard.string(forKey: "userID") {
             do {
-                let credentialState = try await appleIDProvider.credentialState(forUserID: userID)
-                print("📍 Credential state for userID \(userID): \(credentialState.rawValue)")
+                let appleIDProvider = ASAuthorizationAppleIDProvider()
+                let credentialState = try await appleIDProvider.credentialState(forUserID: storedID)
+
                 switch credentialState {
                 case .authorized:
+                    userID = storedID
                     isAuthenticated = true
-                    self.userID = userID
-                    await syncUserProfile()
-                default:
-                    isAuthenticated = false
-                    self.userID = nil
+                    await syncPlayers()
+                case .revoked, .notFound, .transferred:
                     UserDefaults.standard.removeObject(forKey: "userID")
+                    userID = nil
+                    isAuthenticated = false
+                @unknown default:
+                    UserDefaults.standard.removeObject(forKey: "userID")
+                    userID = nil
+                    isAuthenticated = false
                 }
             } catch {
-                isAuthenticated = false
-                self.userID = nil
                 UserDefaults.standard.removeObject(forKey: "userID")
-                print("❌ Error checking credentials: \(error.localizedDescription)")
+                userID = nil
+                isAuthenticated = false
             }
         } else {
-            print("ℹ️ No existing userID found")
+            isAuthenticated = false
         }
+
+        isCheckingCredentials = false
     }
 
-    func handleSignInWithAppleCompletion(credential: ASAuthorizationAppleIDCredential) async {
-        print("🎯 Handling Sign In with Apple completion...")
+    func handleSignInWithApple(_ authorization: ASAuthorization) async throws {
+        guard !isSigningIn else { return }
+
+        isSigningIn = true
+        isCheckingCredentials = true
+
+        defer {
+            isSigningIn = false
+            isCheckingCredentials = false
+        }
+
+        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential
+        else {
+            throw AuthenticationError.invalidCredential
+        }
+
+        userID = appleIDCredential.user
+        UserDefaults.standard.set(appleIDCredential.user, forKey: "userID")
+
+        if let givenName = appleIDCredential.fullName?.givenName,
+            let familyName = appleIDCredential.fullName?.familyName
+        {
+            await updatePlayerName("\(givenName) \(familyName)")
+        }
+
+        await syncPlayers()
+        isAuthenticated = true
+    }
+
+    private func syncPlayers() async {
+        guard let modelContext, let userID else { return }
         isSyncing = true
         defer { isSyncing = false }
 
-        // Store user info
-        self.userID = credential.user
-        UserDefaults.standard.set(credential.user, forKey: "userID")
-
-        if let fullName = credential.fullName {
-            let givenName = fullName.givenName ?? ""
-            let familyName = fullName.familyName ?? ""
-            let userName = "\(givenName) \(familyName)"
-            UserDefaults.standard.set(userName, forKey: "userName")
-            print("📝 Stored user name: \(userName)")
-        }
-        if let email = credential.email {
-            UserDefaults.standard.set(email, forKey: "userEmail")
-            print("📧 Stored email: \(email)")
-        }
-
-        await syncUserProfile()
-
-        print("⏳ Waiting for CloudKit sync...")
-        try? await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
-        isAuthenticated = true
-        print("✅ Sign in complete!")
-    }
-
-    func signOut() {
-        print("👋 Signing out...")
-        Task {
-            await updateOnlineStatus(false)
-        }
-        isAuthenticated = false
-        userID = nil
-        UserDefaults.standard.removeObject(forKey: "userID")
-        UserDefaults.standard.removeObject(forKey: "userName")
-        UserDefaults.standard.removeObject(forKey: "userEmail")
-        print("✅ Sign out complete!")
-    }
-
-    // MARK: - Multiplayer Methods
-
-    private func syncUserProfile() async {
-        guard let userID = userID,
-            let modelContext = modelContext
-        else { return }
-
-        print("🔄 Syncing user profile for \(userID)")
-
-        let descriptor = FetchDescriptor<Player>(
-            predicate: #Predicate<Player> { player in
-                player.appleUserID == userID
-            }
-        )
-
         do {
-            let existingPlayer = try modelContext.fetch(descriptor).first
-
-            if let player = existingPlayer {
-                // Update existing player
-                player.isOnline = true
-                player.lastSeen = Date()
-                if player.name == nil {
-                    player.name = UserDefaults.standard.string(forKey: "userName")
-                }
-            } else {
-                // Create new player
-                let userName = UserDefaults.standard.string(forKey: "userName") ?? "Player"
-                let player = Player(name: userName, appleUserID: userID)
-                player.isOnline = true
-                player.lastSeen = Date()
-                modelContext.insert(player)
-            }
-
-            try modelContext.save()
-            print("✅ User profile synced successfully")
-        } catch {
-            print("❌ Error syncing user profile: \(error.localizedDescription)")
-        }
-    }
-
-    private func updateOnlineStatus(_ isOnline: Bool) async {
-        guard let userID = userID,
-            let modelContext = modelContext
-        else { return }
-
-        print("🔄 Updating online status to \(isOnline) for \(userID)")
-
-        let descriptor = FetchDescriptor<Player>(
-            predicate: #Predicate<Player> { player in
-                player.appleUserID == userID
-            }
-        )
-
-        do {
-            if let player = try modelContext.fetch(descriptor).first {
-                player.isOnline = isOnline
-                player.lastSeen = isOnline ? Date() : nil
-                try modelContext.save()
-                print("✅ Online status updated successfully")
-            }
-        } catch {
-            print("❌ Error updating online status: \(error.localizedDescription)")
-        }
-    }
-
-    func updateDeviceToken(_ deviceToken: String) {
-        guard let userID = userID,
-            let modelContext = modelContext
-        else { return }
-
-        print("🔄 Updating device token for \(userID)")
-
-        Task {
+            // Fetch current user's player record
             let descriptor = FetchDescriptor<Player>(
                 predicate: #Predicate<Player> { player in
                     player.appleUserID == userID
                 }
             )
+            let currentPlayers = try modelContext.fetch(descriptor)
 
-            do {
-                if let player = try modelContext.fetch(descriptor).first {
-                    player.deviceToken = deviceToken
-                    try modelContext.save()
-                    print("✅ Device token updated successfully")
-                }
-            } catch {
-                print("❌ Error updating device token: \(error.localizedDescription)")
+            // Create or update current user's player
+            if let currentPlayer = currentPlayers.first {
+                currentPlayer.isOnline = isAuthenticated
+                currentPlayer.lastSeen = Date()
+            } else {
+                let newPlayer = Player(name: "Player")
+                newPlayer.appleUserID = userID
+                newPlayer.isOnline = isAuthenticated
+                newPlayer.lastSeen = Date()
+                modelContext.insert(newPlayer)
             }
+
+            try modelContext.save()
+        } catch {
+            print("❌ Error syncing players: \(error)")
+            self.error = error
         }
+    }
+
+    private func updateOnlineStatus(_ isOnline: Bool) async {
+        guard let modelContext, let userID else { return }
+        do {
+            // Update current user's online status
+            let descriptor = FetchDescriptor<Player>(
+                predicate: #Predicate<Player> { player in
+                    player.appleUserID == userID
+                }
+            )
+            let currentPlayers = try modelContext.fetch(descriptor)
+            if let currentPlayer = currentPlayers.first {
+                currentPlayer.isOnline = isOnline
+                currentPlayer.lastSeen = isOnline ? Date() : currentPlayer.lastSeen
+                try modelContext.save()
+            }
+        } catch {
+            print("❌ Error updating online status: \(error)")
+            self.error = error
+        }
+    }
+
+    func updatePlayerName(_ name: String) async {
+        guard let modelContext, let userID else { return }
+        do {
+            let descriptor = FetchDescriptor<Player>(
+                predicate: #Predicate<Player> { player in
+                    player.appleUserID == userID
+                }
+            )
+            let currentPlayers = try modelContext.fetch(descriptor)
+            if let currentPlayer = currentPlayers.first {
+                // Only update name if it's not already set
+                if currentPlayer.name == nil {
+                    currentPlayer.name = name
+                    try modelContext.save()
+                }
+            }
+        } catch {
+            print("❌ Error updating player name: \(error)")
+            self.error = error
+        }
+    }
+
+    func signOut() async {
+        await updateOnlineStatus(false)
+        UserDefaults.standard.removeObject(forKey: "userID")
+        userID = nil
+        isAuthenticated = false
     }
 }
 
-// Helper class to handle the sign-in process
-private class SignInDelegate: NSObject, ASAuthorizationControllerDelegate,
+enum AuthenticationError: Error {
+    case invalidCredential
+    case missingCredential
+}
+
+private class AuthorizationDelegate: NSObject, ASAuthorizationControllerDelegate,
     ASAuthorizationControllerPresentationContextProviding
 {
     let continuation: CheckedContinuation<ASAuthorization, Error>
 
     init(continuation: CheckedContinuation<ASAuthorization, Error>) {
         self.continuation = continuation
-    }
-
-    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        #if canImport(UIKit)
-            let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
-            return scene?.windows.first ?? UIWindow()
-        #else
-            return NSApplication.shared.windows.first ?? NSWindow()
-        #endif
+        super.init()
     }
 
     func authorizationController(
@@ -251,5 +202,22 @@ private class SignInDelegate: NSObject, ASAuthorizationControllerDelegate,
         controller: ASAuthorizationController, didCompleteWithError error: Error
     ) {
         continuation.resume(throwing: error)
+    }
+
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        #if canImport(UIKit)
+            if #available(iOS 15.0, *) {
+                guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                    let window = scene.windows.first
+                else {
+                    return UIWindow()
+                }
+                return window
+            } else {
+                return UIApplication.shared.windows.first ?? UIWindow()
+            }
+        #else
+            return NSApplication.shared.windows.first ?? NSWindow()
+        #endif
     }
 }

@@ -43,7 +43,7 @@ struct MatchDetailView: View {
             }
         }) {
             HStack {
-                if let photoData = player.photoData {
+                if player.photoData != nil {
                     Circle()
                         .fill(playerColor(for: player))
                         .frame(width: 40, height: 40)
@@ -78,6 +78,28 @@ struct MatchDetailView: View {
                         .foregroundStyle(.green)
                 }
             }
+        }
+    }
+
+    private func playerImage(_ player: Player) -> AnyView {
+        if player.photoData != nil {
+            return AnyView(
+                Circle()
+                    .fill(playerColor(for: player))
+                    .frame(width: 40, height: 40)
+                    .overlay {
+                        Image(systemName: "person.fill")
+                            .foregroundStyle(.white)
+                    }
+            )
+        } else {
+            return AnyView(
+                PlayerInitialsView(
+                    name: player.name ?? "",
+                    size: 40,
+                    color: playerColor(for: player)
+                )
+            )
         }
     }
 

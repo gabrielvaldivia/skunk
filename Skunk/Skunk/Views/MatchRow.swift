@@ -11,6 +11,29 @@ struct MatchRow: View {
         return Color(hue: hue, saturation: 0.7, brightness: 0.9)
     }
 
+    private func playerImage(_ player: Player) -> AnyView {
+        if player.photoData != nil {
+            return AnyView(
+                Circle()
+                    .fill(playerColor(for: player))
+                    .frame(width: 30, height: 30)
+                    .overlay {
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.white)
+                    }
+            )
+        } else {
+            return AnyView(
+                PlayerInitialsView(
+                    name: player.name ?? "",
+                    size: 30,
+                    color: playerColor(for: player)
+                )
+            )
+        }
+    }
+
     var body: some View {
         NavigationLink(value: match) {
             HStack {
@@ -28,7 +51,7 @@ struct MatchRow: View {
 
                 if let winner = match.winner {
                     HStack(spacing: 4) {
-                        if let photoData = winner.photoData {
+                        if winner.photoData != nil {
                             Circle()
                                 .fill(playerColor(for: winner))
                                 .frame(width: 24, height: 24)
