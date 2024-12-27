@@ -72,13 +72,15 @@ import SwiftUI
                     .frame(width: 12, height: 12)
                 Text(entry.player.name ?? "")
                 Spacer()
-                Text("\(entry.count) wins (\(calculateWinPercentage(count: entry.count))%)")
+                Text("\(calculateWinPercentage(count: entry.count))%")
                     .foregroundStyle(.secondary)
             }
         }
 
         private func playerRow(_ index: Int, _ entry: (player: Player, count: Int)) -> some View {
-            NavigationLink(value: entry.player) {
+            NavigationLink {
+                PlayerDetailView(player: entry.player)
+            } label: {
                 HStack(spacing: 16) {
                     Text("#\(index + 1)")
                         .font(.headline)
@@ -90,14 +92,11 @@ import SwiftUI
                     VStack(alignment: .leading) {
                         Text(entry.player.name ?? "")
                             .font(.headline)
-                        Text("\(entry.count) wins")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
                     }
 
                     Spacer()
 
-                    Text("\(calculateWinPercentage(count: entry.count))%")
+                    Text("\(entry.count) wins")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
