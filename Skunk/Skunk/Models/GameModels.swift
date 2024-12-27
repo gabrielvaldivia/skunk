@@ -13,12 +13,16 @@ import SwiftData
         @Relationship(deleteRule: .nullify) var scores: [Score]?
 
         // Multiplayer properties
-        var appleUserID: String?
+        var appleUserID: String?  // The user's own Apple ID if this is their main profile
+        var ownerID: String?  // The Apple ID of the user who created/manages this player
 
-        init(name: String, photoData: Data? = nil, appleUserID: String? = nil) {
+        init(
+            name: String, photoData: Data? = nil, appleUserID: String? = nil, ownerID: String? = nil
+        ) {
             self.name = name
             self.photoData = photoData
             self.appleUserID = appleUserID
+            self.ownerID = ownerID
             self.matches = []
             self.scores = []
             // Generate a consistent color based on the name

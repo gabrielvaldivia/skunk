@@ -21,8 +21,9 @@ import SwiftUI
 
         private var availablePlayers: [Player] {
             allPlayers.filter { player in
-                player.appleUserID != nil  // Only show players with Apple ID
-                    && player.appleUserID != authManager.userID  // Don't show current user
+                player.appleUserID.flatMap { id in
+                    id != authManager.userID
+                } == true
             }
         }
 

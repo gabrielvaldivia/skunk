@@ -9,6 +9,7 @@ import SwiftUI
     struct PlayerFormView: View {
         @Environment(\.modelContext) private var modelContext
         @Environment(\.dismiss) private var dismiss
+        @EnvironmentObject private var authManager: AuthenticationManager
         @Binding var name: String
         @State private var selectedItem: PhotosPickerItem?
         @State private var selectedImageData: Data?
@@ -104,8 +105,11 @@ import SwiftUI
                             }
                         } else {
                             // Create new player
-                            let newPlayer = Player(name: name)
-                            newPlayer.photoData = selectedImageData
+                            let newPlayer = Player(
+                                name: name,
+                                photoData: selectedImageData,
+                                ownerID: authManager.userID  // Set the current user as the owner
+                            )
                             if let color = try? NSKeyedArchiver.archivedData(
                                 withRootObject: UIColor(color), requiringSecureCoding: true)
                             {
