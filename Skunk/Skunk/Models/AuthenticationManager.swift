@@ -18,6 +18,7 @@ import UserNotifications
 
         private var modelContext: ModelContext?
         private var isSigningIn = false
+        private var isResettingStore = false
 
         func setModelContext(_ context: ModelContext) {
             modelContext = context
@@ -80,6 +81,9 @@ import UserNotifications
             else {
                 throw AuthenticationError.invalidCredential
             }
+
+            // Wait for any pending store operations to complete
+            try? await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
 
             userID = appleIDCredential.user
             UserDefaults.standard.set(appleIDCredential.user, forKey: "userID")
@@ -164,10 +168,36 @@ import UserNotifications
             }
         }
 
+        private func resetStore() async {
+            guard let modelContext = modelContext, !isResettingStore else { return }
+
+            isResettingStore = true
+            do {
+                // Delete all Player objects
+                let descriptor = FetchDescriptor<Player>()
+                let allPlayers = try modelContext.fetch(descriptor)
+                for player in allPlayers {
+                    modelContext.delete(player)
+                }
+                try modelContext.save()
+
+                // Wait for changes to be processed
+                try await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
+            } catch {
+                print("❌ Error resetting store: \(error)")
+                self.error = error
+            }
+            isResettingStore = false
+        }
+
         func signOut() async {
+            await resetStore()
             UserDefaults.standard.removeObject(forKey: "userID")
             userID = nil
             isAuthenticated = false
+
+            // Wait for store to finish cleanup
+            try? await Task.sleep(nanoseconds: 2_000_000_000)  // 2 seconds
         }
 
         func signIn() async {
