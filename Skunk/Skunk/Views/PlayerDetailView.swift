@@ -73,13 +73,7 @@ import SwiftUI
                             NavigationLink {
                                 MatchDetailView(match: match)
                             } label: {
-                                VStack(alignment: .leading) {
-                                    Text(match.game?.title ?? "")
-                                        .font(.headline)
-                                    Text(match.date, style: .date)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
+                                MatchRow(match: match)
                             }
                         }
                     }

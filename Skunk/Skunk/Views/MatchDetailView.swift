@@ -10,6 +10,12 @@ import SwiftUI
         @Environment(\.dismiss) private var dismiss
         @EnvironmentObject private var authManager: AuthenticationManager
 
+        private let relativeFormatter: RelativeDateTimeFormatter = {
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = .full
+            return formatter
+        }()
+
         private var isCurrentUserInvited: Bool {
             guard let userID = authManager.userID else { return false }
             return match.invitedPlayerIDs.contains(userID)
@@ -45,7 +51,7 @@ import SwiftUI
         }
 
         private func playerView(_ player: Player) -> some View {
-            HStack(spacing: 0) {
+            HStack {
                 HStack {
                     if let photoData = player.photoData,
                         let uiImage = UIImage(data: photoData)
@@ -64,10 +70,8 @@ import SwiftUI
                     }
 
                     Text(player.name ?? "")
-                        .font(.headline)
-                        .padding(.leading, 8)
+                        .font(.body)
                 }
-                .padding(.leading, -12)
 
                 Spacer()
 
@@ -101,6 +105,25 @@ import SwiftUI
 
         var body: some View {
             List {
+                Section("Game Details") {
+                    if let game = match.game {
+                        HStack {
+                            Text("Game")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text(game.title ?? "")
+                                .font(.body)
+                        }
+                    }
+                    HStack {
+                        Text("Date")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(match.date.formatted(date: .abbreviated, time: .shortened))
+                            .font(.body)
+                    }
+                }
+
                 if match.isMultiplayer {
                     Section {
                         HStack {
@@ -134,6 +157,7 @@ import SwiftUI
                             dismiss()
                         } label: {
                             Text("Delete Match")
+                                .frame(maxWidth: .infinity, alignment: .center)
                         }
                     }
                 }

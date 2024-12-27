@@ -6,6 +6,7 @@ import SwiftUI
 
     struct MatchRow: View {
         let match: Match
+        var hideGameTitle: Bool = false
 
         private func playerColor(for player: Player) -> Color {
             if let colorData = player.colorData,
@@ -44,14 +45,14 @@ import SwiftUI
 
         var body: some View {
             HStack {
-                VStack(alignment: .leading) {
-                    if let game = match.game {
+                VStack(alignment: .leading, spacing: 6) {
+                    if let game = match.game, !hideGameTitle {
                         Text(game.title ?? "")
-                            .font(.headline)
+                            .font(.body)
                     }
-                    Text(match.date, style: .date)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(match.date.formatted(date: .abbreviated, time: .shortened))
+                        .font(hideGameTitle ? .body : .caption)
+                        .foregroundStyle(hideGameTitle ? .primary : .secondary)
                 }
 
                 Spacer()

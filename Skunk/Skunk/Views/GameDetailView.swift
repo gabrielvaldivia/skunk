@@ -129,7 +129,7 @@ import SwiftUI
                     NavigationLink {
                         MatchDetailView(match: match)
                     } label: {
-                        MatchRow(match: match)
+                        MatchRow(match: match, hideGameTitle: true)
                     }
                 }
             }
