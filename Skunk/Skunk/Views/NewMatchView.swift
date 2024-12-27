@@ -29,12 +29,31 @@ import SwiftUI
             _scores = State(initialValue: Array(repeating: 0, count: initialPlayerCount))
         }
 
-        // Get the default players from the last match
+        // Get the default players from the last match, with current user as player 1
         private var defaultPlayers: [Player?] {
-            if let lastMatch = game.matches?.sorted(by: { $0.date > $1.date }).first {
-                return Array((lastMatch.players ?? []).prefix(players.count))
+            var players = Array(repeating: nil as Player?, count: self.players.count)
+
+            // Set current user as player 1
+            if let userID = authManager.userID {
+                players[0] = allPlayers.first { "\($0.persistentModelID)" == userID }
             }
-            return Array(repeating: nil, count: players.count)
+
+            // Fill remaining slots with players from last match
+            if let lastMatch = game.matches?.sorted(by: { $0.date > $1.date }).first {
+                let lastMatchPlayers = lastMatch.players ?? []
+                // Skip any player that matches the current user to avoid duplicates
+                let remainingPlayers = lastMatchPlayers.filter { player in
+                    guard let userID = authManager.userID else { return true }
+                    return "\(player.persistentModelID)" != userID
+                }
+
+                // Fill remaining slots starting from index 1
+                for (index, player) in remainingPlayers.prefix(players.count - 1).enumerated() {
+                    players[index + 1] = player
+                }
+            }
+
+            return players
         }
 
         var body: some View {
@@ -75,6 +94,18 @@ import SwiftUI
                                 Text("\(scores[index])")
                                     .frame(width: 40)
                             }
+                        }
+                    }
+                    .onDelete { indexSet in
+                        guard let minPlayers = game.supportedPlayerCounts.min(),
+                            players.count > minPlayers,
+                            !indexSet.contains(0),  // Prevent deleting player 1
+                            indexSet.max() ?? 0 < players.count  // Ensure all indices are valid
+                        else { return }
+
+                        withAnimation {
+                            players.remove(atOffsets: indexSet)
+                            scores.remove(atOffsets: indexSet)
                         }
                     }
 

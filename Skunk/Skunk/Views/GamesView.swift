@@ -14,13 +14,26 @@ struct GamesView: View {
     @State private var showingAddGame = false
 
     var body: some View {
-        List {
-            ForEach(games) { game in
-                NavigationLink(destination: GameDetailView(game: game)) {
-                    Text(game.title ?? "Untitled Game")
+        ZStack {
+            if games.isEmpty {
+                VStack(spacing: 8) {
+                    Text("No Games")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    Text("Tap the button above to add a game")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                List {
+                    ForEach(games) { game in
+                        NavigationLink(destination: GameDetailView(game: game)) {
+                            Text(game.title ?? "Untitled Game")
+                        }
+                    }
+                    .onDelete(perform: deleteGames)
                 }
             }
-            .onDelete(perform: deleteGames)
         }
         .navigationTitle("Games")
         .toolbar {
