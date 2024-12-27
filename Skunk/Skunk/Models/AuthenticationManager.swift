@@ -15,6 +15,7 @@ import UserNotifications
         @Published var error: Error?
         @Published private(set) var isSyncing = false
         @Published private(set) var isCheckingCredentials = false
+        @Published private(set) var isDeletingAccount = false
 
         private var modelContext: ModelContext?
         private var isSigningIn = false
@@ -42,7 +43,7 @@ import UserNotifications
                     case .authorized:
                         userID = storedID
                         isAuthenticated = true
-                        await syncPlayers()
+                        try? await syncPlayers()
                     case .revoked, .notFound, .transferred:
                         UserDefaults.standard.removeObject(forKey: "userID")
                         userID = nil
@@ -83,7 +84,7 @@ import UserNotifications
             }
 
             // Wait for any pending store operations to complete
-            try? await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
+            try await Task.sleep(nanoseconds: 3_000_000_000)  // 3 seconds
 
             userID = appleIDCredential.user
             UserDefaults.standard.set(appleIDCredential.user, forKey: "userID")
@@ -96,7 +97,23 @@ import UserNotifications
                 updatePlayerName("\(givenName) \(familyName)")
             }
 
-            syncPlayers()
+            // Wait for CloudKit store to be ready
+            try await Task.sleep(nanoseconds: 3_000_000_000)  // 3 seconds
+
+            // Try syncing players with retries
+            for attempt in 1...3 {
+                do {
+                    try await Task.sleep(nanoseconds: UInt64(attempt) * 1_000_000_000)  // Increasing delay
+                    try await syncPlayers()
+                    break
+                } catch {
+                    if attempt == 3 {
+                        print("❌ Failed to sync players after 3 attempts: \(error)")
+                        throw error
+                    }
+                }
+            }
+
             isAuthenticated = true
         }
 
@@ -119,33 +136,55 @@ import UserNotifications
             }
         }
 
-        private func syncPlayers() {
+        private func syncPlayers() async throws {
             guard let modelContext = modelContext, let userID = userID else { return }
 
-            // Check if this user's data was previously deleted
-            if UserDefaults.standard.bool(forKey: "userDataDeleted-\(userID)") {
-                return
-            }
+            // Wait for store to be ready
+            try await Task.sleep(nanoseconds: 2_000_000_000)  // 2 seconds
 
             do {
                 // Find current user's player
-                let currentPlayers = try modelContext.fetch(
-                    FetchDescriptor<Player>(
-                        predicate: #Predicate<Player> { $0.appleUserID == userID }
-                    )
+                let descriptor = FetchDescriptor<Player>(
+                    predicate: #Predicate<Player> { $0.appleUserID == userID }
                 )
+
+                // Try fetching with retries
+                var currentPlayers: [Player] = []
+                var lastError: Error? = nil
+
+                for attempt in 1...3 {
+                    do {
+                        currentPlayers = try modelContext.fetch(descriptor)
+                        lastError = nil
+                        break
+                    } catch {
+                        lastError = error
+                        try await Task.sleep(nanoseconds: UInt64(attempt) * 1_000_000_000)
+                        continue
+                    }
+                }
+
+                if let lastError = lastError {
+                    throw lastError
+                }
 
                 // Create or update current user's player
                 if currentPlayers.isEmpty {
+                    // Wait a bit before creating new player
+                    try await Task.sleep(nanoseconds: 1_000_000_000)
+
                     let newPlayer = Player(name: "Player")
                     newPlayer.appleUserID = userID
                     modelContext.insert(newPlayer)
-                }
 
-                try modelContext.save()
+                    // Wait before saving
+                    try await Task.sleep(nanoseconds: 1_000_000_000)
+                    try modelContext.save()
+                }
             } catch {
                 print("❌ Error syncing players: \(error)")
                 self.error = error
+                throw error
             }
         }
 
@@ -292,7 +331,21 @@ import UserNotifications
                 return
             }
 
+            isDeletingAccount = true
+            defer { isDeletingAccount = false }
+
             do {
+                // First wait for any pending CloudKit operations
+                try await Task.sleep(nanoseconds: 2_000_000_000)  // 2 seconds
+
+                // First, fetch all players we need to delete
+                let managedPlayerDescriptor = FetchDescriptor<Player>(
+                    predicate: #Predicate<Player> { player in
+                        player.ownerID == userID
+                    }
+                )
+                let managedPlayers = try modelContext.fetch(managedPlayerDescriptor)
+
                 // Delete all matches created by this user and their scores
                 let matchDescriptor = FetchDescriptor<Match>(
                     predicate: #Predicate<Match> { match in
@@ -301,44 +354,120 @@ import UserNotifications
                 )
                 let userMatches = try modelContext.fetch(matchDescriptor)
                 for match in userMatches {
+                    // First remove all player relationships
+                    if let players = match.players {
+                        for player in players {
+                            player.matches?.removeAll { $0.id == match.id }
+                        }
+                    }
+                    match.players = []
+
+                    // Then delete scores
                     if let scores = match.scores {
                         for score in scores {
+                            score.player = nil
+                            score.match = nil
                             modelContext.delete(score)
                         }
                     }
+                    match.scores = []
                     modelContext.delete(match)
                 }
 
-                // Delete the user's player
-                let playerDescriptor = FetchDescriptor<Player>(
-                    predicate: #Predicate<Player> { player in
-                        player.appleUserID == userID
+                // Save and wait for CloudKit sync
+                try modelContext.save()
+                try await Task.sleep(nanoseconds: 2_000_000_000)  // 2 seconds
+
+                // Delete all games created by this user
+                let gameDescriptor = FetchDescriptor<Game>(
+                    predicate: #Predicate<Game> { game in
+                        game.createdByID == userID
                     }
                 )
-                let userPlayers = try modelContext.fetch(playerDescriptor)
-                for player in userPlayers {
+                let userGames = try modelContext.fetch(gameDescriptor)
+                for game in userGames {
+                    // Delete all matches and scores associated with this game
+                    if let matches = game.matches {
+                        for match in matches {
+                            // First remove all player relationships
+                            if let players = match.players {
+                                for player in players {
+                                    player.matches?.removeAll { $0.id == match.id }
+                                }
+                            }
+                            match.players = []
+
+                            // Then delete scores
+                            if let scores = match.scores {
+                                for score in scores {
+                                    score.player = nil
+                                    score.match = nil
+                                    modelContext.delete(score)
+                                }
+                            }
+                            match.scores = []
+                            modelContext.delete(match)
+                        }
+                    }
+                    game.matches = []
+                    modelContext.delete(game)
+                }
+
+                // Save and wait for CloudKit sync
+                try modelContext.save()
+                try await Task.sleep(nanoseconds: 2_000_000_000)  // 2 seconds
+
+                // Delete all managed players
+                for player in managedPlayers {
+                    // First remove all match relationships
+                    if let matches = player.matches {
+                        for match in matches {
+                            match.players?.removeAll { $0.id == player.id }
+                        }
+                    }
+                    player.matches = []
+
+                    // Then delete scores
+                    if let scores = player.scores {
+                        for score in scores {
+                            score.player = nil
+                            score.match = nil
+                            modelContext.delete(score)
+                        }
+                    }
+                    player.scores = []
                     modelContext.delete(player)
                 }
 
-                // Save changes to ensure CloudKit sync
+                // Save and wait for CloudKit sync
                 try modelContext.save()
-
-                // Store a flag indicating this user's data was deleted
-                UserDefaults.standard.set(true, forKey: "userDataDeleted-\(userID)")
-
-                // Wait for CloudKit operations
                 try await Task.sleep(nanoseconds: 3_000_000_000)  // 3 seconds
 
+                // Clear all UserDefaults related to this user
+                let defaults = UserDefaults.standard
+                defaults.removeObject(forKey: "userID")
+                defaults.removeObject(forKey: "userDataDeleted-\(userID)")
+                defaults.synchronize()
+
                 // Clear credentials and state
-                UserDefaults.standard.removeObject(forKey: "userID")
+                isCheckingCredentials = false  // Ensure we're not in checking state
                 self.userID = nil
                 isAuthenticated = false
+                self.error = nil  // Clear any existing errors
+                isSigningIn = false  // Reset signing in state
+                isResettingStore = false  // Reset store state
 
                 // Final wait to ensure all operations are complete
                 try await Task.sleep(nanoseconds: 2_000_000_000)  // 2 seconds
             } catch {
                 print("❌ Error deleting account: \(error)")
                 self.error = error
+                // Still reset auth state even if deletion had errors
+                isCheckingCredentials = false
+                self.userID = nil
+                isAuthenticated = false
+                isSigningIn = false
+                isResettingStore = false
             }
         }
     }

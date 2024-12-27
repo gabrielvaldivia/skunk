@@ -23,12 +23,10 @@ import SwiftUI
 
         private var isCurrentUser: Bool {
             guard let currentUserID = authManager.userID else {
-                print("❌ No current user ID")
                 return false
             }
 
             guard let playerID = player.appleUserID else {
-                print("❌ No apple user ID for player: \(player.name ?? "")")
                 return false
             }
 

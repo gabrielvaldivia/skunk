@@ -27,8 +27,18 @@ import SwiftUI
                         Button(role: .destructive) {
                             showingDeleteAccount = true
                         } label: {
-                            Label("Delete Account", systemImage: "person.crop.circle.badge.minus")
+                            if authManager.isDeletingAccount {
+                                HStack {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                    Text("Deleting Account...")
+                                }
+                            } else {
+                                Label(
+                                    "Delete Account", systemImage: "person.crop.circle.badge.minus")
+                            }
                         }
+                        .disabled(authManager.isDeletingAccount)
                     } footer: {
                         Text(
                             "Deleting your account will permanently remove all your data and revoke Apple ID access."

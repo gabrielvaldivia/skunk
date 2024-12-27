@@ -9,8 +9,8 @@ import SwiftData
         var name: String?
         var photoData: Data?
         var colorData: Data?
-        @Relationship(deleteRule: .nullify) var matches: [Match]?
-        @Relationship(deleteRule: .nullify) var scores: [Score]?
+        @Relationship(deleteRule: .cascade) var matches: [Match]?
+        @Relationship(deleteRule: .cascade) var scores: [Score]?
 
         // Multiplayer properties
         var appleUserID: String?  // The user's own Apple ID if this is their main profile
@@ -39,7 +39,8 @@ import SwiftData
         var title: String?
         var isBinaryScore: Bool = false
         @Attribute private var _supportedPlayerCountsData: Data?
-        @Relationship(deleteRule: .nullify) var matches: [Match]?
+        @Relationship(deleteRule: .cascade) var matches: [Match]?
+        var createdByID: String?  // Apple User ID of game creator
 
         var supportedPlayerCounts: Set<Int> {
             get {
@@ -61,16 +62,17 @@ import SwiftData
             self._supportedPlayerCountsData = try? JSONEncoder().encode(
                 Array(supportedPlayerCounts))
             self.matches = []
+            self.createdByID = nil
         }
     }
 
     @Model
     final class Match {
-        @Relationship(deleteRule: .nullify) var game: Game?
+        @Relationship(deleteRule: .cascade) var game: Game?
         var date: Date = Date()
-        @Relationship(deleteRule: .nullify) var players: [Player]?
+        @Relationship(deleteRule: .cascade) var players: [Player]?
         @Attribute private var _playerOrderData: Data?
-        @Relationship(deleteRule: .nullify) var scores: [Score]?
+        @Relationship(deleteRule: .cascade) var scores: [Score]?
         @Attribute var winnerID: String?
 
         // Multiplayer properties
@@ -164,8 +166,8 @@ import SwiftData
 
     @Model
     final class Score {
-        @Relationship(deleteRule: .nullify, inverse: \Player.scores) var player: Player?
-        @Relationship(deleteRule: .nullify, inverse: \Match.scores) var match: Match?
+        @Relationship(deleteRule: .cascade, inverse: \Player.scores) var player: Player?
+        @Relationship(deleteRule: .cascade, inverse: \Match.scores) var match: Match?
         var points: Int = 0
 
         init(player: Player? = nil, match: Match? = nil, points: Int = 0) {
