@@ -19,8 +19,17 @@ import SwiftUI
                         Button(role: .destructive) {
                             showingSignOut = true
                         } label: {
-                            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                            if authManager.isSigningOut {
+                                HStack {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                    Text("Signing Out...")
+                                }
+                            } else {
+                                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                            }
                         }
+                        .disabled(authManager.isSigningOut)
                     }
 
                     Section {

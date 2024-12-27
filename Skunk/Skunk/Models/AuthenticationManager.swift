@@ -16,6 +16,7 @@ import UserNotifications
         @Published private(set) var isSyncing = false
         @Published private(set) var isCheckingCredentials = false
         @Published private(set) var isDeletingAccount = false
+        @Published private(set) var isSigningOut = false
 
         private var modelContext: ModelContext?
         private var isSigningIn = false
@@ -264,6 +265,11 @@ import UserNotifications
         }
 
         func signOut() async {
+            guard !isSigningOut else { return }
+
+            isSigningOut = true
+            defer { isSigningOut = false }
+
             // First wait for any pending CloudKit operations to complete
             try? await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
 
@@ -289,7 +295,7 @@ import UserNotifications
 
                 let appleIDProvider = ASAuthorizationAppleIDProvider()
                 let request = appleIDProvider.createRequest()
-                request.requestedScopes = [.fullName]
+                request.requestedScopes = [.fullName, .email]
 
                 let authorization = try await withCheckedThrowingContinuation { continuation in
                     let controller = ASAuthorizationController(authorizationRequests: [request])
