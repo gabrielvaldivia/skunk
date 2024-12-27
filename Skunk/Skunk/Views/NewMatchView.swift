@@ -13,19 +13,9 @@ import SwiftUI
         @State private var players: [Player?]
         @State private var scores: [Int]
         @State private var currentPlayerCount: Int
-        @State private var isMultiplayer = false
-        @State private var invitedPlayers: Set<Player> = []
 
         @Query(sort: \Match.date, order: .reverse) private var matches: [Match]
         @Query private var allPlayers: [Player]
-
-        private var availablePlayers: [Player] {
-            allPlayers.filter { player in
-                player.appleUserID.flatMap { id in
-                    id != authManager.userID
-                } == true
-            }
-        }
 
         init(game: Game) {
             self.game = game
@@ -50,77 +40,50 @@ import SwiftUI
         var body: some View {
             NavigationStack {
                 Form {
-                    if authManager.isAuthenticated {
-                        Section {
-                            Toggle("Multiplayer Match", isOn: $isMultiplayer)
+                    ForEach(players.indices, id: \.self) { index in
+                        HStack(spacing: 0) {
+                            Picker("Player \(index + 1)", selection: $players[index]) {
+                                Text("Select Player").tag(nil as Player?)
+                                ForEach(
+                                    allPlayers.filter { player in
+                                        !players.contains { $0?.id == player.id }
+                                            || players[index]?.id == player.id
+                                    }
+                                ) { player in
+                                    Text(player.name ?? "").tag(player as Player?)
+                                }
+                            }
+                            .labelsHidden()
+                            .padding(.leading, -12)
+
+                            Spacer()
+
+                            if game.isBinaryScore {
+                                Toggle(
+                                    "",
+                                    isOn: Binding(
+                                        get: { scores[index] == 1 },
+                                        set: { scores[index] = $0 ? 1 : 0 }
+                                    )
+                                )
+                            } else {
+                                Stepper(
+                                    "",
+                                    value: $scores[index],
+                                    in: 0...Int.max
+                                )
+                                Text("\(scores[index])")
+                                    .frame(width: 40)
+                            }
                         }
                     }
 
-                    if isMultiplayer {
-                        Section("Invite Players") {
-                            if availablePlayers.isEmpty {
-                                Text("No online players available")
-                                    .foregroundStyle(.secondary)
-                            } else {
-                                ForEach(availablePlayers) { player in
-                                    PlayerRow(player: player)
-                                        .badge(invitedPlayers.contains(player) ? "Invited" : nil)
-                                        .onTapGesture {
-                                            if invitedPlayers.contains(player) {
-                                                invitedPlayers.remove(player)
-                                            } else {
-                                                invitedPlayers.insert(player)
-                                            }
-                                        }
-                                }
-                            }
-                        }
-                    } else {
-                        ForEach(players.indices, id: \.self) { index in
-                            HStack(spacing: 0) {
-                                Picker("Player \(index + 1)", selection: $players[index]) {
-                                    Text("Select Player").tag(nil as Player?)
-                                    ForEach(
-                                        allPlayers.filter { player in
-                                            !players.contains { $0?.id == player.id }
-                                                || players[index]?.id == player.id
-                                        }
-                                    ) { player in
-                                        Text(player.name ?? "").tag(player as Player?)
-                                    }
-                                }
-                                .labelsHidden()
-                                .padding(.leading, -12)
-
-                                Spacer()
-
-                                if game.isBinaryScore {
-                                    Toggle(
-                                        "",
-                                        isOn: Binding(
-                                            get: { scores[index] == 1 },
-                                            set: { scores[index] = $0 ? 1 : 0 }
-                                        )
-                                    )
-                                } else {
-                                    Stepper(
-                                        "",
-                                        value: $scores[index],
-                                        in: 0...Int.max
-                                    )
-                                    Text("\(scores[index])")
-                                        .frame(width: 40)
-                                }
-                            }
-                        }
-
-                        if game.supportedPlayerCounts.contains(players.count + 1) {
-                            Button(action: {
-                                players.append(nil)
-                                scores.append(0)
-                            }) {
-                                Text("Add Player")
-                            }
+                    if game.supportedPlayerCounts.contains(players.count + 1) {
+                        Button(action: {
+                            players.append(nil)
+                            scores.append(0)
+                        }) {
+                            Text("Add Player")
                         }
                     }
                 }
@@ -150,73 +113,45 @@ import SwiftUI
         }
 
         private var canSave: Bool {
-            if isMultiplayer {
-                return !invitedPlayers.isEmpty
-            } else {
-                return !players.contains(nil)
-                    && Set(players.compactMap { $0?.id }).count == players.count
-                    && (!game.isBinaryScore || Set(scores).count > 1)
-            }
+            return !players.contains(nil)
+                && Set(players.compactMap { $0?.id }).count == players.count
+                && (!game.isBinaryScore || Set(scores).count > 1)
         }
 
         private func saveMatch() {
             let match = Match(game: game)
-            match.isMultiplayer = isMultiplayer
             match.createdByID = authManager.userID
+            match.status = "completed"
             modelContext.insert(match)
 
-            if isMultiplayer {
-                // Set up multiplayer match
-                match.status = "pending"
-                match.invitedPlayerIDs = invitedPlayers.compactMap { $0.appleUserID }
-
-                // Add current user as first player
-                if let currentUserID = authManager.userID,
-                    let currentPlayer = try? modelContext.fetch(
-                        FetchDescriptor<Player>(
-                            predicate: #Predicate<Player> { $0.appleUserID == currentUserID }
-                        )
-                    ).first
-                {
-                    match.addPlayer(currentPlayer)
-                    if currentPlayer.matches == nil {
-                        currentPlayer.matches = []
-                    }
-                    currentPlayer.matches?.append(match)
+            // Set up relationships
+            for player in players.compactMap({ $0 }) {
+                match.addPlayer(player)
+                if player.matches == nil {
+                    player.matches = []
                 }
-            } else {
-                // Set up local match
-                match.status = "completed"
+                player.matches?.append(match)
+            }
 
-                // Set up relationships
-                for player in players.compactMap({ $0 }) {
-                    match.addPlayer(player)
-                    if player.matches == nil {
-                        player.matches = []
-                    }
-                    player.matches?.append(match)
-                }
+            // Set winner based on scores
+            if let maxScore = scores.max(),
+                let winnerIndex = scores.firstIndex(of: maxScore),
+                let winner = players[winnerIndex]
+            {
+                match.winnerID = "\(winner.persistentModelID)"
+            }
 
-                // Set winner based on scores
-                if let maxScore = scores.max(),
-                    let winnerIndex = scores.firstIndex(of: maxScore),
-                    let winner = players[winnerIndex]
-                {
-                    match.winnerID = "\(winner.persistentModelID)"
-                }
-
-                // Save scores for point-based games
-                if !game.isBinaryScore {
-                    for (index, player) in players.enumerated() {
-                        if let player = player {
-                            let scoreObj = Score(
-                                player: player, match: match, points: scores[index])
-                            if match.scores == nil {
-                                match.scores = []
-                            }
-                            match.scores?.append(scoreObj)
-                            modelContext.insert(scoreObj)
+            // Save scores for point-based games
+            if !game.isBinaryScore {
+                for (index, player) in players.enumerated() {
+                    if let player = player {
+                        let scoreObj = Score(
+                            player: player, match: match, points: scores[index])
+                        if match.scores == nil {
+                            match.scores = []
                         }
+                        match.scores?.append(scoreObj)
+                        modelContext.insert(scoreObj)
                     }
                 }
             }
