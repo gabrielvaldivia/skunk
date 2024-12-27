@@ -1,41 +1,48 @@
 import SwiftData
 import SwiftUI
 
-struct MatchRow: View {
-    let match: Match
+#if canImport(UIKit)
+    import UIKit
 
-    private func playerColor(for player: Player) -> Color {
-        // Generate a consistent color based on the name
-        let hash = abs(player.name?.hashValue ?? 0)
-        let hue = Double(hash % 255) / 255.0
-        return Color(hue: hue, saturation: 0.7, brightness: 0.9)
-    }
+    struct MatchRow: View {
+        let match: Match
 
-    private func playerImage(_ player: Player) -> AnyView {
-        if player.photoData != nil {
-            return AnyView(
-                Circle()
-                    .fill(playerColor(for: player))
-                    .frame(width: 30, height: 30)
-                    .overlay {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 14))
-                            .foregroundStyle(.white)
-                    }
-            )
-        } else {
-            return AnyView(
-                PlayerInitialsView(
-                    name: player.name ?? "",
-                    size: 30,
-                    color: playerColor(for: player)
-                )
-            )
+        private func playerColor(for player: Player) -> Color {
+            if let colorData = player.colorData,
+                let uiColor = try? NSKeyedUnarchiver.unarchivedObject(
+                    ofClass: UIColor.self, from: colorData)
+            {
+                return Color(uiColor: uiColor)
+            }
+            // Generate a consistent color based on the name
+            let hash = abs(player.name?.hashValue ?? 0)
+            let hue = Double(hash % 255) / 255.0
+            return Color(hue: hue, saturation: 0.7, brightness: 0.9)
         }
-    }
 
-    var body: some View {
-        NavigationLink(value: match) {
+        private func playerImage(_ player: Player) -> AnyView {
+            if let photoData = player.photoData,
+                let uiImage = UIImage(data: photoData)
+            {
+                return AnyView(
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 30, height: 30)
+                        .clipShape(Circle())
+                )
+            } else {
+                return AnyView(
+                    PlayerInitialsView(
+                        name: player.name ?? "",
+                        size: 30,
+                        color: playerColor(for: player)
+                    )
+                )
+            }
+        }
+
+        var body: some View {
             HStack {
                 VStack(alignment: .leading) {
                     if let game = match.game {
@@ -51,14 +58,14 @@ struct MatchRow: View {
 
                 if let winner = match.winner {
                     HStack(spacing: 4) {
-                        if winner.photoData != nil {
-                            Circle()
-                                .fill(playerColor(for: winner))
+                        if let photoData = winner.photoData,
+                            let uiImage = UIImage(data: photoData)
+                        {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
                                 .frame(width: 24, height: 24)
-                                .overlay {
-                                    Image(systemName: "person.fill")
-                                        .foregroundStyle(.white)
-                                }
+                                .clipShape(Circle())
                         } else {
                             PlayerInitialsView(
                                 name: winner.name ?? "",
@@ -66,12 +73,9 @@ struct MatchRow: View {
                                 color: playerColor(for: winner)
                             )
                         }
-                        Text("Winner")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                 }
             }
         }
     }
-}
+#endif

@@ -20,6 +20,22 @@ import SwiftUI
         let title: String
         let player: Player?
 
+        private var isCurrentUserProfile: Bool {
+            guard let userID = authManager.userID else { return false }
+            return player?.appleUserID == userID
+        }
+
+        private var canDelete: Bool {
+            if let player = player {
+                // Can only delete if:
+                // 1. It's a managed player (has ownerID but no appleUserID)
+                // 2. Current user is the owner
+                guard let currentUserID = authManager.userID else { return false }
+                return player.ownerID == currentUserID && player.appleUserID == nil
+            }
+            return false
+        }
+
         var body: some View {
             Form {
                 Section {
@@ -72,9 +88,16 @@ import SwiftUI
                     TextField("Name", text: $name)
                         .focused($isNameFocused)
                     ColorPicker("Color", selection: $color)
+                } footer: {
+                    if isCurrentUserProfile {
+                        Text(
+                            "To remove your profile, you need to delete your account in Settings."
+                        )
+                        .foregroundStyle(.secondary)
+                    }
                 }
 
-                if player != nil {
+                if canDelete {
                     Section {
                         Button(role: .destructive) {
                             showingDeleteConfirmation = true
@@ -125,7 +148,7 @@ import SwiftUI
             }
             .alert("Delete Player", isPresented: $showingDeleteConfirmation) {
                 Button("Delete", role: .destructive) {
-                    if let player = player {
+                    if let player = player, canDelete {
                         modelContext.delete(player)
                         try? modelContext.save()
                     }
@@ -143,21 +166,73 @@ import SwiftUI
 
     struct PlayersView: View {
         @Environment(\.modelContext) private var modelContext
-        @Query(sort: \Player.name) private var players: [Player]
+        @Query(sort: \Player.name) private var allPlayers: [Player]
         @EnvironmentObject private var authManager: AuthenticationManager
         @State private var showingAddPlayer = false
-        @State private var showingPlayerDetail: Player?
         @State private var newPlayerName = ""
         @State private var newPlayerColor = Color.blue
+
+        private var currentUser: Player? {
+            guard let userID = authManager.userID else { return nil }
+            return allPlayers.first { $0.appleUserID == userID }
+        }
+
+        private var managedPlayers: [Player] {
+            guard let userID = authManager.userID else { return [] }
+            return allPlayers.filter { player in
+                player.ownerID == userID && player.appleUserID != userID
+            }
+        }
+
+        private var otherUsers: [Player] {
+            guard let userID = authManager.userID else { return [] }
+            return allPlayers.filter { player in
+                player.appleUserID != nil  // Has an Apple ID (is a real user)
+                    && player.appleUserID != userID  // Not the current user
+                    && player.ownerID != userID  // Not managed by current user
+            }
+        }
 
         var body: some View {
             NavigationStack {
                 List {
-                    ForEach(players) { player in
-                        Button {
-                            showingPlayerDetail = player
-                        } label: {
-                            PlayerRow(player: player)
+                    if let currentUser = currentUser {
+                        Section("Your Profile") {
+                            NavigationLink {
+                                PlayerDetailView(player: currentUser)
+                            } label: {
+                                PlayerRow(player: currentUser)
+                            }
+                        }
+                    }
+
+                    Section("Players You Manage") {
+                        if managedPlayers.isEmpty {
+                            Text("No managed players")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(managedPlayers) { player in
+                                NavigationLink {
+                                    PlayerDetailView(player: player)
+                                } label: {
+                                    PlayerRow(player: player)
+                                }
+                            }
+                        }
+                    }
+
+                    Section("Other Players") {
+                        if otherUsers.isEmpty {
+                            Text("No other players found")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(otherUsers) { player in
+                                NavigationLink {
+                                    PlayerDetailView(player: player)
+                                } label: {
+                                    PlayerRow(player: player)
+                                }
+                            }
                         }
                     }
                 }
@@ -185,11 +260,6 @@ import SwiftUI
                         // Reset the form when sheet is dismissed
                         newPlayerName = ""
                         newPlayerColor = .blue
-                    }
-                }
-                .sheet(item: $showingPlayerDetail) { player in
-                    NavigationStack {
-                        PlayerDetailView(player: player)
                     }
                 }
                 .refreshable {

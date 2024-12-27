@@ -8,25 +8,42 @@
 import SwiftData
 import SwiftUI
 
-struct ContentView: View {
-    var body: some View {
-        NavigationStack {
+#if canImport(UIKit)
+    import UIKit
+
+    struct ContentView: View {
+        var body: some View {
             TabView {
-                NavigationView {
+                NavigationStack {
                     GamesView()
+                        .navigationDestination(for: Game.self) { game in
+                            GameDetailView(game: game)
+                                .navigationDestination(for: Match.self) { match in
+                                    MatchDetailView(match: match)
+                                }
+                                .navigationDestination(for: Player.self) { player in
+                                    PlayerDetailView(player: player)
+                                }
+                        }
                 }
                 .tabItem {
                     Label("Games", systemImage: "gamecontroller")
                 }
 
-                NavigationView {
+                NavigationStack {
                     PlayersView()
+                        .navigationDestination(for: Match.self) { match in
+                            MatchDetailView(match: match)
+                        }
+                        .navigationDestination(for: Player.self) { player in
+                            PlayerDetailView(player: player)
+                        }
                 }
                 .tabItem {
                     Label("Players", systemImage: "person.2")
                 }
 
-                NavigationView {
+                NavigationStack {
                     SettingsView()
                 }
                 .tabItem {
@@ -35,4 +52,4 @@ struct ContentView: View {
             }
         }
     }
-}
+#endif

@@ -61,6 +61,7 @@ import SwiftUI
                 VStack(alignment: .leading) {
                     Text(player.name ?? "")
                         .font(.headline)
+                        .foregroundStyle(.primary)
                     if isCurrentUser {
                         Text("(you)")
                             .font(.caption)
