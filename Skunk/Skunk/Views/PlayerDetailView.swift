@@ -17,18 +17,28 @@ import SwiftUI
             _editingName = State(initialValue: player.name ?? "")
             _editingColor = State(
                 initialValue: {
+                    if let colorData = player.colorData,
+                        let uiColor = try? NSKeyedUnarchiver.unarchivedObject(
+                            ofClass: UIColor.self, from: colorData)
+                    {
+                        return Color(uiColor: uiColor)
+                    }
                     // Generate a consistent color based on the name
-                    let name = player.name ?? ""
-                    let hash = abs(name.hashValue)
+                    let hash = abs(player.name?.hashValue ?? 0)
                     let hue = Double(hash % 255) / 255.0
                     return Color(hue: hue, saturation: 0.7, brightness: 0.9)
                 }())
         }
 
         private var playerColor: Color {
+            if let colorData = player.colorData,
+                let uiColor = try? NSKeyedUnarchiver.unarchivedObject(
+                    ofClass: UIColor.self, from: colorData)
+            {
+                return Color(uiColor: uiColor)
+            }
             // Generate a consistent color based on the name
-            let name = player.name ?? ""
-            let hash = abs(name.hashValue)
+            let hash = abs(player.name?.hashValue ?? 0)
             let hue = Double(hash % 255) / 255.0
             return Color(hue: hue, saturation: 0.7, brightness: 0.9)
         }
