@@ -82,14 +82,35 @@ class AuthenticationManager: ObservableObject {
         userID = appleIDCredential.user
         UserDefaults.standard.set(appleIDCredential.user, forKey: "userID")
 
-        if let givenName = appleIDCredential.fullName?.givenName,
-            let familyName = appleIDCredential.fullName?.familyName
+        // Handle full name
+        if let fullName = appleIDCredential.fullName,
+            let givenName = fullName.givenName,
+            let familyName = fullName.familyName
         {
             await updatePlayerName("\(givenName) \(familyName)")
         }
 
         await syncPlayers()
         isAuthenticated = true
+    }
+
+    private func updatePlayerPhoto(_ photoData: Data) async {
+        guard let modelContext, let userID else { return }
+        do {
+            let descriptor = FetchDescriptor<Player>(
+                predicate: #Predicate<Player> { player in
+                    player.appleUserID == userID
+                }
+            )
+            let currentPlayers = try modelContext.fetch(descriptor)
+            if let currentPlayer = currentPlayers.first {
+                currentPlayer.photoData = photoData
+                try modelContext.save()
+            }
+        } catch {
+            print("❌ Error updating player photo: \(error)")
+            self.error = error
+        }
     }
 
     private func syncPlayers() async {

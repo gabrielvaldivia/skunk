@@ -41,11 +41,6 @@ import SwiftUI
                 VStack(alignment: .leading) {
                     Text(player.name ?? "")
                         .font(.headline)
-                    if player.appleUserID != nil {
-                        Text(player.isOnline ? "Online" : "Offline")
-                            .font(.caption)
-                            .foregroundStyle(player.isOnline ? .green : .secondary)
-                    }
                 }
             }
         }
