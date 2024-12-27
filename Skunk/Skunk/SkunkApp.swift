@@ -5,51 +5,31 @@ import SwiftUI
 @main
 struct SkunkApp: App {
     @StateObject private var authManager = AuthenticationManager.shared
-    @State private var showSignIn = false
-    let container: ModelContainer
 
-    init() {
+    var sharedModelContainer: ModelContainer = {
+        let schema = Schema([
+            Player.self,
+            Game.self,
+            Match.self,
+            Score.self,
+        ])
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+
         do {
-            let schema = Schema([
-                Player.self,
-                Game.self,
-                Match.self,
-                Score.self,
-            ])
-
-            let modelConfiguration = ModelConfiguration(
-                schema: schema,
-                isStoredInMemoryOnly: false,
-                allowsSave: true,
-                cloudKitDatabase: .automatic
-            )
-
-            container = try ModelContainer(
-                for: schema,
-                migrationPlan: nil,
-                configurations: [modelConfiguration]
-            )
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not initialize ModelContainer: \(error)")
+            fatalError("Could not create ModelContainer: \(error)")
         }
-    }
+    }()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(authManager)
                 .task {
                     await authManager.checkExistingCredentials()
                 }
-                .modelContainer(container)
-                .onChange(of: authManager.isAuthenticated) { _, isAuthenticated in
-                    if isAuthenticated {
-                        // Give CloudKit time to sync before allowing further actions
-                        Task {
-                            try? await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
-                            try? container.mainContext.save()
-                        }
-                    }
-                }
         }
+        .modelContainer(sharedModelContainer)
     }
 }

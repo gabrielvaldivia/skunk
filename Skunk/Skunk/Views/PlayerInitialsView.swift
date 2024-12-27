@@ -1,35 +1,40 @@
 import SwiftUI
-import UIKit
 
 struct PlayerInitialsView: View {
     let name: String
     let size: CGFloat
-    let colorData: Data?
+    let color: Color
 
-    private var initial: String {
-        String(name.prefix(1).uppercased())
+    private var initials: String {
+        let components = name.components(separatedBy: .whitespaces)
+        if components.count > 1 {
+            return String(components[0].prefix(1) + components[1].prefix(1))
+        } else {
+            return String(name.prefix(2))
+        }
     }
 
-    private var color: Color {
-        if let colorData = colorData,
-            let uiColor = try? NSKeyedUnarchiver.unarchivedObject(
-                ofClass: UIColor.self, from: colorData)
-        {
-            return Color(uiColor: uiColor)
+    init(name: String, size: CGFloat, color: Color? = nil) {
+        self.name = name
+        self.size = size
+        if let color = color {
+            self.color = color
         } else {
-            // Fallback color for preview or if color is not set
-            return Color(hue: 0.5, saturation: 0.8, brightness: 0.7)
+            // Generate a consistent color based on the name
+            let hash = abs(name.hashValue)
+            let hue = Double(hash % 255) / 255.0
+            self.color = Color(hue: hue, saturation: 0.7, brightness: 0.9)
         }
     }
 
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(color)
-            Text(initial)
-                .font(.system(size: size * 0.4, weight: .bold))
-                .foregroundStyle(.white)
-        }
-        .frame(width: size, height: size)
+        Circle()
+            .fill(color)
+            .frame(width: size, height: size)
+            .overlay {
+                Text(initials.uppercased())
+                    .font(.system(size: size * 0.4, weight: .bold))
+                    .foregroundStyle(.white)
+            }
     }
 }

@@ -2,25 +2,11 @@ import Charts
 import SwiftData
 import SwiftUI
 
-// Import local models and views
-@preconcurrency import class UIKit.UIColor
-@preconcurrency import class UIKit.UIImage
-
-#if canImport(UIKit)
-    import UIKit
-#else
-    import AppKit
-#endif
-
 private func playerColor(_ player: Player) -> Color {
-    if let colorData = player.colorData,
-        let uiColor = try? NSKeyedUnarchiver.unarchivedObject(
-            ofClass: UIColor.self, from: colorData)
-    {
-        return Color(uiColor: uiColor)
-    } else {
-        return Color(hue: 0.5, saturation: 0.7, brightness: 0.9)
-    }
+    // Generate a consistent color based on the name
+    let hash = abs(player.name?.hashValue ?? 0)
+    let hue = Double(hash % 255) / 255.0
+    return Color(hue: hue, saturation: 0.7, brightness: 0.9)
 }
 
 struct PieChartView: View {
@@ -274,69 +260,19 @@ struct ActivityGridView: View {
 
 struct GameDetailView: View {
     let game: Game
+    @Environment(\.modelContext) private var modelContext
     @State private var showingNewMatch = false
     @State private var showingEditGame = false
-    @Environment(\.modelContext) private var modelContext
-
-    private var championshipStatus: (winner: Player?, isDraw: Bool) {
-        // Return early if no matches
-        guard let matches = game.matches, !matches.isEmpty else { return (nil, false) }
-
-        // Get all winners
-        var winners: [Player] = []
-        for match in matches {
-            if let winner = match.winner {
-                winners.append(winner)
-            }
-        }
-        if winners.isEmpty { return (nil, false) }
-
-        // Count wins for each player
-        var winCounts: [Player: Int] = [:]
-        for winner in winners {
-            winCounts[winner, default: 0] += 1
-        }
-
-        // Find the highest win count
-        var maxCount = 0
-        for count in winCounts.values {
-            maxCount = max(maxCount, count)
-        }
-
-        // Find players with the highest win count
-        var topPlayers: [Player] = []
-        for (player, count) in winCounts {
-            if count == maxCount {
-                topPlayers.append(player)
-            }
-        }
-
-        // If more than one player has the highest count, it's a draw
-        if topPlayers.count > 1 {
-            return (nil, true)
-        }
-
-        // Otherwise, return the winner
-        return (topPlayers.first, false)
-    }
 
     private var winCounts: [(player: Player, count: Int)] {
-        // Return empty array if no matches or winners
-        guard let matches = game.matches, !matches.isEmpty else { return [] }
-
-        // Get all winners
-        var winners: [Player] = []
-        for match in matches {
-            if let winner = match.winner {
-                winners.append(winner)
-            }
-        }
-        if winners.isEmpty { return [] }
-
-        // Count wins for each player
+        // Count wins per player
         var counts: [Player: Int] = [:]
-        for winner in winners {
-            counts[winner, default: 0] += 1
+        if let matches = game.matches {
+            for match in matches {
+                if let winner = match.winner {
+                    counts[winner, default: 0] += 1
+                }
+            }
         }
 
         // Convert to array of tuples
@@ -347,16 +283,89 @@ struct GameDetailView: View {
 
         // Sort by count (highest first)
         pairs.sort { $0.count > $1.count }
-
         return pairs
     }
 
     private var totalWins: Int {
-        var total = 0
-        for (_, count) in winCounts {
-            total += count
+        winCounts.reduce(0) { $0 + $1.count }
+    }
+
+    private func calculateWinPercentage(count: Int) -> Int {
+        guard totalWins > 0 else { return 0 }
+        let percentage = Double(count) / Double(totalWins) * 100.0
+        return Int(percentage)
+    }
+
+    private func playerStatsView(_ entry: (player: Player, count: Int)) -> some View {
+        HStack {
+            Circle()
+                .fill(playerColor(entry.player))
+                .frame(width: 12, height: 12)
+            Text(entry.player.name ?? "")
+            Spacer()
+            Text("\(entry.count) wins (\(calculateWinPercentage(count: entry.count))%)")
+                .foregroundStyle(.secondary)
         }
-        return total
+    }
+
+    private func playerRow(_ index: Int, _ entry: (player: Player, count: Int)) -> some View {
+        NavigationLink(destination: PlayerDetailView(player: entry.player)) {
+            HStack(spacing: 16) {
+                Text("#\(index + 1)")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 40)
+
+                PlayerAvatar(player: entry.player)
+
+                VStack(alignment: .leading) {
+                    Text(entry.player.name ?? "")
+                        .font(.headline)
+                    Text("\(entry.count) wins")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Text("\(Int((Double(entry.count) / Double(totalWins)) * 100))%")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func winDistributionSection() -> some View {
+        Section("Win Distribution") {
+            VStack(alignment: .center, spacing: 16) {
+                PieChartView(winCounts: winCounts, totalWins: totalWins)
+                    .padding(.vertical)
+
+                ForEach(winCounts, id: \.player.id) { entry in
+                    playerStatsView(entry)
+                }
+            }
+            .padding(20)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .frame(maxWidth: .infinity)
+            .listRowInsets(EdgeInsets())
+        }
+    }
+
+    private func matchHistorySection(_ matches: [Match]) -> some View {
+        Section("Match History") {
+            let sortedMatches = matches.sorted(by: { $0.date > $1.date })
+            ForEach(sortedMatches) { match in
+                MatchRow(match: match)
+            }
+        }
+    }
+
+    private func activitySection(_ matches: [Match]) -> some View {
+        Section("Activity") {
+            ActivityGridView(matches: Array(matches))
+                .listRowInsets(EdgeInsets())
+        }
     }
 
     var body: some View {
@@ -370,91 +379,18 @@ struct GameDetailView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-            } else {
+            } else if let matches = game.matches, !matches.isEmpty {
                 List {
-                    if let matches = game.matches, !matches.isEmpty {
-                        Section("Leaderboard") {
-                            ForEach(Array(winCounts.enumerated()), id: \.element.player.id) {
-                                index, entry in
-                                NavigationLink(destination: PlayerDetailView(player: entry.player))
-                                {
-                                    HStack(spacing: 16) {
-                                        Text("#\(index + 1)")
-                                            .font(.headline)
-                                            .foregroundStyle(.secondary)
-                                            .frame(width: 40)
-
-                                        if let photoData = entry.player.photoData,
-                                            let uiImage = UIImage(data: photoData)
-                                        {
-                                            Image(uiImage: uiImage)
-                                                .resizable()
-                                                .scaledToFill()
-                                                .frame(width: 40, height: 40)
-                                                .clipShape(Circle())
-                                        } else {
-                                            PlayerInitialsView(
-                                                name: entry.player.name ?? "",
-                                                size: 40,
-                                                colorData: entry.player.colorData)
-                                        }
-
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(entry.player.name ?? "")
-                                                .font(.headline)
-
-                                            HStack {
-                                                Text("\(entry.count) wins")
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                            .font(.subheadline)
-                                        }
-
-                                        Spacer()
-                                    }
-                                }
-                            }
-                        }
-
-                        Section("Win Distribution") {
-                            VStack(alignment: .center, spacing: 16) {
-                                PieChartView(winCounts: winCounts, totalWins: totalWins)
-                                    .padding(.vertical)
-
-                                ForEach(winCounts, id: \.player.id) { entry in
-                                    HStack {
-                                        Circle()
-                                            .fill(playerColor(entry.player))
-                                            .frame(width: 12, height: 12)
-                                        Text(entry.player.name ?? "")
-                                        Spacer()
-                                        let winCount = entry.count
-                                        let winPercentage =
-                                            Double(winCount) / Double(totalWins) * 100.0
-                                        let roundedPercentage = Int(winPercentage)
-                                        Text("\(winCount) wins (\(roundedPercentage)%)")
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                            }
-                            .padding(20)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .frame(maxWidth: .infinity)
-                            .listRowInsets(EdgeInsets())
-                        }
-
-                        Section("Activity") {
-                            ActivityGridView(matches: Array(matches))
-                                .listRowInsets(EdgeInsets())
-                        }
-
-                        Section("Match History") {
-                            let sortedMatches = matches.sorted(by: { $0.date > $1.date })
-                            ForEach(sortedMatches) { match in
-                                MatchRow(match: match, showGameTitle: false)
-                            }
+                    Section("Leaderboard") {
+                        ForEach(Array(winCounts.enumerated()), id: \.element.player.id) {
+                            index, entry in
+                            playerRow(index, entry)
                         }
                     }
+
+                    winDistributionSection()
+                    activitySection(matches)
+                    matchHistorySection(matches)
                 }
             }
 
@@ -487,6 +423,27 @@ struct GameDetailView: View {
         }
         .sheet(isPresented: $showingEditGame) {
             EditGameView(game: game)
+        }
+    }
+}
+
+struct PlayerAvatar: View {
+    let player: Player
+
+    var body: some View {
+        if player.photoData != nil {
+            Circle()
+                .fill(playerColor(player))
+                .frame(width: 40, height: 40)
+                .overlay {
+                    Image(systemName: "person.fill")
+                        .foregroundStyle(.white)
+                }
+        } else {
+            PlayerInitialsView(
+                name: player.name ?? "",
+                size: 40,
+                color: playerColor(player))
         }
     }
 }

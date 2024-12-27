@@ -1,5 +1,7 @@
 import AuthenticationServices
+import SwiftData
 import SwiftUI
+import UserNotifications
 
 #if canImport(UIKit)
     import UIKit
@@ -17,6 +19,9 @@ class AuthenticationManager: ObservableObject {
     @Published var userID: String? {
         didSet {
             print("👤 UserID changed: \(userID ?? "nil")")
+            Task {
+                await updateOnlineStatus(isAuthenticated)
+            }
         }
     }
     @Published var error: Error?
@@ -26,10 +31,31 @@ class AuthenticationManager: ObservableObject {
         }
     }
 
+    private var modelContext: ModelContext?
+
     static let shared = AuthenticationManager()
 
     private init() {
         print("📱 AuthenticationManager initialized")
+        setupNotifications()
+    }
+
+    func setModelContext(_ context: ModelContext) {
+        self.modelContext = context
+    }
+
+    private func setupNotifications() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) {
+            granted, error in
+            if granted {
+                print("✅ Notification permission granted")
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+            } else if let error = error {
+                print("❌ Notification permission error: \(error.localizedDescription)")
+            }
+        }
     }
 
     func checkExistingCredentials() async {
@@ -43,6 +69,7 @@ class AuthenticationManager: ObservableObject {
                 case .authorized:
                     isAuthenticated = true
                     self.userID = userID
+                    await syncUserProfile()
                 default:
                     isAuthenticated = false
                     self.userID = nil
@@ -80,6 +107,8 @@ class AuthenticationManager: ObservableObject {
             print("📧 Stored email: \(email)")
         }
 
+        await syncUserProfile()
+
         print("⏳ Waiting for CloudKit sync...")
         try? await Task.sleep(nanoseconds: 1_000_000_000)  // 1 second
         isAuthenticated = true
@@ -88,12 +117,107 @@ class AuthenticationManager: ObservableObject {
 
     func signOut() {
         print("👋 Signing out...")
+        Task {
+            await updateOnlineStatus(false)
+        }
         isAuthenticated = false
         userID = nil
         UserDefaults.standard.removeObject(forKey: "userID")
         UserDefaults.standard.removeObject(forKey: "userName")
         UserDefaults.standard.removeObject(forKey: "userEmail")
         print("✅ Sign out complete!")
+    }
+
+    // MARK: - Multiplayer Methods
+
+    private func syncUserProfile() async {
+        guard let userID = userID,
+            let modelContext = modelContext
+        else { return }
+
+        print("🔄 Syncing user profile for \(userID)")
+
+        let descriptor = FetchDescriptor<Player>(
+            predicate: #Predicate<Player> { player in
+                player.appleUserID == userID
+            }
+        )
+
+        do {
+            let existingPlayer = try modelContext.fetch(descriptor).first
+
+            if let player = existingPlayer {
+                // Update existing player
+                player.isOnline = true
+                player.lastSeen = Date()
+                if player.name == nil {
+                    player.name = UserDefaults.standard.string(forKey: "userName")
+                }
+            } else {
+                // Create new player
+                let userName = UserDefaults.standard.string(forKey: "userName") ?? "Player"
+                let player = Player(name: userName, appleUserID: userID)
+                player.isOnline = true
+                player.lastSeen = Date()
+                modelContext.insert(player)
+            }
+
+            try modelContext.save()
+            print("✅ User profile synced successfully")
+        } catch {
+            print("❌ Error syncing user profile: \(error.localizedDescription)")
+        }
+    }
+
+    private func updateOnlineStatus(_ isOnline: Bool) async {
+        guard let userID = userID,
+            let modelContext = modelContext
+        else { return }
+
+        print("🔄 Updating online status to \(isOnline) for \(userID)")
+
+        let descriptor = FetchDescriptor<Player>(
+            predicate: #Predicate<Player> { player in
+                player.appleUserID == userID
+            }
+        )
+
+        do {
+            if let player = try modelContext.fetch(descriptor).first {
+                player.isOnline = isOnline
+                player.lastSeen = isOnline ? Date() : nil
+                try modelContext.save()
+                print("✅ Online status updated successfully")
+            }
+        } catch {
+            print("❌ Error updating online status: \(error.localizedDescription)")
+        }
+    }
+
+    func updateDeviceToken(_ deviceToken: String) {
+        guard let userID = userID,
+            let modelContext = modelContext
+        else { return }
+
+        print("🔄 Updating device token for \(userID)")
+
+        Task {
+            let descriptor = FetchDescriptor<Player>(
+                predicate: #Predicate<Player> { player in
+                    player.appleUserID == userID
+                }
+            )
+
+            do {
+                if let player = try modelContext.fetch(descriptor).first {
+                    player.deviceToken = deviceToken
+                    try modelContext.save()
+                    print("✅ Device token updated successfully")
+                }
+            } catch {
+                print("❌ Error updating device token: \(error.localizedDescription)")
+            }
+        }
     }
 }
 

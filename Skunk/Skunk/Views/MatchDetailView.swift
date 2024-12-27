@@ -1,40 +1,74 @@
 import SwiftData
 import SwiftUI
 
-#if canImport(UIKit)
-    import UIKit
-#else
-    import AppKit
-#endif
-
 struct MatchDetailView: View {
     let match: Match
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authManager: AuthenticationManager
+
+    private var isCurrentUserInvited: Bool {
+        guard let userID = authManager.userID else { return false }
+        return match.invitedPlayerIDs.contains(userID)
+    }
+
+    private var canJoinMatch: Bool {
+        guard let userID = authManager.userID else { return false }
+        return match.isMultiplayer && match.status == "pending" && isCurrentUserInvited
+            && !match.acceptedPlayerIDs.contains(userID)
+    }
+
+    private var statusColor: Color {
+        switch match.status {
+        case "pending": return .orange
+        case "active": return .blue
+        case "completed": return .green
+        case "cancelled": return .red
+        default: return .secondary
+        }
+    }
+
+    private func playerColor(for player: Player) -> Color {
+        // Generate a consistent color based on the name
+        let hash = abs(player.name?.hashValue ?? 0)
+        let hue = Double(hash % 255) / 255.0
+        return Color(hue: hue, saturation: 0.7, brightness: 0.9)
+    }
 
     private func playerView(_ player: Player) -> some View {
         Button(action: {
-            match.winnerID = "\(player.persistentModelID)"
-            try? modelContext.save()
+            if !match.isMultiplayer || match.status == "completed" {
+                match.winnerID = "\(player.persistentModelID)"
+                try? modelContext.save()
+            }
         }) {
             HStack {
-                if let photoData = player.photoData,
-                    let uiImage = UIImage(data: photoData)
-                {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
+                if let photoData = player.photoData {
+                    Circle()
+                        .fill(playerColor(for: player))
                         .frame(width: 40, height: 40)
-                        .clipShape(Circle())
+                        .overlay {
+                            Image(systemName: "person.fill")
+                                .foregroundStyle(.white)
+                        }
                 } else {
                     PlayerInitialsView(
                         name: player.name ?? "",
                         size: 40,
-                        colorData: player.colorData)
+                        color: playerColor(for: player)
+                    )
                 }
 
-                Text(player.name ?? "")
-                    .font(.headline)
+                VStack(alignment: .leading) {
+                    Text(player.name ?? "")
+                        .font(.headline)
+
+                    if player.appleUserID != nil {
+                        Text(player.isOnline ? "Online" : "Offline")
+                            .font(.caption)
+                            .foregroundStyle(player.isOnline ? .green : .secondary)
+                    }
+                }
 
                 Spacer()
 
@@ -43,26 +77,29 @@ struct MatchDetailView: View {
                         .font(.subheadline)
                         .foregroundStyle(.green)
                 }
-
-                if let game = match.game, !game.isBinaryScore,
-                    let score = match.scores?.first(where: { $0.player == player })
-                {
-                    Text("\(score.points) points")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
             }
         }
-        .buttonStyle(.plain)
     }
 
     var body: some View {
         List {
-            Section {
-                if let game = match.game {
-                    LabeledContent("Game", value: game.title ?? "")
+            if match.isMultiplayer {
+                Section {
+                    HStack {
+                        Text(match.status.capitalized)
+                            .font(.headline)
+                            .foregroundStyle(statusColor)
+                        Spacer()
+                        if canJoinMatch {
+                            Button("Join Match") {
+                                if let userID = authManager.userID {
+                                    match.acceptedPlayerIDs.append(userID)
+                                    try? modelContext.save()
+                                }
+                            }
+                        }
+                    }
                 }
-                LabeledContent("Date", value: match.date, format: .dateTime)
             }
 
             Section("Players") {
@@ -71,40 +108,15 @@ struct MatchDetailView: View {
                 }
             }
 
-            Section {
-                Button(role: .destructive) {
-                    // Remove match from game's matches array
-                    if let game = match.game,
-                        var matches = game.matches
-                    {
-                        matches.removeAll { $0.id == match.id }
-                        game.matches = matches
+            if !match.isMultiplayer || match.status == "completed" {
+                Section {
+                    Button(role: .destructive) {
+                        modelContext.delete(match)
+                        try? modelContext.save()
+                        dismiss()
+                    } label: {
+                        Text("Delete Match")
                     }
-
-                    // Remove match from all players' matches arrays
-                    if let players = match.players {
-                        for player in players {
-                            if var matches = player.matches {
-                                matches.removeAll { $0.id == match.id }
-                                player.matches = matches
-                            }
-                        }
-                    }
-
-                    // Delete all associated scores
-                    if let scores = match.scores {
-                        for score in scores {
-                            modelContext.delete(score)
-                        }
-                    }
-
-                    // Finally delete the match
-                    modelContext.delete(match)
-                    try? modelContext.save()
-                    dismiss()
-                } label: {
-                    Text("Delete Match")
-                        .frame(maxWidth: .infinity)
                 }
             }
         }

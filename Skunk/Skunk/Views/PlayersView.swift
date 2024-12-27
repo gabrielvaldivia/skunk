@@ -3,36 +3,37 @@ import PhotosUI
 import SwiftData
 import SwiftUI
 
-typealias Context = UIViewControllerRepresentableContext<ImagePicker>
-
 struct PlayerFormView: View {
     @Binding var name: String
-    @Binding var selectedImage: UIImage?
+    @State private var selectedItem: PhotosPickerItem?
+    @State private var selectedImageData: Data?
     @Binding var color: Color
-    @State private var isImagePickerPresented = false
     @FocusState private var isNameFocused: Bool
     let existingPhotoData: Data?
-    let existingColorData: Data?
     let title: String
 
     var body: some View {
         Form {
             Section {
-                Button(action: { isImagePickerPresented.toggle() }) {
-                    if let image = selectedImage {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFill()
+                PhotosPicker(selection: $selectedItem, matching: .images) {
+                    if let selectedImageData {
+                        Circle()
+                            .fill(color)
                             .frame(width: 120, height: 120)
-                            .clipShape(Circle())
-                    } else if let photoData = existingPhotoData,
-                        let uiImage = UIImage(data: photoData)
-                    {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
+                            .overlay {
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 60))
+                                    .foregroundStyle(.white)
+                            }
+                    } else if let existingPhotoData {
+                        Circle()
+                            .fill(color)
                             .frame(width: 120, height: 120)
-                            .clipShape(Circle())
+                            .overlay {
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 60))
+                                    .foregroundStyle(.white)
+                            }
                     } else if name.isEmpty {
                         Circle()
                             .fill(Color(.tertiarySystemFill))
@@ -43,17 +44,22 @@ struct PlayerFormView: View {
                                     .foregroundStyle(.primary)
                             }
                     } else {
-                        let colorData = try? NSKeyedArchiver.archivedData(
-                            withRootObject: UIColor(color),
-                            requiringSecureCoding: true)
                         PlayerInitialsView(
                             name: name,
                             size: 120,
-                            colorData: colorData)
+                            color: color
+                        )
                     }
                 }
                 .frame(maxWidth: .infinity)
                 .listRowBackground(Color.clear)
+            }
+            .onChange(of: selectedItem) { _, newValue in
+                Task {
+                    if let data = try? await newValue?.loadTransferable(type: Data.self) {
+                        selectedImageData = data
+                    }
+                }
             }
 
             Section {
@@ -64,9 +70,6 @@ struct PlayerFormView: View {
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $isImagePickerPresented) {
-            ImagePicker(image: $selectedImage)
-        }
         .onAppear {
             isNameFocused = true
         }
@@ -75,136 +78,84 @@ struct PlayerFormView: View {
 
 struct PlayersView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var players: [Player]
-
+    @Query(sort: \Player.name) private var players: [Player]
+    @EnvironmentObject private var authManager: AuthenticationManager
     @State private var showingAddPlayer = false
-    @State private var newPlayerName = ""
-    @State private var selectedImage: UIImage?
-    @State private var newPlayerColor = Color.blue
+    @State private var showingPlayerDetail: Player?
+
+    private func playersByStatus() -> (online: [Player], offline: [Player]) {
+        let onlinePlayers = players.filter { $0.isOnline }
+        let offlinePlayers = players.filter { !$0.isOnline }
+        return (online: onlinePlayers, offline: offlinePlayers)
+    }
+
+    private func timeAgoString(from date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
 
     var body: some View {
-        List {
-            ForEach(players) { player in
-                NavigationLink(destination: PlayerDetailView(player: player)) {
-                    HStack {
-                        if let photoData = player.photoData,
-                            let uiImage = UIImage(data: photoData)
-                        {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 40, height: 40)
-                                .clipShape(Circle())
-                        } else {
-                            PlayerInitialsView(
-                                name: player.name ?? "",
-                                size: 40,
-                                colorData: player.colorData)
+        NavigationStack {
+            List {
+                let status = playersByStatus()
+                if !status.online.isEmpty {
+                    Section("Online") {
+                        ForEach(status.online) { player in
+                            PlayerRow(player: player)
+                                .badge("Online")
+                                .onTapGesture {
+                                    showingPlayerDetail = player
+                                }
                         }
+                    }
+                }
 
-                        Text(player.name ?? "")
-                            .padding(.leading, 8)
+                if !status.offline.isEmpty {
+                    Section("Offline") {
+                        ForEach(status.offline) { player in
+                            PlayerRow(player: player)
+                                .badge(
+                                    player.lastSeen.map {
+                                        "Last seen \(timeAgoString(from: $0))"
+                                    }
+                                )
+                                .onTapGesture {
+                                    showingPlayerDetail = player
+                                }
+                        }
                     }
                 }
             }
-            .onDelete(perform: deletePlayers)
-        }
-        .navigationTitle("Players")
-        .toolbar {
-            Button(action: {
-                newPlayerColor = Color(
-                    hue: Double.random(in: 0...1), saturation: 0.7, brightness: 0.9)
-                showingAddPlayer.toggle()
-            }) {
-                Label("Add Player", systemImage: "plus")
-            }
-        }
-        .sheet(isPresented: $showingAddPlayer) {
-            NavigationStack {
-                PlayerFormView(
-                    name: $newPlayerName,
-                    selectedImage: $selectedImage,
-                    color: $newPlayerColor,
-                    existingPhotoData: nil,
-                    existingColorData: nil,
-                    title: "New Player"
-                )
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            newPlayerName = ""
-                            selectedImage = nil
-                            showingAddPlayer = false
-                        }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Add") {
-                            addPlayer()
-                        }
-                        .disabled(newPlayerName.isEmpty)
-                    }
+            .navigationTitle("Players")
+            .toolbar {
+                Button {
+                    showingAddPlayer = true
+                } label: {
+                    Label("Add Player", systemImage: "person.badge.plus")
                 }
             }
-        }
-    }
-
-    private func addPlayer() {
-        let imageData = selectedImage?.jpegData(compressionQuality: 0.8)
-        let player = Player(name: newPlayerName, photoData: imageData)
-        if let colorData = try? NSKeyedArchiver.archivedData(
-            withRootObject: UIColor(newPlayerColor),
-            requiringSecureCoding: true
-        ) {
-            player.colorData = colorData
-        }
-        modelContext.insert(player)
-        newPlayerName = ""
-        selectedImage = nil
-        showingAddPlayer = false
-    }
-
-    private func deletePlayers(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(players[index])
+            .sheet(isPresented: $showingAddPlayer) {
+                NavigationStack {
+                    PlayerFormView(
+                        name: .constant(""),
+                        color: .constant(.blue),
+                        existingPhotoData: nil,
+                        title: "New Player"
+                    )
+                }
+            }
+            .sheet(item: $showingPlayerDetail) { player in
+                NavigationStack {
+                    PlayerDetailView(player: player)
+                }
+            }
+            .refreshable {
+                // This will trigger a SwiftData refresh
             }
         }
-    }
-}
-
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
-    @Environment(\.dismiss) private var dismiss
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(
-        _ uiViewController: UIImagePickerController, context: Context
-    ) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: ImagePicker
-
-        init(_ parent: ImagePicker) {
-            self.parent = parent
-        }
-
-        func imagePickerController(
-            _ picker: UIImagePickerController,
-            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
-        ) {
-            if let image = info[.originalImage] as? UIImage {
-                parent.image = image
-            }
-            parent.dismiss()
+        .onAppear {
+            authManager.setModelContext(modelContext)
         }
     }
 }
