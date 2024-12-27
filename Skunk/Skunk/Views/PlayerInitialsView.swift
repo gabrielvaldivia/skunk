@@ -7,10 +7,10 @@ struct PlayerInitialsView: View {
 
     private var initials: String {
         let components = name.components(separatedBy: .whitespaces)
-        if components.count > 1 {
-            return String(components[0].prefix(1) + components[1].prefix(1))
+        if !components.isEmpty && !components[0].isEmpty {
+            return String(components[0].prefix(1))
         } else {
-            return String(name.prefix(2))
+            return ""
         }
     }
 
