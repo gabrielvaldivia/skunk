@@ -288,6 +288,10 @@ import SwiftUI
             print("🔵 GameDetailView: Starting loadMatches()")
             isLoading = true
             do {
+                // First fetch players to ensure they're available
+                print("🔵 GameDetailView: Fetching players")
+                _ = try await cloudKitManager.fetchPlayers()
+
                 let loadedMatches = try await cloudKitManager.fetchMatches(for: game)
                 print("🔵 GameDetailView: Successfully loaded \(loadedMatches.count) matches")
                 matches = loadedMatches
