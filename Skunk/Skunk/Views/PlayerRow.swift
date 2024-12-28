@@ -7,8 +7,14 @@ import SwiftUI
     struct PlayerRow: View {
         let player: Player
         @EnvironmentObject private var cloudKitManager: CloudKitManager
+        @EnvironmentObject private var authManager: AuthenticationManager
         @State private var lastMatchDate: Date?
         @State private var isLoading = false
+
+        private var isCurrentUser: Bool {
+            guard let userID = authManager.userID else { return false }
+            return player.appleUserID == userID
+        }
 
         private func loadMatches() async {
             guard !isLoading else { return }
@@ -79,8 +85,14 @@ import SwiftUI
                 }
 
                 VStack(alignment: .leading) {
-                    Text(player.name)
-                        .font(.body)
+                    HStack {
+                        Text(player.name)
+                            .font(.body)
+                        if isCurrentUser {
+                            Text("(You)")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                     Text(subtitle)
                         .font(.caption)
                         .foregroundStyle(.secondary)
