@@ -214,42 +214,8 @@ import SwiftUI
         @State private var error: Error?
         @State private var showingError = false
 
-        private var currentUser: Player? {
-            guard let userID = authManager.userID else { return nil }
-            return cloudKitManager.players.first { $0.appleUserID == userID }
-        }
-
-        private var managedPlayers: [Player] {
-            guard let userID = authManager.userID else { return [] }
-            return cloudKitManager.players.filter { player in
-                player.ownerID == userID && player.appleUserID != userID
-            }
-        }
-
-        private var otherUsers: [Player] {
-            guard let userID = authManager.userID else { return [] }
-            return cloudKitManager.players.filter { player in
-                player.appleUserID != nil  // Has an Apple ID (is a real user)
-                    && player.appleUserID != userID  // Not the current user
-                    && player.ownerID != userID  // Not managed by current user
-            }
-        }
-
-        private func loadPlayers() async {
-            print("🔵 PlayersView: Starting to load players")
-            isLoading = true
-            do {
-                print("🔵 PlayersView: Calling fetchPlayers")
-                // Only force refresh if we don't have any players
-                _ = try await cloudKitManager.fetchPlayers(
-                    forceRefresh: cloudKitManager.players.isEmpty)
-                print("🔵 PlayersView: Successfully loaded players")
-            } catch {
-                print("🔵 PlayersView: Error loading players: \(error.localizedDescription)")
-                self.error = error
-                showingError = true
-            }
-            isLoading = false
+        private var allPlayersAlphabetically: [Player] {
+            cloudKitManager.players.sorted { $0.name.lowercased() < $1.name.lowercased() }
         }
 
         var body: some View {
@@ -259,42 +225,15 @@ import SwiftUI
                         ProgressView()
                     } else {
                         List {
-                            if let currentUser = currentUser {
-                                Section("Your Profile") {
+                            if allPlayersAlphabetically.isEmpty {
+                                Text("No players found")
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                ForEach(allPlayersAlphabetically) { player in
                                     NavigationLink {
-                                        PlayerDetailView(player: currentUser)
+                                        PlayerDetailView(player: player)
                                     } label: {
-                                        PlayerRow(player: currentUser)
-                                    }
-                                }
-                            }
-
-                            Section("Players You Manage") {
-                                if managedPlayers.isEmpty {
-                                    Text("No managed players")
-                                        .foregroundStyle(.secondary)
-                                } else {
-                                    ForEach(managedPlayers) { player in
-                                        NavigationLink {
-                                            PlayerDetailView(player: player)
-                                        } label: {
-                                            PlayerRow(player: player)
-                                        }
-                                    }
-                                }
-                            }
-
-                            Section("Other Players") {
-                                if otherUsers.isEmpty {
-                                    Text("No other players found")
-                                        .foregroundStyle(.secondary)
-                                } else {
-                                    ForEach(otherUsers) { player in
-                                        NavigationLink {
-                                            PlayerDetailView(player: player)
-                                        } label: {
-                                            PlayerRow(player: player)
-                                        }
+                                        PlayerRow(player: player)
                                     }
                                 }
                             }
@@ -369,6 +308,23 @@ import SwiftUI
                     Text(error?.localizedDescription ?? "An unknown error occurred")
                 }
             }
+        }
+
+        private func loadPlayers() async {
+            print("🔵 PlayersView: Starting to load players")
+            isLoading = true
+            do {
+                print("🔵 PlayersView: Calling fetchPlayers")
+                // Only force refresh if we don't have any players
+                _ = try await cloudKitManager.fetchPlayers(
+                    forceRefresh: cloudKitManager.players.isEmpty)
+                print("🔵 PlayersView: Successfully loaded players")
+            } catch {
+                print("🔵 PlayersView: Error loading players: \(error.localizedDescription)")
+                self.error = error
+                showingError = true
+            }
+            isLoading = false
         }
     }
 #endif
