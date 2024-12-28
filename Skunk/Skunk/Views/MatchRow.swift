@@ -25,10 +25,39 @@ import SwiftUI
                         .foregroundStyle(.secondary)
 
                     if !match.playerIDs.isEmpty {
-                        HStack {
-                            Text("\(match.playerIDs.count) players")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: -8) {
+                                ForEach(match.playerIDs, id: \.self) { playerID in
+                                    if let player = cloudKitManager.players.first(where: {
+                                        $0.id == playerID
+                                    }) {
+                                        PlayerAvatar(player: player)
+                                            .frame(width: 24, height: 24)
+                                    } else {
+                                        // Show a placeholder for players that haven't loaded yet
+                                        Circle()
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: 24, height: 24)
+                                            .overlay(
+                                                Text("?")
+                                                    .font(.caption2)
+                                                    .foregroundStyle(.secondary)
+                                            )
+                                    }
+                                }
+                            }
+                        }
+                        .task {
+                            // Try to fetch any missing players
+                            for playerID in match.playerIDs {
+                                if !cloudKitManager.players.contains(where: { $0.id == playerID }) {
+                                    if let player = try? await cloudKitManager.fetchPlayer(
+                                        id: playerID)
+                                    {
+                                        print("Loaded player for match row: \(player.name)")
+                                    }
+                                }
+                            }
                         }
                     }
                 }

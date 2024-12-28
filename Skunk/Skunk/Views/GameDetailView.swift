@@ -203,9 +203,19 @@ import SwiftUI
                 }
             }
             .sheet(isPresented: $showingNewMatch) {
-                NewMatchView(game: game)
+                NewMatchView(
+                    game: game,
+                    onMatchSaved: { newMatch in
+                        print("🔵 GameDetailView: New match saved, updating local state")
+                        matches.insert(newMatch, at: 0)  // Add to beginning since it's newest
+                        Task {
+                            try? await Task.sleep(for: .seconds(1))  // Give CloudKit time to propagate
+                            await loadMatches()  // Then refresh to ensure consistency
+                        }
+                    })
             }
             .onChange(of: showingNewMatch) { isShowing in
+                print("🔵 GameDetailView: NewMatch sheet \(isShowing ? "opened" : "closed")")
                 if !isShowing {
                     Task {
                         await loadMatches()
@@ -222,10 +232,34 @@ import SwiftUI
                 PlayerDetailView(player: player)
             }
             .task {
+                print("🔵 GameDetailView: Initial task triggered")
                 await loadMatches()
             }
             .refreshable {
+                print("🔵 GameDetailView: Manual refresh triggered")
                 await loadMatches()
+            }
+            .onAppear {
+                print("🔵 GameDetailView: View appeared")
+                Task {
+                    await loadMatches()
+                }
+            }
+            .onChange(of: cloudKitManager.games) { _ in
+                print("🔵 GameDetailView: CloudKitManager games array changed")
+                if let updatedGame = cloudKitManager.games.first(where: { $0.id == game.id }) {
+                    print("🔵 GameDetailView: Found updated game: \(updatedGame.id)")
+                    if let updatedMatches = updatedGame.matches {
+                        print(
+                            "🔵 GameDetailView: Updating matches array with \(updatedMatches.count) matches"
+                        )
+                        matches = updatedMatches
+                    } else {
+                        print("🔵 GameDetailView: Updated game has no matches array")
+                    }
+                } else {
+                    print("🔵 GameDetailView: Could not find updated game in CloudKitManager")
+                }
             }
             .alert("Error", isPresented: $showingError) {
                 Button("OK", role: .cancel) {}
@@ -251,14 +285,19 @@ import SwiftUI
         }
 
         private func loadMatches() async {
+            print("🔵 GameDetailView: Starting loadMatches()")
             isLoading = true
             do {
-                matches = try await cloudKitManager.fetchMatches(for: game)
+                let loadedMatches = try await cloudKitManager.fetchMatches(for: game)
+                print("🔵 GameDetailView: Successfully loaded \(loadedMatches.count) matches")
+                matches = loadedMatches
             } catch {
+                print("🔵 GameDetailView: Error loading matches: \(error.localizedDescription)")
                 self.error = error
                 showingError = true
             }
             isLoading = false
+            print("🔵 GameDetailView: Finished loadMatches()")
         }
     }
 

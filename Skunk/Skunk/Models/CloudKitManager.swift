@@ -119,34 +119,66 @@ import SwiftUI
 
         func fetchPlayers() async throws -> [Player] {
             do {
-                print("Fetching players...")
+                print("🟣 CloudKitManager: Fetching players...")
                 let query = CKQuery(
                     recordType: "Player", predicate: NSPredicate(format: "name != ''"))
                 let (results, _) = try await database.records(matching: query)
-                print("Found \(results.count) player records")
+                print("🟣 CloudKitManager: Found \(results.count) player records")
 
                 let players = results.compactMap { result -> Player? in
                     guard let record = try? result.1.get() else {
-                        print("Failed to get player record")
+                        print("🟣 CloudKitManager: Failed to get player record")
                         return nil
                     }
                     guard let name = record.value(forKey: "name") as? String else {
-                        print("Failed to get player name")
+                        print("🟣 CloudKitManager: Failed to get player name")
                         return nil
                     }
-                    print("Processing player: \(name)")
+                    guard let id = record.value(forKey: "id") as? String else {
+                        print("🟣 CloudKitManager: Failed to get player ID for \(name)")
+                        return nil
+                    }
+                    print("🟣 CloudKitManager: Processing player: \(name) with ID: \(id)")
                     return Player(from: record)
                 }
-                print("Successfully parsed \(players.count) players")
+                print("🟣 CloudKitManager: Successfully parsed \(players.count) players")
 
                 // Update the players array
                 self.players = players
                 return players
             } catch let error as CKError {
-                print("Error fetching players: \(error.localizedDescription)")
+                print("🟣 CloudKitManager: Error fetching players: \(error.localizedDescription)")
                 handleCloudKitError(error)
                 throw error
             }
+        }
+
+        func getOrCreatePlayer(name: String, appleUserID: String?) async throws -> Player {
+            print(
+                "🟣 CloudKitManager: Getting or creating player with name: \(name), appleUserID: \(appleUserID ?? "nil")"
+            )
+
+            // First, try to find an existing player
+            if let appleUserID = appleUserID {
+                if let existingPlayer = players.first(where: { $0.appleUserID == appleUserID }) {
+                    print(
+                        "🟣 CloudKitManager: Found existing player by Apple User ID: \(existingPlayer.name)"
+                    )
+                    return existingPlayer
+                }
+            }
+
+            // Then try by name
+            if let existingPlayer = players.first(where: { $0.name == name }) {
+                print("🟣 CloudKitManager: Found existing player by name: \(existingPlayer.name)")
+                return existingPlayer
+            }
+
+            // If no existing player found, create a new one
+            print("🟣 CloudKitManager: Creating new player: \(name)")
+            let newPlayer = Player(name: name, appleUserID: appleUserID)
+            try await savePlayer(newPlayer)
+            return newPlayer
         }
 
         func refreshPlayers() async {
@@ -204,25 +236,39 @@ import SwiftUI
         }
 
         func updatePlayer(_ player: Player) async throws {
+            print("🟣 CloudKitManager: Updating player: \(player.name)")
             guard let record = player.record else {
-                // If no record exists, create one
+                print("🟣 CloudKitManager: No record found, creating new player")
                 try await savePlayer(player)
                 return
             }
 
             // Update existing record with new values
+            record.setValue(player.id, forKey: "id")
             record.setValue(player.name, forKey: "name")
             record.setValue(player.photoData, forKey: "photoData")
             record.setValue(player.colorData, forKey: "colorData")
             record.setValue(player.appleUserID, forKey: "appleUserID")
             record.setValue(player.ownerID, forKey: "ownerID")
 
-            try await database.save(record)
+            print("🟣 CloudKitManager: Saving updated player record")
+            let savedRecord = try await database.save(record)
+            print("🟣 CloudKitManager: Successfully saved player record")
 
+            // Create an updated player with the saved record
+            var updatedPlayer = player
+            updatedPlayer.record = savedRecord
+            updatedPlayer.recordID = savedRecord.recordID
+
+            // Update local cache immediately
             if let index = players.firstIndex(where: { $0.id == player.id }) {
-                players[index] = player
+                print("🟣 CloudKitManager: Updating player in local cache")
+                players[index] = updatedPlayer
+                objectWillChange.send()  // Force UI update
             } else {
-                players.append(player)
+                print("🟣 CloudKitManager: Adding player to local cache")
+                players.append(updatedPlayer)
+                objectWillChange.send()  // Force UI update
             }
         }
 
@@ -234,69 +280,114 @@ import SwiftUI
             players.removeAll { $0.id == player.id }
         }
 
+        func fetchPlayer(id: String) async throws -> Player? {
+            do {
+                let predicate = NSPredicate(format: "id == %@", id)
+                let query = CKQuery(recordType: "Player", predicate: predicate)
+                let (results, _) = try await database.records(matching: query)
+
+                if let result = results.first,
+                    let record = try? result.1.get(),
+                    let player = Player(from: record)
+                {
+                    // Add the player to our local cache
+                    if !players.contains(where: { $0.id == player.id }) {
+                        players.append(player)
+                    }
+                    return player
+                }
+                return nil
+            } catch let error as CKError {
+                print("Error fetching player: \(error.localizedDescription)")
+                handleCloudKitError(error)
+                throw error
+            }
+        }
+
         // MARK: - Matches
 
         func fetchMatches(for game: Game) async throws -> [Match] {
             do {
-                print("Fetching matches for game: \(game.id)")
+                print("🟣 CloudKitManager: Fetching matches for game: \(game.id)")
                 let query = CKQuery(
                     recordType: "Match", predicate: NSPredicate(format: "gameID == %@", game.id))
                 query.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
 
                 let (results, _) = try await database.records(matching: query)
-                print("Found \(results.count) matches")
+                print("🟣 CloudKitManager: Found \(results.count) match records in CloudKit")
 
                 let matches = results.compactMap { result -> Match? in
                     guard let record = try? result.1.get() else {
-                        print("Failed to get record")
+                        print("🟣 CloudKitManager: Failed to get match record")
                         return nil
                     }
-                    print("Processing match record with ID: \(record.recordID.recordName)")
+                    print(
+                        "🟣 CloudKitManager: Processing match record: \(record.recordID.recordName)")
                     var match = Match(from: record)
                     match?.game = game  // Set the game reference directly
                     return match
                 }
-                print("Successfully parsed \(matches.count) matches")
+                print("🟣 CloudKitManager: Successfully parsed \(matches.count) matches")
 
                 // Update the game's matches
                 var updatedGame = game
                 updatedGame.matches = matches
                 if let index = games.firstIndex(where: { $0.id == game.id }) {
+                    print(
+                        "🟣 CloudKitManager: Updating game in games array with \(matches.count) matches"
+                    )
                     games[index] = updatedGame
+                } else {
+                    print("🟣 CloudKitManager: Could not find game in games array to update")
                 }
 
                 return matches
             } catch let error as CKError {
-                print("Error fetching matches: \(error.localizedDescription)")
+                print("🟣 CloudKitManager: Error fetching matches: \(error.localizedDescription)")
                 handleCloudKitError(error)
                 throw error
             }
         }
 
         func saveMatch(_ match: Match) async throws {
-            print("Saving match with ID: \(match.id), game ID: \(match.game?.id ?? "nil")")
+            print("🟣 CloudKitManager: Saving match with ID: \(match.id)")
+            print("🟣 CloudKitManager: Game ID: \(match.game?.id ?? "nil")")
+            print("🟣 CloudKitManager: Player IDs: \(match.playerIDs)")
+
             var updatedMatch = match
             let record = match.toRecord()
             let savedRecord = try await database.save(record)
             updatedMatch.recordID = savedRecord.recordID
             updatedMatch.record = savedRecord
-            print("Successfully saved match record")
+            print("🟣 CloudKitManager: Successfully saved match record to CloudKit")
 
             // Update the game's matches
             if let game = match.game,
                 let index = games.firstIndex(where: { $0.id == game.id })
             {
-                var updatedGame = game
+                print("🟣 CloudKitManager: Found game in games array, updating matches")
+                var updatedGame = games[index]
                 if updatedGame.matches == nil {
+                    print("🟣 CloudKitManager: Initializing empty matches array for game")
                     updatedGame.matches = []
                 }
                 if let matchIndex = updatedGame.matches?.firstIndex(where: { $0.id == match.id }) {
+                    print("🟣 CloudKitManager: Updating existing match in game's matches array")
                     updatedGame.matches?[matchIndex] = updatedMatch
                 } else {
+                    print("🟣 CloudKitManager: Adding new match to game's matches array")
                     updatedGame.matches?.append(updatedMatch)
                 }
                 games[index] = updatedGame
-                print("Updated game's matches array")
+                print(
+                    "🟣 CloudKitManager: Updated game now has \(updatedGame.matches?.count ?? 0) matches"
+                )
+            } else {
+                print("🟣 CloudKitManager: Could not find game in games array to update matches")
+                if let gameId = match.game?.id {
+                    print("🟣 CloudKitManager: Game ID we're looking for: \(gameId)")
+                    print("🟣 CloudKitManager: Available game IDs: \(games.map { $0.id })")
+                }
             }
         }
 
@@ -384,6 +475,35 @@ import SwiftUI
 
         enum CloudKitError: Error {
             case missingData
+        }
+
+        func deleteAllPlayers() async throws {
+            print("🟣 CloudKitManager: Starting to delete all players...")
+            let query = CKQuery(recordType: "Player", predicate: NSPredicate(value: true))
+            let (results, _) = try await database.records(matching: query)
+            print("🟣 CloudKitManager: Found \(results.count) players to delete")
+
+            for result in results {
+                do {
+                    let record = try result.1.get()
+                    print(
+                        "🟣 CloudKitManager: Deleting player: \(record.value(forKey: "name") ?? "unknown")"
+                    )
+                    try await database.deleteRecord(withID: record.recordID)
+                    print("🟣 CloudKitManager: Successfully deleted player record")
+                } catch {
+                    print(
+                        "🟣 CloudKitManager: Error deleting player record: \(error.localizedDescription)"
+                    )
+                }
+            }
+
+            // Clear local cache
+            players.removeAll()
+            print("🟣 CloudKitManager: Successfully deleted all players")
+
+            // Refresh the players list
+            await refreshPlayers()
         }
     }
 #endif

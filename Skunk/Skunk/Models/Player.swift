@@ -31,6 +31,7 @@ import SwiftUI
         init(
             name: String, photoData: Data? = nil, appleUserID: String? = nil, ownerID: String? = nil
         ) {
+            // Create a unique ID in the same format as CloudKit record IDs
             self.id = UUID().uuidString
             self.name = name
             self.photoData = photoData
@@ -48,8 +49,9 @@ import SwiftUI
 
         init?(from record: CKRecord) {
             guard let name = record.value(forKey: "name") as? String else { return nil }
+            guard let id = record.value(forKey: "id") as? String else { return nil }
 
-            self.id = UUID().uuidString
+            self.id = id
             self.name = name
             self.photoData = record.value(forKey: "photoData") as? Data
             self.colorData = record.value(forKey: "colorData") as? Data
@@ -67,6 +69,7 @@ import SwiftUI
                 record = CKRecord(recordType: "Player")
             }
 
+            record.setValue(id, forKey: "id")
             record.setValue(name, forKey: "name")
             record.setValue(photoData, forKey: "photoData")
             record.setValue(colorData, forKey: "colorData")
@@ -74,6 +77,18 @@ import SwiftUI
             record.setValue(ownerID, forKey: "ownerID")
 
             return record
+        }
+
+        // Add a method to create an updated copy
+        func updated(name: String? = nil, photoData: Data? = nil) -> Player {
+            var updatedPlayer = self
+            if let name = name {
+                updatedPlayer.name = name
+            }
+            if let photoData = photoData {
+                updatedPlayer.photoData = photoData
+            }
+            return updatedPlayer
         }
 
         // MARK: - Hashable

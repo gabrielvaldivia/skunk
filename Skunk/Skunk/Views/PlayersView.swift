@@ -118,10 +118,11 @@ import SwiftUI
                     Button(player == nil ? "Add" : "Save") {
                         Task {
                             if let player = player {
-                                // Update existing player
-                                var updatedPlayer = player
-                                updatedPlayer.name = name
-                                updatedPlayer.photoData = selectedImageData ?? existingPhotoData
+                                // Update existing player using the new method
+                                let updatedPlayer = player.updated(
+                                    name: name,
+                                    photoData: selectedImageData ?? existingPhotoData
+                                )
                                 try? await cloudKitManager.updatePlayer(updatedPlayer)
                             } else {
                                 // Create new player
@@ -234,6 +235,14 @@ import SwiftUI
                         showingAddPlayer = true
                     } label: {
                         Label("Add Player", systemImage: "person.badge.plus")
+                    }
+
+                    Button(role: .destructive) {
+                        Task {
+                            try? await cloudKitManager.deleteAllPlayers()
+                        }
+                    } label: {
+                        Label("Delete All Players", systemImage: "trash")
                     }
                 }
                 .sheet(isPresented: $showingAddPlayer) {

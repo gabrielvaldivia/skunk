@@ -156,15 +156,47 @@ import SwiftUI
         private func loadData() async {
             isLoading = true
             do {
-                _ = try await cloudKitManager.fetchPlayers()
+                print("Loading players for match: \(match.id)")
+                let players = try await cloudKitManager.fetchPlayers()
+                print("Loaded \(players.count) players")
+                print("Available player IDs: \(players.map { $0.id })")
 
                 if let game = match.game {
+                    print("Fetching matches for game: \(game.id)")
                     let matches = try await cloudKitManager.fetchMatches(for: game)
+                    print("Found \(matches.count) matches")
                     if let updatedMatch = matches.first(where: { $0.id == match.id }) {
+                        print("Updating match with \(updatedMatch.playerIDs.count) players")
+
+                        // Ensure all players in the match are loaded
+                        for playerID in updatedMatch.playerIDs {
+                            if !cloudKitManager.players.contains(where: { $0.id == playerID }) {
+                                print("Attempting to fetch missing player: \(playerID)")
+                                // Try to fetch the specific player if not found
+                                if let player = try? await cloudKitManager.fetchPlayer(id: playerID)
+                                {
+                                    print("Successfully fetched missing player: \(player.name)")
+                                } else {
+                                    print("Failed to fetch player with ID: \(playerID)")
+                                }
+                            }
+                        }
+
                         match = updatedMatch
                     }
                 }
+
+                // Debug print player IDs and found players
+                print("Match player IDs: \(match.playerIDs)")
+                for playerID in match.playerIDs {
+                    if let player = cloudKitManager.players.first(where: { $0.id == playerID }) {
+                        print("Found player: \(player.name) for ID: \(playerID)")
+                    } else {
+                        print("Could not find player for ID: \(playerID)")
+                    }
+                }
             } catch {
+                print("Error loading data: \(error.localizedDescription)")
                 self.error = error
                 showingError = true
             }

@@ -8,6 +8,7 @@ import SwiftUI
         @EnvironmentObject private var authManager: AuthenticationManager
 
         let game: Game
+        let onMatchSaved: ((Match) -> Void)?
         @State private var players: [Player?]
         @State private var scores: [Int]
         @State private var currentPlayerCount: Int
@@ -17,8 +18,9 @@ import SwiftUI
         @State private var showingError = false
         @State private var selectedWinnerIndex: Int?
 
-        init(game: Game) {
+        init(game: Game, onMatchSaved: ((Match) -> Void)? = nil) {
             self.game = game
+            self.onMatchSaved = onMatchSaved
             let minPlayerCount = game.supportedPlayerCounts.min() ?? 2
             _currentPlayerCount = State(initialValue: minPlayerCount)
             _players = State(initialValue: Array(repeating: nil, count: minPlayerCount))
@@ -111,13 +113,16 @@ import SwiftUI
         }
 
         private var availablePlayers: [Player] {
-            allPlayers.filter { player in
+            let available = allPlayers.filter { player in
                 !players.compactMap { $0 }.contains { $0.id == player.id }
             }
+            print("Available players: \(available.map { $0.name })")
+            return available
         }
 
         private var canSave: Bool {
             let filledPlayers = players.compactMap { $0 }
+            print("Filled players: \(filledPlayers.map { $0.name })")
             return !filledPlayers.isEmpty
                 && filledPlayers.count >= (game.supportedPlayerCounts.min() ?? 2)
         }
@@ -125,16 +130,19 @@ import SwiftUI
         private func loadPlayers() async {
             isLoading = true
             do {
+                print("Loading all players...")
                 allPlayers = try await cloudKitManager.fetchPlayers()
-                print("Loaded \(allPlayers.count) players")
+                print("Loaded \(allPlayers.count) players: \(allPlayers.map { $0.name })")
 
-                // Set default players
+                // Set default players - find existing player by Apple User ID
                 if let currentUser = allPlayers.first(where: {
                     $0.appleUserID == authManager.userID
                 }) {
                     print("Setting current user: \(currentUser.name)")
                     players[0] = currentUser
                 }
+
+                print("Initial players array: \(players.map { $0?.name ?? "nil" })")
             } catch {
                 print("Error loading players: \(error.localizedDescription)")
                 self.error = error
@@ -148,6 +156,8 @@ import SwiftUI
                 do {
                     var match = Match(date: Date(), createdByID: authManager.userID, game: game)
                     let filledPlayers = players.compactMap { $0 }
+
+                    // Use the existing player IDs directly
                     match.playerIDs = filledPlayers.map { $0.id }
                     match.playerOrder = match.playerIDs
                     match.status = selectedWinnerIndex != nil ? "completed" : "active"
@@ -159,14 +169,12 @@ import SwiftUI
                     }
 
                     try await cloudKitManager.saveMatch(match)
-                    await MainActor.run {
-                        dismiss()
-                    }
+                    onMatchSaved?(match)
+                    dismiss()
                 } catch {
-                    await MainActor.run {
-                        self.error = error
-                        showingError = true
-                    }
+                    print("Error saving match: \(error.localizedDescription)")
+                    self.error = error
+                    showingError = true
                 }
             }
         }
