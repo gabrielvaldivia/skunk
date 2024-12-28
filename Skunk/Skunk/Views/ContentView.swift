@@ -44,6 +44,13 @@ import SwiftUI
                 }
 
                 NavigationStack {
+                    ActivityView()
+                }
+                .tabItem {
+                    Label("Activity", systemImage: "list.bullet")
+                }
+
+                NavigationStack {
                     SettingsView()
                 }
                 .tabItem {
