@@ -8,6 +8,7 @@ import SwiftUI
         static let shared = CloudKitManager()
         private let container: CKContainer
         private let database: CKDatabase
+        private var lastRefreshTime: Date = .distantPast
 
         @Published var games: [Game] = []
         @Published var players: [Player] = []
@@ -181,12 +182,20 @@ import SwiftUI
             return newPlayer
         }
 
-        func refreshPlayers() async {
+        func refreshPlayers(force: Bool = false) async {
+            // Debounce refreshes to prevent rapid-fire updates
+            let now = Date()
+            if !force && now.timeIntervalSince(lastRefreshTime) < 1.0 {
+                print("🟣 CloudKitManager: Skipping refresh, too soon since last refresh")
+                return
+            }
+            lastRefreshTime = now
+
             do {
-                print("Refreshing players...")
+                print("🟣 CloudKitManager: Refreshing players...")
                 _ = try await fetchPlayers()
             } catch {
-                print("Error refreshing players: \(error.localizedDescription)")
+                print("🟣 CloudKitManager: Error refreshing players: \(error.localizedDescription)")
                 self.error = error
             }
         }
@@ -264,12 +273,18 @@ import SwiftUI
             if let index = players.firstIndex(where: { $0.id == player.id }) {
                 print("🟣 CloudKitManager: Updating player in local cache")
                 players[index] = updatedPlayer
-                objectWillChange.send()  // Force UI update
             } else {
                 print("🟣 CloudKitManager: Adding player to local cache")
                 players.append(updatedPlayer)
-                objectWillChange.send()  // Force UI update
             }
+
+            // Force UI update
+            objectWillChange.send()
+
+            // Refresh the players list to ensure consistency with server
+            print("🟣 CloudKitManager: Refreshing all players")
+            try? await Task.sleep(for: .seconds(0.5))  // Add a small delay before refresh
+            await refreshPlayers(force: true)
         }
 
         func deletePlayer(_ player: Player) async throws {

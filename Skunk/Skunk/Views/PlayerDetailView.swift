@@ -15,19 +15,23 @@ import SwiftUI
         @State private var editingColor = Color.blue
         @State private var playerMatches: [Match] = []
 
+        private var currentPlayer: Player {
+            cloudKitManager.players.first { $0.id == player.id } ?? player
+        }
+
         var isCurrentUserProfile: Bool {
-            player.appleUserID == authManager.userID
+            currentPlayer.appleUserID == authManager.userID
         }
 
         var canDelete: Bool {
-            !isCurrentUserProfile && player.ownerID == authManager.userID
+            !isCurrentUserProfile && currentPlayer.ownerID == authManager.userID
         }
 
         var body: some View {
             List {
                 Section {
                     HStack {
-                        if let photoData = player.photoData,
+                        if let photoData = currentPlayer.photoData,
                             let uiImage = UIImage(data: photoData)
                         {
                             Image(uiImage: uiImage)
@@ -37,13 +41,13 @@ import SwiftUI
                                 .clipShape(Circle())
                         } else {
                             PlayerInitialsView(
-                                name: player.name,
+                                name: currentPlayer.name,
                                 size: 80,
-                                color: player.color
+                                color: currentPlayer.color
                             )
                         }
 
-                        Text(player.name)
+                        Text(currentPlayer.name)
                             .font(.headline)
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -52,12 +56,12 @@ import SwiftUI
 
                 matchHistorySection(playerMatches)
             }
-            .navigationTitle(player.name)
+            .navigationTitle(currentPlayer.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 Button("Edit") {
-                    editingName = player.name
-                    editingColor = player.color
+                    editingName = currentPlayer.name
+                    editingColor = currentPlayer.color
                     showingEditSheet = true
                 }
             }
@@ -66,9 +70,9 @@ import SwiftUI
                     PlayerFormView(
                         name: $editingName,
                         color: $editingColor,
-                        existingPhotoData: player.photoData,
+                        existingPhotoData: currentPlayer.photoData,
                         title: "Edit Player",
-                        player: player
+                        player: currentPlayer
                     )
                 }
             }

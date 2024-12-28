@@ -124,6 +124,9 @@ import SwiftUI
                                     photoData: selectedImageData ?? existingPhotoData
                                 )
                                 try? await cloudKitManager.updatePlayer(updatedPlayer)
+                                // Force a refresh after update
+                                try? await Task.sleep(for: .seconds(0.5))
+                                await cloudKitManager.refreshPlayers()
                             } else {
                                 // Create new player
                                 let newPlayer = Player(
@@ -132,6 +135,9 @@ import SwiftUI
                                     ownerID: authManager.userID
                                 )
                                 try? await cloudKitManager.savePlayer(newPlayer)
+                                // Force a refresh after save
+                                try? await Task.sleep(for: .seconds(0.5))
+                                await cloudKitManager.refreshPlayers()
                             }
                             dismiss()
                         }
@@ -164,6 +170,9 @@ import SwiftUI
         @State private var showingAddPlayer = false
         @State private var newPlayerName = ""
         @State private var newPlayerColor = Color.blue
+        @State private var isLoading = false
+        @State private var error: Error?
+        @State private var showingError = false
 
         private var currentUser: Player? {
             guard let userID = authManager.userID else { return nil }
@@ -186,44 +195,61 @@ import SwiftUI
             }
         }
 
+        private func loadPlayers() async {
+            isLoading = true
+            do {
+                await cloudKitManager.refreshPlayers(force: true)
+            } catch {
+                self.error = error
+                showingError = true
+            }
+            isLoading = false
+        }
+
         var body: some View {
             NavigationStack {
-                List {
-                    if let currentUser = currentUser {
-                        Section("Your Profile") {
-                            NavigationLink {
-                                PlayerDetailView(player: currentUser)
-                            } label: {
-                                PlayerRow(player: currentUser)
-                            }
-                        }
-                    }
-
-                    Section("Players You Manage") {
-                        if managedPlayers.isEmpty {
-                            Text("No managed players")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            ForEach(managedPlayers) { player in
-                                NavigationLink {
-                                    PlayerDetailView(player: player)
-                                } label: {
-                                    PlayerRow(player: player)
+                ZStack {
+                    if isLoading {
+                        ProgressView()
+                    } else {
+                        List {
+                            if let currentUser = currentUser {
+                                Section("Your Profile") {
+                                    NavigationLink {
+                                        PlayerDetailView(player: currentUser)
+                                    } label: {
+                                        PlayerRow(player: currentUser)
+                                    }
                                 }
                             }
-                        }
-                    }
 
-                    Section("Other Players") {
-                        if otherUsers.isEmpty {
-                            Text("No other players found")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            ForEach(otherUsers) { player in
-                                NavigationLink {
-                                    PlayerDetailView(player: player)
-                                } label: {
-                                    PlayerRow(player: player)
+                            Section("Players You Manage") {
+                                if managedPlayers.isEmpty {
+                                    Text("No managed players")
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    ForEach(managedPlayers) { player in
+                                        NavigationLink {
+                                            PlayerDetailView(player: player)
+                                        } label: {
+                                            PlayerRow(player: player)
+                                        }
+                                    }
+                                }
+                            }
+
+                            Section("Other Players") {
+                                if otherUsers.isEmpty {
+                                    Text("No other players found")
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    ForEach(otherUsers) { player in
+                                        NavigationLink {
+                                            PlayerDetailView(player: player)
+                                        } label: {
+                                            PlayerRow(player: player)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -261,15 +287,22 @@ import SwiftUI
                         // Reset the form when sheet is dismissed
                         newPlayerName = ""
                         newPlayerColor = .blue
+                        // Refresh players when the sheet is dismissed
+                        Task {
+                            await loadPlayers()
+                        }
                     }
                 }
                 .refreshable {
-                    Task {
-                        await cloudKitManager.refreshPlayers()
-                    }
+                    await loadPlayers()
                 }
                 .task {
-                    await cloudKitManager.refreshPlayers()
+                    await loadPlayers()
+                }
+                .alert("Error", isPresented: $showingError) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(error?.localizedDescription ?? "An unknown error occurred")
                 }
             }
         }
