@@ -8,6 +8,7 @@ import SwiftUI
         @State private var match: Match
         @State private var showingError = false
         @State private var error: Error?
+        @State private var isLoading = false
 
         init(match: Match) {
             _match = State(initialValue: match)
@@ -35,11 +36,15 @@ import SwiftUI
                 }
 
                 Section("Players") {
-                    if match.playerIDs.isEmpty {
+                    if isLoading {
+                        ProgressView()
+                    } else if match.playerIDs.isEmpty {
                         Text("No players")
                             .foregroundStyle(.secondary)
                     } else {
-                        ForEach(match.playerOrder, id: \.self) { playerID in
+                        let playerList =
+                            match.playerOrder.isEmpty ? match.playerIDs : match.playerOrder
+                        ForEach(playerList, id: \.self) { playerID in
                             if let player = cloudKitManager.players.first(where: {
                                 $0.id == playerID
                             }) {
@@ -140,6 +145,30 @@ import SwiftUI
             } message: {
                 Text(error?.localizedDescription ?? "An unknown error occurred")
             }
+            .task {
+                await loadData()
+            }
+            .refreshable {
+                await loadData()
+            }
+        }
+
+        private func loadData() async {
+            isLoading = true
+            do {
+                _ = try await cloudKitManager.fetchPlayers()
+
+                if let game = match.game {
+                    let matches = try await cloudKitManager.fetchMatches(for: game)
+                    if let updatedMatch = matches.first(where: { $0.id == match.id }) {
+                        match = updatedMatch
+                    }
+                }
+            } catch {
+                self.error = error
+                showingError = true
+            }
+            isLoading = false
         }
     }
 #endif

@@ -126,14 +126,17 @@ import SwiftUI
             isLoading = true
             do {
                 allPlayers = try await cloudKitManager.fetchPlayers()
+                print("Loaded \(allPlayers.count) players")
 
                 // Set default players
                 if let currentUser = allPlayers.first(where: {
                     $0.appleUserID == authManager.userID
                 }) {
+                    print("Setting current user: \(currentUser.name)")
                     players[0] = currentUser
                 }
             } catch {
+                print("Error loading players: \(error.localizedDescription)")
                 self.error = error
                 showingError = true
             }
@@ -144,7 +147,8 @@ import SwiftUI
             Task {
                 do {
                     var match = Match(date: Date(), createdByID: authManager.userID, game: game)
-                    match.playerIDs = players.compactMap { $0?.id }
+                    let filledPlayers = players.compactMap { $0 }
+                    match.playerIDs = filledPlayers.map { $0.id }
                     match.playerOrder = match.playerIDs
                     match.status = selectedWinnerIndex != nil ? "completed" : "active"
 

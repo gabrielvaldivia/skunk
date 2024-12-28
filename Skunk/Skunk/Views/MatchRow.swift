@@ -13,50 +13,55 @@ import SwiftUI
         }
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 4) {
-                if !hideGameTitle, let game = match.game {
-                    Text(game.title)
-                        .font(.headline)
-                }
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    if !hideGameTitle, let game = match.game {
+                        Text(game.title)
+                            .font(.headline)
+                    }
 
-                Text(match.date.formatted(date: .abbreviated, time: .shortened))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    Text(match.date.formatted(date: .abbreviated, time: .shortened))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
 
-                if !match.playerIDs.isEmpty {
-                    HStack {
-                        Text("\(match.playerIDs.count) players")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        if let winnerID = match.winnerID,
-                            let winner = cloudKitManager.players.first(where: { $0.id == winnerID })
-                        {
-                            Text("•")
-                                .foregroundStyle(.secondary)
-                            Text("Winner: \(winner.name)")
+                    if !match.playerIDs.isEmpty {
+                        HStack {
+                            Text("\(match.playerIDs.count) players")
                                 .font(.caption)
-                                .foregroundStyle(.green)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
 
-                HStack {
-                    Text(match.status)
-                        .font(.caption)
-                        .foregroundStyle(statusColor)
+                Spacer()
+
+                // Show winner's profile photo if there is a winner
+                if let winnerID = match.winnerID,
+                    let winner = cloudKitManager.players.first(where: { $0.id == winnerID })
+                {
+                    if let photoData = winner.photoData,
+                        let uiImage = UIImage(data: photoData)
+                    {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 40, height: 40)
+                            .clipShape(Circle())
+                            .overlay(Circle().stroke(winner.color, lineWidth: 2))
+                    } else {
+                        // Fallback to initials if no photo
+                        ZStack {
+                            Circle()
+                                .fill(winner.color)
+                                .frame(width: 40, height: 40)
+                            Text(String(winner.name.prefix(1)))
+                                .font(.headline)
+                                .foregroundColor(.white)
+                        }
+                    }
                 }
             }
-        }
-
-        private var statusColor: Color {
-            switch match.status {
-            case "pending": return .orange
-            case "active": return .blue
-            case "completed": return .green
-            case "cancelled": return .red
-            default: return .secondary
-            }
+            .padding(.vertical, 4)
         }
     }
 #endif

@@ -119,16 +119,31 @@ import SwiftUI
 
         func fetchPlayers() async throws -> [Player] {
             do {
+                print("Fetching players...")
                 let query = CKQuery(
                     recordType: "Player", predicate: NSPredicate(format: "name != ''"))
                 let (results, _) = try await database.records(matching: query)
+                print("Found \(results.count) player records")
+
                 let players = results.compactMap { result -> Player? in
-                    guard let record = try? result.1.get() else { return nil }
+                    guard let record = try? result.1.get() else {
+                        print("Failed to get player record")
+                        return nil
+                    }
+                    guard let name = record.value(forKey: "name") as? String else {
+                        print("Failed to get player name")
+                        return nil
+                    }
+                    print("Processing player: \(name)")
                     return Player(from: record)
                 }
+                print("Successfully parsed \(players.count) players")
+
+                // Update the players array
                 self.players = players
                 return players
             } catch let error as CKError {
+                print("Error fetching players: \(error.localizedDescription)")
                 handleCloudKitError(error)
                 throw error
             }
@@ -136,21 +151,39 @@ import SwiftUI
 
         func refreshPlayers() async {
             do {
+                print("Refreshing players...")
                 _ = try await fetchPlayers()
             } catch {
+                print("Error refreshing players: \(error.localizedDescription)")
                 self.error = error
             }
         }
 
         func fetchCurrentUserPlayer(userID: String) async throws -> Player? {
             do {
+                print("Fetching current user player for ID: \(userID)")
+
+                // Create a query with a simple predicate
                 let query = CKQuery(
-                    recordType: "Player",
-                    predicate: NSPredicate(format: "appleUserID == %@", userID))
+                    recordType: "Player", predicate: NSPredicate(format: "name != ''"))
                 let (results, _) = try await database.records(matching: query)
-                guard let record = try? results.first?.1.get() else { return nil }
-                return Player(from: record)
+
+                // Find the player with matching userID
+                for result in results {
+                    guard let record = try? result.1.get(),
+                        let player = Player(from: record),
+                        let appleUserID = record.value(forKey: "appleUserID") as? String,
+                        appleUserID == userID
+                    else { continue }
+
+                    print("Found current user player: \(player.name)")
+                    return player
+                }
+
+                print("No player found for user ID: \(userID)")
+                return nil
             } catch let error as CKError {
+                print("Error fetching current user player: \(error.localizedDescription)")
                 handleCloudKitError(error)
                 throw error
             }
