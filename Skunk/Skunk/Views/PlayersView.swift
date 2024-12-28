@@ -15,6 +15,9 @@ import SwiftUI
         @Binding var color: Color
         @FocusState private var isNameFocused: Bool
         @State private var showingDeleteConfirmation = false
+        @State private var isSaving = false
+        @State private var error: Error?
+        @State private var showingError = false
         let existingPhotoData: Data?
         let title: String
         let player: Player?
@@ -113,46 +116,31 @@ import SwiftUI
                     Button("Cancel") {
                         dismiss()
                     }
+                    .disabled(isSaving)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(player == nil ? "Add" : "Save") {
                         Task {
-                            if let player = player {
-                                // Update existing player using the new method
-                                var updatedPlayer = player.updated(
-                                    name: name,
-                                    photoData: selectedImageData ?? existingPhotoData
+                            do {
+                                isSaving = true
+                                try await savePlayer()
+                                dismiss()
+                            } catch {
+                                print(
+                                    "🟣 PlayerFormView: Error saving player: \(error.localizedDescription)"
                                 )
-                                // Convert Color to UIColor and then to Data
-                                if let colorData = try? NSKeyedArchiver.archivedData(
-                                    withRootObject: UIColor(color),
-                                    requiringSecureCoding: true
-                                ) {
-                                    updatedPlayer.colorData = colorData
-                                }
-                                try? await cloudKitManager.updatePlayer(updatedPlayer)
-                                // No need to fetch all players again since cache is already updated
-                            } else {
-                                // Create new player
-                                var newPlayer = Player(
-                                    name: name,
-                                    photoData: selectedImageData,
-                                    ownerID: authManager.userID
-                                )
-                                // Convert Color to UIColor and then to Data
-                                if let colorData = try? NSKeyedArchiver.archivedData(
-                                    withRootObject: UIColor(color),
-                                    requiringSecureCoding: true
-                                ) {
-                                    newPlayer.colorData = colorData
-                                }
-                                try? await cloudKitManager.savePlayer(newPlayer)
-                                // No need to fetch all players again since cache is already updated
+                                self.error = error
+                                showingError = true
                             }
-                            dismiss()
+                            isSaving = false
                         }
                     }
-                    .disabled(name.isEmpty)
+                    .disabled(name.isEmpty || isSaving)
+                }
+                if isSaving {
+                    ToolbarItem(placement: .principal) {
+                        ProgressView()
+                    }
                 }
             }
             .alert("Delete Player", isPresented: $showingDeleteConfirmation) {
@@ -160,6 +148,7 @@ import SwiftUI
                     Task {
                         if let player = player, canDelete {
                             try? await cloudKitManager.deletePlayer(player)
+                            try? await cloudKitManager.refreshPlayers()
                         }
                         dismiss()
                     }
@@ -168,8 +157,47 @@ import SwiftUI
             } message: {
                 Text("Are you sure you want to delete this player? This action cannot be undone.")
             }
+            .alert("Error Saving Player", isPresented: $showingError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(error?.localizedDescription ?? "An unknown error occurred")
+            }
             .onAppear {
                 isNameFocused = true
+            }
+            .onDisappear {
+                // Refresh players when the form is dismissed
+                Task {
+                    try? await cloudKitManager.refreshPlayers()
+                }
+            }
+        }
+
+        private func savePlayer() async throws {
+            if let player = player {
+                // Update existing player
+                let updatedPlayer = player.updated(
+                    name: name,
+                    photoData: selectedImageData ?? existingPhotoData
+                )
+                print(
+                    "🟣 PlayerFormView: Updating player with photo data: \(updatedPlayer.photoData?.count ?? 0) bytes"
+                )
+                try await cloudKitManager.updatePlayer(updatedPlayer)
+                print("🟣 PlayerFormView: Successfully updated player")
+            } else {
+                // Create new player
+                let newPlayer = Player(
+                    name: name,
+                    photoData: selectedImageData,
+                    appleUserID: isCurrentUserProfile ? authManager.userID : nil,
+                    ownerID: authManager.userID
+                )
+                print(
+                    "🟣 PlayerFormView: Creating new player with photo data: \(newPlayer.photoData?.count ?? 0) bytes"
+                )
+                try await cloudKitManager.savePlayer(newPlayer)
+                print("🟣 PlayerFormView: Successfully created new player")
             }
         }
     }

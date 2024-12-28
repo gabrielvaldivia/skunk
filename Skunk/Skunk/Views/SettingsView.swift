@@ -8,9 +8,14 @@ import SwiftUI
     @MainActor
     struct SettingsView: View {
         @EnvironmentObject private var authManager: AuthenticationManager
+        @EnvironmentObject private var cloudKitManager: CloudKitManager
         @Environment(\.dismiss) private var dismiss
         @State private var showingSignOut = false
         @State private var showingDeleteAccount = false
+        @State private var isResettingSchema = false
+        @State private var showingResetComplete = false
+        @State private var showingResetError = false
+        @State private var resetError: Error?
 
         var body: some View {
             NavigationStack {
@@ -53,6 +58,31 @@ import SwiftUI
                             "Deleting your account will permanently remove all your data and revoke Apple ID access."
                         )
                     }
+
+                    Button(role: .destructive) {
+                        Task {
+                            isResettingSchema = true
+                            do {
+                                try await cloudKitManager.forceSchemaReset()
+                                showingResetComplete = true
+                            } catch {
+                                resetError = error
+                                showingResetError = true
+                            }
+                            isResettingSchema = false
+                        }
+                    } label: {
+                        if isResettingSchema {
+                            HStack {
+                                ProgressView()
+                                    .controlSize(.small)
+                                Text("Resetting Schema...")
+                            }
+                        } else {
+                            Label("Reset CloudKit Schema", systemImage: "arrow.clockwise")
+                        }
+                    }
+                    .disabled(isResettingSchema)
                 }
                 .navigationTitle("Settings")
                 .alert("Sign Out", isPresented: $showingSignOut) {
@@ -74,6 +104,20 @@ import SwiftUI
                     }
                 } message: {
                     Text("This action cannot be undone. All your data will be permanently deleted.")
+                }
+                .alert("Schema Reset Complete", isPresented: $showingResetComplete) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(
+                        "The CloudKit schema has been successfully reset. You can now try adding photos again."
+                    )
+                }
+                .alert("Schema Reset Error", isPresented: $showingResetError) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(
+                        resetError?.localizedDescription
+                            ?? "An unknown error occurred while resetting the schema.")
                 }
             }
         }

@@ -8,7 +8,8 @@ import SwiftUI
         @Environment(\.dismiss) var dismiss
         @EnvironmentObject var authManager: AuthenticationManager
         let cloudKitManager: CloudKitManager
-        let player: Player
+        private let playerId: String
+        @State private var player: Player
 
         @State private var playerMatches: [Match] = []
         @State private var isLoading = false
@@ -18,7 +19,8 @@ import SwiftUI
         @State private var loadingTask: Task<Void, Never>?
 
         init(player: Player, cloudKitManager: CloudKitManager = .shared) {
-            self.player = player
+            self.playerId = player.id
+            self._player = State(initialValue: player)
             self.cloudKitManager = cloudKitManager
         }
 
@@ -30,61 +32,9 @@ import SwiftUI
             !isCurrentUserProfile && player.ownerID == authManager.userID
         }
 
-        var body: some View {
-            List {
-                PlayerInfoSection(player: player)
-                matchHistorySection(playerMatches)
-
-                if canDelete {
-                    Section {
-                        Button(role: .destructive) {
-                            Task {
-                                try? await cloudKitManager.deletePlayer(player)
-                                dismiss()
-                            }
-                        } label: {
-                            Text("Delete Player")
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-                }
-            }
-            .navigationTitle(player.name)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    if isCurrentUserProfile {
-                        Button {
-                            editingName = player.name
-                            editingColor = player.color
-                            showingEditSheet = true
-                        } label: {
-                            Text("Edit")
-                        }
-                    }
-                }
-            }
-            .sheet(isPresented: $showingEditSheet) {
-                NavigationStack {
-                    PlayerFormView(
-                        name: $editingName,
-                        color: $editingColor,
-                        existingPhotoData: player.photoData,
-                        title: "Edit Player",
-                        player: player
-                    )
-                }
-            }
-            .task {
-                if playerMatches.isEmpty {
-                    await loadPlayerData()
-                }
-            }
-            .refreshable {
-                await loadPlayerData()
-            }
-            .onDisappear {
-                loadingTask?.cancel()
-                loadingTask = nil
+        private func refreshPlayer() async {
+            if let updatedPlayer = try? await cloudKitManager.fetchPlayer(id: playerId) {
+                player = updatedPlayer
             }
         }
 
@@ -92,6 +42,8 @@ import SwiftUI
             guard !isLoading, !Task.isCancelled else { return }
             isLoading = true
             defer { isLoading = false }
+
+            await refreshPlayer()
 
             do {
                 print("🔵 PlayerDetailView: Starting to load player data")
@@ -148,6 +100,71 @@ import SwiftUI
                 playerMatches = newMatches.sorted { $0.date > $1.date }
             } catch {
                 print("🔵 PlayerDetailView: Error loading matches: \(error.localizedDescription)")
+            }
+        }
+
+        var body: some View {
+            List {
+                PlayerInfoSection(player: player)
+                matchHistorySection(playerMatches)
+
+                if canDelete {
+                    Section {
+                        Button(role: .destructive) {
+                            Task {
+                                try? await cloudKitManager.deletePlayer(player)
+                                dismiss()
+                            }
+                        } label: {
+                            Text("Delete Player")
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(player.name)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if isCurrentUserProfile {
+                        Button {
+                            editingName = player.name
+                            editingColor = player.color
+                            showingEditSheet = true
+                        } label: {
+                            Text("Edit")
+                        }
+                    }
+                }
+            }
+            .sheet(
+                isPresented: $showingEditSheet,
+                onDismiss: {
+                    Task {
+                        await loadPlayerData()
+                    }
+                }
+            ) {
+                NavigationStack {
+                    PlayerFormView(
+                        name: $editingName,
+                        color: $editingColor,
+                        existingPhotoData: player.photoData,
+                        title: "Edit Player",
+                        player: player
+                    )
+                }
+            }
+            .task {
+                if playerMatches.isEmpty {
+                    await loadPlayerData()
+                }
+            }
+            .refreshable {
+                await loadPlayerData()
+            }
+            .onDisappear {
+                loadingTask?.cancel()
+                loadingTask = nil
             }
         }
 

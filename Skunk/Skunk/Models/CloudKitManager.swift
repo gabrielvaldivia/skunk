@@ -33,6 +33,37 @@ import SwiftUI
 
         func setupSchema() async throws {
             do {
+                print("🟣 CloudKitManager: Starting schema setup")
+
+                // Delete all existing records first
+                print("🟣 CloudKitManager: Deleting existing records")
+                let playerQuery = CKQuery(recordType: "Player", predicate: NSPredicate(value: true))
+                let gameQuery = CKQuery(recordType: "Game", predicate: NSPredicate(value: true))
+                let matchQuery = CKQuery(recordType: "Match", predicate: NSPredicate(value: true))
+
+                // Delete all records of each type
+                let (playerResults, _) = try await database.records(matching: playerQuery)
+                let (gameResults, _) = try await database.records(matching: gameQuery)
+                let (matchResults, _) = try await database.records(matching: matchQuery)
+
+                for result in playerResults {
+                    if let record = try? result.1.get() {
+                        try await database.deleteRecord(withID: record.recordID)
+                    }
+                }
+                for result in gameResults {
+                    if let record = try? result.1.get() {
+                        try await database.deleteRecord(withID: record.recordID)
+                    }
+                }
+                for result in matchResults {
+                    if let record = try? result.1.get() {
+                        try await database.deleteRecord(withID: record.recordID)
+                    }
+                }
+
+                print("🟣 CloudKitManager: Creating new schema")
+
                 // Create Game record type
                 let gameRecord = CKRecord(recordType: "Game")
                 gameRecord.setValue("Sample Game", forKey: "title")
@@ -45,7 +76,11 @@ import SwiftUI
                 // Create Player record type
                 let playerRecord = CKRecord(recordType: "Player")
                 playerRecord.setValue("Sample Player", forKey: "name")
-                playerRecord.setValue(Data(), forKey: "photoData")
+                // Create a temporary empty file for the photo asset
+                let tempDir = FileManager.default.temporaryDirectory
+                let tempFile = tempDir.appendingPathComponent("temp.jpg")
+                try Data().write(to: tempFile)
+                playerRecord.setValue(CKAsset(fileURL: tempFile), forKey: "photo")
                 playerRecord.setValue(Data(), forKey: "colorData")
                 playerRecord.setValue("sample", forKey: "appleUserID")
                 playerRecord.setValue("sample", forKey: "ownerID")
@@ -70,17 +105,32 @@ import SwiftUI
                 matchRecord.setValue("sample", forKey: "gameID")
                 matchRecord.setValue("sample", forKey: "id")
 
+                print("🟣 CloudKitManager: Saving schema records")
                 // Try to save the records to create the schema
                 try await database.save(gameRecord)
                 try await database.save(playerRecord)
                 try await database.save(matchRecord)
 
+                print("🟣 CloudKitManager: Cleaning up schema records")
                 // Delete the sample records
                 try await database.deleteRecord(withID: gameRecord.recordID)
                 try await database.deleteRecord(withID: playerRecord.recordID)
                 try await database.deleteRecord(withID: matchRecord.recordID)
+
+                // Clean up the temporary file
+                try? FileManager.default.removeItem(at: tempFile)
+
+                print("🟣 CloudKitManager: Schema setup complete")
+
+                // Clear local caches
+                matchCache.removeAll()
+                playerCache.removeAll()
+                players.removeAll()
+                games.removeAll()
+
             } catch {
-                print("Schema setup completed with expected errors: \(error.localizedDescription)")
+                print("🟣 CloudKitManager: Schema setup error: \(error.localizedDescription)")
+                throw error
             }
         }
 
@@ -187,6 +237,10 @@ import SwiftUI
             }
         }
 
+        func refreshPlayers() async throws {
+            _ = try await fetchPlayers(forceRefresh: true)
+        }
+
         func getOrCreatePlayer(name: String, appleUserID: String?) async throws -> Player {
             print(
                 "🟣 CloudKitManager: Getting or creating player with name: \(name), appleUserID: \(appleUserID ?? "nil")"
@@ -252,49 +306,92 @@ import SwiftUI
             updatedPlayer.recordID = savedRecord.recordID
             updatedPlayer.record = savedRecord
 
-            if let index = players.firstIndex(where: { $0.id == player.id }) {
-                players[index] = updatedPlayer
-            } else {
-                players.append(updatedPlayer)
-            }
+            // Update both the cache and published array
+            updatePlayerCache(updatedPlayer)
+
+            // Reset the last refresh time to force next fetch to get fresh data
+            lastPlayerRefreshTime = .distantPast
+
+            // Notify of changes
+            objectWillChange.send()
         }
 
         func updatePlayer(_ player: Player) async throws {
             print("🟣 CloudKitManager: Updating player: \(player.name)")
-            guard let record = player.record else {
-                print("🟣 CloudKitManager: No record found, creating new player")
-                try await savePlayer(player)
-                return
+            print("🟣 CloudKitManager: Photo data size: \(player.photoData?.count ?? 0) bytes")
+
+            do {
+                guard let recordID = player.recordID else {
+                    print("🟣 CloudKitManager: No record found, creating new player")
+                    try await savePlayer(player)
+                    return
+                }
+
+                // Fetch the latest record from CloudKit
+                print("🟣 CloudKitManager: Fetching latest record")
+                let latestRecord = try await database.record(for: recordID)
+
+                // Update the fetched record with new values
+                latestRecord.setValue(player.id, forKey: "id")
+                latestRecord.setValue(player.name, forKey: "name")
+                latestRecord.setValue(player.colorData, forKey: "colorData")
+                latestRecord.setValue(player.appleUserID, forKey: "appleUserID")
+                latestRecord.setValue(player.ownerID, forKey: "ownerID")
+
+                // Handle photo data as CKAsset
+                if let photoData = player.photoData {
+                    print("🟣 CloudKitManager: Creating photo asset")
+                    let tempDir = FileManager.default.temporaryDirectory
+                    let fileName = UUID().uuidString + ".jpg"
+                    let fileURL = tempDir.appendingPathComponent(fileName)
+
+                    do {
+                        try photoData.write(to: fileURL)
+                        let asset = CKAsset(fileURL: fileURL)
+                        latestRecord.setValue(asset, forKey: "photo")
+                        print("🟣 CloudKitManager: Successfully created photo asset")
+                    } catch {
+                        print("🟣 CloudKitManager: Error creating photo asset: \(error)")
+                    }
+                } else {
+                    latestRecord.setValue(nil, forKey: "photo")
+                }
+
+                print("🟣 CloudKitManager: Saving updated player record")
+                let savedRecord = try await database.save(latestRecord)
+                print("🟣 CloudKitManager: Successfully saved player record")
+
+                // Create an updated player with the saved record
+                var updatedPlayer = player
+                updatedPlayer.record = savedRecord
+                updatedPlayer.recordID = savedRecord.recordID
+
+                // Update both the cache and published array
+                updatePlayerCache(updatedPlayer)
+
+                // Reset the last refresh time to force next fetch to get fresh data
+                lastPlayerRefreshTime = .distantPast
+
+                // Notify of changes
+                objectWillChange.send()
+
+                print("🟣 CloudKitManager: Starting force refresh")
+                // Force a refresh to ensure all views have the latest data
+                _ = try await fetchPlayers(forceRefresh: true)
+                print("🟣 CloudKitManager: Completed force refresh")
+            } catch let error as CKError {
+                print(
+                    "🟣 CloudKitManager: CloudKit error during update: \(error.localizedDescription)"
+                )
+                print("🟣 CloudKitManager: Error code: \(error.code.rawValue)")
+                handleCloudKitError(error)
+                throw error
+            } catch {
+                print(
+                    "🟣 CloudKitManager: Non-CloudKit error during update: \(error.localizedDescription)"
+                )
+                throw error
             }
-
-            // Update existing record with new values
-            record.setValue(player.id, forKey: "id")
-            record.setValue(player.name, forKey: "name")
-            record.setValue(player.photoData, forKey: "photoData")
-            record.setValue(player.colorData, forKey: "colorData")
-            record.setValue(player.appleUserID, forKey: "appleUserID")
-            record.setValue(player.ownerID, forKey: "ownerID")
-
-            print("🟣 CloudKitManager: Saving updated player record")
-            let savedRecord = try await database.save(record)
-            print("🟣 CloudKitManager: Successfully saved player record")
-
-            // Create an updated player with the saved record
-            var updatedPlayer = player
-            updatedPlayer.record = savedRecord
-            updatedPlayer.recordID = savedRecord.recordID
-
-            // Update local cache immediately
-            if let index = players.firstIndex(where: { $0.id == player.id }) {
-                print("🟣 CloudKitManager: Updating player in local cache")
-                players[index] = updatedPlayer
-            } else {
-                print("🟣 CloudKitManager: Adding player to local cache")
-                players.append(updatedPlayer)
-            }
-
-            // Only notify of this specific player change
-            objectWillChange.send()
         }
 
         func deletePlayer(_ player: Player) async throws {
@@ -595,6 +692,16 @@ import SwiftUI
         private func removePlayerFromCache(_ playerId: String) {
             playerCache.removeValue(forKey: playerId)
             players.removeAll { $0.id == playerId }
+        }
+
+        func forceSchemaReset() async throws {
+            print("🟣 CloudKitManager: Starting schema reset")
+            // Delete all existing records
+            try await deleteAllPlayers()
+
+            // Set up the schema again
+            try await setupSchema()
+            print("🟣 CloudKitManager: Schema reset complete")
         }
     }
 #endif

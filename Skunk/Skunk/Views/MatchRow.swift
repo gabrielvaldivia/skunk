@@ -36,14 +36,14 @@ import SwiftUI
                         Image(uiImage: uiImage)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .frame(width: 40, height: 40)
+                            .frame(width: 28, height: 28)
                             .clipShape(Circle())
                     } else {
                         // Fallback to initials if no photo
                         ZStack {
                             Circle()
                                 .fill(winner.color)
-                                .frame(width: 40, height: 40)
+                                .frame(width: 28, height: 28)
                             Text(String(winner.name.prefix(1)))
                                 .font(.headline)
                                 .foregroundColor(.white)

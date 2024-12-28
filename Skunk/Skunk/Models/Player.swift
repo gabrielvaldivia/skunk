@@ -53,12 +53,20 @@ import SwiftUI
 
             self.id = id
             self.name = name
-            self.photoData = record.value(forKey: "photoData") as? Data
             self.colorData = record.value(forKey: "colorData") as? Data
             self.appleUserID = record.value(forKey: "appleUserID") as? String
             self.ownerID = record.value(forKey: "ownerID") as? String
             self.record = record
             self.recordID = record.recordID
+
+            // Handle photo data from CKAsset
+            if let photoAsset = record.value(forKey: "photo") as? CKAsset,
+                let fileURL = photoAsset.fileURL
+            {
+                self.photoData = try? Data(contentsOf: fileURL)
+            } else {
+                self.photoData = nil
+            }
         }
 
         func toRecord() -> CKRecord {
@@ -71,10 +79,26 @@ import SwiftUI
 
             record.setValue(id, forKey: "id")
             record.setValue(name, forKey: "name")
-            record.setValue(photoData, forKey: "photoData")
             record.setValue(colorData, forKey: "colorData")
             record.setValue(appleUserID, forKey: "appleUserID")
             record.setValue(ownerID, forKey: "ownerID")
+
+            // Handle photo data as CKAsset
+            if let photoData = photoData {
+                let tempDir = FileManager.default.temporaryDirectory
+                let fileName = UUID().uuidString + ".jpg"
+                let fileURL = tempDir.appendingPathComponent(fileName)
+
+                do {
+                    try photoData.write(to: fileURL)
+                    let asset = CKAsset(fileURL: fileURL)
+                    record.setValue(asset, forKey: "photo")
+                } catch {
+                    print("Error creating photo asset: \(error)")
+                }
+            } else {
+                record.setValue(nil, forKey: "photo")
+            }
 
             return record
         }
@@ -88,6 +112,9 @@ import SwiftUI
             if let photoData = photoData {
                 updatedPlayer.photoData = photoData
             }
+            // Preserve the record and recordID
+            updatedPlayer.record = self.record
+            updatedPlayer.recordID = self.recordID
             return updatedPlayer
         }
 
