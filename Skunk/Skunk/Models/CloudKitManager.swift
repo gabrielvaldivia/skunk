@@ -9,6 +9,8 @@ import SwiftUI
         private let container: CKContainer
         private let database: CKDatabase
         private var lastRefreshTime: Date = .distantPast
+        private var isRefreshing = false
+        private var matchCache: [String: [Match]] = [:]  // Cache matches by game ID
 
         @Published var games: [Game] = []
         @Published var players: [Player] = []
@@ -183,12 +185,21 @@ import SwiftUI
         }
 
         func refreshPlayers(force: Bool = false) async {
-            // Debounce refreshes to prevent rapid-fire updates
+            // Prevent concurrent refreshes
+            guard !isRefreshing else {
+                print("🟣 CloudKitManager: Skipping refresh, already refreshing")
+                return
+            }
+
+            // Debounce refreshes
             let now = Date()
             if !force && now.timeIntervalSince(lastRefreshTime) < 1.0 {
                 print("🟣 CloudKitManager: Skipping refresh, too soon since last refresh")
                 return
             }
+
+            isRefreshing = true
+            defer { isRefreshing = false }
             lastRefreshTime = now
 
             do {
@@ -280,11 +291,6 @@ import SwiftUI
 
             // Force UI update
             objectWillChange.send()
-
-            // Refresh the players list to ensure consistency with server
-            print("🟣 CloudKitManager: Refreshing all players")
-            try? await Task.sleep(for: .seconds(0.5))  // Add a small delay before refresh
-            await refreshPlayers(force: true)
         }
 
         func deletePlayer(_ player: Player) async throws {
@@ -305,15 +311,16 @@ import SwiftUI
                     let record = try? result.1.get(),
                     let player = Player(from: record)
                 {
-                    // Add the player to our local cache
-                    if !players.contains(where: { $0.id == player.id }) {
+                    // Update the local cache without triggering a refresh
+                    if let index = players.firstIndex(where: { $0.id == player.id }) {
+                        players[index] = player
+                    } else {
                         players.append(player)
                     }
                     return player
                 }
                 return nil
             } catch let error as CKError {
-                print("Error fetching player: \(error.localizedDescription)")
                 handleCloudKitError(error)
                 throw error
             }
@@ -322,6 +329,11 @@ import SwiftUI
         // MARK: - Matches
 
         func fetchMatches(for game: Game) async throws -> [Match] {
+            // Return cached matches if available
+            if let cachedMatches = matchCache[game.id] {
+                return cachedMatches
+            }
+
             do {
                 print("🟣 CloudKitManager: Fetching matches for game: \(game.id)")
                 let query = CKQuery(
@@ -339,26 +351,21 @@ import SwiftUI
                     print(
                         "🟣 CloudKitManager: Processing match record: \(record.recordID.recordName)")
                     var match = Match(from: record)
-                    match?.game = game  // Set the game reference directly
+                    match?.game = game
                     return match
                 }
                 print("🟣 CloudKitManager: Successfully parsed \(matches.count) matches")
 
-                // Update the game's matches
-                var updatedGame = game
-                updatedGame.matches = matches
+                // Update cache
+                matchCache[game.id] = matches
+
+                // Update game's matches without triggering a refresh
                 if let index = games.firstIndex(where: { $0.id == game.id }) {
-                    print(
-                        "🟣 CloudKitManager: Updating game in games array with \(matches.count) matches"
-                    )
-                    games[index] = updatedGame
-                } else {
-                    print("🟣 CloudKitManager: Could not find game in games array to update")
+                    games[index].matches = matches
                 }
 
                 return matches
             } catch let error as CKError {
-                print("🟣 CloudKitManager: Error fetching matches: \(error.localizedDescription)")
                 handleCloudKitError(error)
                 throw error
             }
@@ -366,42 +373,25 @@ import SwiftUI
 
         func saveMatch(_ match: Match) async throws {
             print("🟣 CloudKitManager: Saving match with ID: \(match.id)")
-            print("🟣 CloudKitManager: Game ID: \(match.game?.id ?? "nil")")
-            print("🟣 CloudKitManager: Player IDs: \(match.playerIDs)")
-
             var updatedMatch = match
             let record = match.toRecord()
             let savedRecord = try await database.save(record)
             updatedMatch.recordID = savedRecord.recordID
             updatedMatch.record = savedRecord
-            print("🟣 CloudKitManager: Successfully saved match record to CloudKit")
 
-            // Update the game's matches
-            if let game = match.game,
-                let index = games.firstIndex(where: { $0.id == game.id })
-            {
-                print("🟣 CloudKitManager: Found game in games array, updating matches")
-                var updatedGame = games[index]
-                if updatedGame.matches == nil {
-                    print("🟣 CloudKitManager: Initializing empty matches array for game")
-                    updatedGame.matches = []
-                }
-                if let matchIndex = updatedGame.matches?.firstIndex(where: { $0.id == match.id }) {
-                    print("🟣 CloudKitManager: Updating existing match in game's matches array")
-                    updatedGame.matches?[matchIndex] = updatedMatch
+            // Update cache and game's matches
+            if let gameId = match.game?.id {
+                var matches = matchCache[gameId] ?? []
+                if let index = matches.firstIndex(where: { $0.id == match.id }) {
+                    matches[index] = updatedMatch
                 } else {
-                    print("🟣 CloudKitManager: Adding new match to game's matches array")
-                    updatedGame.matches?.append(updatedMatch)
+                    matches.append(updatedMatch)
                 }
-                games[index] = updatedGame
-                print(
-                    "🟣 CloudKitManager: Updated game now has \(updatedGame.matches?.count ?? 0) matches"
-                )
-            } else {
-                print("🟣 CloudKitManager: Could not find game in games array to update matches")
-                if let gameId = match.game?.id {
-                    print("🟣 CloudKitManager: Game ID we're looking for: \(gameId)")
-                    print("🟣 CloudKitManager: Available game IDs: \(games.map { $0.id })")
+                matchCache[gameId] = matches
+
+                // Update game's matches without triggering a refresh
+                if let gameIndex = games.firstIndex(where: { $0.id == gameId }) {
+                    games[gameIndex].matches = matches
                 }
             }
         }
@@ -412,13 +402,12 @@ import SwiftUI
             }
             try await database.deleteRecord(withID: recordID)
 
-            // Update the game's matches
-            if let game = match.game,
-                let index = games.firstIndex(where: { $0.id == game.id })
-            {
-                var updatedGame = game
-                updatedGame.matches?.removeAll { $0.id == match.id }
-                games[index] = updatedGame
+            // Update cache and game's matches
+            if let gameId = match.game?.id {
+                matchCache[gameId]?.removeAll { $0.id == match.id }
+                if let gameIndex = games.firstIndex(where: { $0.id == gameId }) {
+                    games[gameIndex].matches = matchCache[gameId]
+                }
             }
         }
 

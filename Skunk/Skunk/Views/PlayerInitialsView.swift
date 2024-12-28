@@ -6,35 +6,35 @@ struct PlayerInitialsView: View {
     let color: Color
 
     private var initials: String {
-        let components = name.components(separatedBy: .whitespaces)
-        if !components.isEmpty && !components[0].isEmpty {
-            return String(components[0].prefix(1))
-        } else {
-            return ""
+        let components = name.components(separatedBy: CharacterSet.whitespaces)
+        if components.count > 1,
+            let first = components.first?.first,
+            let last = components.last?.first
+        {
+            return "\(first)\(last)".uppercased()
+        } else if let first = name.first {
+            return String(first).uppercased()
         }
-    }
-
-    init(name: String, size: CGFloat, color: Color? = nil) {
-        self.name = name
-        self.size = size
-        if let color = color {
-            self.color = color
-        } else {
-            // Generate a consistent color based on the name
-            let hash = abs(name.hashValue)
-            let hue = Double(hash % 255) / 255.0
-            self.color = Color(hue: hue, saturation: 0.7, brightness: 0.9)
-        }
+        return "?"
     }
 
     var body: some View {
-        Circle()
-            .fill(color)
-            .frame(width: size, height: size)
-            .overlay {
-                Text(initials.uppercased())
-                    .font(.system(size: size * 0.4, weight: .bold))
-                    .foregroundStyle(.white)
-            }
+        ZStack {
+            Circle()
+                .fill(color)
+
+            Text(initials)
+                .font(.system(size: size * 0.4, weight: .bold))
+                .foregroundStyle(.white)
+        }
+        .frame(width: size, height: size)
+    }
+}
+
+#Preview {
+    VStack {
+        PlayerInitialsView(name: "John Doe", size: 100, color: .blue)
+        PlayerInitialsView(name: "Alice", size: 60, color: .red)
+        PlayerInitialsView(name: "", size: 40, color: .green)
     }
 }
