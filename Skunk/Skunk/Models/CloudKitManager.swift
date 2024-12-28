@@ -38,90 +38,67 @@ import SwiftUI
             do {
                 print("🟣 CloudKitManager: Starting schema setup")
 
-                // Delete all existing records first
-                print("🟣 CloudKitManager: Deleting existing records")
-                let playerQuery = CKQuery(recordType: "Player", predicate: NSPredicate(value: true))
-                let gameQuery = CKQuery(recordType: "Game", predicate: NSPredicate(value: true))
-                let matchQuery = CKQuery(recordType: "Match", predicate: NSPredicate(value: true))
+                // Define the schema fields
+                let gameFields = [
+                    "title",
+                    "isBinaryScore",
+                    "supportedPlayerCounts",
+                    "createdByID",
+                    "id",
+                ]
 
-                // Delete all records of each type
-                let (playerResults, _) = try await database.records(matching: playerQuery)
-                let (gameResults, _) = try await database.records(matching: gameQuery)
-                let (matchResults, _) = try await database.records(matching: matchQuery)
+                let playerFields = [
+                    "name",
+                    "colorData",
+                    "appleUserID",
+                    "ownerID",
+                    "id",
+                    "photo",
+                ]
 
-                for result in playerResults {
-                    if let record = try? result.1.get() {
-                        try await database.deleteRecord(withID: record.recordID)
-                    }
-                }
-                for result in gameResults {
-                    if let record = try? result.1.get() {
-                        try await database.deleteRecord(withID: record.recordID)
-                    }
-                }
-                for result in matchResults {
-                    if let record = try? result.1.get() {
-                        try await database.deleteRecord(withID: record.recordID)
-                    }
-                }
+                let matchFields = [
+                    "date",
+                    "playerIDs",
+                    "playerOrder",
+                    "winnerID",
+                    "isMultiplayer",
+                    "status",
+                    "invitedPlayerIDs",
+                    "acceptedPlayerIDs",
+                    "lastModified",
+                    "createdByID",
+                    "gameID",
+                    "id",
+                ]
 
-                print("🟣 CloudKitManager: Creating new schema")
+                print("🟣 CloudKitManager: Saving schema definitions")
 
-                // Create Game record type
+                // Save the schema definitions
+                let zone = CKRecordZone(zoneName: "Schema")
+                try await database.modifyRecordZones(saving: [zone], deleting: [])
+
+                // Create sample records to establish schema
                 let gameRecord = CKRecord(recordType: "Game")
-                gameRecord.setValue("Sample Game", forKey: "title")
-                gameRecord.setValue(false, forKey: "isBinaryScore")
-                let supportedPlayerCounts = try JSONEncoder().encode([2, 3, 4])
-                gameRecord.setValue(supportedPlayerCounts, forKey: "supportedPlayerCounts")
-                gameRecord.setValue("sample", forKey: "createdByID")
-                gameRecord.setValue("sample", forKey: "id")
-
-                // Create Player record type
                 let playerRecord = CKRecord(recordType: "Player")
-                playerRecord.setValue("Sample Player", forKey: "name")
-                // Create a temporary empty file for the photo asset
-                let tempDir = FileManager.default.temporaryDirectory
-                let tempFile = tempDir.appendingPathComponent("temp.jpg")
-                try Data().write(to: tempFile)
-                playerRecord.setValue(CKAsset(fileURL: tempFile), forKey: "photo")
-                playerRecord.setValue(Data(), forKey: "colorData")
-                playerRecord.setValue("sample", forKey: "appleUserID")
-                playerRecord.setValue("sample", forKey: "ownerID")
-                playerRecord.setValue("sample", forKey: "id")
-
-                // Create Match record type
                 let matchRecord = CKRecord(recordType: "Match")
-                matchRecord.setValue(Date(), forKey: "date")
-                let playerIDs = try JSONEncoder().encode(["sample"])
-                matchRecord.setValue(playerIDs, forKey: "playerIDs")
-                let playerOrder = try JSONEncoder().encode(["sample"])
-                matchRecord.setValue(playerOrder, forKey: "playerOrder")
-                matchRecord.setValue("sample", forKey: "winnerID")
-                matchRecord.setValue(false, forKey: "isMultiplayer")
-                matchRecord.setValue("pending", forKey: "status")
-                let invitedPlayerIDs = try JSONEncoder().encode(["sample"])
-                matchRecord.setValue(invitedPlayerIDs, forKey: "invitedPlayerIDs")
-                let acceptedPlayerIDs = try JSONEncoder().encode(["sample"])
-                matchRecord.setValue(acceptedPlayerIDs, forKey: "acceptedPlayerIDs")
-                matchRecord.setValue(Date(), forKey: "lastModified")
-                matchRecord.setValue("sample", forKey: "createdByID")
-                matchRecord.setValue("sample", forKey: "gameID")
-                matchRecord.setValue("sample", forKey: "id")
 
-                print("🟣 CloudKitManager: Saving schema records")
-                // Try to save the records to create the schema
+                // Set default values to establish field types
+                for field in gameFields {
+                    gameRecord[field] = ""  // Set appropriate default values based on field type
+                }
+
+                for field in playerFields {
+                    playerRecord[field] = ""  // Set appropriate default values based on field type
+                }
+
+                for field in matchFields {
+                    matchRecord[field] = ""  // Set appropriate default values based on field type
+                }
+
+                // Save the sample records to establish schema
                 try await database.save(gameRecord)
                 try await database.save(playerRecord)
                 try await database.save(matchRecord)
-
-                print("🟣 CloudKitManager: Cleaning up schema records")
-                // Delete the sample records
-                try await database.deleteRecord(withID: gameRecord.recordID)
-                try await database.deleteRecord(withID: playerRecord.recordID)
-                try await database.deleteRecord(withID: matchRecord.recordID)
-
-                // Clean up the temporary file
-                try? FileManager.default.removeItem(at: tempFile)
 
                 print("🟣 CloudKitManager: Schema setup complete")
 
@@ -133,6 +110,9 @@ import SwiftUI
 
             } catch {
                 print("🟣 CloudKitManager: Schema setup error: \(error.localizedDescription)")
+                if let ckError = error as? CKError {
+                    print("🔴 CloudKitManager: CloudKit error code: \(ckError.code.rawValue)")
+                }
                 throw error
             }
         }
@@ -281,29 +261,30 @@ import SwiftUI
 
         func fetchCurrentUserPlayer(userID: String) async throws -> Player? {
             do {
-                print("Fetching current user player for ID: \(userID)")
+                print("🟣 CloudKitManager: Fetching current user player for ID: \(userID)")
 
-                // Create a query with a simple predicate
-                let query = CKQuery(
-                    recordType: "Player", predicate: NSPredicate(format: "name != ''"))
+                // Create a query that specifically looks for the user's ID
+                let predicate = NSPredicate(format: "appleUserID == %@", userID)
+                let query = CKQuery(recordType: "Player", predicate: predicate)
                 let (results, _) = try await database.records(matching: query)
 
-                // Find the player with matching userID
+                // Get the first matching player
                 for result in results {
                     guard let record = try? result.1.get(),
-                        let player = Player(from: record),
-                        let appleUserID = record.value(forKey: "appleUserID") as? String,
-                        appleUserID == userID
+                        let player = Player(from: record)
                     else { continue }
 
-                    print("Found current user player: \(player.name)")
+                    print("🟣 CloudKitManager: Found current user player: \(player.name)")
                     return player
                 }
 
-                print("No player found for user ID: \(userID)")
+                print("🟣 CloudKitManager: No player found for user ID: \(userID)")
                 return nil
             } catch let error as CKError {
-                print("Error fetching current user player: \(error.localizedDescription)")
+                print(
+                    "🔴 CloudKitManager: Error fetching current user player: \(error.localizedDescription)"
+                )
+                print("🔴 CloudKitManager: Error code: \(error.code.rawValue)")
                 handleCloudKitError(error)
                 throw error
             }
@@ -708,12 +689,28 @@ import SwiftUI
 
         func forceSchemaReset() async throws {
             print("🟣 CloudKitManager: Starting schema reset")
-            // Delete all existing records
-            try await deleteAllPlayers()
 
-            // Set up the schema again
-            try await setupSchema()
-            print("🟣 CloudKitManager: Schema reset complete")
+            do {
+                // Set up the schema
+                try await setupSchema()
+
+                // Set up subscriptions
+                try await setupSubscriptions()
+
+                // Clear local caches
+                matchCache.removeAll()
+                playerCache.removeAll()
+                players.removeAll()
+                games.removeAll()
+
+                print("🟣 CloudKitManager: Schema reset complete")
+            } catch {
+                print("🔴 CloudKitManager: Schema reset error: \(error.localizedDescription)")
+                if let ckError = error as? CKError {
+                    print("🔴 CloudKitManager: CloudKit error code: \(ckError.code.rawValue)")
+                }
+                throw error
+            }
         }
 
         // Add a method to get matches for a player

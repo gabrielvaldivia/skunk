@@ -86,36 +86,47 @@ import SwiftUI
             UserDefaults.standard.set(appleIDCredential.user, forKey: "userID")
 
             // Create or update player
-            if let player = try? await CloudKitManager.shared.fetchCurrentUserPlayer(
-                userID: appleIDCredential.user)
-            {
-                // Update existing player if needed
-                if let fullName = appleIDCredential.fullName,
-                    let givenName = fullName.givenName,
-                    let familyName = fullName.familyName,
-                    player.name == "Player"  // Only update if it's the default name
+            do {
+                if let player = try await CloudKitManager.shared.fetchCurrentUserPlayer(
+                    userID: appleIDCredential.user)
                 {
-                    var updatedPlayer = player
-                    updatedPlayer.name = "\(givenName) \(familyName)"
-                    try? await CloudKitManager.shared.updatePlayer(updatedPlayer)
-                }
-            } else {
-                // Create new player
-                let name: String
-                if let fullName = appleIDCredential.fullName,
-                    let givenName = fullName.givenName,
-                    let familyName = fullName.familyName
-                {
-                    name = "\(givenName) \(familyName)"
+                    // Update existing player if needed
+                    if let fullName = appleIDCredential.fullName,
+                        let givenName = fullName.givenName,
+                        let familyName = fullName.familyName,
+                        player.name == "Player"  // Only update if it's the default name
+                    {
+                        var updatedPlayer = player
+                        updatedPlayer.name = "\(givenName) \(familyName)"
+                        try await CloudKitManager.shared.updatePlayer(updatedPlayer)
+                        print(
+                            "🟢 AuthenticationManager: Successfully updated player name to \(updatedPlayer.name)"
+                        )
+                    }
                 } else {
-                    name = "Player"
-                }
+                    // Create new player
+                    let name: String
+                    if let fullName = appleIDCredential.fullName,
+                        let givenName = fullName.givenName,
+                        let familyName = fullName.familyName
+                    {
+                        name = "\(givenName) \(familyName)"
+                    } else {
+                        name = "Player"
+                    }
 
-                let newPlayer = Player(
-                    name: name,
-                    appleUserID: appleIDCredential.user
-                )
-                try? await CloudKitManager.shared.savePlayer(newPlayer)
+                    print("🟢 AuthenticationManager: Creating new player with name: \(name)")
+                    let newPlayer = Player(
+                        name: name,
+                        appleUserID: appleIDCredential.user
+                    )
+                    try await CloudKitManager.shared.savePlayer(newPlayer)
+                    print("🟢 AuthenticationManager: Successfully created new player")
+                }
+            } catch {
+                print(
+                    "🔴 AuthenticationManager: Error handling player: \(error.localizedDescription)")
+                throw error
             }
 
             isAuthenticated = true

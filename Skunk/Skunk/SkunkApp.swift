@@ -24,10 +24,18 @@ import SwiftUI
                     }
                 }
                 .task {
-                    // Setup CloudKit schema first
-                    try? await cloudKitManager.setupSchema()
-                    // Then check credentials
-                    await authManager.checkExistingCredentials()
+                    do {
+                        // Setup CloudKit schema first
+                        try await cloudKitManager.setupSchema()
+                        // Setup subscriptions
+                        try await cloudKitManager.setupSubscriptions()
+                        // Then check credentials
+                        await authManager.checkExistingCredentials()
+                    } catch {
+                        print(
+                            "🔴 SkunkApp: Error during initialization: \(error.localizedDescription)"
+                        )
+                    }
                     isInitializing = false
                 }
             }
