@@ -27,8 +27,9 @@ import Foundation
 
         init?(from record: CKRecord) {
             guard let title = record.value(forKey: "title") as? String else { return nil }
+            guard let id = record.value(forKey: "id") as? String else { return nil }
 
-            self.id = UUID().uuidString
+            self.id = id
             self.title = title
             self.isBinaryScore = record.value(forKey: "isBinaryScore") as? Bool ?? false
             if let countsData = record.value(forKey: "supportedPlayerCounts") as? Data,
@@ -52,6 +53,7 @@ import Foundation
                 record = CKRecord(recordType: "Game")
             }
 
+            record.setValue(id, forKey: "id")
             record.setValue(title, forKey: "title")
             record.setValue(isBinaryScore, forKey: "isBinaryScore")
             if let countsData = try? JSONEncoder().encode(Array(supportedPlayerCounts)) {

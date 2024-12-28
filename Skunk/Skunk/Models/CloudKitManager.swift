@@ -205,15 +205,25 @@ import SwiftUI
 
         func fetchMatches(for game: Game) async throws -> [Match] {
             do {
+                print("Fetching matches for game: \(game.id)")
                 let query = CKQuery(
                     recordType: "Match", predicate: NSPredicate(format: "gameID == %@", game.id))
+                query.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+
                 let (results, _) = try await database.records(matching: query)
+                print("Found \(results.count) matches")
+
                 let matches = results.compactMap { result -> Match? in
-                    guard let record = try? result.1.get() else { return nil }
+                    guard let record = try? result.1.get() else {
+                        print("Failed to get record")
+                        return nil
+                    }
+                    print("Processing match record with ID: \(record.recordID.recordName)")
                     var match = Match(from: record)
-                    match?.game = game
+                    match?.game = game  // Set the game reference directly
                     return match
                 }
+                print("Successfully parsed \(matches.count) matches")
 
                 // Update the game's matches
                 var updatedGame = game
@@ -224,17 +234,20 @@ import SwiftUI
 
                 return matches
             } catch let error as CKError {
+                print("Error fetching matches: \(error.localizedDescription)")
                 handleCloudKitError(error)
                 throw error
             }
         }
 
         func saveMatch(_ match: Match) async throws {
+            print("Saving match with ID: \(match.id), game ID: \(match.game?.id ?? "nil")")
             var updatedMatch = match
             let record = match.toRecord()
             let savedRecord = try await database.save(record)
             updatedMatch.recordID = savedRecord.recordID
             updatedMatch.record = savedRecord
+            print("Successfully saved match record")
 
             // Update the game's matches
             if let game = match.game,
@@ -250,6 +263,7 @@ import SwiftUI
                     updatedGame.matches?.append(updatedMatch)
                 }
                 games[index] = updatedGame
+                print("Updated game's matches array")
             }
         }
 

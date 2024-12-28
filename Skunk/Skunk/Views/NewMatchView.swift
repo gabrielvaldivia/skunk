@@ -15,6 +15,7 @@ import SwiftUI
         @State private var isLoading = false
         @State private var error: Error?
         @State private var showingError = false
+        @State private var selectedWinnerIndex: Int?
 
         init(game: Game) {
             self.game = game
@@ -32,6 +33,19 @@ import SwiftUI
                             HStack {
                                 if let player = player {
                                     Text(player.name)
+
+                                    Spacer()
+
+                                    Toggle(
+                                        "",
+                                        isOn: Binding(
+                                            get: { selectedWinnerIndex == index },
+                                            set: { isWinner in
+                                                selectedWinnerIndex = isWinner ? index : nil
+                                            }
+                                        )
+                                    )
+                                    .tint(.green)
                                 } else {
                                     Menu {
                                         ForEach(availablePlayers) { player in
@@ -45,12 +59,13 @@ import SwiftUI
                                     }
                                 }
 
-                                Spacer()
-
                                 if index >= game.supportedPlayerCounts.min() ?? 2 {
                                     Button(role: .destructive) {
                                         players.remove(at: index)
                                         scores.remove(at: index)
+                                        if selectedWinnerIndex == index {
+                                            selectedWinnerIndex = nil
+                                        }
                                     } label: {
                                         Image(systemName: "minus.circle.fill")
                                             .foregroundStyle(.red)
@@ -131,6 +146,14 @@ import SwiftUI
                     var match = Match(date: Date(), createdByID: authManager.userID, game: game)
                     match.playerIDs = players.compactMap { $0?.id }
                     match.playerOrder = match.playerIDs
+                    match.status = selectedWinnerIndex != nil ? "completed" : "active"
+
+                    if let winnerIndex = selectedWinnerIndex,
+                        let winner = players[winnerIndex]
+                    {
+                        match.winnerID = winner.id
+                    }
+
                     try await cloudKitManager.saveMatch(match)
                     await MainActor.run {
                         dismiss()

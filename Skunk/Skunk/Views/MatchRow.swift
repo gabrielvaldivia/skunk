@@ -3,6 +3,7 @@ import SwiftUI
 
 #if canImport(UIKit)
     struct MatchRow: View {
+        @EnvironmentObject private var cloudKitManager: CloudKitManager
         let match: Match
         let hideGameTitle: Bool
 
@@ -23,21 +24,27 @@ import SwiftUI
                     .foregroundStyle(.secondary)
 
                 if !match.playerIDs.isEmpty {
-                    Text("\(match.playerIDs.count) players")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    HStack {
+                        Text("\(match.playerIDs.count) players")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        if let winnerID = match.winnerID,
+                            let winner = cloudKitManager.players.first(where: { $0.id == winnerID })
+                        {
+                            Text("•")
+                                .foregroundStyle(.secondary)
+                            Text("Winner: \(winner.name)")
+                                .font(.caption)
+                                .foregroundStyle(.green)
+                        }
+                    }
                 }
 
                 HStack {
                     Text(match.status)
                         .font(.caption)
                         .foregroundStyle(statusColor)
-
-                    if let winner = match.winnerID {
-                        Text("• Winner: \(winner)")
-                            .font(.caption)
-                            .foregroundStyle(.green)
-                    }
                 }
             }
         }

@@ -205,6 +205,13 @@ import SwiftUI
             .sheet(isPresented: $showingNewMatch) {
                 NewMatchView(game: game)
             }
+            .onChange(of: showingNewMatch) { isShowing in
+                if !isShowing {
+                    Task {
+                        await loadMatches()
+                    }
+                }
+            }
             .sheet(isPresented: $showingEditGame) {
                 EditGameView(game: game)
             }

@@ -25,7 +25,7 @@ import Foundation
             self.playerOrder = []
             self.winnerID = nil
             self.isMultiplayer = false
-            self.status = "pending"
+            self.status = "active"
             self.invitedPlayerIDs = []
             self.acceptedPlayerIDs = []
             self.lastModified = date
@@ -35,7 +35,8 @@ import Foundation
         }
 
         init?(from record: CKRecord) {
-            self.id = UUID().uuidString
+            guard let id = record.value(forKey: "id") as? String else { return nil }
+            self.id = id
             self.date = record.value(forKey: "date") as? Date ?? Date()
             if let playerIDsData = record.value(forKey: "playerIDs") as? Data,
                 let ids = try? JSONDecoder().decode([String].self, from: playerIDsData)
@@ -71,7 +72,17 @@ import Foundation
             self.lastModified = record.value(forKey: "lastModified") as? Date ?? Date()
             self.createdByID = record.value(forKey: "createdByID") as? String
             self.record = record
-            self.game = nil  // This will be set after fetching the game reference
+
+            // Set game to nil initially, but store the gameID in the record
+            // This will be used to fetch the game later
+            self.game = nil
+            if let gameID = record.value(forKey: "gameID") as? String,
+                let gameRecord = record.value(forKey: "game") as? CKRecord,
+                let game = Game(from: gameRecord)
+            {
+                self.game = game
+            }
+
             self.recordID = record.recordID
         }
 
@@ -83,6 +94,7 @@ import Foundation
                 record = CKRecord(recordType: "Match")
             }
 
+            record.setValue(id, forKey: "id")
             record.setValue(date, forKey: "date")
             if let playerIDsData = try? JSONEncoder().encode(playerIDs) {
                 record.setValue(playerIDsData, forKey: "playerIDs")
