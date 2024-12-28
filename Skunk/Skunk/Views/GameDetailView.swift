@@ -214,14 +214,6 @@ import SwiftUI
                         }
                     })
             }
-            .onChange(of: showingNewMatch) { isShowing in
-                print("🔵 GameDetailView: NewMatch sheet \(isShowing ? "opened" : "closed")")
-                if !isShowing {
-                    Task {
-                        await loadMatches()
-                    }
-                }
-            }
             .sheet(isPresented: $showingEditGame) {
                 EditGameView(game: game)
             }
@@ -233,17 +225,13 @@ import SwiftUI
             }
             .task {
                 print("🔵 GameDetailView: Initial task triggered")
-                await loadMatches()
+                if matches.isEmpty {
+                    await loadMatches()
+                }
             }
             .refreshable {
                 print("🔵 GameDetailView: Manual refresh triggered")
                 await loadMatches()
-            }
-            .onAppear {
-                print("🔵 GameDetailView: View appeared")
-                Task {
-                    await loadMatches()
-                }
             }
             .onChange(of: cloudKitManager.games) { _ in
                 print("🔵 GameDetailView: CloudKitManager games array changed")
@@ -266,34 +254,33 @@ import SwiftUI
             } message: {
                 Text(error?.localizedDescription ?? "An unknown error occurred")
             }
-            .alert("Delete Game", isPresented: $showingDeleteConfirmation) {
-                Button("Cancel", role: .cancel) {}
-                Button("Delete", role: .destructive) {
-                    Task {
-                        do {
-                            try await cloudKitManager.deleteGame(game)
-                            dismiss()
-                        } catch {
-                            self.error = error
-                            showingError = true
-                        }
-                    }
-                }
-            } message: {
-                Text("Are you sure you want to delete this game? This action cannot be undone.")
-            }
         }
 
         private func loadMatches() async {
             print("🔵 GameDetailView: Starting loadMatches()")
             isLoading = true
             do {
-                // First fetch players to ensure they're available
-                print("🔵 GameDetailView: Fetching players")
-                _ = try await cloudKitManager.fetchPlayers()
+                // Only fetch players if we don't have any yet, using cache when possible
+                if cloudKitManager.players.isEmpty {
+                    print("🔵 GameDetailView: No players in cache, fetching players")
+                    _ = try await cloudKitManager.fetchPlayers(forceRefresh: false)
+                }
 
                 let loadedMatches = try await cloudKitManager.fetchMatches(for: game)
                 print("🔵 GameDetailView: Successfully loaded \(loadedMatches.count) matches")
+
+                // Check if we need to fetch any missing players
+                let missingPlayerIDs = loadedMatches.flatMap { $0.playerIDs }
+                    .filter { playerID in
+                        !cloudKitManager.players.contains { $0.id == playerID }
+                    }
+
+                // Only fetch players again if we're missing some
+                if !missingPlayerIDs.isEmpty {
+                    print("🔵 GameDetailView: Fetching missing players")
+                    _ = try await cloudKitManager.fetchPlayers(forceRefresh: true)
+                }
+
                 matches = loadedMatches
             } catch {
                 print("🔵 GameDetailView: Error loading matches: \(error.localizedDescription)")

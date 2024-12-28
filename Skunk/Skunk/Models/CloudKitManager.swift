@@ -11,9 +11,16 @@ import SwiftUI
         private var lastRefreshTime: Date = .distantPast
         private var isRefreshing = false
         private var matchCache: [String: [Match]] = [:]  // Cache matches by game ID
+        private var playerCache: [String: Player] = [:]  // Cache players by ID
+        private var refreshDebounceTask: Task<Void, Never>?
+        private let debounceInterval: TimeInterval = 2.0  // 2 seconds debounce
+        private var lastPlayerRefreshTime: Date = .distantPast
+        private var isRefreshingPlayers = false
+        private var playerRefreshDebounceTask: Task<Void, Never>?
+        private let playerRefreshDebounceInterval: TimeInterval = 2.0  // 2 seconds debounce
 
         @Published var games: [Game] = []
-        @Published var players: [Player] = []
+        @Published private(set) var players: [Player] = []  // Make players private(set)
         @Published var isLoading = false
         @Published var error: Error?
 
@@ -120,39 +127,63 @@ import SwiftUI
 
         // MARK: - Players
 
-        func fetchPlayers() async throws -> [Player] {
-            do {
-                print("🟣 CloudKitManager: Fetching players...")
-                let query = CKQuery(
-                    recordType: "Player", predicate: NSPredicate(format: "name != ''"))
-                let (results, _) = try await database.records(matching: query)
-                print("🟣 CloudKitManager: Found \(results.count) player records")
-
-                let players = results.compactMap { result -> Player? in
-                    guard let record = try? result.1.get() else {
-                        print("🟣 CloudKitManager: Failed to get player record")
-                        return nil
-                    }
-                    guard let name = record.value(forKey: "name") as? String else {
-                        print("🟣 CloudKitManager: Failed to get player name")
-                        return nil
-                    }
-                    guard let id = record.value(forKey: "id") as? String else {
-                        print("🟣 CloudKitManager: Failed to get player ID for \(name)")
-                        return nil
-                    }
-                    print("🟣 CloudKitManager: Processing player: \(name) with ID: \(id)")
-                    return Player(from: record)
-                }
-                print("🟣 CloudKitManager: Successfully parsed \(players.count) players")
-
-                // Update the players array
-                self.players = players
+        func fetchPlayers(forceRefresh: Bool = false) async throws -> [Player] {
+            // Return cached players if we have them and they're fresh enough
+            let now = Date()
+            if !forceRefresh && !players.isEmpty
+                && now.timeIntervalSince(lastPlayerRefreshTime) < 30
+            {  // Cache valid for 30 seconds
+                print("🟣 CloudKitManager: Returning cached players")
                 return players
-            } catch let error as CKError {
-                print("🟣 CloudKitManager: Error fetching players: \(error.localizedDescription)")
-                handleCloudKitError(error)
-                throw error
+            }
+
+            // If already refreshing, wait for the current refresh to complete
+            if isRefreshingPlayers {
+                print("🟣 CloudKitManager: Already refreshing players, waiting...")
+                return players
+            }
+
+            // Cancel any pending debounce task
+            playerRefreshDebounceTask?.cancel()
+
+            // Create a new debounce task
+            return await withCheckedContinuation { continuation in
+                playerRefreshDebounceTask = Task {
+                    do {
+                        isRefreshingPlayers = true
+                        print("🟣 CloudKitManager: Fetching players from CloudKit...")
+                        let query = CKQuery(
+                            recordType: "Player", predicate: NSPredicate(format: "name != ''"))
+                        let (results, _) = try await database.records(matching: query)
+                        print("🟣 CloudKitManager: Found \(results.count) player records")
+
+                        var newPlayers: [Player] = []
+                        for result in results {
+                            guard let record = try? result.1.get(),
+                                let player = Player(from: record)
+                            else { continue }
+                            updatePlayerCache(player)
+                            newPlayers.append(player)
+                        }
+
+                        // Remove players that no longer exist
+                        let newPlayerIds = Set(newPlayers.map { $0.id })
+                        let removedPlayerIds = Set(playerCache.keys).subtracting(newPlayerIds)
+                        for id in removedPlayerIds {
+                            removePlayerFromCache(id)
+                        }
+
+                        lastPlayerRefreshTime = now
+                        isRefreshingPlayers = false
+                        continuation.resume(returning: players)
+                    } catch {
+                        print(
+                            "🟣 CloudKitManager: Error fetching players: \(error.localizedDescription)"
+                        )
+                        isRefreshingPlayers = false
+                        continuation.resume(returning: players)
+                    }
+                }
             }
         }
 
@@ -182,33 +213,6 @@ import SwiftUI
             let newPlayer = Player(name: name, appleUserID: appleUserID)
             try await savePlayer(newPlayer)
             return newPlayer
-        }
-
-        func refreshPlayers(force: Bool = false) async {
-            // Prevent concurrent refreshes
-            guard !isRefreshing else {
-                print("🟣 CloudKitManager: Skipping refresh, already refreshing")
-                return
-            }
-
-            // Debounce refreshes
-            let now = Date()
-            if !force && now.timeIntervalSince(lastRefreshTime) < 1.0 {
-                print("🟣 CloudKitManager: Skipping refresh, too soon since last refresh")
-                return
-            }
-
-            isRefreshing = true
-            defer { isRefreshing = false }
-            lastRefreshTime = now
-
-            do {
-                print("🟣 CloudKitManager: Refreshing players...")
-                _ = try await fetchPlayers()
-            } catch {
-                print("🟣 CloudKitManager: Error refreshing players: \(error.localizedDescription)")
-                self.error = error
-            }
         }
 
         func fetchCurrentUserPlayer(userID: String) async throws -> Player? {
@@ -289,7 +293,7 @@ import SwiftUI
                 players.append(updatedPlayer)
             }
 
-            // Force UI update
+            // Only notify of this specific player change
             objectWillChange.send()
         }
 
@@ -507,7 +511,90 @@ import SwiftUI
             print("🟣 CloudKitManager: Successfully deleted all players")
 
             // Refresh the players list
-            await refreshPlayers()
+            _ = try? await fetchPlayers()
+        }
+
+        // Add a method to handle specific record changes
+        func handleRecordChange(_ record: CKRecord) async {
+            switch record.recordType {
+            case "Player":
+                if let id = record.value(forKey: "id") as? String,
+                    let player = Player(from: record)
+                {
+                    // Update cache directly with the record we already have
+                    updatePlayerCache(player)
+                }
+            case "Game":
+                _ = try? await fetchGames()
+            case "Match":
+                matchCache.removeAll()
+            default:
+                break
+            }
+        }
+
+        func handleSubscriptionNotification(for recordType: String, recordID: CKRecord.ID? = nil) {
+            // Cancel any existing debounce task
+            refreshDebounceTask?.cancel()
+
+            // Create a new debounce task
+            refreshDebounceTask = Task { [weak self] in
+                do {
+                    try await Task.sleep(for: .seconds(self?.debounceInterval ?? 2.0))
+                    guard !Task.isCancelled else { return }
+
+                    switch recordType {
+                    case "Player":
+                        if let recordID = recordID {
+                            // Fetch just this one record directly
+                            let record = try? await self?.database.record(for: recordID)
+                            if let record = record,
+                                let player = Player(from: record)
+                            {
+                                self?.updatePlayerCache(player)
+                            }
+                        } else {
+                            _ = try? await self?.fetchPlayers()
+                        }
+                    case "Game":
+                        _ = try? await self?.fetchGames()
+                    case "Match":
+                        // Only clear the specific match from cache if we have its ID
+                        if let recordID = recordID,
+                            let gameID = self?.matchCache.first(where: {
+                                $0.value.contains { $0.recordID == recordID }
+                            })?.key
+                        {
+                            self?.matchCache.removeValue(forKey: gameID)
+                        }
+                    default:
+                        break
+                    }
+                } catch {}
+            }
+        }
+
+        // Add methods to access players
+        func getPlayer(id: String) -> Player? {
+            return playerCache[id]
+        }
+
+        func getPlayers() -> [Player] {
+            return players
+        }
+
+        private func updatePlayerCache(_ player: Player) {
+            playerCache[player.id] = player
+            if let index = players.firstIndex(where: { $0.id == player.id }) {
+                players[index] = player
+            } else {
+                players.append(player)
+            }
+        }
+
+        private func removePlayerFromCache(_ playerId: String) {
+            playerCache.removeValue(forKey: playerId)
+            players.removeAll { $0.id == playerId }
         }
     }
 #endif

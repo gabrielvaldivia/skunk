@@ -131,9 +131,7 @@ import SwiftUI
                                     updatedPlayer.colorData = colorData
                                 }
                                 try? await cloudKitManager.updatePlayer(updatedPlayer)
-                                // Force a refresh after update
-                                try? await Task.sleep(for: .seconds(0.5))
-                                await cloudKitManager.refreshPlayers()
+                                // No need to fetch all players again since cache is already updated
                             } else {
                                 // Create new player
                                 var newPlayer = Player(
@@ -149,9 +147,7 @@ import SwiftUI
                                     newPlayer.colorData = colorData
                                 }
                                 try? await cloudKitManager.savePlayer(newPlayer)
-                                // Force a refresh after save
-                                try? await Task.sleep(for: .seconds(0.5))
-                                await cloudKitManager.refreshPlayers()
+                                // No need to fetch all players again since cache is already updated
                             }
                             dismiss()
                         }
@@ -210,10 +206,16 @@ import SwiftUI
         }
 
         private func loadPlayers() async {
+            print("🔵 PlayersView: Starting to load players")
             isLoading = true
             do {
-                await cloudKitManager.refreshPlayers(force: true)
+                print("🔵 PlayersView: Calling fetchPlayers")
+                // Only force refresh if we don't have any players
+                _ = try await cloudKitManager.fetchPlayers(
+                    forceRefresh: cloudKitManager.players.isEmpty)
+                print("🔵 PlayersView: Successfully loaded players")
             } catch {
+                print("🔵 PlayersView: Error loading players: \(error.localizedDescription)")
                 self.error = error
                 showingError = true
             }
@@ -311,7 +313,12 @@ import SwiftUI
                     await loadPlayers()
                 }
                 .task {
+                    // Only load players when this view appears
                     await loadPlayers()
+                }
+                .onDisappear {
+                    // Cancel any ongoing loading when navigating away
+                    isLoading = false
                 }
                 .alert("Error", isPresented: $showingError) {
                     Button("OK", role: .cancel) {}

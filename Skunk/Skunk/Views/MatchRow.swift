@@ -3,9 +3,10 @@ import SwiftUI
 
 #if canImport(UIKit)
     struct MatchRow: View {
-        @EnvironmentObject private var cloudKitManager: CloudKitManager
         let match: Match
         let hideGameTitle: Bool
+        @State private var winner: Player?
+        @StateObject private var cloudKitManager = CloudKitManager.shared
 
         init(match: Match, hideGameTitle: Bool = false) {
             self.match = match
@@ -28,18 +29,15 @@ import SwiftUI
                 Spacer()
 
                 // Show winner's profile photo if there is a winner
-                if let winnerID = match.winnerID,
-                    let winner = cloudKitManager.players.first(where: { $0.id == winnerID })
-                {
+                if let winner = winner {
                     if let photoData = winner.photoData,
                         let uiImage = UIImage(data: photoData)
                     {
                         Image(uiImage: uiImage)
                             .resizable()
-                            .scaledToFill()
+                            .aspectRatio(contentMode: .fill)
                             .frame(width: 40, height: 40)
                             .clipShape(Circle())
-                            .overlay(Circle().stroke(winner.color, lineWidth: 2))
                     } else {
                         // Fallback to initials if no photo
                         ZStack {
@@ -54,6 +52,11 @@ import SwiftUI
                 }
             }
             .padding(.vertical, 4)
+            .task {
+                if let winnerID = match.winnerID {
+                    winner = cloudKitManager.getPlayer(id: winnerID)
+                }
+            }
         }
     }
 #endif

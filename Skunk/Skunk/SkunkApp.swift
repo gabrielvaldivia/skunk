@@ -7,11 +7,14 @@ import SwiftUI
     struct SkunkApp: App {
         @StateObject private var authManager = AuthenticationManager()
         @StateObject private var cloudKitManager = CloudKitManager.shared
+        @State private var isInitializing = true
 
         var body: some Scene {
             WindowGroup {
                 Group {
-                    if authManager.isAuthenticated {
+                    if isInitializing {
+                        ProgressView()
+                    } else if authManager.isAuthenticated {
                         ContentView()
                             .environmentObject(authManager)
                             .environmentObject(cloudKitManager)
@@ -25,6 +28,7 @@ import SwiftUI
                     try? await cloudKitManager.setupSchema()
                     // Then check credentials
                     await authManager.checkExistingCredentials()
+                    isInitializing = false
                 }
             }
         }

@@ -8,6 +8,7 @@ import Foundation
         var playerIDs: [String]
         var playerOrder: [String]
         var winnerID: String?
+        var winner: Player?
         var isMultiplayer: Bool
         var status: String
         var invitedPlayerIDs: [String]
@@ -24,6 +25,7 @@ import Foundation
             self.playerIDs = []
             self.playerOrder = []
             self.winnerID = nil
+            self.winner = nil
             self.isMultiplayer = false
             self.status = "active"
             self.invitedPlayerIDs = []

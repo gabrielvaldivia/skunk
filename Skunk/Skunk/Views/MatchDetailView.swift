@@ -157,7 +157,8 @@ import SwiftUI
             isLoading = true
             do {
                 print("Loading players for match: \(match.id)")
-                let players = try await cloudKitManager.fetchPlayers()
+                // Use cached players if available
+                let players = try await cloudKitManager.fetchPlayers(forceRefresh: false)
                 print("Loaded \(players.count) players")
                 print("Available player IDs: \(players.map { $0.id })")
 
@@ -168,18 +169,15 @@ import SwiftUI
                     if let updatedMatch = matches.first(where: { $0.id == match.id }) {
                         print("Updating match with \(updatedMatch.playerIDs.count) players")
 
-                        // Ensure all players in the match are loaded
-                        for playerID in updatedMatch.playerIDs {
-                            if !cloudKitManager.players.contains(where: { $0.id == playerID }) {
-                                print("Attempting to fetch missing player: \(playerID)")
-                                // Try to fetch the specific player if not found
-                                if let player = try? await cloudKitManager.fetchPlayer(id: playerID)
-                                {
-                                    print("Successfully fetched missing player: \(player.name)")
-                                } else {
-                                    print("Failed to fetch player with ID: \(playerID)")
-                                }
-                            }
+                        // Check for missing players
+                        let missingPlayerIDs = updatedMatch.playerIDs.filter { playerID in
+                            !cloudKitManager.players.contains { $0.id == playerID }
+                        }
+
+                        // Only force refresh if we're missing players
+                        if !missingPlayerIDs.isEmpty {
+                            print("Fetching missing players")
+                            _ = try await cloudKitManager.fetchPlayers(forceRefresh: true)
                         }
 
                         match = updatedMatch

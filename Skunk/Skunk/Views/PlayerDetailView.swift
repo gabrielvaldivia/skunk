@@ -5,10 +5,11 @@ import SwiftUI
     import UIKit
 
     struct PlayerDetailView: View {
-        @EnvironmentObject var cloudKitManager: CloudKitManager
-        @EnvironmentObject var authManager: AuthenticationManager
         @Environment(\.dismiss) var dismiss
-        @State private var updatedPlayer: Player
+        @EnvironmentObject var authManager: AuthenticationManager
+        let cloudKitManager: CloudKitManager
+        let player: Player
+
         @State private var playerMatches: [Match] = []
         @State private var isLoading = false
         @State private var showingEditSheet = false
@@ -16,31 +17,29 @@ import SwiftUI
         @State private var editingColor = Color.blue
         @State private var loadingTask: Task<Void, Never>?
 
-        let player: Player
-
-        init(player: Player) {
+        init(player: Player, cloudKitManager: CloudKitManager = .shared) {
             self.player = player
-            _updatedPlayer = State(initialValue: player)
+            self.cloudKitManager = cloudKitManager
         }
 
         var isCurrentUserProfile: Bool {
-            updatedPlayer.appleUserID == authManager.userID
+            player.appleUserID == authManager.userID
         }
 
         var canDelete: Bool {
-            !isCurrentUserProfile && updatedPlayer.ownerID == authManager.userID
+            !isCurrentUserProfile && player.ownerID == authManager.userID
         }
 
         var body: some View {
             List {
-                PlayerInfoSection(playerId: player.id)
+                PlayerInfoSection(player: player)
                 matchHistorySection(playerMatches)
 
                 if canDelete {
                     Section {
                         Button(role: .destructive) {
                             Task {
-                                try? await cloudKitManager.deletePlayer(updatedPlayer)
+                                try? await cloudKitManager.deletePlayer(player)
                                 dismiss()
                             }
                         } label: {
@@ -50,15 +49,13 @@ import SwiftUI
                     }
                 }
             }
-            .navigationTitle(
-                cloudKitManager.players.first(where: { $0.id == player.id })?.name ?? player.name
-            )
+            .navigationTitle(player.name)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     if isCurrentUserProfile {
                         Button {
-                            editingName = updatedPlayer.name
-                            editingColor = updatedPlayer.color
+                            editingName = player.name
+                            editingColor = player.color
                             showingEditSheet = true
                         } label: {
                             Text("Edit")
@@ -71,26 +68,21 @@ import SwiftUI
                     PlayerFormView(
                         name: $editingName,
                         color: $editingColor,
-                        existingPhotoData: updatedPlayer.photoData,
+                        existingPhotoData: player.photoData,
                         title: "Edit Player",
                         player: player
                     )
                 }
             }
-            .onChange(of: cloudKitManager.players) { _, players in
-                // Update player data when players array changes
-                if let refreshedPlayer = players.first(where: { $0.id == player.id }) {
-                    updatedPlayer = refreshedPlayer
-                }
-            }
             .task {
-                await loadPlayerData()
+                if playerMatches.isEmpty {
+                    await loadPlayerData()
+                }
             }
             .refreshable {
                 await loadPlayerData()
             }
             .onDisappear {
-                // Cancel the loading task when view disappears
                 loadingTask?.cancel()
                 loadingTask = nil
             }
@@ -101,29 +93,61 @@ import SwiftUI
             isLoading = true
             defer { isLoading = false }
 
-            // Update player data from local cache only
-            if let refreshedPlayer = cloudKitManager.players.first(where: { $0.id == player.id }) {
-                updatedPlayer = refreshedPlayer
-            }
-
-            // Fetch matches only once
             do {
+                print("🔵 PlayerDetailView: Starting to load player data")
+
+                // First try to find matches in existing games
+                var newMatches: [Match] = []
+
+                // If we have games in cache, use those first
+                if !cloudKitManager.games.isEmpty {
+                    print("🔵 PlayerDetailView: Using cached games")
+                    for game in cloudKitManager.games {
+                        if let gameMatches = game.matches {
+                            newMatches.append(
+                                contentsOf: gameMatches.filter { $0.playerIDs.contains(player.id) })
+                        }
+                    }
+                }
+
+                // If we found matches in cache, use those
+                if !newMatches.isEmpty {
+                    print("🔵 PlayerDetailView: Found \(newMatches.count) matches in cache")
+                    playerMatches = newMatches.sorted { $0.date > $1.date }
+                    return
+                }
+
+                // Otherwise fetch games and matches
+                print("🔵 PlayerDetailView: No matches in cache, fetching games")
                 let games = try await cloudKitManager.fetchGames()
                 guard !Task.isCancelled else { return }
 
-                var newMatches: [Match] = []
-                for game in games {
-                    guard !Task.isCancelled else { return }
-                    if let matches = try? await cloudKitManager.fetchMatches(for: game) {
-                        newMatches.append(
-                            contentsOf: matches.filter { $0.playerIDs.contains(player.id) })
+                // Ensure we have all players loaded before fetching matches
+                _ = try await cloudKitManager.fetchPlayers(forceRefresh: false)
+
+                // Create a task group to fetch matches in parallel
+                try await withThrowingTaskGroup(of: [Match].self) { group in
+                    for game in games {
+                        group.addTask {
+                            guard !Task.isCancelled else { return [] }
+                            if let matches = try? await cloudKitManager.fetchMatches(for: game) {
+                                return matches.filter { $0.playerIDs.contains(player.id) }
+                            }
+                            return []
+                        }
+                    }
+
+                    // Collect all matches
+                    for try await matches in group {
+                        newMatches.append(contentsOf: matches)
                     }
                 }
 
                 guard !Task.isCancelled else { return }
+                print("🔵 PlayerDetailView: Found \(newMatches.count) matches from fetch")
                 playerMatches = newMatches.sorted { $0.date > $1.date }
             } catch {
-                print("Error loading matches: \(error.localizedDescription)")
+                print("🔵 PlayerDetailView: Error loading matches: \(error.localizedDescription)")
             }
         }
 
