@@ -87,9 +87,11 @@ import SwiftUI
                 }
 
                 Section {
-                    TextField("Name", text: $name)
-                        .focused($isNameFocused)
-                    ColorPicker("Color", selection: $color)
+                    HStack {
+                        TextField("Name", text: $name)
+                            .focused($isNameFocused)
+                        ColorPicker("", selection: $color)
+                    }
                 } footer: {
                     if isCurrentUserProfile {
                         Text(
