@@ -11,6 +11,7 @@ import SwiftUI
         private var lastRefreshTime: Date = .distantPast
         private var isRefreshing = false
         private var matchCache: [String: [Match]] = [:]  // Cache matches by game ID
+        private var playerMatchesCache: [String: [Match]] = [:]  // Cache matches by player ID
         private var playerCache: [String: Player] = [:]  // Cache players by ID
         private var refreshDebounceTask: Task<Void, Never>?
         private let debounceInterval: TimeInterval = 2.0  // 2 seconds debounce
@@ -583,32 +584,33 @@ import SwiftUI
         }
 
         func deleteAllPlayers() async throws {
-            print("🟣 CloudKitManager: Starting to delete all players...")
-            let query = CKQuery(recordType: "Player", predicate: NSPredicate(value: true))
-            let (results, _) = try await database.records(matching: query)
-            print("🟣 CloudKitManager: Found \(results.count) players to delete")
-
-            for result in results {
-                do {
-                    let record = try result.1.get()
-                    print(
-                        "🟣 CloudKitManager: Deleting player: \(record.value(forKey: "name") ?? "unknown")"
-                    )
-                    try await database.deleteRecord(withID: record.recordID)
-                    print("🟣 CloudKitManager: Successfully deleted player record")
-                } catch {
-                    print(
-                        "🟣 CloudKitManager: Error deleting player record: \(error.localizedDescription)"
-                    )
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                for player in players {
+                    group.addTask {
+                        try await self.deletePlayer(player)
+                    }
                 }
+                try await group.waitForAll()
             }
-
-            // Clear local cache
             players.removeAll()
-            print("🟣 CloudKitManager: Successfully deleted all players")
+        }
 
-            // Refresh the players list
-            _ = try? await fetchPlayers()
+        func deletePlayersWithoutAppleID() async throws {
+            // Only delete players that have no Apple ID AND are not owned by anyone
+            let playersToDelete = players.filter { player in
+                player.appleUserID == nil && player.ownerID == nil
+            }
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                for player in playersToDelete {
+                    group.addTask {
+                        try await self.deletePlayer(player)
+                    }
+                }
+                try await group.waitForAll()
+            }
+            players.removeAll { player in
+                player.appleUserID == nil && player.ownerID == nil
+            }
         }
 
         // Add a method to handle specific record changes
@@ -625,6 +627,7 @@ import SwiftUI
                 _ = try? await fetchGames()
             case "Match":
                 matchCache.removeAll()
+                clearPlayerMatchesCache()  // Clear player matches cache when any match changes
             default:
                 break
             }
@@ -702,6 +705,21 @@ import SwiftUI
             // Set up the schema again
             try await setupSchema()
             print("🟣 CloudKitManager: Schema reset complete")
+        }
+
+        // Add a method to get matches for a player
+        func getPlayerMatches(_ playerId: String) -> [Match]? {
+            return playerMatchesCache[playerId]
+        }
+
+        // Add a method to cache matches for a player
+        func cachePlayerMatches(_ matches: [Match], for playerId: String) {
+            playerMatchesCache[playerId] = matches
+        }
+
+        // Add a method to clear player matches cache
+        func clearPlayerMatchesCache() {
+            playerMatchesCache.removeAll()
         }
     }
 #endif

@@ -307,12 +307,25 @@ import SwiftUI
                         Label("Add Player", systemImage: "person.badge.plus")
                     }
 
-                    Button(role: .destructive) {
-                        Task {
-                            try? await cloudKitManager.deleteAllPlayers()
+                    Menu {
+                        Button(role: .destructive) {
+                            Task {
+                                try? await cloudKitManager.deleteAllPlayers()
+                            }
+                        } label: {
+                            Label("Delete All Players", systemImage: "trash")
+                        }
+
+                        Button(role: .destructive) {
+                            Task {
+                                try? await cloudKitManager.deletePlayersWithoutAppleID()
+                                await loadPlayers()
+                            }
+                        } label: {
+                            Label("Clean Up Players", systemImage: "trash.slash")
                         }
                     } label: {
-                        Label("Delete All Players", systemImage: "trash")
+                        Label("More", systemImage: "ellipsis.circle")
                     }
                 }
                 .sheet(isPresented: $showingAddPlayer) {

@@ -8,7 +8,7 @@ import SwiftUI
 
         var body: some View {
             Section {
-                HStack {
+                VStack(spacing: 12) {
                     if let photoData = player.photoData,
                         let uiImage = UIImage(data: photoData)
                     {
@@ -24,6 +24,10 @@ import SwiftUI
                             color: player.color
                         )
                     }
+
+                    Text(player.name)
+                        .font(.system(size: 28))
+                        .fontWeight(.bold)
                 }
                 .frame(maxWidth: .infinity)
                 .listRowBackground(Color.clear)

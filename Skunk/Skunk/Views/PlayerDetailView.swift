@@ -85,6 +85,8 @@ import SwiftUI
         @State private var editingName = ""
         @State private var editingColor = Color.blue
         @State private var loadingTask: Task<Void, Never>?
+        @State private var lastRefreshTime: Date = .distantPast
+        private let cacheTimeout: TimeInterval = 30  // Refresh cache after 30 seconds
 
         init(player: Player, cloudKitManager: CloudKitManager = .shared) {
             self.playerId = player.id
@@ -107,7 +109,17 @@ import SwiftUI
         }
 
         private func loadPlayerData() async {
-            guard !isLoading, !Task.isCancelled else { return }
+            guard !isLoading else { return }
+
+            // Check if we have cached data and it's still fresh
+            let now = Date()
+            if let cachedMatches = cloudKitManager.getPlayerMatches(playerId),
+                now.timeIntervalSince(lastRefreshTime) < cacheTimeout
+            {
+                playerMatches = cachedMatches
+                return
+            }
+
             isLoading = true
             defer { isLoading = false }
 
@@ -133,7 +145,10 @@ import SwiftUI
                 // If we found matches in cache, use those
                 if !newMatches.isEmpty {
                     print("🔵 PlayerDetailView: Found \(newMatches.count) matches in cache")
-                    playerMatches = newMatches.sorted { $0.date > $1.date }
+                    newMatches = newMatches.sorted { $0.date > $1.date }
+                    playerMatches = newMatches
+                    cloudKitManager.cachePlayerMatches(newMatches, for: playerId)
+                    lastRefreshTime = now
                     return
                 }
 
@@ -165,7 +180,10 @@ import SwiftUI
 
                 guard !Task.isCancelled else { return }
                 print("🔵 PlayerDetailView: Found \(newMatches.count) matches from fetch")
-                playerMatches = newMatches.sorted { $0.date > $1.date }
+                newMatches = newMatches.sorted { $0.date > $1.date }
+                playerMatches = newMatches
+                cloudKitManager.cachePlayerMatches(newMatches, for: playerId)
+                lastRefreshTime = now
             } catch {
                 print("🔵 PlayerDetailView: Error loading matches: \(error.localizedDescription)")
             }
@@ -174,10 +192,21 @@ import SwiftUI
         var body: some View {
             List {
                 PlayerInfoSection(player: player)
-                if !playerMatches.isEmpty {
-                    StatsGridView(matches: playerMatches, playerId: player.id)
+
+                if isLoading {
+                    Section {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                            Spacer()
+                        }
+                    }
+                } else {
+                    if !playerMatches.isEmpty {
+                        StatsGridView(matches: playerMatches, playerId: player.id)
+                    }
+                    matchHistorySection(playerMatches)
                 }
-                matchHistorySection(playerMatches)
 
                 if canDelete {
                     Section {
@@ -193,7 +222,8 @@ import SwiftUI
                     }
                 }
             }
-            .navigationTitle(player.name)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     if isCurrentUserProfile {

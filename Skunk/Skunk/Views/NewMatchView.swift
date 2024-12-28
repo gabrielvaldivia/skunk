@@ -1,11 +1,32 @@
 import CloudKit
 import SwiftUI
 
+extension Sequence {
+    func uniqued<T: Hashable>(by keyPath: KeyPath<Element, T>) -> [Element] {
+        var seen = Set<T>()
+        return filter { seen.insert($0[keyPath: keyPath]).inserted }
+    }
+}
+
 #if canImport(UIKit)
     struct NewMatchView: View {
         @Environment(\.dismiss) private var dismiss
         @EnvironmentObject private var cloudKitManager: CloudKitManager
         @EnvironmentObject private var authManager: AuthenticationManager
+        @AppStorage("lastMatchPlayerIDs") private var lastMatchPlayerIDsString: String = "[]"
+
+        private var lastMatchPlayerIDs: [String] {
+            (try? JSONDecoder().decode([String].self, from: Data(lastMatchPlayerIDsString.utf8)))
+                ?? []
+        }
+
+        private func setLastMatchPlayerIDs(_ ids: [String]) {
+            if let encoded = try? JSONEncoder().encode(ids),
+                let string = String(data: encoded, encoding: .utf8)
+            {
+                lastMatchPlayerIDsString = string
+            }
+        }
 
         let game: Game
         let onMatchSaved: ((Match) -> Void)?
@@ -56,23 +77,26 @@ import SwiftUI
                                             }
                                         }
                                     } label: {
-                                        Text("Select Player")
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-
-                                if index >= game.supportedPlayerCounts.min() ?? 2 {
-                                    Button(role: .destructive) {
-                                        players.remove(at: index)
-                                        scores.remove(at: index)
-                                        if selectedWinnerIndex == index {
-                                            selectedWinnerIndex = nil
+                                        HStack {
+                                            Text("Select Player")
+                                                .foregroundColor(.secondary)
+                                            Image(systemName: "chevron.up.chevron.down")
+                                                .foregroundColor(.secondary)
                                         }
-                                    } label: {
-                                        Image(systemName: "minus.circle.fill")
-                                            .foregroundStyle(.red)
                                     }
                                 }
+                            }
+                        }
+                        .onDelete { indexSet in
+                            guard let index = indexSet.first,
+                                index >= (game.supportedPlayerCounts.min() ?? 2)
+                            else { return }
+                            players.remove(at: index)
+                            scores.remove(at: index)
+                            if selectedWinnerIndex == index {
+                                selectedWinnerIndex = nil
+                            } else if let winner = selectedWinnerIndex, winner > index {
+                                selectedWinnerIndex = winner - 1
                             }
                         }
 
@@ -132,14 +156,56 @@ import SwiftUI
             do {
                 print("Loading all players...")
                 allPlayers = try await cloudKitManager.fetchPlayers()
+
+                // Filter to only include real users (players with Apple IDs)
+                guard let userID = authManager.userID else { return }
+                allPlayers = allPlayers.filter { player in
+                    player.appleUserID != nil  // Is a real user
+                        || (player.ownerID == userID && player.appleUserID == nil)  // Or is a managed player
+                }
+
+                // Sort to match PlayersView order but without sections
+                let currentUser = allPlayers.first { $0.appleUserID == userID }
+                let managedPlayers = allPlayers.filter { player in
+                    player.ownerID == userID && player.appleUserID != userID
+                }
+                let otherUsers = allPlayers.filter { player in
+                    player.appleUserID != nil && player.appleUserID != userID
+                        && player.ownerID != userID
+                }
+
+                // Reorder allPlayers to match the structure
+                var orderedPlayers: [Player] = []
+                if let currentUser = currentUser {
+                    orderedPlayers.append(currentUser)
+                }
+                orderedPlayers.append(contentsOf: managedPlayers)
+                orderedPlayers.append(contentsOf: otherUsers)
+                allPlayers = orderedPlayers
+
                 print("Loaded \(allPlayers.count) players: \(allPlayers.map { $0.name })")
 
-                // Set default players - find existing player by Apple User ID
-                if let currentUser = allPlayers.first(where: {
-                    $0.appleUserID == authManager.userID
-                }) {
-                    print("Setting current user: \(currentUser.name)")
-                    players[0] = currentUser
+                // If we have last match players, use those
+                if !lastMatchPlayerIDs.isEmpty {
+                    print("Found last match players: \(lastMatchPlayerIDs)")
+                    // Fill in as many slots as we have players and supported count allows
+                    let lastPlayers = lastMatchPlayerIDs.compactMap { id in
+                        allPlayers.first { $0.id == id }
+                    }
+
+                    for (index, player) in lastPlayers.enumerated() {
+                        if index < players.count {
+                            players[index] = player
+                        }
+                    }
+                } else {
+                    // First time - just set current user as player 1
+                    if let currentUser = allPlayers.first(where: {
+                        $0.appleUserID == authManager.userID
+                    }) {
+                        print("Setting current user: \(currentUser.name)")
+                        players[0] = currentUser
+                    }
                 }
 
                 print("Initial players array: \(players.map { $0?.name ?? "nil" })")
@@ -156,6 +222,9 @@ import SwiftUI
                 do {
                     var match = Match(date: Date(), createdByID: authManager.userID, game: game)
                     let filledPlayers = players.compactMap { $0 }
+
+                    // Save the current players as last players
+                    setLastMatchPlayerIDs(filledPlayers.map { $0.id })
 
                     // Use the existing player IDs directly
                     match.playerIDs = filledPlayers.map { $0.id }
