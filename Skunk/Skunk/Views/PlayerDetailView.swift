@@ -4,6 +4,74 @@ import SwiftUI
 #if canImport(UIKit)
     import UIKit
 
+    struct StatsGridView: View {
+        let matches: [Match]
+        let playerId: String
+
+        private var matchesPlayed: Int {
+            matches.count
+        }
+
+        private var matchesWon: Int {
+            matches.filter { $0.winnerID == playerId }.count
+        }
+
+        private var winRate: Double {
+            guard matchesPlayed > 0 else { return 0 }
+            return Double(matchesWon) / Double(matchesPlayed) * 100
+        }
+
+        private var longestStreak: Int {
+            var currentStreak = 0
+            var maxStreak = 0
+
+            for match in matches.sorted(by: { $0.date < $1.date }) {
+                if match.winnerID == playerId {
+                    currentStreak += 1
+                    maxStreak = max(maxStreak, currentStreak)
+                } else {
+                    currentStreak = 0
+                }
+            }
+
+            return maxStreak
+        }
+
+        var body: some View {
+            Section {
+                LazyVGrid(
+                    columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible()),
+                    ], spacing: 20
+                ) {
+                    StatItemView(value: "\(matchesPlayed)", label: "Matches Played")
+                    StatItemView(value: "\(matchesWon)", label: "Matches Won")
+                    StatItemView(value: "\(Int(winRate))%", label: "Win Rate")
+                    StatItemView(value: "\(longestStreak)", label: "Longest Streak")
+                }
+                .padding(.vertical)
+            }
+        }
+    }
+
+    struct StatItemView: View {
+        let value: String
+        let label: String
+
+        var body: some View {
+            VStack(spacing: 4) {
+                Text(value)
+                    .font(.title)
+                    .fontWeight(.bold)
+                Text(label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
     struct PlayerDetailView: View {
         @Environment(\.dismiss) var dismiss
         @EnvironmentObject var authManager: AuthenticationManager
@@ -106,6 +174,9 @@ import SwiftUI
         var body: some View {
             List {
                 PlayerInfoSection(player: player)
+                if !playerMatches.isEmpty {
+                    StatsGridView(matches: playerMatches, playerId: player.id)
+                }
                 matchHistorySection(playerMatches)
 
                 if canDelete {
