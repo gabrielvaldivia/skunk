@@ -9,12 +9,14 @@ import SwiftUI
         private let container: CKContainer
         private let database: CKDatabase
         private var lastRefreshTime: Date = .distantPast
+        private var lastGamesRefreshTime: Date = .distantPast
         private var isRefreshing = false
         private var matchCache: [String: [Match]] = [:]  // Cache matches by game ID
         private var playerMatchesCache: [String: [Match]] = [:]  // Cache matches by player ID
         private var playerCache: [String: Player] = [:]  // Cache players by ID
         private var refreshDebounceTask: Task<Void, Never>?
         private let debounceInterval: TimeInterval = 2.0  // 2 seconds debounce
+        private let cacheTimeout: TimeInterval = 30.0  // 30 seconds cache timeout
         private var lastPlayerRefreshTime: Date = .distantPast
         private var isRefreshingPlayers = false
         private var playerRefreshDebounceTask: Task<Void, Never>?
@@ -138,6 +140,12 @@ import SwiftUI
         // MARK: - Games
 
         func fetchGames() async throws -> [Game] {
+            // Return cached games if they're fresh enough
+            let now = Date()
+            if !games.isEmpty && now.timeIntervalSince(lastGamesRefreshTime) < cacheTimeout {
+                return games
+            }
+
             do {
                 let query = CKQuery(
                     recordType: "Game", predicate: NSPredicate(format: "title != ''"))
@@ -147,6 +155,7 @@ import SwiftUI
                     return Game(from: record)
                 }
                 self.games = games
+                lastGamesRefreshTime = now
                 return games
             } catch let error as CKError {
                 handleCloudKitError(error)
@@ -182,8 +191,8 @@ import SwiftUI
             // Return cached players if we have them and they're fresh enough
             let now = Date()
             if !forceRefresh && !players.isEmpty
-                && now.timeIntervalSince(lastPlayerRefreshTime) < 30
-            {  // Cache valid for 30 seconds
+                && now.timeIntervalSince(lastPlayerRefreshTime) < cacheTimeout
+            {
                 print("🟣 CloudKitManager: Returning cached players")
                 return players
             }
