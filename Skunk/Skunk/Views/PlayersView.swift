@@ -119,21 +119,35 @@ import SwiftUI
                         Task {
                             if let player = player {
                                 // Update existing player using the new method
-                                let updatedPlayer = player.updated(
+                                var updatedPlayer = player.updated(
                                     name: name,
                                     photoData: selectedImageData ?? existingPhotoData
                                 )
+                                // Convert Color to UIColor and then to Data
+                                if let colorData = try? NSKeyedArchiver.archivedData(
+                                    withRootObject: UIColor(color),
+                                    requiringSecureCoding: true
+                                ) {
+                                    updatedPlayer.colorData = colorData
+                                }
                                 try? await cloudKitManager.updatePlayer(updatedPlayer)
                                 // Force a refresh after update
                                 try? await Task.sleep(for: .seconds(0.5))
                                 await cloudKitManager.refreshPlayers()
                             } else {
                                 // Create new player
-                                let newPlayer = Player(
+                                var newPlayer = Player(
                                     name: name,
                                     photoData: selectedImageData,
                                     ownerID: authManager.userID
                                 )
+                                // Convert Color to UIColor and then to Data
+                                if let colorData = try? NSKeyedArchiver.archivedData(
+                                    withRootObject: UIColor(color),
+                                    requiringSecureCoding: true
+                                ) {
+                                    newPlayer.colorData = colorData
+                                }
                                 try? await cloudKitManager.savePlayer(newPlayer)
                                 // Force a refresh after save
                                 try? await Task.sleep(for: .seconds(0.5))
