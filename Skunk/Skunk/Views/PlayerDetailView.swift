@@ -75,9 +75,12 @@ import SwiftUI
     struct PlayerDetailView: View {
         @Environment(\.dismiss) var dismiss
         @EnvironmentObject var authManager: AuthenticationManager
-        let cloudKitManager: CloudKitManager
+        @ObservedObject var cloudKitManager: CloudKitManager
         private let playerId: String
-        @State private var player: Player
+        private var player: Player {
+            cloudKitManager.players.first(where: { $0.id == playerId })
+                ?? cloudKitManager.players[0]
+        }
 
         @State private var playerMatches: [Match] = []
         @State private var isLoading = false
@@ -89,8 +92,8 @@ import SwiftUI
         private let cacheTimeout: TimeInterval = 30  // Refresh cache after 30 seconds
 
         init(player: Player, cloudKitManager: CloudKitManager = .shared) {
+            print("🔵 PlayerDetailView: Initializing with player: \(player.name)")
             self.playerId = player.id
-            self._player = State(initialValue: player)
             self.cloudKitManager = cloudKitManager
         }
 
@@ -98,35 +101,25 @@ import SwiftUI
             player.appleUserID == authManager.userID
         }
 
-        var canDelete: Bool {
-            !isCurrentUserProfile && player.ownerID == authManager.userID
-        }
-
         private func refreshPlayer() async {
+            print("🔵 PlayerDetailView: Starting refreshPlayer for ID: \(playerId)")
             if let updatedPlayer = try? await cloudKitManager.fetchPlayer(id: playerId) {
-                player = updatedPlayer
+                print("🔵 PlayerDetailView: Got updated player: \(updatedPlayer.name)")
+                print("🔵 PlayerDetailView: Updated player state")
+            } else {
+                print("🔵 PlayerDetailView: Failed to fetch updated player")
             }
         }
 
         private func loadPlayerData() async {
             guard !isLoading else { return }
 
-            // Check if we have cached data and it's still fresh
-            let now = Date()
-            if let cachedMatches = cloudKitManager.getPlayerMatches(playerId),
-                now.timeIntervalSince(lastRefreshTime) < cacheTimeout
-            {
-                playerMatches = cachedMatches
-                return
-            }
-
             isLoading = true
             defer { isLoading = false }
 
-            await refreshPlayer()
-
             do {
                 print("🔵 PlayerDetailView: Starting to load player data")
+                await refreshPlayer()
 
                 // First try to find matches in existing games
                 var newMatches: [Match] = []
@@ -147,8 +140,6 @@ import SwiftUI
                     print("🔵 PlayerDetailView: Found \(newMatches.count) matches in cache")
                     newMatches = newMatches.sorted { $0.date > $1.date }
                     playerMatches = newMatches
-                    cloudKitManager.cachePlayerMatches(newMatches, for: playerId)
-                    lastRefreshTime = now
                     return
                 }
 
@@ -156,9 +147,6 @@ import SwiftUI
                 print("🔵 PlayerDetailView: No matches in cache, fetching games")
                 let games = try await cloudKitManager.fetchGames()
                 guard !Task.isCancelled else { return }
-
-                // Ensure we have all players loaded before fetching matches
-                _ = try await cloudKitManager.fetchPlayers(forceRefresh: false)
 
                 // Create a task group to fetch matches in parallel
                 try await withThrowingTaskGroup(of: [Match].self) { group in
@@ -182,8 +170,6 @@ import SwiftUI
                 print("🔵 PlayerDetailView: Found \(newMatches.count) matches from fetch")
                 newMatches = newMatches.sorted { $0.date > $1.date }
                 playerMatches = newMatches
-                cloudKitManager.cachePlayerMatches(newMatches, for: playerId)
-                lastRefreshTime = now
             } catch {
                 print("🔵 PlayerDetailView: Error loading matches: \(error.localizedDescription)")
             }
@@ -191,7 +177,36 @@ import SwiftUI
 
         var body: some View {
             List {
-                PlayerInfoSection(player: player)
+                Section {
+                    VStack(spacing: 12) {
+                        if let photoData = player.photoData,
+                            let uiImage = UIImage(data: photoData)
+                        {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 120, height: 120)
+                                .clipShape(Circle())
+                        } else {
+                            PlayerInitialsView(
+                                name: player.name,
+                                size: 120,
+                                color: player.color
+                            )
+                        }
+
+                        Text(player.name)
+                            .font(.system(size: 28))
+                            .fontWeight(.bold)
+                            .onChange(of: player.name) { oldValue, newValue in
+                                print(
+                                    "🔵 PlayerDetailView: Player name changed in view from \(oldValue) to \(newValue)"
+                                )
+                            }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.clear)
+                }
 
                 if isLoading {
                     Section {
@@ -206,20 +221,6 @@ import SwiftUI
                         StatsGridView(matches: playerMatches, playerId: player.id)
                     }
                     matchHistorySection(playerMatches)
-                }
-
-                if canDelete {
-                    Section {
-                        Button(role: .destructive) {
-                            Task {
-                                try? await cloudKitManager.deletePlayer(player)
-                                dismiss()
-                            }
-                        } label: {
-                            Text("Delete Player")
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
                 }
             }
             .navigationTitle("")
@@ -242,7 +243,9 @@ import SwiftUI
             .sheet(
                 isPresented: $showingEditSheet,
                 onDismiss: {
+                    print("🔵 PlayerDetailView: Edit sheet dismissed")
                     Task {
+                        print("🔵 PlayerDetailView: Starting post-edit refresh")
                         await loadPlayerData()
                     }
                 }
@@ -258,7 +261,12 @@ import SwiftUI
                 }
             }
             .task {
-                if playerMatches.isEmpty {
+                print("🔵 PlayerDetailView: View appeared, loading data")
+                await loadPlayerData()
+            }
+            .onChange(of: cloudKitManager.players) { _, _ in
+                print("🔵 PlayerDetailView: CloudKitManager players changed")
+                Task {
                     await loadPlayerData()
                 }
             }

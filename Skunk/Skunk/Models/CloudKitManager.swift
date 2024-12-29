@@ -359,6 +359,10 @@ import SwiftUI
 
                 // Notify of changes
                 objectWillChange.send()
+
+                // Force a refresh to ensure all views have the latest data
+                _ = try await fetchPlayers(forceRefresh: true)
+
                 print("🟣 CloudKitManager: Successfully completed player save operation")
             } catch let error as CKError {
                 print(
@@ -439,10 +443,10 @@ import SwiftUI
                 // Notify of changes
                 objectWillChange.send()
 
-                print("🟣 CloudKitManager: Starting force refresh")
                 // Force a refresh to ensure all views have the latest data
                 _ = try await fetchPlayers(forceRefresh: true)
-                print("🟣 CloudKitManager: Completed force refresh")
+
+                print("🟣 CloudKitManager: Successfully completed player update operation")
             } catch let error as CKError {
                 print(
                     "🟣 CloudKitManager: CloudKit error during update: \(error.localizedDescription)"
