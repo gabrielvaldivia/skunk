@@ -275,6 +275,12 @@ import SwiftUI
             .refreshable {
                 await loadPlayers()
             }
+            .onChange(of: cloudKitManager.players) { _, _ in
+                print("🔵 PlayersView: CloudKitManager players changed")
+                Task {
+                    await loadPlayers()
+                }
+            }
             .sheet(isPresented: $showingAddPlayer) {
                 NavigationStack {
                     PlayerFormView(
@@ -373,9 +379,7 @@ import SwiftUI
             isLoading = true
             do {
                 print("🔵 PlayersView: Calling fetchPlayers")
-                // Only force refresh if we don't have any players
-                _ = try await cloudKitManager.fetchPlayers(
-                    forceRefresh: cloudKitManager.players.isEmpty)
+                _ = try await cloudKitManager.fetchPlayers(forceRefresh: true)
                 print("🔵 PlayersView: Successfully loaded players")
             } catch {
                 print("🔵 PlayersView: Error loading players: \(error.localizedDescription)")
