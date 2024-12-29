@@ -17,6 +17,7 @@ import SwiftUI
                 NavigationStack {
                     GamesView()
                         .navigationBarTitleDisplayMode(.inline)
+                        .toolbarBackground(.secondary.opacity(0.1), for: .navigationBar)
                         .navigationDestination(for: Game.self) { game in
                             GameDetailView(game: game)
                                 .navigationDestination(for: Match.self) { match in
@@ -33,6 +34,8 @@ import SwiftUI
 
                 NavigationStack {
                     PlayersView()
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbarBackground(.secondary.opacity(0.1), for: .navigationBar)
                         .navigationDestination(for: Match.self) { match in
                             MatchDetailView(match: match)
                         }
@@ -47,6 +50,7 @@ import SwiftUI
                 NavigationStack {
                     ActivityView()
                         .navigationBarTitleDisplayMode(.inline)
+                        .toolbarBackground(.secondary.opacity(0.1), for: .navigationBar)
                 }
                 .tabItem {
                     Label("Activity", systemImage: "list.bullet")
@@ -55,6 +59,7 @@ import SwiftUI
                 NavigationStack {
                     SettingsView()
                         .navigationBarTitleDisplayMode(.inline)
+                        .toolbarBackground(.secondary.opacity(0.1), for: .navigationBar)
                 }
                 .tabItem {
                     Label("Settings", systemImage: "gear")

@@ -68,6 +68,23 @@ import SwiftUI
 
         var body: some View {
             HStack {
+                VStack(alignment: .leading) {
+                    HStack {
+                        Text(player.name)
+                            .font(.body)
+                            .foregroundColor(Color(.label))
+                        if isCurrentUser {
+                            Text("(You)")
+                                .foregroundColor(Color(.secondaryLabel))
+                        }
+                    }
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(Color(.secondaryLabel))
+                }
+
+                Spacer()
+
                 if let photoData = player.photoData,
                     let uiImage = UIImage(data: photoData)
                 {
@@ -76,27 +93,22 @@ import SwiftUI
                         .scaledToFill()
                         .frame(width: 40, height: 40)
                         .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(Color.black.opacity(0.1), lineWidth: 1)
+                        )
                 } else {
                     PlayerInitialsView(
                         name: player.name,
                         size: 40,
                         color: player.color
                     )
+                    .overlay(
+                        Circle()
+                            .stroke(Color.black.opacity(0.1), lineWidth: 1)
+                    )
                 }
 
-                VStack(alignment: .leading) {
-                    HStack {
-                        Text(player.name)
-                            .font(.body)
-                        if isCurrentUser {
-                            Text("(You)")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
             }
             .task {
                 await loadMatches()
