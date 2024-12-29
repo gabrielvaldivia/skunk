@@ -13,6 +13,7 @@ import SwiftUI
         private var isRefreshing = false
         private var matchCache: [String: [Match]] = [:]  // Cache matches by game ID
         private var playerMatchesCache: [String: [Match]] = [:]  // Cache matches by player ID
+        private var groupMatchesCache: [String: [Match]] = [:]  // Cache matches by group ID
         private var playerCache: [String: Player] = [:]  // Cache players by ID
         private var refreshDebounceTask: Task<Void, Never>?
         private let debounceInterval: TimeInterval = 2.0  // 2 seconds debounce
@@ -978,6 +979,60 @@ import SwiftUI
                     try await savePlayerGroup(group)
                 }
             }
+        }
+
+        // Add a method to get matches for a group
+        func getGroupMatches(_ groupId: String) -> [Match]? {
+            return groupMatchesCache[groupId]
+        }
+
+        // Add a method to cache matches for a group
+        func cacheGroupMatches(_ matches: [Match], for groupId: String) {
+            groupMatchesCache[groupId] = matches
+        }
+
+        // Add a method to clear group matches cache
+        func clearGroupMatchesCache() {
+            groupMatchesCache.removeAll()
+        }
+
+        // Update loadGroupsAndMatches to return matches
+        func loadGroupsAndMatches() async throws -> [String: [Match]] {
+            // First ensure we have fresh player data
+            _ = try await fetchPlayers(forceRefresh: true)
+
+            // Update all group names to use the new format
+            try await updateAllGroupNames()
+
+            // Then force a fresh fetch of groups
+            let groups = try await fetchPlayerGroups()
+
+            // Load matches for each group
+            var newGroupMatches: [String: [Match]] = [:]
+            let games = try await fetchGames()
+
+            // First fetch all matches for all games
+            var allGameMatches: [Game: [Match]] = [:]
+            for game in games {
+                let gameMatches = try await fetchMatches(for: game)
+                allGameMatches[game] = gameMatches
+            }
+
+            // Then process matches for each group
+            for group in groups {
+                var groupMatchList: [Match] = []
+                for (_, matches) in allGameMatches {
+                    let filteredMatches = matches.filter { match in
+                        Set(match.playerIDs) == Set(group.playerIDs)
+                    }
+                    groupMatchList.append(contentsOf: filteredMatches)
+                }
+                let sortedMatches = groupMatchList.sorted { $0.date > $1.date }
+                newGroupMatches[group.id] = sortedMatches
+                cacheGroupMatches(sortedMatches, for: group.id)
+            }
+
+            return newGroupMatches
         }
     }
 #endif

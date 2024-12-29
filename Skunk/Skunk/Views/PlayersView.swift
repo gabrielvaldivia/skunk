@@ -307,7 +307,7 @@ import SwiftUI
                                 NavigationLink {
                                     PlayerDetailView(player: currentUser)
                                 } label: {
-                                    PlayerRow(player: currentUser)
+                                    PlayerRow(player: currentUser, group: nil)
                                         .padding(.vertical, 8)
                                 }
                             }
@@ -317,7 +317,7 @@ import SwiftUI
                                 NavigationLink {
                                     PlayerDetailView(player: player)
                                 } label: {
-                                    PlayerRow(player: player)
+                                    PlayerRow(player: player, group: nil)
                                         .padding(.vertical, 8)
                                 }
                             }
@@ -355,7 +355,7 @@ import SwiftUI
                                     NavigationLink {
                                         PlayerDetailView(player: player)
                                     } label: {
-                                        PlayerRow(player: player)
+                                        PlayerRow(player: player, group: nil)
                                             .padding(.vertical, 12)
                                     }
                                 }

@@ -1,6 +1,51 @@
 import SwiftUI
 
 #if canImport(UIKit)
+    struct GroupRowLink: View {
+        let group: PlayerGroup
+
+        var body: some View {
+            NavigationLink {
+                PlayerGroupDetailView(group: group)
+            } label: {
+                PlayerRow(
+                    player: nil,
+                    group: group
+                )
+                .padding(.vertical, 12)
+            }
+            .tint(.primary)
+        }
+    }
+
+    struct EmptyGroupsView: View {
+        var body: some View {
+            HStack {
+                Text("No groups found")
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.vertical, 8)
+        }
+    }
+
+    struct GroupsListView: View {
+        let groups: [PlayerGroup]
+        let groupMatches: [String: [Match]]
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 0) {
+                if groups.isEmpty {
+                    EmptyGroupsView()
+                } else {
+                    ForEach(groups) { group in
+                        GroupRowLink(group: group)
+                    }
+                }
+            }
+        }
+    }
+
     struct PlayerGroupsView: View {
         @EnvironmentObject private var cloudKitManager: CloudKitManager
         @State private var error: Error?
@@ -9,34 +54,14 @@ import SwiftUI
 
         var body: some View {
             ScrollView {
-                // All Groups container
                 VStack(alignment: .leading, spacing: 20) {
-                    // Groups section
-                    VStack(alignment: .leading, spacing: 0) {
-                        if cloudKitManager.playerGroups.isEmpty {
-                            HStack {
-                                Text("No groups found")
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                            }
-                            .padding(.vertical, 8)
-                        } else {
-                            ForEach(cloudKitManager.playerGroups) { group in
-                                NavigationLink {
-                                    PlayerGroupDetailView(group: group)
-                                } label: {
-                                    PlayerGroupRow(
-                                        group: group, matches: groupMatches[group.id] ?? []
-                                    )
-                                    .padding(.vertical, 12)
-                                }
-                                .tint(.primary)
-                            }
-                        }
-                    }
+                    GroupsListView(
+                        groups: cloudKitManager.playerGroups,
+                        groupMatches: groupMatches
+                    )
                 }
                 .padding(.horizontal, 20)
-                .padding(.vertical)
+                .padding(.vertical, 16)
             }
             .task {
                 await loadGroupsAndMatches()
@@ -53,119 +78,13 @@ import SwiftUI
 
         private func loadGroupsAndMatches() async {
             do {
-                // First ensure we have fresh player data
-                _ = try await cloudKitManager.fetchPlayers(forceRefresh: true)
-
-                // Update all group names to use the new format
-                try await cloudKitManager.updateAllGroupNames()
-
-                // Then force a fresh fetch of groups
-                let groups = try await cloudKitManager.fetchPlayerGroups()
-
-                // Load matches for each group
-                var newGroupMatches: [String: [Match]] = [:]
-                let games = try await cloudKitManager.fetchGames()
-
-                // First fetch all matches for all games
-                var allGameMatches: [Game: [Match]] = [:]
-                for game in games {
-                    let gameMatches = try await cloudKitManager.fetchMatches(for: game)
-                    allGameMatches[game] = gameMatches
-                }
-
-                // Then process matches for each group
-                for group in groups {
-                    var groupMatchList: [Match] = []
-                    for (_, matches) in allGameMatches {
-                        let filteredMatches = matches.filter { match in
-                            Set(match.playerIDs) == Set(group.playerIDs)
-                        }
-                        groupMatchList.append(contentsOf: filteredMatches)
-                    }
-                    newGroupMatches[group.id] = groupMatchList.sorted { $0.date > $1.date }
-                }
-
-                // Update state all at once to avoid UI flicker
+                let newGroupMatches = try await cloudKitManager.loadGroupsAndMatches()
                 await MainActor.run {
                     groupMatches = newGroupMatches
                 }
             } catch {
                 self.error = error
                 showingError = true
-            }
-        }
-    }
-
-    struct PlayerGroupRow: View {
-        @EnvironmentObject private var cloudKitManager: CloudKitManager
-        let group: PlayerGroup
-        let matches: [Match]
-
-        private var playerNames: String {
-            let names = group.playerIDs.compactMap { id in
-                cloudKitManager.getPlayer(id: id)?.name
-            }
-
-            switch names.count {
-            case 0:
-                return "No players"
-            case 1:
-                return names[0]
-            case 2:
-                return "\(names[0]) & \(names[1])"
-            default:
-                let allButLast = names.dropLast().joined(separator: ", ")
-                return "\(allButLast), & \(names.last!)"
-            }
-        }
-
-        private var players: [Player] {
-            group.playerIDs.compactMap { id in
-                cloudKitManager.getPlayer(id: id)
-            }
-        }
-
-        private var lastMatchInfo: String {
-            if let lastMatch = matches.first, let game = lastMatch.game {
-                let formatter = RelativeDateTimeFormatter()
-                formatter.unitsStyle = .full
-                let timeAgo = formatter.localizedString(for: lastMatch.date, relativeTo: Date())
-                return "Last played \(game.title) \(timeAgo)"
-            }
-            return "No matches yet"
-        }
-
-        var body: some View {
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(playerNames)
-                        .font(.body)
-                    Text(lastMatchInfo)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                // Facepile
-                HStack(spacing: -8) {
-                    ForEach(players.prefix(3)) { player in
-                        PlayerAvatar(player: player, size: 40)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(Color(.systemBackground), lineWidth: 2)
-                            )
-                    }
-                    if players.count > 3 {
-                        Text("+\(players.count - 3)")
-                            .font(.caption)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color(.systemGray5))
-                            .clipShape(Capsule())
-                    }
-                }
             }
         }
     }
