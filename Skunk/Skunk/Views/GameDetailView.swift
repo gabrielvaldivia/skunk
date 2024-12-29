@@ -218,12 +218,13 @@ import SwiftUI
                     HStack {
                         Spacer()
                         Button(action: { showingNewMatch.toggle() }) {
-                            Image(systemName: "plus")
-                                .font(.title2.weight(.semibold))
+                            Text("New Match")
+                                .font(.headline)
                                 .foregroundColor(.white)
-                                .frame(width: 60, height: 60)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
                                 .background(Color.blue)
-                                .clipShape(Circle())
+                                .clipShape(RoundedRectangle(cornerRadius: 24))
                                 .shadow(radius: 4, y: 2)
                         }
                         Spacer()

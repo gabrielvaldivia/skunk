@@ -824,7 +824,13 @@ import SwiftUI
                 return playerGroups
             }
 
+            await MainActor.run { isLoading = true }
+            defer { Task { @MainActor in isLoading = false } }
+
             do {
+                // First ensure we have the latest player data
+                _ = try await fetchPlayers(forceRefresh: true)
+
                 // Fetch all matches to find unique player combinations
                 let games = try await fetchGames()
                 var uniquePlayerCombinations = Set<String>()
@@ -833,8 +839,11 @@ import SwiftUI
                     let matches = try await fetchMatches(for: game)
                     for match in matches {
                         let sortedIDs = match.playerIDs.sorted()
-                        let idString = sortedIDs.joined(separator: ",")
-                        uniquePlayerCombinations.insert(idString)
+                        // Only add combinations where we have all player data
+                        if sortedIDs.allSatisfy({ playerCache[$0] != nil }) {
+                            let idString = sortedIDs.joined(separator: ",")
+                            uniquePlayerCombinations.insert(idString)
+                        }
                     }
                 }
 
@@ -846,9 +855,12 @@ import SwiftUI
                     groups.append(group)
                 }
 
-                self.playerGroups = groups
-                groups.forEach { playerGroupCache[$0.id] = $0 }
-                lastPlayerGroupRefreshTime = now
+                // Update everything at once to avoid UI flicker
+                await MainActor.run {
+                    self.playerGroups = groups
+                    groups.forEach { playerGroupCache[$0.id] = $0 }
+                    lastPlayerGroupRefreshTime = now
+                }
 
                 return groups
             } catch let error as CKError {

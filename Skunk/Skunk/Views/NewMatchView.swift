@@ -158,7 +158,7 @@ extension Sequence {
                         }
                     }
                 }
-                .navigationTitle("New Match")
+                .navigationTitle("New \(game.title) Match")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {

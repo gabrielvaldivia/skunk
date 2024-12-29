@@ -3,22 +3,30 @@ import SwiftUI
 #if canImport(UIKit)
     struct PlayerGroupsView: View {
         @EnvironmentObject private var cloudKitManager: CloudKitManager
-        @State private var isLoading = false
         @State private var error: Error?
         @State private var showingError = false
 
         var body: some View {
-            List {
-                ForEach(cloudKitManager.playerGroups) { group in
-                    NavigationLink {
-                        PlayerGroupDetailView(group: group)
-                    } label: {
-                        PlayerGroupRow(group: group)
+            ZStack {
+                if cloudKitManager.isLoading {
+                    ProgressView()
+                } else {
+                    List {
+                        ForEach(cloudKitManager.playerGroups) { group in
+                            NavigationLink {
+                                PlayerGroupDetailView(group: group)
+                            } label: {
+                                PlayerGroupRow(group: group)
+                            }
+                        }
                     }
                 }
             }
             .navigationTitle("Groups")
             .task {
+                await loadGroups()
+            }
+            .refreshable {
                 await loadGroups()
             }
             .alert("Error", isPresented: $showingError) {
@@ -29,14 +37,12 @@ import SwiftUI
         }
 
         private func loadGroups() async {
-            isLoading = true
             do {
                 _ = try await cloudKitManager.fetchPlayerGroups()
             } catch {
                 self.error = error
                 showingError = true
             }
-            isLoading = false
         }
     }
 
@@ -75,6 +81,7 @@ import SwiftUI
         @State private var error: Error?
         @State private var showingError = false
         @State private var selectedGameId: String? = nil
+        @State private var showingNewMatch = false
 
         private var games: [Game] {
             // Get unique games from matches, sorted by title
@@ -241,13 +248,16 @@ import SwiftUI
                     }
                 } else {
                     List {
-                        // Game Picker
-                        Section {
-                            Picker("Game", selection: $selectedGameId) {
-                                Text("All Games").tag(Optional<String>.none)
-                                ForEach(games) { game in
-                                    Text(game.title).tag(Optional(game.id))
+                        // Game Picker - only show if there's more than one game
+                        if games.count > 1 {
+                            Section {
+                                Picker("Game", selection: $selectedGameId) {
+                                    Text("All Games").tag(Optional<String>.none)
+                                    ForEach(games) { game in
+                                        Text(game.title).tag(Optional(game.id))
+                                    }
                                 }
+                                .pickerStyle(.menu)
                             }
                         }
 
@@ -266,13 +276,57 @@ import SwiftUI
                         matchHistorySection(filteredMatches)
                     }
                 }
+
+                // Add floating action button
+                if let selectedGame = games.first(where: { $0.id == selectedGameId }) ?? games.first
+                {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                showingNewMatch = true
+                            }) {
+                                Text("New Match")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 12)
+                                    .background(Color.blue)
+                                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                                    .shadow(radius: 4, y: 2)
+                            }
+                            Spacer()
+                        }
+                        .padding(.bottom, 20)
+                    }
+                }
             }
             .navigationTitle(playerNames)
             .task {
                 await loadMatches()
+                // Auto-select the only game if there's just one
+                if games.count == 1 {
+                    selectedGameId = games[0].id
+                }
             }
             .refreshable {
                 await loadMatches()
+            }
+            .sheet(isPresented: $showingNewMatch) {
+                if let selectedGame = games.first(where: { $0.id == selectedGameId }) ?? games.first
+                {
+                    NewMatchView(
+                        game: selectedGame,
+                        defaultPlayerIDs: group.playerIDs,
+                        onMatchSaved: { newMatch in
+                            matches.insert(newMatch, at: 0)
+                            Task {
+                                await loadMatches()
+                            }
+                        }
+                    )
+                }
             }
             .alert("Error", isPresented: $showingError) {
                 Button("OK", role: .cancel) {}
