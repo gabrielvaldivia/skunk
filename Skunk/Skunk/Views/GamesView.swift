@@ -42,6 +42,11 @@ import SwiftUI
             }
             .sheet(isPresented: $showingAddGame) {
                 AddGameView()
+                    .onDisappear {
+                        Task {
+                            await loadGames()
+                        }
+                    }
             }
             .task {
                 await loadGames()
