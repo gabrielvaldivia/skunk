@@ -22,7 +22,6 @@ import SwiftUI
                     }
                 }
             }
-            .navigationTitle("Groups")
             .task {
                 await loadGroups()
             }
@@ -326,7 +325,6 @@ import SwiftUI
                     }
                 }
             }
-            .navigationTitle(playerNames)
             .task {
                 await loadMatches()
             }

@@ -204,6 +204,11 @@ import SwiftUI
         }
     }
 
+    private enum ViewMode {
+        case players
+        case groups
+    }
+
     struct PlayersView: View {
         @EnvironmentObject private var authManager: AuthenticationManager
         @EnvironmentObject private var cloudKitManager: CloudKitManager
@@ -213,6 +218,7 @@ import SwiftUI
         @State private var isLoading = false
         @State private var error: Error?
         @State private var showingError = false
+        @State private var viewMode: ViewMode = .players
 
         private var currentUser: Player? {
             guard let userID = authManager.userID else { return nil }
@@ -235,6 +241,112 @@ import SwiftUI
             }
         }
 
+        var body: some View {
+            VStack(spacing: 0) {
+                // Fixed header with segmented control
+                Picker("View", selection: $viewMode) {
+                    Text("All").tag(ViewMode.players)
+                    Text("Groups").tag(ViewMode.groups)
+                }
+                .pickerStyle(.segmented)
+                .padding()
+
+                // Content area that takes remaining space
+                GeometryReader { geometry in
+                    ZStack(alignment: .center) {
+                        if isLoading {
+                            ProgressView()
+                        } else {
+                            if viewMode == .players {
+                                playersView
+                            } else {
+                                PlayerGroupsView()
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .navigationTitle("Players")
+            .navigationBarTitleDisplayMode(.inline)
+            .task {
+                await loadPlayers()
+            }
+            .refreshable {
+                await loadPlayers()
+            }
+            .sheet(isPresented: $showingAddPlayer) {
+                NavigationStack {
+                    PlayerFormView(
+                        name: $newPlayerName,
+                        color: $newPlayerColor,
+                        existingPhotoData: nil,
+                        title: "New Player",
+                        player: nil
+                    )
+                }
+            }
+            .alert("Error", isPresented: $showingError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(error?.localizedDescription ?? "An unknown error occurred")
+            }
+        }
+
+        private var playersView: some View {
+            List {
+                Section("Your Players") {
+                    if let currentUser = currentUser {
+                        NavigationLink {
+                            PlayerDetailView(player: currentUser)
+                        } label: {
+                            PlayerRow(player: currentUser)
+                        }
+                    }
+
+                    ForEach(managedPlayers) { player in
+                        NavigationLink {
+                            PlayerDetailView(player: player)
+                        } label: {
+                            PlayerRow(player: player)
+                        }
+                    }
+
+                    Button {
+                        showingAddPlayer = true
+                    } label: {
+                        HStack {
+                            Circle()
+                                .fill(Color(.systemGray5))
+                                .frame(width: 40, height: 40)
+                                .overlay {
+                                    Image(systemName: "plus")
+                                        .foregroundStyle(.blue)
+                                }
+                            Text("Add Player")
+                                .foregroundStyle(.blue)
+                            Spacer()
+                        }
+                    }
+                }
+
+                Section("Other Players") {
+                    if otherUsers.isEmpty {
+                        Text("No other players found")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(otherUsers) { player in
+                            NavigationLink {
+                                PlayerDetailView(player: player)
+                            } label: {
+                                PlayerRow(player: player)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         private func loadPlayers() async {
             print("🔵 PlayersView: Starting to load players")
             isLoading = true
@@ -250,123 +362,6 @@ import SwiftUI
                 showingError = true
             }
             isLoading = false
-        }
-
-        var body: some View {
-            NavigationStack {
-                ZStack {
-                    if isLoading {
-                        ProgressView()
-                    } else {
-                        List {
-                            Section("Your Players") {
-                                if let currentUser = currentUser {
-                                    NavigationLink {
-                                        PlayerDetailView(player: currentUser)
-                                    } label: {
-                                        PlayerRow(player: currentUser)
-                                    }
-                                }
-
-                                if managedPlayers.isEmpty && currentUser == nil {
-                                    Text("No players")
-                                        .foregroundStyle(.secondary)
-                                } else {
-                                    ForEach(managedPlayers) { player in
-                                        NavigationLink {
-                                            PlayerDetailView(player: player)
-                                        } label: {
-                                            PlayerRow(player: player)
-                                        }
-                                    }
-                                }
-                            }
-
-                            Section("Other Players") {
-                                if otherUsers.isEmpty {
-                                    Text("No other players found")
-                                        .foregroundStyle(.secondary)
-                                } else {
-                                    ForEach(otherUsers) { player in
-                                        NavigationLink {
-                                            PlayerDetailView(player: player)
-                                        } label: {
-                                            PlayerRow(player: player)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                .navigationTitle("Players")
-                .toolbar {
-                    Button {
-                        showingAddPlayer = true
-                    } label: {
-                        Label("Add Player", systemImage: "person.badge.plus")
-                    }
-
-                    Menu {
-                        Button(role: .destructive) {
-                            Task {
-                                try? await cloudKitManager.deleteAllPlayers()
-                            }
-                        } label: {
-                            Label("Delete All Players", systemImage: "trash")
-                        }
-
-                        Button(role: .destructive) {
-                            Task {
-                                try? await cloudKitManager.deletePlayersWithoutAppleID()
-                                await loadPlayers()
-                            }
-                        } label: {
-                            Label("Clean Up Players", systemImage: "trash.slash")
-                        }
-                    } label: {
-                        Label("More", systemImage: "ellipsis.circle")
-                    }
-                }
-                .sheet(isPresented: $showingAddPlayer) {
-                    NavigationStack {
-                        PlayerFormView(
-                            name: $newPlayerName,
-                            color: $newPlayerColor,
-                            existingPhotoData: nil,
-                            title: "New Player",
-                            player: nil
-                        )
-                    }
-                }
-                .onChange(of: showingAddPlayer) { _, isShowing in
-                    if !isShowing {
-                        // Reset the form when sheet is dismissed
-                        newPlayerName = ""
-                        newPlayerColor = .blue
-                        // Refresh players when the sheet is dismissed
-                        Task {
-                            await loadPlayers()
-                        }
-                    }
-                }
-                .refreshable {
-                    await loadPlayers()
-                }
-                .task {
-                    // Only load players when this view appears
-                    await loadPlayers()
-                }
-                .onDisappear {
-                    // Cancel any ongoing loading when navigating away
-                    isLoading = false
-                }
-                .alert("Error", isPresented: $showingError) {
-                    Button("OK", role: .cancel) {}
-                } message: {
-                    Text(error?.localizedDescription ?? "An unknown error occurred")
-                }
-            }
         }
     }
 #endif

@@ -16,6 +16,7 @@ import SwiftUI
             TabView {
                 NavigationStack {
                     GamesView()
+                        .navigationBarTitleDisplayMode(.inline)
                         .navigationDestination(for: Game.self) { game in
                             GameDetailView(game: game)
                                 .navigationDestination(for: Match.self) { match in
@@ -44,20 +45,8 @@ import SwiftUI
                 }
 
                 NavigationStack {
-                    PlayerGroupsView()
-                        .navigationDestination(for: Match.self) { match in
-                            MatchDetailView(match: match)
-                        }
-                        .navigationDestination(for: Player.self) { player in
-                            PlayerDetailView(player: player)
-                        }
-                }
-                .tabItem {
-                    Label("Groups", systemImage: "person.2.circle")
-                }
-
-                NavigationStack {
                     ActivityView()
+                        .navigationBarTitleDisplayMode(.inline)
                 }
                 .tabItem {
                     Label("Activity", systemImage: "list.bullet")
@@ -65,6 +54,7 @@ import SwiftUI
 
                 NavigationStack {
                     SettingsView()
+                        .navigationBarTitleDisplayMode(.inline)
                 }
                 .tabItem {
                     Label("Settings", systemImage: "gear")
