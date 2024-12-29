@@ -53,22 +53,41 @@ import SwiftUI
 
         private func loadGroupsAndMatches() async {
             do {
+                // First ensure we have fresh player data
+                _ = try await cloudKitManager.fetchPlayers(forceRefresh: true)
+
+                // Update all group names to use the new format
+                try await cloudKitManager.updateAllGroupNames()
+
+                // Then force a fresh fetch of groups
                 let groups = try await cloudKitManager.fetchPlayerGroups()
 
                 // Load matches for each group
-                for group in groups {
-                    let games = try await cloudKitManager.fetchGames()
-                    var allMatches: [Match] = []
+                var newGroupMatches: [String: [Match]] = [:]
+                let games = try await cloudKitManager.fetchGames()
 
-                    for game in games {
-                        let gameMatches = try await cloudKitManager.fetchMatches(for: game)
-                        let groupMatches = gameMatches.filter { match in
+                // First fetch all matches for all games
+                var allGameMatches: [Game: [Match]] = [:]
+                for game in games {
+                    let gameMatches = try await cloudKitManager.fetchMatches(for: game)
+                    allGameMatches[game] = gameMatches
+                }
+
+                // Then process matches for each group
+                for group in groups {
+                    var groupMatchList: [Match] = []
+                    for (_, matches) in allGameMatches {
+                        let filteredMatches = matches.filter { match in
                             Set(match.playerIDs) == Set(group.playerIDs)
                         }
-                        allMatches.append(contentsOf: groupMatches)
+                        groupMatchList.append(contentsOf: filteredMatches)
                     }
+                    newGroupMatches[group.id] = groupMatchList.sorted { $0.date > $1.date }
+                }
 
-                    groupMatches[group.id] = allMatches.sorted { $0.date > $1.date }
+                // Update state all at once to avoid UI flicker
+                await MainActor.run {
+                    groupMatches = newGroupMatches
                 }
             } catch {
                 self.error = error
@@ -119,7 +138,7 @@ import SwiftUI
         var body: some View {
             HStack {
                 VStack(alignment: .leading) {
-                    Text(group.name)
+                    Text(playerNames)
                         .font(.body)
                     Text(lastMatchInfo)
                         .font(.caption)

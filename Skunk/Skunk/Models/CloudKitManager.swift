@@ -831,28 +831,15 @@ import SwiftUI
                 // First ensure we have the latest player data
                 _ = try await fetchPlayers(forceRefresh: true)
 
-                // Fetch all matches to find unique player combinations
-                let games = try await fetchGames()
-                var uniquePlayerCombinations = Set<String>()
-
-                for game in games {
-                    let matches = try await fetchMatches(for: game)
-                    for match in matches {
-                        let sortedIDs = match.playerIDs.sorted()
-                        // Only add combinations where we have all player data
-                        if sortedIDs.allSatisfy({ playerCache[$0] != nil }) {
-                            let idString = sortedIDs.joined(separator: ",")
-                            uniquePlayerCombinations.insert(idString)
-                        }
-                    }
-                }
-
-                // Create or fetch groups for each unique combination
-                var groups: [PlayerGroup] = []
-                for idString in uniquePlayerCombinations {
-                    let playerIDs = idString.split(separator: ",").map(String.init)
-                    let group = try await findOrCreatePlayerGroup(for: playerIDs)
-                    groups.append(group)
+                // Just fetch all existing groups using a simple predicate
+                let query = CKQuery(
+                    recordType: "PlayerGroup", predicate: NSPredicate(format: "id != ''"))
+                let (results, _) = try await database.records(matching: query)
+                let groups = results.compactMap { result -> PlayerGroup? in
+                    guard let record = try? result.1.get(),
+                        let group = PlayerGroup(from: record)
+                    else { return nil }
+                    return group
                 }
 
                 // Update everything at once to avoid UI flicker
@@ -871,11 +858,36 @@ import SwiftUI
 
         func savePlayerGroup(_ group: PlayerGroup) async throws {
             var updatedGroup = group
-            let record = group.toRecord()
-            let savedRecord = try await database.save(record)
-            updatedGroup.recordID = savedRecord.recordID
-            updatedGroup.record = savedRecord
 
+            // First try to fetch an existing record
+            let playerIDsData = try JSONEncoder().encode(group.playerIDs.sorted())
+            let predicate = NSPredicate(format: "playerIDs == %@", playerIDsData as CVarArg)
+            let query = CKQuery(recordType: "PlayerGroup", predicate: predicate)
+            let (results, _) = try await database.records(matching: query)
+
+            if let result = results.first,
+                let existingRecord = try? result.1.get()
+            {
+                // Update the existing record
+                existingRecord["name"] = group.name
+                existingRecord["playerIDs"] = playerIDsData
+                existingRecord["id"] = group.id
+                if let createdByID = group.createdByID {
+                    existingRecord["createdByID"] = createdByID
+                }
+
+                let savedRecord = try await database.save(existingRecord)
+                updatedGroup.recordID = savedRecord.recordID
+                updatedGroup.record = savedRecord
+            } else {
+                // Create a new record
+                let record = group.toRecord()
+                let savedRecord = try await database.save(record)
+                updatedGroup.recordID = savedRecord.recordID
+                updatedGroup.record = savedRecord
+            }
+
+            // Update local state
             if let index = playerGroups.firstIndex(where: { $0.id == group.id }) {
                 playerGroups[index] = updatedGroup
             } else {
@@ -908,6 +920,13 @@ import SwiftUI
                 let record = try? result.1.get(),
                 let group = PlayerGroup(from: record)
             {
+                // Update the group name if it's different from the suggested name
+                if let suggestedName = suggestedName, group.name != suggestedName {
+                    var updatedGroup = group
+                    updatedGroup.name = suggestedName
+                    try await savePlayerGroup(updatedGroup)
+                    return updatedGroup
+                }
                 return group
             }
 
@@ -915,15 +934,50 @@ import SwiftUI
             let name = suggestedName ?? generateGroupName(for: sortedPlayerIDs)
             let userID = await self.userID
             let group = PlayerGroup(name: name, playerIDs: sortedPlayerIDs, createdByID: userID)
-            try await savePlayerGroup(group)
-            return group
+
+            do {
+                try await savePlayerGroup(group)
+                return group
+            } catch let error as CKError {
+                // On any CloudKit error, try to fetch the existing record
+                let (results, _) = try await database.records(matching: query)
+                if let result = results.first,
+                    let record = try? result.1.get(),
+                    let existingGroup = PlayerGroup(from: record)
+                {
+                    return existingGroup
+                }
+                throw error
+            }
         }
 
         private func generateGroupName(for playerIDs: [String]) -> String {
             let playerNames = playerIDs.compactMap { id in
                 playerCache[id]?.name
             }
-            return playerNames.joined(separator: ", ")
+
+            switch playerNames.count {
+            case 0:
+                return "No players"
+            case 1:
+                return playerNames[0]
+            case 2:
+                return "\(playerNames[0]) & \(playerNames[1])"
+            default:
+                let allButLast = playerNames.dropLast().joined(separator: ", ")
+                return "\(allButLast), & \(playerNames.last!)"
+            }
+        }
+
+        func updateAllGroupNames() async throws {
+            let groups = try await fetchPlayerGroups()
+            for var group in groups {
+                let newName = generateGroupName(for: group.playerIDs)
+                if group.name != newName {
+                    group.name = newName
+                    try await savePlayerGroup(group)
+                }
+            }
         }
     }
 #endif

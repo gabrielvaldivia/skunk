@@ -30,25 +30,8 @@ import SwiftUI
 
                 // Show winner's profile photo if there is a winner
                 if let winner = winner {
-                    if let photoData = winner.photoData,
-                        let uiImage = UIImage(data: photoData)
-                    {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 28, height: 28)
-                            .clipShape(Circle())
-                    } else {
-                        // Fallback to initials if no photo
-                        ZStack {
-                            Circle()
-                                .fill(winner.color)
-                                .frame(width: 28, height: 28)
-                            Text(String(winner.name.prefix(1)))
-                                .font(.headline)
-                                .foregroundColor(.white)
-                        }
-                    }
+                    PlayerAvatar(player: winner, size: 40)
+                        .clipShape(Circle())
                 }
             }
             .padding(.vertical, 4)

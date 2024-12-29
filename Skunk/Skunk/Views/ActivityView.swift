@@ -98,8 +98,8 @@
                 HStack(alignment: .top, spacing: 12) {
                     if let winner = cloudKitManager.players.first(where: { $0.id == match.winnerID }
                     ) {
-                        PlayerAvatar(player: winner)
-                            .frame(width: 40, height: 40)
+                        PlayerAvatar(player: winner, size: 40)
+                            .clipShape(Circle())
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
