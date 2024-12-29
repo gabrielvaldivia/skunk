@@ -106,7 +106,11 @@ import SwiftUI
                         Button(role: .destructive) {
                             showingDeleteConfirmation = true
                         } label: {
-                            Label("Delete Player", systemImage: "trash")
+                            HStack {
+                                Spacer()
+                                Text("Delete Player")
+                                Spacer()
+                            }
                         }
                     }
                 }
@@ -176,12 +180,18 @@ import SwiftUI
         }
 
         private func savePlayer() async throws {
+            // Convert Color to UIColor and then to Data
+            let uiColor = UIColor(color)
+            let colorData = try? NSKeyedArchiver.archivedData(
+                withRootObject: uiColor, requiringSecureCoding: true)
+
             if let player = player {
                 // Update existing player
-                let updatedPlayer = player.updated(
+                var updatedPlayer = player.updated(
                     name: name,
                     photoData: selectedImageData ?? existingPhotoData
                 )
+                updatedPlayer.colorData = colorData
                 print(
                     "🟣 PlayerFormView: Updating player with photo data: \(updatedPlayer.photoData?.count ?? 0) bytes"
                 )
@@ -189,12 +199,13 @@ import SwiftUI
                 print("🟣 PlayerFormView: Successfully updated player")
             } else {
                 // Create new player
-                let newPlayer = Player(
+                var newPlayer = Player(
                     name: name,
                     photoData: selectedImageData,
                     appleUserID: isCurrentUserProfile ? authManager.userID : nil,
                     ownerID: authManager.userID
                 )
+                newPlayer.colorData = colorData
                 print(
                     "🟣 PlayerFormView: Creating new player with photo data: \(newPlayer.photoData?.count ?? 0) bytes"
                 )
