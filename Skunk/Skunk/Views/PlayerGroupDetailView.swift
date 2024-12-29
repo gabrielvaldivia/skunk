@@ -188,24 +188,22 @@ import SwiftUI
                                     .font(.system(size: 28))
                                     .fontWeight(.bold)
 
-                                Button {
-                                    // This will trigger the picker
+                                Menu {
+                                    Button("All Games") {
+                                        selectedGameId = nil
+                                    }
+                                    ForEach(games) { game in
+                                        Button(game.title) {
+                                            selectedGameId = game.id
+                                        }
+                                    }
                                 } label: {
                                     HStack {
                                         Text(selectedGameTitle)
                                         Image(systemName: "chevron.up.chevron.down")
+                                            .imageScale(.small)
                                     }
-                                    .foregroundStyle(.secondary)
-                                }
-                                .overlay {
-                                    Picker("", selection: $selectedGameId) {
-                                        Text("All Games").tag(Optional<String>.none)
-                                        ForEach(games) { game in
-                                            Text(game.title).tag(Optional(game.id))
-                                        }
-                                    }
-                                    .pickerStyle(.menu)
-                                    .opacity(0.02)
+                                    .foregroundStyle(.blue)
                                 }
                             }
                             .frame(maxWidth: .infinity)
@@ -249,24 +247,22 @@ import SwiftUI
                                     .font(.system(size: 28))
                                     .fontWeight(.bold)
 
-                                Button {
-                                    // This will trigger the picker
+                                Menu {
+                                    Button("All Games") {
+                                        selectedGameId = nil
+                                    }
+                                    ForEach(games) { game in
+                                        Button(game.title) {
+                                            selectedGameId = game.id
+                                        }
+                                    }
                                 } label: {
                                     HStack {
                                         Text(selectedGameTitle)
-                                        Image(systemName: "chevron.down")
+                                        Image(systemName: "chevron.up.chevron.down")
+                                            .imageScale(.small)
                                     }
                                     .foregroundStyle(.blue)
-                                }
-                                .overlay {
-                                    Picker("", selection: $selectedGameId) {
-                                        Text("All Games").tag(Optional<String>.none)
-                                        ForEach(games) { game in
-                                            Text(game.title).tag(Optional(game.id))
-                                        }
-                                    }
-                                    .pickerStyle(.menu)
-                                    .opacity(0.02)
                                 }
                             }
                             .frame(maxWidth: .infinity)
