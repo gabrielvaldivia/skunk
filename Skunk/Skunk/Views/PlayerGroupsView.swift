@@ -74,67 +74,204 @@ import SwiftUI
         @State private var isLoading = false
         @State private var error: Error?
         @State private var showingError = false
+        @State private var selectedGameId: String? = nil
 
-        // Group matches by game
-        private var matchesByGame: [(game: Game, matches: [Match])] {
-            let grouped = Dictionary(grouping: matches) { $0.game }
-            return grouped.compactMap { game, matches in
-                guard let game = game else { return nil }
-                return (game: game, matches: matches)
-            }.sorted { $0.game.title < $1.game.title }
+        private var games: [Game] {
+            // Get unique games from matches, sorted by title
+            let uniqueGames = Set(matches.compactMap { $0.game })
+            return Array(uniqueGames).sorted { $0.title < $1.title }
         }
 
-        private func matchesSection(for gameMatch: (game: Game, matches: [Match])) -> some View {
-            Section(header: Text(gameMatch.game.title)) {
-                VStack(alignment: .leading, spacing: 16) {
-                    GameStatsView(
-                        matches: gameMatch.matches,
-                        game: gameMatch.game,
-                        playerIDs: group.playerIDs
-                    )
+        private var filteredMatches: [Match] {
+            if let selectedGameId = selectedGameId {
+                return matches.filter { $0.game?.id == selectedGameId }
+            }
+            return matches
+        }
 
-                    let sortedMatches = gameMatch.matches.sorted { $0.date > $1.date }
-                    ForEach(sortedMatches) { match in
-                        MatchRow(match: match)
+        private var winCounts: [(player: Player, count: Int)] {
+            // Get all players who have participated in matches
+            var allPlayers = Set<Player>()
+            var counts: [Player: Int] = [:]
+
+            // First collect all players who have participated
+            for match in filteredMatches {
+                for playerID in match.playerIDs {
+                    if let player = cloudKitManager.players.first(where: { $0.id == playerID }) {
+                        allPlayers.insert(player)
+                    }
+                }
+            }
+
+            // Then count wins
+            for match in filteredMatches {
+                if let winnerID = match.winnerID,
+                    let winner = cloudKitManager.players.first(where: { $0.id == winnerID })
+                {
+                    counts[winner, default: 0] += 1
+                }
+            }
+
+            // Ensure all players are in counts, even with 0 wins
+            for player in allPlayers {
+                if counts[player] == nil {
+                    counts[player] = 0
+                }
+            }
+
+            // Convert to array of tuples
+            var pairs: [(player: Player, count: Int)] = []
+            for (player, count) in counts {
+                pairs.append((player: player, count: count))
+            }
+
+            // Sort by count (highest first), then by name for ties
+            pairs.sort { pair1, pair2 in
+                if pair1.count != pair2.count {
+                    return pair1.count > pair2.count
+                }
+                return pair1.player.name < pair2.player.name
+            }
+            return pairs
+        }
+
+        private var totalWins: Int {
+            winCounts.reduce(0) { $0 + $1.count }
+        }
+
+        private func calculateWinPercentage(count: Int) -> Int {
+            guard totalWins > 0 else { return 0 }
+            let percentage = Double(count) / Double(totalWins) * 100.0
+            return Int(percentage)
+        }
+
+        private func playerStatsView(_ entry: (player: Player, count: Int)) -> some View {
+            HStack {
+                Circle()
+                    .fill(entry.player.color)
+                    .frame(width: 12, height: 12)
+                Text(entry.player.name)
+                Spacer()
+                Text("\(calculateWinPercentage(count: entry.count))%")
+                    .foregroundStyle(.secondary)
+            }
+        }
+
+        private func playerRow(_ index: Int, _ entry: (player: Player, count: Int)) -> some View {
+            NavigationLink {
+                PlayerDetailView(player: entry.player)
+            } label: {
+                HStack(spacing: 16) {
+                    Text("#\(index + 1)")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 40)
+
+                    PlayerAvatar(player: entry.player)
+
+                    VStack(alignment: .leading) {
+                        Text(entry.player.name)
+                            .font(.headline)
+                    }
+
+                    Spacer()
+
+                    Text("\(entry.count) wins")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+
+        private func winDistributionSection() -> some View {
+            Section("Win Distribution") {
+                VStack(alignment: .center, spacing: 16) {
+                    if totalWins > 0 {
+                        PieChartView(winCounts: winCounts, totalWins: totalWins)
+                            .padding(.vertical)
+                    }
+
+                    ForEach(winCounts, id: \.player.id) { entry in
+                        playerStatsView(entry)
+                    }
+                }
+                .padding(20)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .frame(maxWidth: .infinity)
+                .listRowInsets(EdgeInsets())
+            }
+        }
+
+        private func matchHistorySection(_ matches: [Match]) -> some View {
+            Section("Match History") {
+                if matches.isEmpty {
+                    Text("No matches")
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(matches.sorted { $0.date > $1.date }) { match in
+                        NavigationLink {
+                            MatchDetailView(match: match)
+                        } label: {
+                            MatchRow(match: match)
+                        }
                     }
                 }
             }
         }
 
-        private func playersSection() -> some View {
-            Section(header: Text("Players")) {
-                ForEach(group.playerIDs, id: \.self) { playerId in
-                    if let player = cloudKitManager.getPlayer(id: playerId) {
-                        Text(player.name)
-                    }
-                }
-            }
-        }
-
-        private func emptySection() -> some View {
-            Section(header: Text("")) {
-                Text("No matches yet")
-                    .foregroundColor(.secondary)
+        private func activitySection(_ matches: [Match]) -> some View {
+            Section("Activity") {
+                ActivityGridView(matches: Array(matches))
+                    .listRowInsets(EdgeInsets())
             }
         }
 
         var body: some View {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 20) {
-                    playersSection()
-
-                    if matches.isEmpty {
-                        emptySection()
-                    } else {
-                        ForEach(matchesByGame, id: \.game.id) { gameMatch in
-                            matchesSection(for: gameMatch)
+            ZStack {
+                if isLoading {
+                    ProgressView()
+                } else if matches.isEmpty {
+                    VStack(spacing: 8) {
+                        Text("No Matches")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                        Text("Play some matches with this group to see stats")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    List {
+                        // Game Picker
+                        Section {
+                            Picker("Game", selection: $selectedGameId) {
+                                Text("All Games").tag(Optional<String>.none)
+                                ForEach(games) { game in
+                                    Text(game.title).tag(Optional(game.id))
+                                }
+                            }
                         }
+
+                        // Leaderboard
+                        Section("Leaderboard") {
+                            ForEach(Array(winCounts.enumerated()), id: \.element.player.id) {
+                                index, entry in
+                                playerRow(index, entry)
+                            }
+                        }
+
+                        if totalWins > 0 {
+                            winDistributionSection()
+                        }
+                        activitySection(filteredMatches)
+                        matchHistorySection(filteredMatches)
                     }
                 }
-                .padding()
             }
             .navigationTitle(playerNames)
             .task {
+                await loadMatches()
+            }
+            .refreshable {
                 await loadMatches()
             }
             .alert("Error", isPresented: $showingError) {
@@ -145,10 +282,19 @@ import SwiftUI
         }
 
         private var playerNames: String {
-            group.playerIDs
-                .compactMap { cloudKitManager.getPlayer(id: $0)?.name }
-                .sorted()
-                .joined(separator: ", ")
+            let names = group.playerIDs.compactMap { cloudKitManager.getPlayer(id: $0)?.name }
+
+            switch names.count {
+            case 0:
+                return "No players"
+            case 1:
+                return names[0]
+            case 2:
+                return "\(names[0]) & \(names[1])"
+            default:
+                let allButLast = names.dropLast().joined(separator: ", ")
+                return "\(allButLast), & \(names.last!)"
+            }
         }
 
         private func loadMatches() async {
