@@ -40,6 +40,10 @@ import SwiftUI
                 } else {
                     ForEach(groups) { group in
                         GroupRowLink(group: group)
+                        if group.id != groups.last?.id {
+                            Divider()
+                                .padding(.horizontal, -20)
+                        }
                     }
                 }
             }

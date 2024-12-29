@@ -357,6 +357,10 @@ import SwiftUI
                             PlayerRow(player: player, group: nil)
                                 .padding(.vertical, 8)
                         }
+                        if player.id != allPlayers.last?.id {
+                            Divider()
+                                .padding(.horizontal, -20)
+                        }
                     }
                 }
                 .padding(.horizontal, 20)
