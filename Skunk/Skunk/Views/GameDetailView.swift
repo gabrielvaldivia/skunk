@@ -106,29 +106,7 @@ import SwiftUI
         }
 
         private func playerRow(_ index: Int, _ entry: (player: Player, count: Int)) -> some View {
-            NavigationLink {
-                PlayerDetailView(player: entry.player)
-            } label: {
-                HStack(spacing: 16) {
-                    Text("#\(index + 1)")
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 40)
-
-                    PlayerAvatar(player: entry.player)
-
-                    VStack(alignment: .leading) {
-                        Text(entry.player.name)
-                            .font(.headline)
-                    }
-
-                    Spacer()
-
-                    Text("\(entry.count) wins")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            LeaderboardRow(rank: index + 1, player: entry.player, wins: entry.count)
         }
 
         private func winDistributionSection() -> some View {
@@ -379,6 +357,7 @@ import SwiftUI
 
     struct PlayerAvatar: View {
         let player: Player
+        var size: CGFloat = 80
 
         var body: some View {
             if let photoData = player.photoData,
@@ -387,12 +366,12 @@ import SwiftUI
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 40, height: 40)
+                    .frame(width: size, height: size)
                     .clipShape(Circle())
             } else {
                 PlayerInitialsView(
                     name: player.name,
-                    size: 40,
+                    size: size,
                     color: player.color
                 )
             }
@@ -520,6 +499,37 @@ import SwiftUI
                 .padding(.horizontal, 4)
             }
             .padding(10)
+        }
+    }
+
+    struct LeaderboardRow: View {
+        let rank: Int
+        let player: Player
+        let wins: Int
+
+        var body: some View {
+            NavigationLink {
+                PlayerDetailView(player: player)
+            } label: {
+                HStack(spacing: 16) {
+                    Text("#\(rank)")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 40)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(player.name)
+                            .font(.headline)
+                        Text("\(wins) wins")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    PlayerAvatar(player: player, size: 40)
+                }
+            }
         }
     }
 #endif
