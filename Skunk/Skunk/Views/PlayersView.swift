@@ -254,16 +254,30 @@ import SwiftUI
 
         private var allPlayers: [Player] {
             guard let userID = authManager.userID else { return [] }
-            return cloudKitManager.players.sorted { player1, player2 in
-                // Get last match dates from cached matches
-                let matches1 = cloudKitManager.getPlayerMatches(player1.id)
-                let matches2 = cloudKitManager.getPlayerMatches(player2.id)
 
-                let lastPlayed1 = matches1?.first?.date ?? .distantPast
-                let lastPlayed2 = matches2?.first?.date ?? .distantPast
+            var players: [Player] = []
 
-                return lastPlayed1 > lastPlayed2
+            // 1. Add Your Player (if it exists)
+            if let currentUser = cloudKitManager.players.first(where: { $0.appleUserID == userID })
+            {
+                players.append(currentUser)
             }
+
+            // 2. Add Managed Players (owned by you but no appleUserID)
+            let managedPlayers = cloudKitManager.players.filter { player in
+                player.ownerID == userID && player.appleUserID == nil
+            }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            players.append(contentsOf: managedPlayers)
+
+            // 3. Add Other Users (have appleUserID but not yours)
+            let otherUsers = cloudKitManager.players.filter { player in
+                player.appleUserID != nil  // Is a real user
+                    && player.appleUserID != userID  // Not you
+                    && player.ownerID != userID  // Not managed by you
+            }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            players.append(contentsOf: otherUsers)
+
+            return players
         }
 
         var body: some View {
