@@ -357,7 +357,7 @@ import SwiftUI
 
     struct PlayerAvatar: View {
         let player: Player
-        var size: CGFloat = 80
+        var size: CGFloat = 40
 
         var body: some View {
             if let photoData = player.photoData,

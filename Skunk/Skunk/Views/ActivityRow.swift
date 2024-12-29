@@ -1,16 +1,10 @@
-import CloudKit
-import SwiftUI
-
 #if canImport(UIKit)
-    struct MatchRow: View {
+    import SwiftUI
+    import CloudKit
+
+    struct ActivityRow: View {
         @EnvironmentObject private var cloudKitManager: CloudKitManager
         let match: Match
-        let hideGameTitle: Bool
-
-        init(match: Match, hideGameTitle: Bool = false) {
-            self.match = match
-            self.hideGameTitle = hideGameTitle
-        }
 
         private var relativeTimeString: String {
             let timeInterval = Date().timeIntervalSince(match.date)
@@ -24,28 +18,42 @@ import SwiftUI
         }
 
         var body: some View {
-            HStack {
-                // Avatar
+            HStack(alignment: .top, spacing: 12) {
                 if let winner = cloudKitManager.players.first(where: { $0.id == match.winnerID }
                 ) {
                     PlayerAvatar(player: winner, size: 40)
                         .clipShape(Circle())
                 }
 
-                // Match info
                 VStack(alignment: .leading, spacing: 4) {
                     if let winner = cloudKitManager.players.first(where: {
                         $0.id == match.winnerID
-                    }
-                    ) {
+                    }),
+                        let game = match.game
+                    {
                         let otherPlayers = match.playerIDs
                             .filter { $0 != winner.id }
                             .compactMap { id in cloudKitManager.getPlayer(id: id) }
                             .map { $0.name }
 
-                        if !otherPlayers.isEmpty {
-                            Text("\(winner.name) beat \(otherPlayers[0])")
+                        if otherPlayers.isEmpty {
+                            Text("\(winner.name) won at \(game.title)")
                                 .font(.body)
+                        } else if otherPlayers.count == 1 {
+                            Text("\(winner.name) beat \(otherPlayers[0]) at \(game.title)")
+                                .font(.body)
+                        } else if otherPlayers.count == 2 {
+                            Text(
+                                "\(winner.name) beat \(otherPlayers[0]) and \(otherPlayers[1]) at \(game.title)"
+                            )
+                            .font(.body)
+                        } else {
+                            let allButLast = otherPlayers.dropLast().joined(separator: ", ")
+                            let last = otherPlayers.last!
+                            Text(
+                                "\(winner.name) beat \(allButLast), and \(last) at \(game.title)"
+                            )
+                            .font(.body)
                         }
                     }
 
@@ -53,10 +61,7 @@ import SwiftUI
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-
-                Spacer()
             }
-            .padding(.vertical, 4)
         }
     }
 #endif

@@ -49,11 +49,13 @@ import SwiftUI
                                 $0.id == playerID
                             }) {
                                 HStack {
-                                    PlayerAvatar(player: player)
-                                        .frame(width: 40, height: 40)
+                                    HStack(spacing: 12) {
+                                        PlayerAvatar(player: player)
+                                            .frame(width: 32, height: 32)
 
-                                    Text(player.name)
-                                        .font(.body)
+                                        Text(player.name)
+                                            .font(.body)
+                                    }
 
                                     Spacer()
 
@@ -98,6 +100,7 @@ import SwiftUI
                                             }
                                     }
                                 }
+                                .padding(.vertical, 8)
                             }
                         }
                     }
