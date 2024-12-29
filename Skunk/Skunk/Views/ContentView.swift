@@ -44,6 +44,19 @@ import SwiftUI
                 }
 
                 NavigationStack {
+                    PlayerGroupsView()
+                        .navigationDestination(for: Match.self) { match in
+                            MatchDetailView(match: match)
+                        }
+                        .navigationDestination(for: Player.self) { player in
+                            PlayerDetailView(player: player)
+                        }
+                }
+                .tabItem {
+                    Label("Groups", systemImage: "person.2.circle")
+                }
+
+                NavigationStack {
                     ActivityView()
                 }
                 .tabItem {

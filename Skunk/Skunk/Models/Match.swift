@@ -18,6 +18,7 @@ import Foundation
         var record: CKRecord?
         var game: Game?
         var recordID: CKRecord.ID?
+        var scores: [Int]
 
         init(date: Date = Date(), createdByID: String? = nil, game: Game? = nil) {
             self.id = UUID().uuidString
@@ -34,6 +35,7 @@ import Foundation
             self.createdByID = createdByID
             self.game = game
             self.recordID = nil
+            self.scores = []
         }
 
         init?(from record: CKRecord) {
@@ -86,6 +88,14 @@ import Foundation
             }
 
             self.recordID = record.recordID
+
+            if let scoresData = record.value(forKey: "scores") as? Data,
+                let scores = try? JSONDecoder().decode([Int].self, from: scoresData)
+            {
+                self.scores = scores
+            } else {
+                self.scores = []
+            }
         }
 
         func toRecord() -> CKRecord {
@@ -117,6 +127,10 @@ import Foundation
             record.setValue(createdByID, forKey: "createdByID")
             if let gameID = game?.id {
                 record.setValue(gameID, forKey: "gameID")
+            }
+
+            if let scoresData = try? JSONEncoder().encode(scores) {
+                record.setValue(scoresData, forKey: "scores")
             }
 
             return record

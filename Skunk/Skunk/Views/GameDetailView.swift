@@ -12,9 +12,30 @@ import SwiftUI
         @State private var showingEditGame = false
         @State private var showingDeleteConfirmation = false
         @State private var matches: [Match] = []
+        @State private var playerGroups: [PlayerGroup] = []
+        @State private var selectedGroupId: String?
         @State private var isLoading = false
         @State private var error: Error?
         @State private var showingError = false
+
+        private var filteredMatches: [Match] {
+            if let groupId = selectedGroupId,
+                let group = playerGroups.first(where: { $0.id == groupId })
+            {
+                return matches.filter { match in
+                    Set(match.playerIDs) == Set(group.playerIDs)
+                }
+            }
+            return matches
+        }
+
+        private var activePlayerGroups: [PlayerGroup] {
+            playerGroups.filter { group in
+                matches.contains { match in
+                    Set(match.playerIDs) == Set(group.playerIDs)
+                }
+            }
+        }
 
         private var winCounts: [(player: Player, count: Int)] {
             // Get all players who have participated in matches
@@ -22,7 +43,7 @@ import SwiftUI
             var counts: [Player: Int] = [:]
 
             // First collect all players who have participated
-            for match in matches {
+            for match in filteredMatches {
                 for playerID in match.playerIDs {
                     if let player = cloudKitManager.players.first(where: { $0.id == playerID }) {
                         allPlayers.insert(player)
@@ -31,7 +52,7 @@ import SwiftUI
             }
 
             // Then count wins
-            for match in matches {
+            for match in filteredMatches {
                 if let winnerID = match.winnerID,
                     let winner = cloudKitManager.players.first(where: { $0.id == winnerID })
                 {
@@ -163,6 +184,20 @@ import SwiftUI
                     }
                 } else {
                     List {
+                        if !activePlayerGroups.isEmpty {
+                            Section {
+                                Picker("Player Group", selection: $selectedGroupId) {
+                                    Text("All Players")
+                                        .tag(Optional<String>.none)
+                                    ForEach(activePlayerGroups) { group in
+                                        Text(group.name)
+                                            .tag(Optional(group.id))
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                            }
+                        }
+
                         Section("Leaderboard") {
                             ForEach(Array(winCounts.enumerated()), id: \.element.player.id) {
                                 index, entry in
@@ -173,8 +208,8 @@ import SwiftUI
                         if totalWins > 0 {
                             winDistributionSection()
                         }
-                        activitySection(matches)
-                        matchHistorySection(matches)
+                        activitySection(filteredMatches)
+                        matchHistorySection(filteredMatches)
                     }
                 }
 
@@ -203,16 +238,64 @@ import SwiftUI
                 }
             }
             .sheet(isPresented: $showingNewMatch) {
-                NewMatchView(
-                    game: game,
-                    onMatchSaved: { newMatch in
-                        print("🔵 GameDetailView: New match saved, updating local state")
-                        matches.insert(newMatch, at: 0)  // Add to beginning since it's newest
-                        Task {
-                            try? await Task.sleep(for: .seconds(1))  // Give CloudKit time to propagate
-                            await loadMatches()  // Then refresh to ensure consistency
+                if let groupId = selectedGroupId,
+                    let group = playerGroups.first(where: { $0.id == groupId })
+                {
+                    NewMatchView(
+                        game: game,
+                        defaultPlayerIDs: group.playerIDs,
+                        onMatchSaved: { newMatch in
+                            print("🔵 GameDetailView: New match saved, updating local state")
+                            matches.insert(newMatch, at: 0)  // Add to beginning since it's newest
+
+                            // Create or find player group for this match
+                            Task {
+                                do {
+                                    let playerNames = newMatch.playerIDs.compactMap { id in
+                                        cloudKitManager.getPlayer(id: id)?.name
+                                    }
+                                    let groupName = playerNames.joined(separator: ", ")
+                                    _ = try await cloudKitManager.findOrCreatePlayerGroup(
+                                        for: newMatch.playerIDs,
+                                        suggestedName: groupName
+                                    )
+                                    try? await Task.sleep(for: .seconds(1))  // Give CloudKit time to propagate
+                                    await loadData()  // Then refresh to ensure consistency
+                                } catch {
+                                    self.error = error
+                                    showingError = true
+                                }
+                            }
                         }
-                    })
+                    )
+                } else {
+                    NewMatchView(
+                        game: game,
+                        onMatchSaved: { newMatch in
+                            print("🔵 GameDetailView: New match saved, updating local state")
+                            matches.insert(newMatch, at: 0)  // Add to beginning since it's newest
+
+                            // Create or find player group for this match
+                            Task {
+                                do {
+                                    let playerNames = newMatch.playerIDs.compactMap { id in
+                                        cloudKitManager.getPlayer(id: id)?.name
+                                    }
+                                    let groupName = playerNames.joined(separator: ", ")
+                                    _ = try await cloudKitManager.findOrCreatePlayerGroup(
+                                        for: newMatch.playerIDs,
+                                        suggestedName: groupName
+                                    )
+                                    try? await Task.sleep(for: .seconds(1))  // Give CloudKit time to propagate
+                                    await loadData()  // Then refresh to ensure consistency
+                                } catch {
+                                    self.error = error
+                                    showingError = true
+                                }
+                            }
+                        }
+                    )
+                }
             }
             .sheet(isPresented: $showingEditGame) {
                 EditGameView(game: game)
@@ -226,12 +309,12 @@ import SwiftUI
             .task {
                 print("🔵 GameDetailView: Initial task triggered")
                 if matches.isEmpty {
-                    await loadMatches()
+                    await loadData()
                 }
             }
             .refreshable {
                 print("🔵 GameDetailView: Manual refresh triggered")
-                await loadMatches()
+                await loadData()
             }
             .onChange(of: cloudKitManager.games) { _ in
                 print("🔵 GameDetailView: CloudKitManager games array changed")
@@ -256,24 +339,21 @@ import SwiftUI
             }
         }
 
-        private func loadMatches() async {
-            print("🔵 GameDetailView: Starting loadMatches()")
+        private func loadData() async {
             isLoading = true
             do {
-                // Only fetch players if we don't have any yet, using cache when possible
-                if cloudKitManager.players.isEmpty {
-                    print("🔵 GameDetailView: No players in cache, fetching players")
-                    _ = try await cloudKitManager.fetchPlayers(forceRefresh: false)
-                }
-
+                // Load matches
                 let loadedMatches = try await cloudKitManager.fetchMatches(for: game)
-                print("🔵 GameDetailView: Successfully loaded \(loadedMatches.count) matches")
+                print("🔵 GameDetailView: Loaded \(loadedMatches.count) matches")
 
-                // Check if we need to fetch any missing players
-                let missingPlayerIDs = loadedMatches.flatMap { $0.playerIDs }
-                    .filter { playerID in
-                        !cloudKitManager.players.contains { $0.id == playerID }
-                    }
+                // Get all unique player IDs from matches
+                let playerIDs = Set(loadedMatches.flatMap { $0.playerIDs })
+                print("🔵 GameDetailView: Found \(playerIDs.count) unique players")
+
+                // Find missing players
+                let missingPlayerIDs = playerIDs.filter { id in
+                    !cloudKitManager.players.contains { $0.id == id }
+                }
 
                 // Only fetch players again if we're missing some
                 if !missingPlayerIDs.isEmpty {
@@ -281,14 +361,18 @@ import SwiftUI
                     _ = try await cloudKitManager.fetchPlayers(forceRefresh: true)
                 }
 
+                // Load player groups
+                let groups = try await cloudKitManager.fetchPlayerGroups()
+
                 matches = loadedMatches
+                playerGroups = groups
             } catch {
-                print("🔵 GameDetailView: Error loading matches: \(error.localizedDescription)")
+                print("🔵 GameDetailView: Error loading data: \(error.localizedDescription)")
                 self.error = error
                 showingError = true
             }
             isLoading = false
-            print("🔵 GameDetailView: Finished loadMatches()")
+            print("🔵 GameDetailView: Finished loadData()")
         }
     }
 

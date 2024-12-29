@@ -31,6 +31,7 @@ extension Sequence {
 
         let game: Game
         let onMatchSaved: ((Match) -> Void)?
+        let defaultPlayerIDs: [String]?
         @State private var players: [Player?]
         @State private var scores: [Int]
         @State private var currentPlayerCount: Int
@@ -40,14 +41,25 @@ extension Sequence {
         @State private var showingError = false
         @State private var selectedWinnerIndex: Int?
 
-        init(game: Game, onMatchSaved: ((Match) -> Void)? = nil) {
+        init(game: Game, defaultPlayerIDs: [String]? = nil, onMatchSaved: ((Match) -> Void)? = nil)
+        {
             self.game = game
             self.onMatchSaved = onMatchSaved
-            let minPlayerCount = game.supportedPlayerCounts.min() ?? 2
+            self.defaultPlayerIDs = defaultPlayerIDs
 
-            _currentPlayerCount = State(initialValue: minPlayerCount)
-            _players = State(initialValue: Array(repeating: nil, count: minPlayerCount))
-            _scores = State(initialValue: Array(repeating: 0, count: minPlayerCount))
+            // If we have default players and their count is supported, use that count
+            let playerCount: Int
+            if let defaultCount = defaultPlayerIDs?.count,
+                game.supportedPlayerCounts.contains(defaultCount)
+            {
+                playerCount = defaultCount
+            } else {
+                playerCount = game.supportedPlayerCounts.min() ?? 2
+            }
+
+            _currentPlayerCount = State(initialValue: playerCount)
+            _players = State(initialValue: Array(repeating: nil, count: playerCount))
+            _scores = State(initialValue: Array(repeating: 0, count: playerCount))
         }
 
         private func adjustToLastMatchPlayerCount() {
@@ -103,16 +115,23 @@ extension Sequence {
                                 }
 
                                 if player != nil {
-                                    Toggle(
-                                        "",
-                                        isOn: Binding(
-                                            get: { selectedWinnerIndex == index },
-                                            set: { isWinner in
-                                                selectedWinnerIndex = isWinner ? index : nil
-                                            }
+                                    if game.isBinaryScore {
+                                        Toggle(
+                                            "",
+                                            isOn: Binding(
+                                                get: { selectedWinnerIndex == index },
+                                                set: { isWinner in
+                                                    selectedWinnerIndex = isWinner ? index : nil
+                                                }
+                                            )
                                         )
-                                    )
-                                    .tint(.green)
+                                        .tint(.green)
+                                    } else {
+                                        TextField("Score", value: $scores[index], format: .number)
+                                            .keyboardType(.numberPad)
+                                            .multilineTextAlignment(.trailing)
+                                            .frame(width: 80)
+                                    }
                                 }
                             }
                         }
@@ -155,7 +174,10 @@ extension Sequence {
                     }
                 }
                 .task {
-                    adjustToLastMatchPlayerCount()
+                    // Only adjust player count if we don't have default players
+                    if defaultPlayerIDs == nil {
+                        adjustToLastMatchPlayerCount()
+                    }
                     await loadPlayers()
                 }
                 .alert("Error", isPresented: $showingError) {
@@ -215,8 +237,22 @@ extension Sequence {
 
                 print("Loaded \(allPlayers.count) players: \(allPlayers.map { $0.name })")
 
-                // If we have last match players, use those
-                if !lastMatchPlayerIDs.isEmpty {
+                // If we have default player IDs, use those and ensure exact match
+                if let defaultPlayerIDs = defaultPlayerIDs {
+                    print("Using default players: \(defaultPlayerIDs)")
+                    // Reset players array to match default count
+                    players = Array(repeating: nil, count: defaultPlayerIDs.count)
+                    scores = Array(repeating: 0, count: defaultPlayerIDs.count)
+
+                    // Fill in all players in the exact order
+                    for (index, playerId) in defaultPlayerIDs.enumerated() {
+                        if let player = allPlayers.first(where: { $0.id == playerId }) {
+                            players[index] = player
+                        }
+                    }
+                }
+                // If no default players, use last match players
+                else if !lastMatchPlayerIDs.isEmpty {
                     print("Found last match players: \(lastMatchPlayerIDs)")
                     // Fill in as many slots as we have players and supported count allows
                     let lastPlayers = lastMatchPlayerIDs.compactMap { id in
@@ -262,10 +298,21 @@ extension Sequence {
                     match.playerOrder = match.playerIDs
                     match.status = selectedWinnerIndex != nil ? "completed" : "active"
 
-                    if let winnerIndex = selectedWinnerIndex,
-                        let winner = players[winnerIndex]
-                    {
-                        match.winnerID = winner.id
+                    if game.isBinaryScore {
+                        if let winnerIndex = selectedWinnerIndex,
+                            let winner = players[winnerIndex]
+                        {
+                            match.winnerID = winner.id
+                        }
+                    } else {
+                        // For games with scores, find the winner based on highest score
+                        if let maxScoreIndex = scores.enumerated()
+                            .max(by: { $0.element < $1.element })?.offset,
+                            let winner = players[maxScoreIndex]
+                        {
+                            match.winnerID = winner.id
+                        }
+                        match.scores = scores
                     }
 
                     try await cloudKitManager.saveMatch(match)

@@ -1,5 +1,4 @@
 import CloudKit
-import FirebaseAnalytics
 import Foundation
 import SwiftUI
 
@@ -18,15 +17,35 @@ import SwiftUI
         private var refreshDebounceTask: Task<Void, Never>?
         private let debounceInterval: TimeInterval = 2.0  // 2 seconds debounce
         private let cacheTimeout: TimeInterval = 30.0  // 30 seconds cache timeout
+        private let refreshInterval: TimeInterval = 30.0  // 30 seconds refresh interval
         private var lastPlayerRefreshTime: Date = .distantPast
         private var isRefreshingPlayers = false
         private var playerRefreshDebounceTask: Task<Void, Never>?
         private let playerRefreshDebounceInterval: TimeInterval = 2.0  // 2 seconds debounce
+        private var playerGroupCache: [String: PlayerGroup] = [:]
+        private var lastPlayerGroupRefreshTime: Date = .distantPast
 
         @Published var games: [Game] = []
         @Published private(set) var players: [Player] = []  // Make players private(set)
+        @Published private(set) var playerGroups: [PlayerGroup] = []
         @Published var isLoading = false
         @Published var error: Error?
+
+        var userID: String? {
+            get async {
+                do {
+                    let accountStatus = try await container.accountStatus()
+                    guard accountStatus == .available else { return nil }
+
+                    // Get the user record ID directly
+                    let recordID = try await container.userRecordID()
+                    return recordID.recordName
+                } catch {
+                    print("Error getting user ID: \(error)")
+                    return nil
+                }
+            }
+        }
 
         init() {
             self.container = CKContainer(identifier: "iCloud.com.gvaldivia.skunkapp")
@@ -39,37 +58,44 @@ import SwiftUI
             do {
                 print("🟣 CloudKitManager: Starting schema setup")
 
-                // Define the schema fields
-                let gameFields = [
-                    "title",
-                    "isBinaryScore",
-                    "supportedPlayerCounts",
-                    "createdByID",
-                    "id",
+                // Define the schema fields with their types
+                let gameFields: [(String, CKRecordValue)] = [
+                    ("title", "" as CKRecordValue),
+                    ("isBinaryScore", 0 as CKRecordValue),  // Changed to number
+                    ("supportedPlayerCounts", Data() as CKRecordValue),
+                    ("createdByID", "" as CKRecordValue),
+                    ("id", "" as CKRecordValue),
                 ]
 
-                let playerFields = [
-                    "name",
-                    "colorData",
-                    "appleUserID",
-                    "ownerID",
-                    "id",
-                    "photo",
+                let playerFields: [(String, CKRecordValue)] = [
+                    ("name", "" as CKRecordValue),
+                    ("colorData", Data() as CKRecordValue),
+                    ("appleUserID", "" as CKRecordValue),
+                    ("ownerID", "" as CKRecordValue),
+                    ("id", "" as CKRecordValue),
+                    ("photo", Data() as CKRecordValue),
                 ]
 
-                let matchFields = [
-                    "date",
-                    "playerIDs",
-                    "playerOrder",
-                    "winnerID",
-                    "isMultiplayer",
-                    "status",
-                    "invitedPlayerIDs",
-                    "acceptedPlayerIDs",
-                    "lastModified",
-                    "createdByID",
-                    "gameID",
-                    "id",
+                let matchFields: [(String, CKRecordValue)] = [
+                    ("date", Date() as CKRecordValue),
+                    ("playerIDs", Data() as CKRecordValue),
+                    ("playerOrder", Data() as CKRecordValue),
+                    ("winnerID", "" as CKRecordValue),
+                    ("isMultiplayer", 0 as CKRecordValue),
+                    ("status", "" as CKRecordValue),
+                    ("invitedPlayerIDs", Data() as CKRecordValue),
+                    ("acceptedPlayerIDs", Data() as CKRecordValue),
+                    ("lastModified", Date() as CKRecordValue),
+                    ("createdByID", "" as CKRecordValue),
+                    ("gameID", "" as CKRecordValue),
+                    ("id", "" as CKRecordValue),
+                ]
+
+                let playerGroupFields: [(String, CKRecordValue)] = [
+                    ("name", "" as CKRecordValue),
+                    ("playerIDs", Data() as CKRecordValue),
+                    ("createdByID", "" as CKRecordValue),
+                    ("id", "" as CKRecordValue),
                 ]
 
                 print("🟣 CloudKitManager: Saving schema definitions")
@@ -82,24 +108,30 @@ import SwiftUI
                 let gameRecord = CKRecord(recordType: "Game")
                 let playerRecord = CKRecord(recordType: "Player")
                 let matchRecord = CKRecord(recordType: "Match")
+                let playerGroupRecord = CKRecord(recordType: "PlayerGroup")
 
-                // Set default values to establish field types
-                for field in gameFields {
-                    gameRecord[field] = ""  // Set appropriate default values based on field type
+                // Set field values with correct types
+                for (field, value) in gameFields {
+                    gameRecord[field] = value
                 }
 
-                for field in playerFields {
-                    playerRecord[field] = ""  // Set appropriate default values based on field type
+                for (field, value) in playerFields {
+                    playerRecord[field] = value
                 }
 
-                for field in matchFields {
-                    matchRecord[field] = ""  // Set appropriate default values based on field type
+                for (field, value) in matchFields {
+                    matchRecord[field] = value
+                }
+
+                for (field, value) in playerGroupFields {
+                    playerGroupRecord[field] = value
                 }
 
                 // Save the sample records to establish schema
                 try await database.save(gameRecord)
                 try await database.save(playerRecord)
                 try await database.save(matchRecord)
+                try await database.save(playerGroupRecord)
 
                 print("🟣 CloudKitManager: Schema setup complete")
 
@@ -108,6 +140,8 @@ import SwiftUI
                 playerCache.removeAll()
                 players.removeAll()
                 games.removeAll()
+                playerGroups.removeAll()
+                playerGroupCache.removeAll()
 
             } catch {
                 print("🟣 CloudKitManager: Schema setup error: \(error.localizedDescription)")
@@ -156,16 +190,6 @@ import SwiftUI
             } else {
                 games.append(updatedGame)
             }
-
-            Analytics.logEvent(
-                "game_saved",
-                parameters: [
-                    "game_id": game.id,
-                    "game_title": game.title,
-                    "is_binary_score": game.isBinaryScore,
-                    "supported_player_counts": game.supportedPlayerCounts.map(String.init).joined(
-                        separator: ","),
-                ])
         }
 
         func deleteGame(_ game: Game) async throws {
@@ -174,13 +198,6 @@ import SwiftUI
             }
             try await database.deleteRecord(withID: recordID)
             games.removeAll { $0.id == game.id }
-
-            Analytics.logEvent(
-                "game_deleted",
-                parameters: [
-                    "game_id": game.id,
-                    "game_title": game.title,
-                ])
         }
 
         // MARK: - Players
@@ -331,27 +348,11 @@ import SwiftUI
                 // Notify of changes
                 objectWillChange.send()
                 print("🟣 CloudKitManager: Successfully completed player save operation")
-
-                Analytics.logEvent(
-                    "player_saved",
-                    parameters: [
-                        "player_id": player.id,
-                        "player_name": player.name,
-                        "has_apple_id": String(player.appleUserID != nil),
-                        "has_photo": String(player.photoData != nil),
-                    ])
             } catch let error as CKError {
                 print(
                     "🔴 CloudKitManager: CloudKit error saving player: \(error.localizedDescription)"
                 )
                 print("🔴 CloudKitManager: Error code: \(error.code.rawValue)")
-                Analytics.logEvent(
-                    "player_save_error",
-                    parameters: [
-                        "error_code": String(error.code.rawValue),
-                        "error_description": error.localizedDescription,
-                        "player_name": player.name,
-                    ])
                 if let serverRecord = error.serverRecord {
                     print("🔴 CloudKitManager: Server record exists: \(serverRecord)")
                 }
@@ -363,13 +364,6 @@ import SwiftUI
                 print(
                     "🔴 CloudKitManager: Non-CloudKit error saving player: \(error.localizedDescription)"
                 )
-                Analytics.logEvent(
-                    "player_save_error",
-                    parameters: [
-                        "error_type": "non_cloudkit",
-                        "error_description": error.localizedDescription,
-                        "player_name": player.name,
-                    ])
                 throw error
             }
         }
@@ -410,12 +404,6 @@ import SwiftUI
                         print("🟣 CloudKitManager: Successfully created photo asset")
                     } catch {
                         print("🟣 CloudKitManager: Error creating photo asset: \(error)")
-                        Analytics.logEvent(
-                            "player_photo_error",
-                            parameters: [
-                                "error_description": error.localizedDescription,
-                                "player_name": player.name,
-                            ])
                     }
                 } else {
                     latestRecord.setValue(nil, forKey: "photo")
@@ -439,14 +427,6 @@ import SwiftUI
                 // Notify of changes
                 objectWillChange.send()
 
-                Analytics.logEvent(
-                    "player_updated",
-                    parameters: [
-                        "player_id": player.id,
-                        "player_name": player.name,
-                        "has_photo": String(player.photoData != nil),
-                    ])
-
                 print("🟣 CloudKitManager: Starting force refresh")
                 // Force a refresh to ensure all views have the latest data
                 _ = try await fetchPlayers(forceRefresh: true)
@@ -456,26 +436,12 @@ import SwiftUI
                     "🟣 CloudKitManager: CloudKit error during update: \(error.localizedDescription)"
                 )
                 print("🟣 CloudKitManager: Error code: \(error.code.rawValue)")
-                Analytics.logEvent(
-                    "player_update_error",
-                    parameters: [
-                        "error_code": String(error.code.rawValue),
-                        "error_description": error.localizedDescription,
-                        "player_name": player.name,
-                    ])
                 handleCloudKitError(error)
                 throw error
             } catch {
                 print(
                     "🟣 CloudKitManager: Non-CloudKit error during update: \(error.localizedDescription)"
                 )
-                Analytics.logEvent(
-                    "player_update_error",
-                    parameters: [
-                        "error_type": "non_cloudkit",
-                        "error_description": error.localizedDescription,
-                        "player_name": player.name,
-                    ])
                 throw error
             }
         }
@@ -486,13 +452,6 @@ import SwiftUI
             }
             try await database.deleteRecord(withID: recordID)
             players.removeAll { $0.id == player.id }
-
-            Analytics.logEvent(
-                "player_deleted",
-                parameters: [
-                    "player_id": player.id,
-                    "player_name": player.name,
-                ])
         }
 
         func fetchPlayer(id: String) async throws -> Player? {
@@ -588,17 +547,6 @@ import SwiftUI
                     games[gameIndex].matches = matches
                 }
             }
-
-            Analytics.logEvent(
-                "match_saved",
-                parameters: [
-                    "match_id": match.id,
-                    "game_id": match.game?.id ?? "",
-                    "game_title": match.game?.title ?? "",
-                    "player_count": String(match.playerIDs.count),
-                    "is_multiplayer": String(match.isMultiplayer),
-                    "status": match.status,
-                ])
         }
 
         func deleteMatch(_ match: Match) async throws {
@@ -614,14 +562,6 @@ import SwiftUI
                     games[gameIndex].matches = matchCache[gameId]
                 }
             }
-
-            Analytics.logEvent(
-                "match_deleted",
-                parameters: [
-                    "match_id": match.id,
-                    "game_id": match.game?.id ?? "",
-                    "game_title": match.game?.title ?? "",
-                ])
         }
 
         // MARK: - Subscriptions
@@ -630,6 +570,7 @@ import SwiftUI
             try await setupGameSubscription()
             try await setupPlayerSubscription()
             try await setupMatchSubscription()
+            try await setupPlayerGroupSubscription()
         }
 
         private func setupGameSubscription() async throws {
@@ -680,19 +621,26 @@ import SwiftUI
             try await database.save(subscription)
         }
 
+        private func setupPlayerGroupSubscription() async throws {
+            let subscription = CKQuerySubscription(
+                recordType: "PlayerGroup",
+                predicate: NSPredicate(value: true),
+                subscriptionID: "player-group-changes",
+                options: [.firesOnRecordCreation, .firesOnRecordDeletion, .firesOnRecordUpdate]
+            )
+
+            let notificationInfo = CKSubscription.NotificationInfo()
+            notificationInfo.shouldSendContentAvailable = true
+            subscription.notificationInfo = notificationInfo
+
+            try await database.save(subscription)
+        }
+
         private func handleCloudKitError(_ error: Error) {
             print("CloudKit error: \(error.localizedDescription)")
             if let ckError = error as? CKError {
                 print("Error code: \(ckError.code.rawValue)")
                 print("Error description: \(ckError.localizedDescription)")
-
-                Analytics.logEvent(
-                    "cloudkit_error",
-                    parameters: [
-                        "error_code": String(ckError.code.rawValue),
-                        "error_description": ckError.localizedDescription,
-                        "error_type": String(describing: type(of: error)),
-                    ])
             }
         }
 
@@ -855,6 +803,104 @@ import SwiftUI
         // Add a method to clear player matches cache
         func clearPlayerMatchesCache() {
             playerMatchesCache.removeAll()
+        }
+
+        // MARK: - Player Groups
+
+        func fetchPlayerGroups() async throws -> [PlayerGroup] {
+            let now = Date()
+            if now.timeIntervalSince(lastPlayerGroupRefreshTime) < refreshInterval {
+                return playerGroups
+            }
+
+            do {
+                // Fetch all matches to find unique player combinations
+                let games = try await fetchGames()
+                var uniquePlayerCombinations = Set<String>()
+
+                for game in games {
+                    let matches = try await fetchMatches(for: game)
+                    for match in matches {
+                        let sortedIDs = match.playerIDs.sorted()
+                        let idString = sortedIDs.joined(separator: ",")
+                        uniquePlayerCombinations.insert(idString)
+                    }
+                }
+
+                // Create or fetch groups for each unique combination
+                var groups: [PlayerGroup] = []
+                for idString in uniquePlayerCombinations {
+                    let playerIDs = idString.split(separator: ",").map(String.init)
+                    let group = try await findOrCreatePlayerGroup(for: playerIDs)
+                    groups.append(group)
+                }
+
+                self.playerGroups = groups
+                groups.forEach { playerGroupCache[$0.id] = $0 }
+                lastPlayerGroupRefreshTime = now
+
+                return groups
+            } catch let error as CKError {
+                handleCloudKitError(error)
+                throw error
+            }
+        }
+
+        func savePlayerGroup(_ group: PlayerGroup) async throws {
+            var updatedGroup = group
+            let record = group.toRecord()
+            let savedRecord = try await database.save(record)
+            updatedGroup.recordID = savedRecord.recordID
+            updatedGroup.record = savedRecord
+
+            if let index = playerGroups.firstIndex(where: { $0.id == group.id }) {
+                playerGroups[index] = updatedGroup
+            } else {
+                playerGroups.append(updatedGroup)
+            }
+            playerGroupCache[group.id] = updatedGroup
+        }
+
+        func deletePlayerGroup(_ group: PlayerGroup) async throws {
+            guard let recordID = group.recordID else {
+                throw CloudKitError.missingData
+            }
+            try await database.deleteRecord(withID: recordID)
+            playerGroups.removeAll { $0.id == group.id }
+            playerGroupCache.removeValue(forKey: group.id)
+        }
+
+        func findOrCreatePlayerGroup(for playerIDs: [String], suggestedName: String? = nil)
+            async throws -> PlayerGroup
+        {
+            let sortedPlayerIDs = playerIDs.sorted()
+
+            // First check if we have an existing group with these exact players
+            let playerIDsData = try JSONEncoder().encode(sortedPlayerIDs)
+            let predicate = NSPredicate(format: "playerIDs == %@", playerIDsData as CVarArg)
+            let query = CKQuery(recordType: "PlayerGroup", predicate: predicate)
+            let (results, _) = try await database.records(matching: query)
+
+            if let result = results.first,
+                let record = try? result.1.get(),
+                let group = PlayerGroup(from: record)
+            {
+                return group
+            }
+
+            // Create a new group
+            let name = suggestedName ?? generateGroupName(for: sortedPlayerIDs)
+            let userID = await self.userID
+            let group = PlayerGroup(name: name, playerIDs: sortedPlayerIDs, createdByID: userID)
+            try await savePlayerGroup(group)
+            return group
+        }
+
+        private func generateGroupName(for playerIDs: [String]) -> String {
+            let playerNames = playerIDs.compactMap { id in
+                playerCache[id]?.name
+            }
+            return playerNames.joined(separator: ", ")
         }
     }
 #endif
