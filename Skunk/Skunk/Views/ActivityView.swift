@@ -106,13 +106,32 @@
                         if let winner = cloudKitManager.players.first(where: {
                             $0.id == match.winnerID
                         }),
-                            let game = match.game,
-                            let loser = cloudKitManager.players.first(where: { player in
-                                match.playerIDs.contains(player.id) && player.id != winner.id
-                            })
+                            let game = match.game
                         {
-                            Text("\(winner.name) beat \(loser.name) at \(game.title)")
+                            let otherPlayers = match.playerIDs
+                                .filter { $0 != winner.id }
+                                .compactMap { id in cloudKitManager.getPlayer(id: id) }
+                                .map { $0.name }
+
+                            if otherPlayers.isEmpty {
+                                Text("\(winner.name) won at \(game.title)")
+                                    .font(.body)
+                            } else if otherPlayers.count == 1 {
+                                Text("\(winner.name) beat \(otherPlayers[0]) at \(game.title)")
+                                    .font(.body)
+                            } else if otherPlayers.count == 2 {
+                                Text(
+                                    "\(winner.name) beat \(otherPlayers[0]) and \(otherPlayers[1]) at \(game.title)"
+                                )
                                 .font(.body)
+                            } else {
+                                let allButLast = otherPlayers.dropLast().joined(separator: ", ")
+                                let last = otherPlayers.last!
+                                Text(
+                                    "\(winner.name) beat \(allButLast), and \(last) at \(game.title)"
+                                )
+                                .font(.body)
+                            }
                         }
 
                         Text(relativeTimeString)

@@ -73,7 +73,6 @@ import SwiftUI
                     ("appleUserID", "" as CKRecordValue),
                     ("ownerID", "" as CKRecordValue),
                     ("id", "" as CKRecordValue),
-                    ("photo", Data() as CKRecordValue),
                 ]
 
                 let matchFields: [(String, CKRecordValue)] = [
@@ -100,6 +99,13 @@ import SwiftUI
 
                 print("🟣 CloudKitManager: Saving schema definitions")
 
+                // Create a temporary file for the photo asset
+                let tempDir = FileManager.default.temporaryDirectory
+                let tempFile = tempDir.appendingPathComponent("temp.jpg")
+                let emptyData = Data()
+                try emptyData.write(to: tempFile)
+                let photoAsset = CKAsset(fileURL: tempFile)
+
                 // Save the schema definitions
                 let zone = CKRecordZone(zoneName: "Schema")
                 try await database.modifyRecordZones(saving: [zone], deleting: [])
@@ -118,6 +124,8 @@ import SwiftUI
                 for (field, value) in playerFields {
                     playerRecord[field] = value
                 }
+                // Set photo asset separately
+                playerRecord["photo"] = photoAsset
 
                 for (field, value) in matchFields {
                     matchRecord[field] = value
@@ -132,6 +140,9 @@ import SwiftUI
                 try await database.save(playerRecord)
                 try await database.save(matchRecord)
                 try await database.save(playerGroupRecord)
+
+                // Clean up temporary file
+                try? FileManager.default.removeItem(at: tempFile)
 
                 print("🟣 CloudKitManager: Schema setup complete")
 

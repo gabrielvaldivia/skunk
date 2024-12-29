@@ -41,21 +41,29 @@ import SwiftUI
     }
 
     struct PlayerGroupRow: View {
-        let group: PlayerGroup
         @EnvironmentObject private var cloudKitManager: CloudKitManager
+        let group: PlayerGroup
 
-        var body: some View {
-            VStack(alignment: .leading) {
-                Text(playerNames)
-                    .font(.headline)
+        private var playerNames: String {
+            let names = group.playerIDs.compactMap { id in
+                cloudKitManager.getPlayer(id: id)?.name
+            }
+
+            switch names.count {
+            case 0:
+                return "No players"
+            case 1:
+                return names[0]
+            case 2:
+                return "\(names[0]) & \(names[1])"
+            default:
+                let allButLast = names.dropLast().joined(separator: ", ")
+                return "\(allButLast), & \(names.last!)"
             }
         }
 
-        private var playerNames: String {
-            group.playerIDs
-                .compactMap { cloudKitManager.getPlayer(id: $0)?.name }
-                .sorted()
-                .joined(separator: ", ")
+        var body: some View {
+            Text(playerNames)
         }
     }
 
