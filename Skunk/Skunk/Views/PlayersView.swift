@@ -252,6 +252,20 @@ import SwiftUI
             }
         }
 
+        private var allPlayers: [Player] {
+            guard let userID = authManager.userID else { return [] }
+            return cloudKitManager.players.sorted { player1, player2 in
+                // Get last match dates from cached matches
+                let matches1 = cloudKitManager.getPlayerMatches(player1.id)
+                let matches2 = cloudKitManager.getPlayerMatches(player2.id)
+
+                let lastPlayed1 = matches1?.first?.date ?? .distantPast
+                let lastPlayed2 = matches2?.first?.date ?? .distantPast
+
+                return lastPlayed1 > lastPlayed2
+            }
+        }
+
         var body: some View {
             VStack(spacing: 0) {
                 // Fixed header with segmented control
@@ -280,6 +294,15 @@ import SwiftUI
             }
             .navigationTitle("Players")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingAddPlayer = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
             .task {
                 await loadPlayers()
             }
@@ -312,71 +335,13 @@ import SwiftUI
 
         private var playersView: some View {
             ScrollView {
-                // All Players container
-                VStack(alignment: .leading, spacing: 20) {
-                    // Your Players section
-                    VStack(alignment: .leading, spacing: 0) {
-
-                        // Your Players container
-                        VStack(alignment: .leading, spacing: 0) {
-                            // Your Player
-                            if let currentUser = currentUser {
-                                NavigationLink {
-                                    PlayerDetailView(player: currentUser)
-                                } label: {
-                                    PlayerRow(player: currentUser, group: nil)
-                                        .padding(.vertical, 8)
-                                }
-                            }
-
-                            // Managed Players
-                            ForEach(managedPlayers) { player in
-                                NavigationLink {
-                                    PlayerDetailView(player: player)
-                                } label: {
-                                    PlayerRow(player: player, group: nil)
-                                        .padding(.vertical, 8)
-                                }
-                            }
-
-                            // Add Player button
-                            Button {
-                                showingAddPlayer = true
-                            } label: {
-                                HStack {
-                                    Text("Add Player")
-                                        .foregroundStyle(.blue)
-                                    Spacer()
-                                }
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(allPlayers) { player in
+                        NavigationLink {
+                            PlayerDetailView(player: player)
+                        } label: {
+                            PlayerRow(player: player, group: nil)
                                 .padding(.vertical, 8)
-                            }
-                        }
-                    }
-
-                    // Online Players section
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("Online Players")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-
-                        VStack(alignment: .leading, spacing: 0) {
-                            if otherUsers.isEmpty {
-                                HStack {
-                                    Text("No other players found")
-                                        .foregroundStyle(.secondary)
-                                    Spacer()
-                                }
-                                .padding(.vertical, 8)
-                            } else {
-                                ForEach(otherUsers) { player in
-                                    NavigationLink {
-                                        PlayerDetailView(player: player)
-                                    } label: {
-                                        PlayerRow(player: player, group: nil)
-                                            .padding(.vertical, 12)
-                                    }
-                                }
-                            }
                         }
                     }
                 }
