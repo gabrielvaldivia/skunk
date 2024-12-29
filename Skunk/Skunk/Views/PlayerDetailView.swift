@@ -226,7 +226,9 @@ import SwiftUI
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    if isCurrentUserProfile {
+                    if isCurrentUserProfile
+                        || (player.ownerID == authManager.userID && player.appleUserID == nil)
+                    {
                         Button {
                             editingName = player.name
                             editingColor = player.color

@@ -14,6 +14,7 @@ extension Sequence {
         @EnvironmentObject private var cloudKitManager: CloudKitManager
         @EnvironmentObject private var authManager: AuthenticationManager
         @AppStorage("lastMatchPlayerIDs") private var lastMatchPlayerIDsString: String = "[]"
+        @AppStorage("lastMatchPlayerCount") private var lastMatchPlayerCount: Int = 0
 
         private var lastMatchPlayerIDs: [String] {
             (try? JSONDecoder().decode([String].self, from: Data(lastMatchPlayerIDsString.utf8)))
@@ -43,9 +44,30 @@ extension Sequence {
             self.game = game
             self.onMatchSaved = onMatchSaved
             let minPlayerCount = game.supportedPlayerCounts.min() ?? 2
+
             _currentPlayerCount = State(initialValue: minPlayerCount)
             _players = State(initialValue: Array(repeating: nil, count: minPlayerCount))
             _scores = State(initialValue: Array(repeating: 0, count: minPlayerCount))
+        }
+
+        private func adjustToLastMatchPlayerCount() {
+            // Adjust to last match player count if valid
+            if game.supportedPlayerCounts.contains(lastMatchPlayerCount) && lastMatchPlayerCount > 0
+            {
+                let currentCount = players.count
+                if lastMatchPlayerCount > currentCount {
+                    // Add more player slots
+                    players.append(
+                        contentsOf: Array(
+                            repeating: nil, count: lastMatchPlayerCount - currentCount))
+                    scores.append(
+                        contentsOf: Array(repeating: 0, count: lastMatchPlayerCount - currentCount))
+                } else if lastMatchPlayerCount < currentCount {
+                    // Remove excess player slots
+                    players.removeLast(currentCount - lastMatchPlayerCount)
+                    scores.removeLast(currentCount - lastMatchPlayerCount)
+                }
+            }
         }
 
         var body: some View {
@@ -54,11 +76,33 @@ extension Sequence {
                     Section("Players") {
                         ForEach(Array(players.enumerated()), id: \.offset) { index, player in
                             HStack {
-                                if let player = player {
-                                    Text(player.name)
+                                Menu {
+                                    ForEach(availablePlayers) { newPlayer in
+                                        Button(newPlayer.name) {
+                                            players[index] = newPlayer
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        if let player = player {
+                                            Text(player.name)
+                                                .foregroundColor(.primary)
+                                            Image(systemName: "chevron.up.chevron.down")
+                                                .foregroundColor(.secondary)
+                                                .font(.footnote)
+                                        } else {
+                                            Text("Select Player")
+                                                .foregroundColor(.secondary)
+                                            Image(systemName: "chevron.up.chevron.down")
+                                                .foregroundColor(.secondary)
+                                                .font(.footnote)
+                                        }
 
-                                    Spacer()
+                                        Spacer()
+                                    }
+                                }
 
+                                if player != nil {
                                     Toggle(
                                         "",
                                         isOn: Binding(
@@ -69,21 +113,6 @@ extension Sequence {
                                         )
                                     )
                                     .tint(.green)
-                                } else {
-                                    Menu {
-                                        ForEach(availablePlayers) { player in
-                                            Button(player.name) {
-                                                players[index] = player
-                                            }
-                                        }
-                                    } label: {
-                                        HStack {
-                                            Text("Select Player")
-                                                .foregroundColor(.secondary)
-                                            Image(systemName: "chevron.up.chevron.down")
-                                                .foregroundColor(.secondary)
-                                        }
-                                    }
                                 }
                             }
                         }
@@ -126,6 +155,7 @@ extension Sequence {
                     }
                 }
                 .task {
+                    adjustToLastMatchPlayerCount()
                     await loadPlayers()
                 }
                 .alert("Error", isPresented: $showingError) {
@@ -223,8 +253,9 @@ extension Sequence {
                     var match = Match(date: Date(), createdByID: authManager.userID, game: game)
                     let filledPlayers = players.compactMap { $0 }
 
-                    // Save the current players as last players
+                    // Save the current players and count
                     setLastMatchPlayerIDs(filledPlayers.map { $0.id })
+                    lastMatchPlayerCount = players.count
 
                     // Use the existing player IDs directly
                     match.playerIDs = filledPlayers.map { $0.id }
