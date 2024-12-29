@@ -435,7 +435,7 @@ import SwiftUI
 
     struct ActivityGridView: View {
         let matches: [Match]
-        private let columns = 16
+        private let columns = 18
         private let weeks = 6
 
         private struct DayActivity: Identifiable {
@@ -486,16 +486,15 @@ import SwiftUI
         var body: some View {
             VStack(alignment: .leading, spacing: 4) {
                 LazyVGrid(
-                    columns: Array(repeating: GridItem(.fixed(20), spacing: 2), count: columns),
+                    columns: Array(repeating: GridItem(.fixed(16), spacing: 2), count: columns),
                     spacing: 2
                 ) {
                     ForEach(activities) { activity in
                         RoundedRectangle(cornerRadius: 2)
                             .fill(activityColor(activity.count))
-                            .frame(height: 20)
+                            .frame(height: 16)
                     }
                 }
-                .padding(.top, 10)
 
                 HStack {
                     Text("Less")
@@ -503,24 +502,24 @@ import SwiftUI
                         .foregroundStyle(.secondary)
                     RoundedRectangle(cornerRadius: 2)
                         .fill(activityColor(0))
-                        .frame(width: 20, height: 20)
+                        .frame(width: 16, height: 16)
                     RoundedRectangle(cornerRadius: 2)
                         .fill(activityColor(2))
-                        .frame(width: 20, height: 20)
+                        .frame(width: 16, height: 16)
                     RoundedRectangle(cornerRadius: 2)
                         .fill(activityColor(4))
-                        .frame(width: 20, height: 20)
+                        .frame(width: 16, height: 16)
                     RoundedRectangle(cornerRadius: 2)
                         .fill(activityColor(6))
-                        .frame(width: 20, height: 20)
+                        .frame(width: 16, height: 16)
                     Text("More")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
                 .padding(.top, 4)
-                .padding(.horizontal)
-                .padding(.bottom, 10)
+                .padding(.horizontal, 4)
             }
+            .padding(10)
         }
     }
 #endif
