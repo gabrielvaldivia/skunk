@@ -1,4 +1,5 @@
 import CloudKit
+import FirebaseAnalytics
 import Foundation
 import SwiftUI
 
@@ -155,6 +156,16 @@ import SwiftUI
             } else {
                 games.append(updatedGame)
             }
+
+            Analytics.logEvent(
+                "game_saved",
+                parameters: [
+                    "game_id": game.id,
+                    "game_title": game.title,
+                    "is_binary_score": game.isBinaryScore,
+                    "supported_player_counts": game.supportedPlayerCounts.map(String.init).joined(
+                        separator: ","),
+                ])
         }
 
         func deleteGame(_ game: Game) async throws {
@@ -163,6 +174,13 @@ import SwiftUI
             }
             try await database.deleteRecord(withID: recordID)
             games.removeAll { $0.id == game.id }
+
+            Analytics.logEvent(
+                "game_deleted",
+                parameters: [
+                    "game_id": game.id,
+                    "game_title": game.title,
+                ])
         }
 
         // MARK: - Players
@@ -313,11 +331,27 @@ import SwiftUI
                 // Notify of changes
                 objectWillChange.send()
                 print("🟣 CloudKitManager: Successfully completed player save operation")
+
+                Analytics.logEvent(
+                    "player_saved",
+                    parameters: [
+                        "player_id": player.id,
+                        "player_name": player.name,
+                        "has_apple_id": String(player.appleUserID != nil),
+                        "has_photo": String(player.photoData != nil),
+                    ])
             } catch let error as CKError {
                 print(
                     "🔴 CloudKitManager: CloudKit error saving player: \(error.localizedDescription)"
                 )
                 print("🔴 CloudKitManager: Error code: \(error.code.rawValue)")
+                Analytics.logEvent(
+                    "player_save_error",
+                    parameters: [
+                        "error_code": String(error.code.rawValue),
+                        "error_description": error.localizedDescription,
+                        "player_name": player.name,
+                    ])
                 if let serverRecord = error.serverRecord {
                     print("🔴 CloudKitManager: Server record exists: \(serverRecord)")
                 }
@@ -329,6 +363,13 @@ import SwiftUI
                 print(
                     "🔴 CloudKitManager: Non-CloudKit error saving player: \(error.localizedDescription)"
                 )
+                Analytics.logEvent(
+                    "player_save_error",
+                    parameters: [
+                        "error_type": "non_cloudkit",
+                        "error_description": error.localizedDescription,
+                        "player_name": player.name,
+                    ])
                 throw error
             }
         }
@@ -369,6 +410,12 @@ import SwiftUI
                         print("🟣 CloudKitManager: Successfully created photo asset")
                     } catch {
                         print("🟣 CloudKitManager: Error creating photo asset: \(error)")
+                        Analytics.logEvent(
+                            "player_photo_error",
+                            parameters: [
+                                "error_description": error.localizedDescription,
+                                "player_name": player.name,
+                            ])
                     }
                 } else {
                     latestRecord.setValue(nil, forKey: "photo")
@@ -392,6 +439,14 @@ import SwiftUI
                 // Notify of changes
                 objectWillChange.send()
 
+                Analytics.logEvent(
+                    "player_updated",
+                    parameters: [
+                        "player_id": player.id,
+                        "player_name": player.name,
+                        "has_photo": String(player.photoData != nil),
+                    ])
+
                 print("🟣 CloudKitManager: Starting force refresh")
                 // Force a refresh to ensure all views have the latest data
                 _ = try await fetchPlayers(forceRefresh: true)
@@ -401,12 +456,26 @@ import SwiftUI
                     "🟣 CloudKitManager: CloudKit error during update: \(error.localizedDescription)"
                 )
                 print("🟣 CloudKitManager: Error code: \(error.code.rawValue)")
+                Analytics.logEvent(
+                    "player_update_error",
+                    parameters: [
+                        "error_code": String(error.code.rawValue),
+                        "error_description": error.localizedDescription,
+                        "player_name": player.name,
+                    ])
                 handleCloudKitError(error)
                 throw error
             } catch {
                 print(
                     "🟣 CloudKitManager: Non-CloudKit error during update: \(error.localizedDescription)"
                 )
+                Analytics.logEvent(
+                    "player_update_error",
+                    parameters: [
+                        "error_type": "non_cloudkit",
+                        "error_description": error.localizedDescription,
+                        "player_name": player.name,
+                    ])
                 throw error
             }
         }
@@ -417,6 +486,13 @@ import SwiftUI
             }
             try await database.deleteRecord(withID: recordID)
             players.removeAll { $0.id == player.id }
+
+            Analytics.logEvent(
+                "player_deleted",
+                parameters: [
+                    "player_id": player.id,
+                    "player_name": player.name,
+                ])
         }
 
         func fetchPlayer(id: String) async throws -> Player? {
@@ -512,6 +588,17 @@ import SwiftUI
                     games[gameIndex].matches = matches
                 }
             }
+
+            Analytics.logEvent(
+                "match_saved",
+                parameters: [
+                    "match_id": match.id,
+                    "game_id": match.game?.id ?? "",
+                    "game_title": match.game?.title ?? "",
+                    "player_count": String(match.playerIDs.count),
+                    "is_multiplayer": String(match.isMultiplayer),
+                    "status": match.status,
+                ])
         }
 
         func deleteMatch(_ match: Match) async throws {
@@ -527,6 +614,14 @@ import SwiftUI
                     games[gameIndex].matches = matchCache[gameId]
                 }
             }
+
+            Analytics.logEvent(
+                "match_deleted",
+                parameters: [
+                    "match_id": match.id,
+                    "game_id": match.game?.id ?? "",
+                    "game_title": match.game?.title ?? "",
+                ])
         }
 
         // MARK: - Subscriptions
@@ -590,6 +685,14 @@ import SwiftUI
             if let ckError = error as? CKError {
                 print("Error code: \(ckError.code.rawValue)")
                 print("Error description: \(ckError.localizedDescription)")
+
+                Analytics.logEvent(
+                    "cloudkit_error",
+                    parameters: [
+                        "error_code": String(ckError.code.rawValue),
+                        "error_description": ckError.localizedDescription,
+                        "error_type": String(describing: type(of: error)),
+                    ])
             }
         }
 
