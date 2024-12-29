@@ -68,8 +68,36 @@ import SwiftUI
             }
         }
 
+        private var players: [Player] {
+            group.playerIDs.compactMap { id in
+                cloudKitManager.getPlayer(id: id)
+            }
+        }
+
         var body: some View {
-            Text(playerNames)
+            HStack {
+                Text(playerNames)
+                Spacer()
+                HStack(spacing: -8) {
+                    ForEach(players.prefix(3)) { player in
+                        PlayerAvatar(player: player)
+                            .frame(width: 32, height: 32)
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle()
+                                    .stroke(Color(.systemBackground), lineWidth: 2)
+                            )
+                    }
+                    if players.count > 3 {
+                        Text("+\(players.count - 3)")
+                            .font(.caption)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color(.systemGray5))
+                            .clipShape(Capsule())
+                    }
+                }
+            }
         }
     }
 
@@ -248,16 +276,13 @@ import SwiftUI
                     }
                 } else {
                     List {
-                        // Game Picker - only show if there's more than one game
-                        if games.count > 1 {
-                            Section {
-                                Picker("Game", selection: $selectedGameId) {
-                                    Text("All Games").tag(Optional<String>.none)
-                                    ForEach(games) { game in
-                                        Text(game.title).tag(Optional(game.id))
-                                    }
+                        // Game Picker
+                        Section {
+                            Picker("Game", selection: $selectedGameId) {
+                                Text("All Games").tag(Optional<String>.none)
+                                ForEach(games) { game in
+                                    Text(game.title).tag(Optional(game.id))
                                 }
-                                .pickerStyle(.menu)
                             }
                         }
 
@@ -278,8 +303,7 @@ import SwiftUI
                 }
 
                 // Add floating action button
-                if let selectedGame = games.first(where: { $0.id == selectedGameId }) ?? games.first
-                {
+                if let selectedGame = games.first(where: { $0.id == selectedGameId }) {
                     VStack {
                         Spacer()
                         HStack {
@@ -305,17 +329,12 @@ import SwiftUI
             .navigationTitle(playerNames)
             .task {
                 await loadMatches()
-                // Auto-select the only game if there's just one
-                if games.count == 1 {
-                    selectedGameId = games[0].id
-                }
             }
             .refreshable {
                 await loadMatches()
             }
             .sheet(isPresented: $showingNewMatch) {
-                if let selectedGame = games.first(where: { $0.id == selectedGameId }) ?? games.first
-                {
+                if let selectedGame = games.first(where: { $0.id == selectedGameId }) {
                     NewMatchView(
                         game: selectedGame,
                         defaultPlayerIDs: group.playerIDs,
