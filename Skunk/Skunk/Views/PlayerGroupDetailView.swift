@@ -76,6 +76,24 @@ import SwiftUI
             }
         }
 
+        private var displayName: String {
+            let names = group.playerIDs.compactMap { id in
+                cloudKitManager.getPlayer(id: id)?.name
+            }
+
+            switch names.count {
+            case 0:
+                return "No players"
+            case 1:
+                return names[0]
+            case 2:
+                return "\(names[0]) & \(names[1])"
+            default:
+                let allButLast = names.dropLast().joined(separator: ", ")
+                return "\(allButLast), & \(names.last!)"
+            }
+        }
+
         private var totalWins: Int {
             winCounts.reduce(0) { $0 + $1.count }
         }
@@ -184,7 +202,7 @@ import SwiftUI
                                 }
                                 .padding(.top, 8)
 
-                                Text(group.name)
+                                Text(displayName)
                                     .font(.system(size: 28))
                                     .fontWeight(.bold)
 
@@ -243,7 +261,7 @@ import SwiftUI
                                 }
                                 .padding(.top, 8)
 
-                                Text(group.name)
+                                Text(displayName)
                                     .font(.system(size: 28))
                                     .fontWeight(.bold)
 
