@@ -57,40 +57,45 @@ import SwiftUI
 
                                     Spacer()
 
+                                    if let game = match.game, !game.isBinaryScore,
+                                        let playerIndex = match.playerIDs.firstIndex(of: player.id),
+                                        playerIndex < match.scores.count
+                                    {
+                                        Text("\(match.scores[playerIndex])")
+                                            .font(.body)
+                                            .foregroundStyle(.secondary)
+                                            .padding(.trailing, 8)
+                                    }
+
                                     if match.status == "completed" {
                                         if match.winnerID == player.id {
                                             Image(systemName: "crown.fill")
                                                 .foregroundStyle(.yellow)
                                         }
                                     } else {
-                                        Toggle(
-                                            isOn: Binding(
-                                                get: { match.winnerID == player.id },
-                                                set: { isWinner in
-                                                    var updatedMatch = match
-                                                    updatedMatch.winnerID =
-                                                        isWinner ? player.id : nil
-                                                    updatedMatch.status =
-                                                        isWinner ? "completed" : "active"
-                                                    Task {
-                                                        do {
-                                                            try await cloudKitManager.saveMatch(
-                                                                updatedMatch)
-                                                            match = updatedMatch
-                                                        } catch {
-                                                            self.error = error
-                                                            showingError = true
-                                                        }
+                                        Image(systemName: "crown.fill")
+                                            .foregroundStyle(
+                                                match.winnerID == player.id
+                                                    ? .yellow : .gray.opacity(0.3)
+                                            )
+                                            .onTapGesture {
+                                                var updatedMatch = match
+                                                updatedMatch.winnerID =
+                                                    match.winnerID == player.id ? nil : player.id
+                                                updatedMatch.status =
+                                                    updatedMatch.winnerID != nil
+                                                    ? "completed" : "active"
+                                                Task {
+                                                    do {
+                                                        try await cloudKitManager.saveMatch(
+                                                            updatedMatch)
+                                                        match = updatedMatch
+                                                    } catch {
+                                                        self.error = error
+                                                        showingError = true
                                                     }
                                                 }
-                                            )
-                                        ) {
-                                            Text("Winner")
-                                                .font(.subheadline)
-                                        }
-                                        .toggleStyle(.button)
-                                        .buttonStyle(.bordered)
-                                        .tint(match.winnerID == player.id ? .green : .gray)
+                                            }
                                     }
                                 }
                             }
