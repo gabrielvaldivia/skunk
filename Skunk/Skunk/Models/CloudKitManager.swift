@@ -291,20 +291,46 @@ import SwiftUI
         }
 
         func savePlayer(_ player: Player) async throws {
+            print(
+                "🟣 CloudKitManager: Starting to save player with name: \(player.name), appleUserID: \(player.appleUserID ?? "nil")"
+            )
             var updatedPlayer = player
             let record = player.toRecord()
-            let savedRecord = try await database.save(record)
-            updatedPlayer.recordID = savedRecord.recordID
-            updatedPlayer.record = savedRecord
+            print("🟣 CloudKitManager: Created CKRecord for player")
 
-            // Update both the cache and published array
-            updatePlayerCache(updatedPlayer)
+            do {
+                let savedRecord = try await database.save(record)
+                print("🟣 CloudKitManager: Successfully saved player record to CloudKit")
+                updatedPlayer.recordID = savedRecord.recordID
+                updatedPlayer.record = savedRecord
 
-            // Reset the last refresh time to force next fetch to get fresh data
-            lastPlayerRefreshTime = .distantPast
+                // Update both the cache and published array
+                updatePlayerCache(updatedPlayer)
 
-            // Notify of changes
-            objectWillChange.send()
+                // Reset the last refresh time to force next fetch to get fresh data
+                lastPlayerRefreshTime = .distantPast
+
+                // Notify of changes
+                objectWillChange.send()
+                print("🟣 CloudKitManager: Successfully completed player save operation")
+            } catch let error as CKError {
+                print(
+                    "🔴 CloudKitManager: CloudKit error saving player: \(error.localizedDescription)"
+                )
+                print("🔴 CloudKitManager: Error code: \(error.code.rawValue)")
+                if let serverRecord = error.serverRecord {
+                    print("🔴 CloudKitManager: Server record exists: \(serverRecord)")
+                }
+                if let retryAfter = error.retryAfterSeconds {
+                    print("🔴 CloudKitManager: Retry suggested after \(retryAfter) seconds")
+                }
+                throw error
+            } catch {
+                print(
+                    "🔴 CloudKitManager: Non-CloudKit error saving player: \(error.localizedDescription)"
+                )
+                throw error
+            }
         }
 
         func updatePlayer(_ player: Player) async throws {
