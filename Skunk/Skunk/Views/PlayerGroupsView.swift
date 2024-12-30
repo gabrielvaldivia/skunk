@@ -55,17 +55,27 @@ import SwiftUI
         @State private var error: Error?
         @State private var showingError = false
         @State private var groupMatches: [String: [Match]] = [:]
+        @State private var isLoading = true
 
         var body: some View {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    GroupsListView(
-                        groups: cloudKitManager.playerGroups,
-                        groupMatches: groupMatches
-                    )
+            Group {
+                if isLoading {
+                    VStack {
+                        ProgressView()
+                            .padding()
+                    }
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 20) {
+                            GroupsListView(
+                                groups: cloudKitManager.playerGroups,
+                                groupMatches: groupMatches
+                            )
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                    }
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
             }
             .task {
                 await loadGroupsAndMatches()
@@ -81,14 +91,19 @@ import SwiftUI
         }
 
         private func loadGroupsAndMatches() async {
+            await MainActor.run { isLoading = true }
             do {
                 let newGroupMatches = try await cloudKitManager.loadGroupsAndMatches()
                 await MainActor.run {
                     groupMatches = newGroupMatches
+                    isLoading = false
                 }
             } catch {
-                self.error = error
-                showingError = true
+                await MainActor.run {
+                    self.error = error
+                    showingError = true
+                    isLoading = false
+                }
             }
         }
     }
