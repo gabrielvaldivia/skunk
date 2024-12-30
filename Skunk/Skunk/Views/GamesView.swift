@@ -32,6 +32,7 @@ import SwiftUI
                         }
                         .onDelete(perform: deleteGames)
                     }
+                    .listStyle(.plain)
                 }
             }
             .navigationTitle("Games")

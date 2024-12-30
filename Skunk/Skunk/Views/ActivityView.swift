@@ -27,6 +27,7 @@
                         }
                     }
                 }
+                .listStyle(.plain)
                 .navigationTitle("Activity")
                 .refreshable {
                     await loadMatches()
