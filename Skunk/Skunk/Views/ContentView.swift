@@ -12,8 +12,12 @@ import SwiftUI
     import UIKit
 
     struct ContentView: View {
+        @State private var selectedTab = 0
+        @State private var showingNewMatch = false
+        @State private var previousTab = 0
+
         var body: some View {
-            TabView {
+            TabView(selection: $selectedTab) {
                 NavigationStack {
                     GamesView()
                         .navigationBarTitleDisplayMode(.inline)
@@ -28,6 +32,7 @@ import SwiftUI
                                 }
                         }
                 }
+                .tag(0)
                 .tabItem {
                     Label("Games", systemImage: "gamecontroller")
                 }
@@ -43,15 +48,23 @@ import SwiftUI
                             PlayerDetailView(player: player)
                         }
                 }
+                .tag(1)
                 .tabItem {
                     Label("Players", systemImage: "person.2")
                 }
+
+                Color.clear
+                    .tag(2)
+                    .tabItem {
+                        Label("New Match", systemImage: "plus.circle.fill")
+                    }
 
                 NavigationStack {
                     ActivityView()
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbarBackground(.secondary.opacity(0.1), for: .navigationBar)
                 }
+                .tag(3)
                 .tabItem {
                     Label("Activity", systemImage: "list.bullet")
                 }
@@ -61,9 +74,20 @@ import SwiftUI
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbarBackground(.secondary.opacity(0.1), for: .navigationBar)
                 }
+                .tag(4)
                 .tabItem {
                     Label("Settings", systemImage: "gear")
                 }
+            }
+            .onChange(of: selectedTab) { oldValue, newValue in
+                if newValue == 2 {
+                    previousTab = oldValue
+                    showingNewMatch = true
+                    selectedTab = previousTab
+                }
+            }
+            .sheet(isPresented: $showingNewMatch) {
+                NewMatchView()
             }
         }
     }

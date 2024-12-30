@@ -158,18 +158,39 @@ import SwiftUI
                     }
                 } else {
                     List {
-                        if !activePlayerGroups.isEmpty {
-                            Section {
-                                Picker("Player Group", selection: $selectedGroupId) {
-                                    Text("All Players")
-                                        .tag(Optional<String>.none)
-                                    ForEach(activePlayerGroups) { group in
-                                        Text(group.name)
-                                            .tag(Optional(group.id))
+                        Section {
+                            VStack(spacing: 12) {
+                                Text(game.title)
+                                    .font(.system(size: 28))
+                                    .fontWeight(.bold)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .multilineTextAlignment(.center)
+
+                                if !activePlayerGroups.isEmpty {
+                                    Menu {
+                                        Button("All Players") {
+                                            selectedGroupId = nil
+                                        }
+                                        ForEach(activePlayerGroups) { group in
+                                            Button(group.name) {
+                                                selectedGroupId = group.id
+                                            }
+                                        }
+                                    } label: {
+                                        HStack {
+                                            Text(
+                                                selectedGroupId.flatMap { id in
+                                                    activePlayerGroups.first { $0.id == id }?.name
+                                                } ?? "All Players")
+                                            Image(systemName: "chevron.up.chevron.down")
+                                                .imageScale(.small)
+                                        }
+                                        .foregroundStyle(.blue)
                                     }
                                 }
-                                .pickerStyle(.menu)
                             }
+                            .frame(maxWidth: .infinity)
+                            .listRowBackground(Color.clear)
                         }
 
                         leaderboardSection
@@ -201,7 +222,8 @@ import SwiftUI
                     .padding(.bottom, 20)
                 }
             }
-            .navigationTitle(game.title)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 Button(action: { showingEditGame.toggle() }) {
                     Text("Edit")

@@ -17,6 +17,7 @@ extension Sequence {
         @StateObject private var locationManager = LocationManager()
         @AppStorage("lastMatchPlayerIDs") private var lastMatchPlayerIDsString: String = "[]"
         @AppStorage("lastMatchPlayerCount") private var lastMatchPlayerCount: Int = 0
+        @State private var showingAddGame = false
 
         private var lastMatchPlayerIDs: [String] {
             (try? JSONDecoder().decode([String].self, from: Data(lastMatchPlayerIDsString.utf8)))
@@ -31,9 +32,10 @@ extension Sequence {
             }
         }
 
-        let game: Game
-        let onMatchSaved: ((Match) -> Void)?
+        let defaultGame: Game?
         let defaultPlayerIDs: [String]?
+        let onMatchSaved: ((Match) -> Void)?
+        @State private var selectedGame: Game?
         @State private var players: [Player?]
         @State private var scores: [Int]
         @State private var currentPlayerCount: Int
@@ -44,22 +46,26 @@ extension Sequence {
         @State private var selectedWinnerIndex: Int?
         @State private var showingAddPlayer = false
 
-        init(game: Game, defaultPlayerIDs: [String]? = nil, onMatchSaved: ((Match) -> Void)? = nil)
-        {
-            self.game = game
-            self.onMatchSaved = onMatchSaved
+        init(
+            game: Game? = nil, defaultPlayerIDs: [String]? = nil,
+            onMatchSaved: ((Match) -> Void)? = nil
+        ) {
+            self.defaultGame = game
             self.defaultPlayerIDs = defaultPlayerIDs
+            self.onMatchSaved = onMatchSaved
 
-            // If we have default players and their count is supported, use that count
+            // If we have a game and default players and their count is supported, use that count
             let playerCount: Int
-            if let defaultCount = defaultPlayerIDs?.count,
+            if let game = game,
+                let defaultCount = defaultPlayerIDs?.count,
                 game.supportedPlayerCounts.contains(defaultCount)
             {
                 playerCount = defaultCount
             } else {
-                playerCount = game.supportedPlayerCounts.min() ?? 2
+                playerCount = 2  // Default to 2 players if no game selected
             }
 
+            _selectedGame = State(initialValue: game)
             _currentPlayerCount = State(initialValue: playerCount)
             _players = State(initialValue: Array(repeating: nil, count: playerCount))
             _scores = State(initialValue: Array(repeating: 0, count: playerCount))
@@ -67,6 +73,7 @@ extension Sequence {
 
         private func adjustToLastMatchPlayerCount() {
             // Adjust to last match player count if valid
+            guard let game = selectedGame else { return }
             if game.supportedPlayerCounts.contains(lastMatchPlayerCount) && lastMatchPlayerCount > 0
             {
                 let currentCount = players.count
@@ -133,6 +140,45 @@ extension Sequence {
         var body: some View {
             NavigationStack {
                 Form {
+                    Section("Game") {
+                        Menu {
+                            ForEach(cloudKitManager.games) { game in
+                                Button {
+                                    selectedGame = game
+                                    // Adjust player count to match game's minimum
+                                    let minPlayers = game.supportedPlayerCounts.min() ?? 2
+                                    if players.count < minPlayers {
+                                        players = Array(repeating: nil, count: minPlayers)
+                                        scores = Array(repeating: 0, count: minPlayers)
+                                    }
+                                } label: {
+                                    Text(game.title)
+                                }
+                            }
+
+                            Divider()
+
+                            Button {
+                                showingAddGame = true
+                            } label: {
+                                HStack {
+                                    Text("Add Game")
+                                    Spacer()
+                                    Image(systemName: "plus.circle.fill")
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text(selectedGame?.title ?? "Select Game")
+                                    .foregroundColor(selectedGame == nil ? .secondary : .primary)
+                                Spacer()
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .foregroundColor(.secondary)
+                                    .font(.footnote)
+                            }
+                        }
+                    }
+
                     Section("Players") {
                         ForEach(Array(players.enumerated()), id: \.offset) { index, player in
                             HStack {
@@ -146,9 +192,11 @@ extension Sequence {
                                             || player.appleUserID != nil
                                     }.sorted { player1, player2 in
                                         let distance1 =
-                                            locationManager.distanceToPlayer(player1) ?? .infinity
+                                            locationManager.distanceToPlayer(player1)
+                                            ?? .infinity
                                         let distance2 =
-                                            locationManager.distanceToPlayer(player2) ?? .infinity
+                                            locationManager.distanceToPlayer(player2)
+                                            ?? .infinity
                                         return distance1 < distance2
                                     }
 
@@ -255,8 +303,8 @@ extension Sequence {
                                     }
                                 }
 
-                                if player != nil {
-                                    if game.isBinaryScore {
+                                if player != nil && selectedGame != nil {
+                                    if selectedGame!.isBinaryScore {
                                         Toggle(
                                             "",
                                             isOn: Binding(
@@ -268,17 +316,19 @@ extension Sequence {
                                         )
                                         .tint(.green)
                                     } else {
-                                        TextField("Score", value: $scores[index], format: .number)
-                                            .keyboardType(.numberPad)
-                                            .multilineTextAlignment(.trailing)
-                                            .frame(width: 80)
+                                        TextField(
+                                            "Score", value: $scores[index], format: .number
+                                        )
+                                        .keyboardType(.numberPad)
+                                        .multilineTextAlignment(.trailing)
+                                        .frame(width: 80)
                                     }
                                 }
                             }
                         }
                         .onDelete { indexSet in
                             guard let index = indexSet.first,
-                                index >= (game.supportedPlayerCounts.min() ?? 2)
+                                index >= (selectedGame?.supportedPlayerCounts.min() ?? 2)
                             else { return }
                             players.remove(at: index)
                             scores.remove(at: index)
@@ -289,7 +339,9 @@ extension Sequence {
                             }
                         }
 
-                        if game.supportedPlayerCounts.contains(players.count + 1) {
+                        if let game = selectedGame,
+                            game.supportedPlayerCounts.contains(players.count + 1)
+                        {
                             Button(action: {
                                 players.append(nil)
                                 scores.append(0)
@@ -299,7 +351,7 @@ extension Sequence {
                         }
                     }
                 }
-                .navigationTitle("New \(game.title) Match")
+                .navigationTitle(selectedGame.map { "New \($0.title) Match" } ?? "New Match")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -313,6 +365,9 @@ extension Sequence {
                         }
                         .disabled(!canSave)
                     }
+                }
+                .sheet(isPresented: $showingAddGame) {
+                    AddGameView()
                 }
                 .sheet(isPresented: $showingAddPlayer) {
                     NavigationStack {
@@ -344,6 +399,7 @@ extension Sequence {
         }
 
         private var canSave: Bool {
+            guard let game = selectedGame else { return false }
             let filledPlayers = players.compactMap { $0 }
             return !filledPlayers.isEmpty
                 && filledPlayers.count >= (game.supportedPlayerCounts.min() ?? 2)
@@ -432,6 +488,7 @@ extension Sequence {
         private func saveMatch() {
             Task {
                 do {
+                    guard let game = selectedGame else { return }
                     var match = Match(date: Date(), createdByID: authManager.userID, game: game)
                     let filledPlayers = players.compactMap { $0 }
 
