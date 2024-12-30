@@ -110,11 +110,10 @@ import SwiftUI
                     // Update existing player if needed
                     if let fullName = appleIDCredential.fullName,
                         let givenName = fullName.givenName,
-                        let familyName = fullName.familyName,
                         player.name == "Player"  // Only update if it's the default name
                     {
                         var updatedPlayer = player
-                        updatedPlayer.name = "\(givenName) \(familyName)"
+                        updatedPlayer.name = givenName
                         do {
                             try await CloudKitManager.shared.updatePlayer(updatedPlayer)
                             print(
@@ -141,10 +140,9 @@ import SwiftUI
                     // Create new player
                     let name: String
                     if let fullName = appleIDCredential.fullName,
-                        let givenName = fullName.givenName,
-                        let familyName = fullName.familyName
+                        let givenName = fullName.givenName
                     {
-                        name = "\(givenName) \(familyName)"
+                        name = givenName
                     } else {
                         name = "Player"
                     }
