@@ -351,7 +351,7 @@ extension Sequence {
                         }
                     }
                 }
-                .navigationTitle(selectedGame.map { "New \($0.title) Match" } ?? "New Match")
+                .navigationTitle("New Match")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {

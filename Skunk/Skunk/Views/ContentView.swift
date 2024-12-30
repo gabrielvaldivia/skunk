@@ -53,11 +53,11 @@ import SwiftUI
                     Label("Players", systemImage: "person.2")
                 }
 
-                Color.clear
-                    .tag(2)
-                    .tabItem {
-                        Label("New Match", systemImage: "plus.circle.fill")
-                    }
+                // Color.clear
+                //     .tag(2)
+                //     .tabItem {
+                //         Label("New Match", systemImage: "plus.circle.fill")
+                //     }
 
                 NavigationStack {
                     ActivityView()

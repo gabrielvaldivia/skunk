@@ -12,6 +12,7 @@
         @State private var minPlayers: Int
         @State private var maxPlayers: Int
         @State private var showingDeleteConfirmation = false
+        @State private var creatorName: String?
 
         init(game: Game) {
             self.game = game
@@ -21,10 +22,20 @@
             _maxPlayers = State(initialValue: game.supportedPlayerCounts.max() ?? 4)
         }
 
+        private var formattedDate: String {
+            guard let date = game.creationDate else { return "unknown date" }
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateStyle = .long
+            dateFormatter.timeStyle = .none
+            return dateFormatter.string(from: date)
+        }
+
         var body: some View {
             NavigationStack {
                 Form {
-                    TextField("Game Title", text: $title)
+                    Section {
+                        TextField("Game Title", text: $title)
+                    }
 
                     Toggle(
                         "Track Score",
@@ -41,6 +52,19 @@
                         Stepper(
                             "Maximum \(maxPlayers) Players", value: $maxPlayers, in: minPlayers...99
                         )
+                    }
+
+                    if let creatorName {
+                        Section("Created By") {
+                            HStack(spacing: 4) {
+                                Text(creatorName)
+                                    .foregroundStyle(.secondary)
+                                Text("on")
+                                    .foregroundStyle(.secondary)
+                                Text(formattedDate)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
 
                     Section {
@@ -79,6 +103,12 @@
                     }
                 } message: {
                     Text("Are you sure you want to delete this game? This action cannot be undone.")
+                }
+                .task {
+                    if let creatorID = game.createdByID {
+                        let players = try? await cloudKitManager.fetchPlayers()
+                        creatorName = players?.first(where: { $0.appleUserID == creatorID })?.name
+                    }
                 }
             }
         }

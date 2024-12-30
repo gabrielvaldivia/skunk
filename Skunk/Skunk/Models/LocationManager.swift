@@ -47,14 +47,14 @@ import SwiftUI
             // Start a new background task for periodic syncing
             backgroundTask = Task { [weak self] in
                 while !Task.isCancelled {
-                    do {
-                        if let strongSelf = self {
+                    if let strongSelf = self {
+                        do {
                             try await strongSelf.syncLocationToCloudKit()
+                            try await Task.sleep(nanoseconds: UInt64(30 * 1_000_000_000))  // 30 seconds
+                        } catch {
+                            print("Error in periodic sync: \(error)")
+                            try? await Task.sleep(nanoseconds: UInt64(5 * 1_000_000_000))  // Wait 5 seconds before retrying
                         }
-                        try await Task.sleep(nanoseconds: UInt64(30 * 1_000_000_000))  // 30 seconds
-                    } catch {
-                        print("Error in periodic sync: \(error)")
-                        try? await Task.sleep(nanoseconds: UInt64(5 * 1_000_000_000))  // Wait 5 seconds before retrying
                     }
                 }
             }
@@ -69,7 +69,7 @@ import SwiftUI
             }
 
             // Get the current user's player record
-            let cloudKitManager = CloudKitManager.shared
+            let cloudKitManager = await getCKManager()
             let userID = try await cloudKitManager.userID
 
             guard let userID = userID else {
@@ -86,7 +86,7 @@ import SwiftUI
             lastLocationUpdate = Date()
         }
 
-        private func getCKManager() async throws -> CloudKitManager {
+        private func getCKManager() async -> CloudKitManager {
             // CloudKitManager.shared is not optional and can be accessed directly
             return CloudKitManager.shared
         }

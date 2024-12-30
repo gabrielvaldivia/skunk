@@ -161,12 +161,12 @@ import SwiftUI
                         Section {
                             VStack(spacing: 12) {
                                 Text(game.title)
-                                    .font(.system(size: 28))
+                                    .font(.system(size: 40))
                                     .fontWeight(.bold)
                                     .frame(maxWidth: .infinity, alignment: .center)
                                     .multilineTextAlignment(.center)
 
-                                if !activePlayerGroups.isEmpty {
+                                if activePlayerGroups.count > 1 {
                                     Menu {
                                         Button("All Players") {
                                             selectedGroupId = nil

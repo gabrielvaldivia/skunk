@@ -11,6 +11,7 @@ import Foundation
         var record: CKRecord?
         var matches: [Match]?
         var recordID: CKRecord.ID?
+        var creationDate: Date?
 
         init(
             title: String, isBinaryScore: Bool, supportedPlayerCounts: Set<Int>,
@@ -23,6 +24,7 @@ import Foundation
             self.createdByID = createdByID
             self.matches = []
             self.recordID = nil
+            self.creationDate = Date()
         }
 
         init?(from record: CKRecord) {
@@ -43,6 +45,7 @@ import Foundation
             self.record = record
             self.matches = []
             self.recordID = record.recordID
+            self.creationDate = record.creationDate
         }
 
         func toRecord() -> CKRecord {
