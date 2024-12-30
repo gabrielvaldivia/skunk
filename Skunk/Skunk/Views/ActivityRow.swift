@@ -37,23 +37,24 @@
                             .map { $0.name }
 
                         if otherPlayers.isEmpty {
-                            Text("\(winner.name) won at \(game.title)")
-                                .font(.body)
+                            Text(winner.name).fontWeight(.semibold) + Text(" won ")
+                                + Text(game.title).fontWeight(.semibold)
                         } else if otherPlayers.count == 1 {
-                            Text("\(winner.name) beat \(otherPlayers[0]) at \(game.title)")
-                                .font(.body)
+                            Text(winner.name).fontWeight(.semibold) + Text(" beat ")
+                                + Text(otherPlayers[0]).fontWeight(.semibold) + Text(" at ")
+                                + Text(game.title).fontWeight(.semibold)
                         } else if otherPlayers.count == 2 {
-                            Text(
-                                "\(winner.name) beat \(otherPlayers[0]) and \(otherPlayers[1]) at \(game.title)"
-                            )
-                            .font(.body)
+                            Text(winner.name).fontWeight(.semibold) + Text(" beat ")
+                                + Text(otherPlayers[0]).fontWeight(.semibold) + Text(" and ")
+                                + Text(otherPlayers[1]).fontWeight(.semibold) + Text(" at ")
+                                + Text(game.title).fontWeight(.semibold)
                         } else {
                             let allButLast = otherPlayers.dropLast().joined(separator: ", ")
                             let last = otherPlayers.last!
-                            Text(
-                                "\(winner.name) beat \(allButLast), and \(last) at \(game.title)"
-                            )
-                            .font(.body)
+                            Text(winner.name).fontWeight(.semibold) + Text(" beat ")
+                                + Text(allButLast).fontWeight(.semibold) + Text(", and ")
+                                + Text(last).fontWeight(.semibold) + Text(" at ")
+                                + Text(game.title).fontWeight(.semibold)
                         }
                     }
 

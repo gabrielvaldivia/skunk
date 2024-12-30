@@ -348,24 +348,14 @@ import SwiftUI
         }
 
         private var playersView: some View {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(allPlayers) { player in
-                        NavigationLink {
-                            PlayerDetailView(player: player)
-                        } label: {
-                            PlayerRow(player: player, group: nil)
-                                .padding(.vertical, 8)
-                        }
-                        if player.id != allPlayers.last?.id {
-                            Divider()
-                                .padding(.horizontal, -20)
-                        }
-                    }
+            List(allPlayers) { player in
+                NavigationLink {
+                    PlayerDetailView(player: player)
+                } label: {
+                    PlayerRow(player: player, group: nil)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical)
             }
+            .listStyle(.plain)
         }
 
         private func loadPlayers() async {

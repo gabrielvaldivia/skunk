@@ -24,6 +24,7 @@ import SwiftUI
                             Spacer()
                             Text(game.title)
                                 .font(.body)
+                                .fontWeight(.bold)
                         }
                     }
                     HStack {

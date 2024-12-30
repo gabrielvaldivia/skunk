@@ -138,7 +138,8 @@ import SwiftUI
                 VStack(alignment: .leading) {
                     HStack {
                         Text(displayName)
-                            .font(.headline)
+                            .font(.body)
+                            .fontWeight(.semibold)
                             .foregroundColor(Color(.label))
                         if isCurrentUser {
                             Text("(You)")
