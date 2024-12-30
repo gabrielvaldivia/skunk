@@ -50,7 +50,21 @@ import SwiftUI
 
         init() {
             self.container = CKContainer(identifier: "iCloud.com.gvaldivia.skunkapp")
-            self.database = container.publicCloudDatabase
+            self.database = container.privateCloudDatabase
+
+            // Ensure proper initialization of CloudKit
+            Task {
+                do {
+                    let status = try await container.accountStatus()
+                    if status == .available {
+                        // Create default zone if needed
+                        let defaultZone = CKRecordZone(zoneName: "_defaultZone")
+                        try await database.modifyRecordZones(saving: [defaultZone], deleting: [])
+                    }
+                } catch {
+                    print("CloudKit initialization error: \(error)")
+                }
+            }
         }
 
         // MARK: - Schema Setup
