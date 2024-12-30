@@ -149,7 +149,7 @@ import SwiftUI
                         NavigationLink {
                             MatchDetailView(match: match)
                         } label: {
-                            MatchRow(match: match)
+                            MatchRow(match: match, hideGameTitle: selectedGameId != nil)
                         }
                     }
                 }
@@ -205,23 +205,27 @@ import SwiftUI
                                 Text(displayName)
                                     .font(.system(size: 28))
                                     .fontWeight(.bold)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .multilineTextAlignment(.center)
 
-                                Menu {
-                                    Button("All Games") {
-                                        selectedGameId = nil
-                                    }
-                                    ForEach(games) { game in
-                                        Button(game.title) {
-                                            selectedGameId = game.id
+                                if games.count > 1 {
+                                    Menu {
+                                        Button("All Games") {
+                                            selectedGameId = nil
                                         }
+                                        ForEach(games) { game in
+                                            Button(game.title) {
+                                                selectedGameId = game.id
+                                            }
+                                        }
+                                    } label: {
+                                        HStack {
+                                            Text(selectedGameTitle)
+                                            Image(systemName: "chevron.up.chevron.down")
+                                                .imageScale(.small)
+                                        }
+                                        .foregroundStyle(.blue)
                                     }
-                                } label: {
-                                    HStack {
-                                        Text(selectedGameTitle)
-                                        Image(systemName: "chevron.up.chevron.down")
-                                            .imageScale(.small)
-                                    }
-                                    .foregroundStyle(.blue)
                                 }
                             }
                             .frame(maxWidth: .infinity)
@@ -264,23 +268,27 @@ import SwiftUI
                                 Text(displayName)
                                     .font(.system(size: 28))
                                     .fontWeight(.bold)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .multilineTextAlignment(.center)
 
-                                Menu {
-                                    Button("All Games") {
-                                        selectedGameId = nil
-                                    }
-                                    ForEach(games) { game in
-                                        Button(game.title) {
-                                            selectedGameId = game.id
+                                if games.count > 1 {
+                                    Menu {
+                                        Button("All Games") {
+                                            selectedGameId = nil
                                         }
+                                        ForEach(games) { game in
+                                            Button(game.title) {
+                                                selectedGameId = game.id
+                                            }
+                                        }
+                                    } label: {
+                                        HStack {
+                                            Text(selectedGameTitle)
+                                            Image(systemName: "chevron.up.chevron.down")
+                                                .imageScale(.small)
+                                        }
+                                        .foregroundStyle(.blue)
                                     }
-                                } label: {
-                                    HStack {
-                                        Text(selectedGameTitle)
-                                        Image(systemName: "chevron.up.chevron.down")
-                                            .imageScale(.small)
-                                    }
-                                    .foregroundStyle(.blue)
                                 }
                             }
                             .frame(maxWidth: .infinity)

@@ -37,9 +37,14 @@ import SwiftUI
                             .map { $0.name }
 
                         if !otherPlayers.isEmpty {
-                            Text("\(winner.name)").fontWeight(.semibold) + Text(" beat ")
-                                + Text("\(otherPlayers[0])").fontWeight(.semibold)
-                                .font(.body)
+                            if hideGameTitle {
+                                Text("\(winner.name)").fontWeight(.semibold) + Text(" beat ")
+                                    + Text("\(otherPlayers[0])").fontWeight(.semibold)
+                            } else if let game = match.game {
+                                Text("\(winner.name)").fontWeight(.semibold) + Text(" beat ")
+                                    + Text("\(otherPlayers[0])").fontWeight(.semibold)
+                                    + Text(" at ") + Text(game.title).fontWeight(.semibold)
+                            }
                         }
                     }
 
