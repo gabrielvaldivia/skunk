@@ -191,6 +191,16 @@ import SwiftUI
         }
 
         func saveGame(_ game: Game) async throws {
+            // Check for duplicate title
+            let query = CKQuery(
+                recordType: "Game",
+                predicate: NSPredicate(format: "title == %@ AND id != %@", game.title, game.id)
+            )
+            let (results, _) = try await database.records(matching: query)
+            if !results.isEmpty {
+                throw CloudKitError.duplicateGameTitle
+            }
+
             var updatedGame = game
             let record = game.toRecord()
             let savedRecord = try await database.save(record)
@@ -664,6 +674,7 @@ import SwiftUI
 
         enum CloudKitError: Error {
             case missingData
+            case duplicateGameTitle
         }
 
         func deleteAllPlayers() async throws {

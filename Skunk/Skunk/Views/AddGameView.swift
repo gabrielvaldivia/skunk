@@ -77,6 +77,11 @@
                     try await cloudKitManager.saveGame(game)
                     print("Successfully added game: \(title)")
                     dismiss()
+                } catch CloudKitManager.CloudKitError.duplicateGameTitle {
+                    errorMessage =
+                        "A game with this title already exists. Please choose a different title."
+                    showingError = true
+                    print("Failed to save game: duplicate title")
                 } catch {
                     errorMessage = error.localizedDescription
                     showingError = true
