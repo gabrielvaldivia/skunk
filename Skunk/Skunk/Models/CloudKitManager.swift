@@ -861,9 +861,24 @@ import SwiftUI
                 // First ensure we have the latest player data
                 _ = try await fetchPlayers(forceRefresh: true)
 
-                // Just fetch all existing groups using a simple predicate
-                let query = CKQuery(
-                    recordType: "PlayerGroup", predicate: NSPredicate(format: "id != ''"))
+                // Get the current user ID
+                let userID = await self.userID
+
+                // Create a predicate that includes groups created by the user or containing the user's player
+                let predicate: NSPredicate
+                if let userID = userID,
+                    let currentPlayer = getCurrentUser(withID: userID)
+                {
+                    let playerIDsData = try JSONEncoder().encode([currentPlayer.id])
+                    predicate = NSPredicate(
+                        format: "createdByID == %@ OR playerIDs CONTAINS %@",
+                        userID, playerIDsData as CVarArg
+                    )
+                } else {
+                    predicate = NSPredicate(value: false)  // No user, no groups
+                }
+
+                let query = CKQuery(recordType: "PlayerGroup", predicate: predicate)
                 let (results, _) = try await database.records(matching: query)
                 let groups = results.compactMap { result -> PlayerGroup? in
                     guard let record = try? result.1.get(),
@@ -887,43 +902,36 @@ import SwiftUI
         }
 
         func savePlayerGroup(_ group: PlayerGroup) async throws {
+            print("🟣 CloudKitManager: Starting to save player group: \(group.name)")
             var updatedGroup = group
+            let record = group.toRecord()
+            print("🟣 CloudKitManager: Created CKRecord for player group")
 
-            // First try to fetch an existing record
-            let playerIDsData = try JSONEncoder().encode(group.playerIDs.sorted())
-            let predicate = NSPredicate(format: "playerIDs == %@", playerIDsData as CVarArg)
-            let query = CKQuery(recordType: "PlayerGroup", predicate: predicate)
-            let (results, _) = try await database.records(matching: query)
-
-            if let result = results.first,
-                let existingRecord = try? result.1.get()
-            {
-                // Update the existing record
-                existingRecord["name"] = group.name
-                existingRecord["playerIDs"] = playerIDsData
-                existingRecord["id"] = group.id
-                if let createdByID = group.createdByID {
-                    existingRecord["createdByID"] = createdByID
-                }
-
-                let savedRecord = try await database.save(existingRecord)
-                updatedGroup.recordID = savedRecord.recordID
-                updatedGroup.record = savedRecord
-            } else {
-                // Create a new record
-                let record = group.toRecord()
+            do {
                 let savedRecord = try await database.save(record)
+                print("🟣 CloudKitManager: Successfully saved player group record to CloudKit")
                 updatedGroup.recordID = savedRecord.recordID
                 updatedGroup.record = savedRecord
-            }
 
-            // Update local state
-            if let index = playerGroups.firstIndex(where: { $0.id == group.id }) {
-                playerGroups[index] = updatedGroup
-            } else {
-                playerGroups.append(updatedGroup)
+                // Update local state
+                if let index = playerGroups.firstIndex(where: { $0.id == group.id }) {
+                    playerGroups[index] = updatedGroup
+                } else {
+                    playerGroups.append(updatedGroup)
+                }
+                playerGroupCache[group.id] = updatedGroup
+
+                // Reset the last refresh time to force next fetch to get fresh data
+                lastPlayerGroupRefreshTime = .distantPast
+
+                print("🟣 CloudKitManager: Successfully completed player group save operation")
+            } catch let error as CKError {
+                print(
+                    "🔴 CloudKitManager: CloudKit error saving player group: \(error.localizedDescription)"
+                )
+                print("🔴 CloudKitManager: Error code: \(error.code.rawValue)")
+                throw error
             }
-            playerGroupCache[group.id] = updatedGroup
         }
 
         func deletePlayerGroup(_ group: PlayerGroup) async throws {
