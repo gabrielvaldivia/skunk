@@ -9,6 +9,7 @@ import SwiftUI
         @State private var showingError = false
         @State private var error: Error?
         @State private var isLoading = false
+        @State private var showingDeleteConfirmation = false
 
         init(match: Match) {
             _match = State(initialValue: match)
@@ -137,13 +138,41 @@ import SwiftUI
                 if !match.isMultiplayer || match.status == "completed" {
                     Section {
                         Button(role: .destructive) {
-                            Task {
-                                try? await cloudKitManager.deleteMatch(match)
-                                dismiss()
-                            }
+                            showingDeleteConfirmation = true
                         } label: {
-                            Text("Delete Match")
-                                .frame(maxWidth: .infinity, alignment: .center)
+                            if isLoading {
+                                ProgressView()
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                            } else {
+                                Text("Delete Match")
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                            }
+                        }
+                        .disabled(isLoading)
+                        .confirmationDialog(
+                            "Delete Match",
+                            isPresented: $showingDeleteConfirmation,
+                            titleVisibility: .visible
+                        ) {
+                            Button("Delete", role: .destructive) {
+                                Task {
+                                    isLoading = true
+                                    do {
+                                        try await cloudKitManager.deleteMatch(match)
+                                        isLoading = false
+                                        dismiss()
+                                    } catch {
+                                        isLoading = false
+                                        self.error = error
+                                        showingError = true
+                                    }
+                                }
+                            }
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text(
+                                "Are you sure you want to delete this match? This action cannot be undone."
+                            )
                         }
                     }
                 }
