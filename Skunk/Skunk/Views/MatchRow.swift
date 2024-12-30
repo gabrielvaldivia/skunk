@@ -25,13 +25,6 @@ import SwiftUI
 
         var body: some View {
             HStack {
-                // Avatar
-                if let winner = cloudKitManager.players.first(where: { $0.id == match.winnerID }
-                ) {
-                    PlayerAvatar(player: winner, size: 40)
-                        .clipShape(Circle())
-                }
-
                 // Match info
                 VStack(alignment: .leading, spacing: 4) {
                     if let winner = cloudKitManager.players.first(where: {
@@ -44,7 +37,8 @@ import SwiftUI
                             .map { $0.name }
 
                         if !otherPlayers.isEmpty {
-                            Text("\(winner.name) beat \(otherPlayers[0])")
+                            Text("\(winner.name)").fontWeight(.semibold) + Text(" beat ")
+                                + Text("\(otherPlayers[0])").fontWeight(.semibold)
                                 .font(.body)
                         }
                     }
@@ -55,6 +49,13 @@ import SwiftUI
                 }
 
                 Spacer()
+
+                // Avatar
+                if let winner = cloudKitManager.players.first(where: { $0.id == match.winnerID }
+                ) {
+                    PlayerAvatar(player: winner, size: 40)
+                        .clipShape(Circle())
+                }
             }
             .padding(.vertical, 4)
         }

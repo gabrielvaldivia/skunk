@@ -38,49 +38,20 @@ import SwiftUI
         }
 
         private var winCounts: [(player: Player, count: Int)] {
-            // Get all players who have participated in matches
-            var allPlayers = Set<Player>()
-            var counts: [Player: Int] = [:]
-
-            // First collect all players who have participated
+            var counts: [(player: Player, count: Int)] = []
             for match in filteredMatches {
-                for playerID in match.playerIDs {
-                    if let player = cloudKitManager.players.first(where: { $0.id == playerID }) {
-                        allPlayers.insert(player)
+                if let winnerID = match.winnerID,
+                    let winner = cloudKitManager.getPlayer(id: winnerID)
+                {
+                    if let index = counts.firstIndex(where: { $0.player.id == winner.id }) {
+                        counts[index].count += 1
+                    } else {
+                        counts.append((player: winner, count: 1))
                     }
                 }
             }
-
-            // Then count wins
-            for match in filteredMatches {
-                if let winnerID = match.winnerID,
-                    let winner = cloudKitManager.players.first(where: { $0.id == winnerID })
-                {
-                    counts[winner, default: 0] += 1
-                }
-            }
-
-            // Ensure all players are in counts, even with 0 wins
-            for player in allPlayers {
-                if counts[player] == nil {
-                    counts[player] = 0
-                }
-            }
-
-            // Convert to array of tuples
-            var pairs: [(player: Player, count: Int)] = []
-            for (player, count) in counts {
-                pairs.append((player: player, count: count))
-            }
-
-            // Sort by count (highest first), then by name for ties
-            pairs.sort { pair1, pair2 in
-                if pair1.count != pair2.count {
-                    return pair1.count > pair2.count
-                }
-                return pair1.player.name < pair2.player.name
-            }
-            return pairs
+            counts.sort { $0.count > $1.count }
+            return counts
         }
 
         private var totalWins: Int {
@@ -107,6 +78,31 @@ import SwiftUI
 
         private func playerRow(_ index: Int, _ entry: (player: Player, count: Int)) -> some View {
             LeaderboardRow(rank: index + 1, player: entry.player, wins: entry.count)
+        }
+
+        private var groupedWinCounts: [(rank: Int, players: [Player], wins: Int)] {
+            var result: [(rank: Int, players: [Player], wins: Int)] = []
+            var currentRank = 1
+
+            // Group players by win count
+            Dictionary(grouping: winCounts, by: { $0.count })
+                .sorted { $0.key > $1.key }  // Sort by wins (descending)
+                .forEach { wins, entries in
+                    let players = entries.map { $0.player }
+                        .sorted { $0.name < $1.name }  // Sort players by name within same win count
+                    result.append((rank: currentRank, players: players, wins: wins))
+                    currentRank += 1
+                }
+
+            return result
+        }
+
+        private var leaderboardSection: some View {
+            Section("Leaderboard") {
+                ForEach(groupedWinCounts, id: \.rank) { group in
+                    LeaderboardRow(rank: group.rank, players: group.players, wins: group.wins)
+                }
+            }
         }
 
         private func winDistributionSection() -> some View {
@@ -176,12 +172,7 @@ import SwiftUI
                             }
                         }
 
-                        Section("Leaderboard") {
-                            ForEach(Array(winCounts.enumerated()), id: \.element.player.id) {
-                                index, entry in
-                                playerRow(index, entry)
-                            }
-                        }
+                        leaderboardSection
 
                         if totalWins > 0 {
                             winDistributionSection()
@@ -414,7 +405,7 @@ import SwiftUI
 
     struct ActivityGridView: View {
         let matches: [Match]
-        private let columns = 18
+        private let columns = 20
         private let weeks = 6
 
         private struct DayActivity: Identifiable {
@@ -504,32 +495,83 @@ import SwiftUI
 
     struct LeaderboardRow: View {
         let rank: Int
-        let player: Player
+        let players: [Player]
         let wins: Int
 
+        init(rank: Int, player: Player, wins: Int) {
+            self.rank = rank
+            self.players = [player]
+            self.wins = wins
+        }
+
+        init(rank: Int, players: [Player], wins: Int) {
+            self.rank = rank
+            self.players = players
+            self.wins = wins
+        }
+
+        private var displayName: String {
+            switch players.count {
+            case 0:
+                return "No players"
+            case 1:
+                return players[0].name
+            case 2:
+                return "\(players[0].name) & \(players[1].name)"
+            default:
+                let allButLast = players.dropLast().map { $0.name }.joined(separator: ", ")
+                return "\(allButLast), & \(players.last!.name)"
+            }
+        }
+
         var body: some View {
-            NavigationLink {
-                PlayerDetailView(player: player)
-            } label: {
-                HStack(spacing: 16) {
-                    Text("#\(rank)")
+            HStack {
+                Text("#\(rank)")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(displayName)
                         .font(.headline)
+                    Text("\(wins) wins")
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .frame(width: 40)
+                }
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(player.name)
-                            .font(.headline)
-                        Text("\(wins) wins")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                Spacer()
+
+                if players.count > 1 {
+                    // Facepile for groups
+                    HStack(spacing: -8) {
+                        ForEach(players.prefix(3)) { player in
+                            PlayerAvatar(player: player, size: 40)
+                                .clipShape(Circle())
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color(.systemBackground), lineWidth: 2)
+                                )
+                        }
+                        if players.count > 3 {
+                            Text("+\(players.count - 3)")
+                                .font(.caption)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color(.systemGray5))
+                                .clipShape(Capsule())
+                        }
                     }
-
-                    Spacer()
-
+                } else if let player = players.first {
+                    // Single avatar for individual players
                     PlayerAvatar(player: player, size: 40)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(Color.black.opacity(0.1), lineWidth: 1)
+                        )
                 }
             }
+            .padding(.vertical, 8)
         }
     }
 #endif

@@ -19,12 +19,6 @@
 
         var body: some View {
             HStack(alignment: .top, spacing: 12) {
-                if let winner = cloudKitManager.players.first(where: { $0.id == match.winnerID }
-                ) {
-                    PlayerAvatar(player: winner, size: 40)
-                        .clipShape(Circle())
-                }
-
                 VStack(alignment: .leading, spacing: 4) {
                     if let winner = cloudKitManager.players.first(where: {
                         $0.id == match.winnerID
@@ -61,6 +55,14 @@
                     Text(relativeTimeString)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                if let winner = cloudKitManager.players.first(where: { $0.id == match.winnerID }
+                ) {
+                    PlayerAvatar(player: winner, size: 40)
+                        .clipShape(Circle())
                 }
             }
         }
