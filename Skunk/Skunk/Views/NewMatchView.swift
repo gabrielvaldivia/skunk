@@ -200,18 +200,6 @@ extension Sequence {
                                         return distance1 < distance2
                                     }
 
-                                    Section("Add Player") {
-                                        Button {
-                                            showingAddPlayer = true
-                                        } label: {
-                                            HStack {
-                                                Image(systemName: "plus.circle.fill")
-                                                Text("Add Player")
-                                            }
-                                        }
-                                        .accentColor(.blue)
-                                    }
-
                                     Section("Offline Players") {
                                         if !managedPlayers.isEmpty {
                                             ForEach(managedPlayers) { newPlayer in

@@ -50,7 +50,7 @@ import SwiftUI
 
         init() {
             self.container = CKContainer(identifier: "iCloud.com.gvaldivia.skunkapp")
-            self.database = container.privateCloudDatabase
+            self.database = container.publicCloudDatabase
 
             // Ensure proper initialization of CloudKit
             Task {
