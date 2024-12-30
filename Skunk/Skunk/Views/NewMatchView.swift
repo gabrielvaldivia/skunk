@@ -112,7 +112,8 @@ extension Sequence {
                 // 1. It's a managed player (owned by current user and no Apple ID)
                 // 2. It's a nearby player (within 100 feet)
                 if let userID = authManager.userID,
-                    player.ownerID == userID && player.appleUserID == nil
+                    (player.ownerID == userID && player.appleUserID == nil)
+                        || player.appleUserID == userID
                 {
                     return true
                 }
@@ -123,10 +124,15 @@ extension Sequence {
 
                 return false
             }.sorted { player1, player2 in
-                // Sort managed players first, then by distance
+                // Sort current user first, then managed players, then by distance
+                let isCurrentUser1 = player1.appleUserID == authManager.userID
+                let isCurrentUser2 = player2.appleUserID == authManager.userID
+                if isCurrentUser1 != isCurrentUser2 {
+                    return isCurrentUser1
+                }
+
                 let isManaged1 = player1.ownerID == authManager.userID && player1.appleUserID == nil
                 let isManaged2 = player2.ownerID == authManager.userID && player2.appleUserID == nil
-
                 if isManaged1 != isManaged2 {
                     return isManaged1
                 }
@@ -185,11 +191,12 @@ extension Sequence {
                                 Menu {
                                     let managedPlayers = availablePlayers.filter { player in
                                         player.ownerID == authManager.userID
-                                            && player.appleUserID == nil
+                                            || player.appleUserID == authManager.userID
                                     }
                                     let nearbyPlayers = availablePlayers.filter { player in
                                         player.ownerID != authManager.userID
-                                            || player.appleUserID != nil
+                                            && player.appleUserID != authManager.userID
+                                            && player.appleUserID != nil
                                     }.sorted { player1, player2 in
                                         let distance1 =
                                             locationManager.distanceToPlayer(player1)
@@ -200,27 +207,25 @@ extension Sequence {
                                         return distance1 < distance2
                                     }
 
-                                    Section("Offline Players") {
-                                        if !managedPlayers.isEmpty {
-                                            ForEach(managedPlayers) { newPlayer in
-                                                Button {
-                                                    players[index] = newPlayer
-                                                } label: {
-                                                    Text(newPlayer.name)
-                                                }
+                                    if !managedPlayers.isEmpty {
+                                        ForEach(managedPlayers) { newPlayer in
+                                            Button {
+                                                players[index] = newPlayer
+                                            } label: {
+                                                Text(newPlayer.name)
                                             }
                                         }
-
-                                        Button {
-                                            showingAddPlayer = true
-                                        } label: {
-                                            HStack {
-                                                Image(systemName: "plus.circle.fill")
-                                                Text("Add Player")
-                                            }
-                                        }
-                                        .accentColor(.blue)
                                     }
+
+                                    Button {
+                                        showingAddPlayer = true
+                                    } label: {
+                                        HStack {
+                                            Image(systemName: "plus.circle.fill")
+                                            Text("Add Player")
+                                        }
+                                    }
+                                    .accentColor(.blue)
 
                                     Section("Nearby Players") {
                                         switch locationManager.authorizationStatus {
@@ -274,13 +279,8 @@ extension Sequence {
                                         if let player = player {
                                             Text(player.name)
                                                 .foregroundColor(.primary)
-                                            if player.ownerID == authManager.userID
-                                                && player.appleUserID == nil
-                                            {
-                                                Text("Offline")
-                                                    .foregroundColor(.secondary)
-                                            } else if let distance =
-                                                locationManager.distanceToPlayer(player)
+                                            if let distance = locationManager.distanceToPlayer(
+                                                player)
                                             {
                                                 Text(formatDistance(distance))
                                                     .foregroundColor(.secondary)
