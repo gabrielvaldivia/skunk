@@ -1,4 +1,5 @@
 import CloudKit
+import CoreLocation
 import SwiftUI
 
 extension Sequence {
@@ -13,6 +14,7 @@ extension Sequence {
         @Environment(\.dismiss) private var dismiss
         @EnvironmentObject private var cloudKitManager: CloudKitManager
         @EnvironmentObject private var authManager: AuthenticationManager
+        @StateObject private var locationManager = LocationManager()
         @AppStorage("lastMatchPlayerIDs") private var lastMatchPlayerIDsString: String = "[]"
         @AppStorage("lastMatchPlayerCount") private var lastMatchPlayerCount: Int = 0
 
@@ -40,6 +42,7 @@ extension Sequence {
         @State private var error: Error?
         @State private var showingError = false
         @State private var selectedWinnerIndex: Int?
+        @State private var showingAddPlayer = false
 
         init(game: Game, defaultPlayerIDs: [String]? = nil, onMatchSaved: ((Match) -> Void)? = nil)
         {
@@ -82,6 +85,51 @@ extension Sequence {
             }
         }
 
+        private func formatDistance(_ meters: CLLocationDistance) -> String {
+            let feet = meters * 3.28084
+            if feet < 10 {
+                return "nearby"
+            } else {
+                return "\(Int(feet))ft away"
+            }
+        }
+
+        var availablePlayers: [Player] {
+            allPlayers.filter { player in
+                // Don't show players that are already selected
+                guard !players.compactMap { $0 }.contains(where: { $0.id == player.id }) else {
+                    return false
+                }
+
+                // Show player if either:
+                // 1. It's a managed player (owned by current user and no Apple ID)
+                // 2. It's a nearby player (within 100 feet)
+                if let userID = authManager.userID,
+                    player.ownerID == userID && player.appleUserID == nil
+                {
+                    return true
+                }
+
+                if let distance = locationManager.distanceToPlayer(player) {
+                    return distance <= 30.48  // 100 feet in meters
+                }
+
+                return false
+            }.sorted { player1, player2 in
+                // Sort managed players first, then by distance
+                let isManaged1 = player1.ownerID == authManager.userID && player1.appleUserID == nil
+                let isManaged2 = player2.ownerID == authManager.userID && player2.appleUserID == nil
+
+                if isManaged1 != isManaged2 {
+                    return isManaged1
+                }
+
+                let distance1 = locationManager.distanceToPlayer(player1) ?? .infinity
+                let distance2 = locationManager.distanceToPlayer(player2) ?? .infinity
+                return distance1 < distance2
+            }
+        }
+
         var body: some View {
             NavigationStack {
                 Form {
@@ -89,9 +137,92 @@ extension Sequence {
                         ForEach(Array(players.enumerated()), id: \.offset) { index, player in
                             HStack {
                                 Menu {
-                                    ForEach(availablePlayers) { newPlayer in
-                                        Button(newPlayer.name) {
-                                            players[index] = newPlayer
+                                    let managedPlayers = availablePlayers.filter { player in
+                                        player.ownerID == authManager.userID
+                                            && player.appleUserID == nil
+                                    }
+                                    let nearbyPlayers = availablePlayers.filter { player in
+                                        player.ownerID != authManager.userID
+                                            || player.appleUserID != nil
+                                    }.sorted { player1, player2 in
+                                        let distance1 =
+                                            locationManager.distanceToPlayer(player1) ?? .infinity
+                                        let distance2 =
+                                            locationManager.distanceToPlayer(player2) ?? .infinity
+                                        return distance1 < distance2
+                                    }
+
+                                    if managedPlayers.isEmpty && nearbyPlayers.isEmpty {
+                                        Text("No players available")
+                                    } else {
+                                        if !managedPlayers.isEmpty {
+                                            Section("Offline Players") {
+                                                ForEach(managedPlayers) { newPlayer in
+                                                    Button {
+                                                        players[index] = newPlayer
+                                                    } label: {
+                                                        Text(newPlayer.name)
+                                                    }
+                                                }
+
+                                                Button {
+                                                    showingAddPlayer = true
+                                                } label: {
+                                                    HStack {
+                                                        Image(systemName: "plus.circle.fill")
+                                                        Text("Add Player")
+                                                    }
+                                                }
+                                                .accentColor(.blue)
+                                            }
+                                        }
+
+                                        Section("Nearby Players") {
+                                            switch locationManager.authorizationStatus {
+                                            case .notDetermined:
+                                                Button {
+                                                    locationManager.requestLocationPermission()
+                                                } label: {
+                                                    HStack {
+                                                        Image(systemName: "location.circle.fill")
+                                                        Text("Enable Location Access")
+                                                    }
+                                                }
+                                                .accentColor(.blue)
+                                            case .restricted, .denied:
+                                                Text(
+                                                    "Location access is required to find nearby players"
+                                                )
+                                                .foregroundColor(.secondary)
+                                            case .authorizedWhenInUse, .authorizedAlways:
+                                                if nearbyPlayers.isEmpty {
+                                                    Text("No players within 100 feet")
+                                                        .foregroundColor(.secondary)
+                                                } else {
+                                                    ForEach(nearbyPlayers) { newPlayer in
+                                                        Button {
+                                                            players[index] = newPlayer
+                                                        } label: {
+                                                            HStack {
+                                                                Text(newPlayer.name)
+                                                                Spacer()
+                                                                if let distance =
+                                                                    locationManager.distanceToPlayer(
+                                                                        newPlayer)
+                                                                {
+                                                                    Text(formatDistance(distance))
+                                                                        .foregroundColor(.secondary)
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            @unknown default:
+                                                Text(
+                                                    "Location access is required to find nearby players"
+                                                )
+                                                .foregroundColor(.secondary)
+                                            }
                                         }
                                     }
                                 } label: {
@@ -99,6 +230,17 @@ extension Sequence {
                                         if let player = player {
                                             Text(player.name)
                                                 .foregroundColor(.primary)
+                                            if player.ownerID == authManager.userID
+                                                && player.appleUserID == nil
+                                            {
+                                                Text("Offline")
+                                                    .foregroundColor(.secondary)
+                                            } else if let distance =
+                                                locationManager.distanceToPlayer(player)
+                                            {
+                                                Text(formatDistance(distance))
+                                                    .foregroundColor(.secondary)
+                                            }
                                             Image(systemName: "chevron.up.chevron.down")
                                                 .foregroundColor(.secondary)
                                                 .font(.footnote)
@@ -109,7 +251,6 @@ extension Sequence {
                                                 .foregroundColor(.secondary)
                                                 .font(.footnote)
                                         }
-
                                         Spacer()
                                     }
                                 }
@@ -173,6 +314,17 @@ extension Sequence {
                         .disabled(!canSave)
                     }
                 }
+                .sheet(isPresented: $showingAddPlayer) {
+                    NavigationStack {
+                        PlayerFormView(
+                            name: .constant(""),
+                            color: .constant(.blue),
+                            existingPhotoData: nil,
+                            title: "New Player",
+                            player: nil
+                        )
+                    }
+                }
                 .task {
                     // Only adjust player count if we don't have default players
                     if defaultPlayerIDs == nil {
@@ -186,19 +338,13 @@ extension Sequence {
                     Text(error?.localizedDescription ?? "An unknown error occurred")
                 }
             }
-        }
-
-        private var availablePlayers: [Player] {
-            let available = allPlayers.filter { player in
-                !players.compactMap { $0 }.contains { $0.id == player.id }
+            .onDisappear {
+                locationManager.stopUpdatingLocation()
             }
-            print("Available players: \(available.map { $0.name })")
-            return available
         }
 
         private var canSave: Bool {
             let filledPlayers = players.compactMap { $0 }
-            print("Filled players: \(filledPlayers.map { $0.name })")
             return !filledPlayers.isEmpty
                 && filledPlayers.count >= (game.supportedPlayerCounts.min() ?? 2)
         }

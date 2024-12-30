@@ -1049,5 +1049,55 @@ import SwiftUI
 
             return newGroupMatches
         }
+
+        func updatePlayerLocation(_ player: Player, location: CLLocation) async throws {
+            guard let record = player.record else { return }
+
+            // Create a location object for CloudKit
+            let location = CLLocation(
+                coordinate: location.coordinate,
+                altitude: location.altitude,
+                horizontalAccuracy: location.horizontalAccuracy,
+                verticalAccuracy: location.verticalAccuracy,
+                timestamp: location.timestamp
+            )
+
+            record.setValue(location, forKey: "location")
+            record.setValue(Date(), forKey: "lastLocationUpdate")
+
+            do {
+                let savedRecord = try await database.save(record)
+                // Update cache with new record
+                if let updatedPlayer = Player(from: savedRecord) {
+                    playerCache[updatedPlayer.id] = updatedPlayer
+                    if let index = players.firstIndex(where: { $0.id == updatedPlayer.id }) {
+                        players[index] = updatedPlayer
+                    }
+                }
+            } catch {
+                print("Error updating player location: \(error)")
+                throw error
+            }
+        }
+
+        // Add a synchronous method to get current user
+        func getCurrentUser(withID userID: String) -> Player? {
+            return players.first(where: { $0.appleUserID == userID })
+        }
+
+        // Add a method to find player by Apple user ID
+        func findPlayer(byAppleUserID userID: String) async throws -> Player {
+            let matchingPlayer = players.first(where: { $0.appleUserID == userID })
+            if let player = matchingPlayer {
+                return player
+            }
+            throw NSError(
+                domain: "CloudKitManager",
+                code: -1,
+                userInfo: [
+                    NSLocalizedDescriptionKey: "Could not find player with Apple user ID: \(userID)"
+                ]
+            )
+        }
     }
 #endif

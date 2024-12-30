@@ -1,4 +1,5 @@
 import CloudKit
+import CoreLocation
 import Foundation
 import SwiftUI
 
@@ -14,6 +15,8 @@ import SwiftUI
         var ownerID: String?
         var record: CKRecord?
         var recordID: CKRecord.ID?
+        var location: CLLocation?
+        var lastLocationUpdate: Date?
 
         var color: Color {
             if let colorData = colorData,
@@ -29,7 +32,9 @@ import SwiftUI
         }
 
         init(
-            name: String, photoData: Data? = nil, appleUserID: String? = nil, ownerID: String? = nil
+            name: String, photoData: Data? = nil, appleUserID: String? = nil,
+            ownerID: String? = nil,
+            location: CLLocation? = nil
         ) {
             // Create a unique ID in the same format as CloudKit record IDs
             self.id = UUID().uuidString
@@ -38,6 +43,8 @@ import SwiftUI
             self.appleUserID = appleUserID
             self.ownerID = ownerID
             self.recordID = nil
+            self.location = location
+            self.lastLocationUpdate = location != nil ? Date() : nil
 
             // Generate color data
             let hash = abs(name.hashValue)
@@ -58,6 +65,8 @@ import SwiftUI
             self.ownerID = record.value(forKey: "ownerID") as? String
             self.record = record
             self.recordID = record.recordID
+            self.location = record.value(forKey: "location") as? CLLocation
+            self.lastLocationUpdate = record.value(forKey: "lastLocationUpdate") as? Date
 
             // Handle photo data from CKAsset
             if let photoAsset = record.value(forKey: "photo") as? CKAsset,
@@ -82,6 +91,8 @@ import SwiftUI
             record.setValue(colorData, forKey: "colorData")
             record.setValue(appleUserID, forKey: "appleUserID")
             record.setValue(ownerID, forKey: "ownerID")
+            record.setValue(location, forKey: "location")
+            record.setValue(lastLocationUpdate, forKey: "lastLocationUpdate")
 
             // Handle photo data as CKAsset
             if let photoData = photoData {

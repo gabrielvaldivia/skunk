@@ -8,5 +8,9 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Skunk needs your location to find nearby players for matches</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Skunk needs your location to find nearby players for matches</string>
 </dict>
 </plist>
