@@ -200,77 +200,85 @@ extension Sequence {
                                         return distance1 < distance2
                                     }
 
-                                    if managedPlayers.isEmpty && nearbyPlayers.isEmpty {
-                                        Text("No players available")
-                                    } else {
-                                        if !managedPlayers.isEmpty {
-                                            Section("Offline Players") {
-                                                ForEach(managedPlayers) { newPlayer in
-                                                    Button {
-                                                        players[index] = newPlayer
-                                                    } label: {
-                                                        Text(newPlayer.name)
-                                                    }
-                                                }
+                                    Section("Add Player") {
+                                        Button {
+                                            showingAddPlayer = true
+                                        } label: {
+                                            HStack {
+                                                Image(systemName: "plus.circle.fill")
+                                                Text("Add Player")
+                                            }
+                                        }
+                                        .accentColor(.blue)
+                                    }
 
+                                    Section("Offline Players") {
+                                        if !managedPlayers.isEmpty {
+                                            ForEach(managedPlayers) { newPlayer in
                                                 Button {
-                                                    showingAddPlayer = true
+                                                    players[index] = newPlayer
                                                 } label: {
-                                                    HStack {
-                                                        Image(systemName: "plus.circle.fill")
-                                                        Text("Add Player")
-                                                    }
+                                                    Text(newPlayer.name)
                                                 }
-                                                .accentColor(.blue)
                                             }
                                         }
 
-                                        Section("Nearby Players") {
-                                            switch locationManager.authorizationStatus {
-                                            case .notDetermined:
-                                                Button {
-                                                    locationManager.requestLocationPermission()
-                                                } label: {
-                                                    HStack {
-                                                        Image(systemName: "location.circle.fill")
-                                                        Text("Enable Location Access")
-                                                    }
+                                        Button {
+                                            showingAddPlayer = true
+                                        } label: {
+                                            HStack {
+                                                Image(systemName: "plus.circle.fill")
+                                                Text("Add Player")
+                                            }
+                                        }
+                                        .accentColor(.blue)
+                                    }
+
+                                    Section("Nearby Players") {
+                                        switch locationManager.authorizationStatus {
+                                        case .notDetermined:
+                                            Button {
+                                                locationManager.requestLocationPermission()
+                                            } label: {
+                                                HStack {
+                                                    Image(systemName: "location.circle.fill")
+                                                    Text("Enable Location Access")
                                                 }
-                                                .accentColor(.blue)
-                                            case .restricted, .denied:
-                                                Text(
-                                                    "Location access is required to find nearby players"
-                                                )
-                                                .foregroundColor(.secondary)
-                                            case .authorizedWhenInUse, .authorizedAlways:
-                                                if nearbyPlayers.isEmpty {
-                                                    Text("No players within 100 feet")
-                                                        .foregroundColor(.secondary)
-                                                } else {
-                                                    ForEach(nearbyPlayers) { newPlayer in
-                                                        Button {
-                                                            players[index] = newPlayer
-                                                        } label: {
-                                                            HStack {
-                                                                Text(newPlayer.name)
-                                                                Spacer()
-                                                                if let distance =
-                                                                    locationManager.distanceToPlayer(
-                                                                        newPlayer)
-                                                                {
-                                                                    Text(formatDistance(distance))
-                                                                        .foregroundColor(.secondary)
-                                                                }
+                                            }
+                                            .accentColor(.blue)
+                                        case .restricted, .denied:
+                                            Text(
+                                                "Location access is required to find nearby players"
+                                            )
+                                            .foregroundColor(.secondary)
+                                        case .authorizedWhenInUse, .authorizedAlways:
+                                            if nearbyPlayers.isEmpty {
+                                                Text("No players within 100 feet")
+                                                    .foregroundColor(.secondary)
+                                            } else {
+                                                ForEach(nearbyPlayers) { newPlayer in
+                                                    Button {
+                                                        players[index] = newPlayer
+                                                    } label: {
+                                                        HStack {
+                                                            Text(newPlayer.name)
+                                                            Spacer()
+                                                            if let distance =
+                                                                locationManager.distanceToPlayer(
+                                                                    newPlayer)
+                                                            {
+                                                                Text(formatDistance(distance))
+                                                                    .foregroundColor(.secondary)
                                                             }
                                                         }
                                                     }
                                                 }
-                                            @unknown default:
-                                                Text(
-                                                    "Location access is required to find nearby players"
-                                                )
-                                                .foregroundColor(.secondary)
                                             }
+                                        @unknown default:
+                                            Text(
+                                                "Location access is required to find nearby players"
+                                            )
+                                            .foregroundColor(.secondary)
                                         }
                                     }
                                 } label: {
