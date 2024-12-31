@@ -5,11 +5,14 @@ import SwiftUI
     struct MatchDetailView: View {
         @Environment(\.dismiss) private var dismiss
         @EnvironmentObject private var cloudKitManager: CloudKitManager
+        @EnvironmentObject private var authManager: AuthenticationManager
         @State private var match: Match
         @State private var showingError = false
         @State private var error: Error?
         @State private var isLoading = false
         @State private var showingDeleteConfirmation = false
+        @State private var currentUserID: String?
+        @State private var currentPlayer: Player?
 
         init(match: Match) {
             _match = State(initialValue: match)
@@ -148,43 +151,46 @@ import SwiftUI
                 }
 
                 if !match.isMultiplayer || match.status == "completed" {
-                    Section {
-                        Button(role: .destructive) {
-                            showingDeleteConfirmation = true
-                        } label: {
-                            if isLoading {
-                                ProgressView()
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                            } else {
-                                Text("Delete Match")
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                            }
-                        }
-                        .disabled(isLoading)
-                        .confirmationDialog(
-                            "Delete Match",
-                            isPresented: $showingDeleteConfirmation,
-                            titleVisibility: .visible
-                        ) {
-                            Button("Delete", role: .destructive) {
-                                Task {
-                                    isLoading = true
-                                    do {
-                                        try await cloudKitManager.deleteMatch(match)
-                                        isLoading = false
-                                        dismiss()
-                                    } catch {
-                                        isLoading = false
-                                        self.error = error
-                                        showingError = true
-                                    }
+                    if let currentPlayer = currentPlayer, match.playerIDs.contains(currentPlayer.id)
+                    {
+                        Section {
+                            Button(role: .destructive) {
+                                showingDeleteConfirmation = true
+                            } label: {
+                                if isLoading {
+                                    ProgressView()
+                                        .frame(maxWidth: .infinity, alignment: .center)
+                                } else {
+                                    Text("Delete Match")
+                                        .frame(maxWidth: .infinity, alignment: .center)
                                 }
                             }
-                            Button("Cancel", role: .cancel) {}
-                        } message: {
-                            Text(
-                                "Are you sure you want to delete this match? This action cannot be undone."
-                            )
+                            .disabled(isLoading)
+                            .confirmationDialog(
+                                "Delete Match",
+                                isPresented: $showingDeleteConfirmation,
+                                titleVisibility: .visible
+                            ) {
+                                Button("Delete", role: .destructive) {
+                                    Task {
+                                        isLoading = true
+                                        do {
+                                            try await cloudKitManager.deleteMatch(match)
+                                            isLoading = false
+                                            dismiss()
+                                        } catch {
+                                            isLoading = false
+                                            self.error = error
+                                            showingError = true
+                                        }
+                                    }
+                                }
+                                Button("Cancel", role: .cancel) {}
+                            } message: {
+                                Text(
+                                    "Are you sure you want to delete this match? This action cannot be undone."
+                                )
+                            }
                         }
                     }
                 }
@@ -206,6 +212,20 @@ import SwiftUI
         private func loadData() async {
             isLoading = true
             do {
+                // Get current user ID from AuthenticationManager instead
+                currentUserID = authManager.userID
+                print("Current Apple User ID: \(currentUserID ?? "nil")")
+
+                // Get current player
+                if let userID = currentUserID {
+                    currentPlayer = cloudKitManager.players.first(where: {
+                        $0.appleUserID == userID
+                    })
+                    print(
+                        "Found current player: \(currentPlayer?.name ?? "nil") with ID: \(currentPlayer?.id ?? "nil")"
+                    )
+                }
+
                 print("Loading players for match: \(match.id)")
                 // Use cached players if available
                 let players = try await cloudKitManager.fetchPlayers(forceRefresh: false)
@@ -228,6 +248,15 @@ import SwiftUI
                         if !missingPlayerIDs.isEmpty {
                             print("Fetching missing players")
                             _ = try await cloudKitManager.fetchPlayers(forceRefresh: true)
+                            // Update current player after refresh
+                            if let userID = currentUserID {
+                                currentPlayer = cloudKitManager.players.first(where: {
+                                    $0.appleUserID == userID
+                                })
+                                print(
+                                    "Updated current player after refresh: \(currentPlayer?.name ?? "nil") with ID: \(currentPlayer?.id ?? "nil")"
+                                )
+                            }
                         }
 
                         match = updatedMatch
@@ -242,6 +271,17 @@ import SwiftUI
                     } else {
                         print("Could not find player for ID: \(playerID)")
                     }
+                }
+
+                // Debug print delete button conditions
+                print("Delete button conditions:")
+                print("- Is multiplayer: \(match.isMultiplayer)")
+                print("- Match status: \(match.status)")
+                print("- Current player exists: \(currentPlayer != nil)")
+                if let currentPlayer = currentPlayer {
+                    print("- Current player ID: \(currentPlayer.id)")
+                    print(
+                        "- Current player in match: \(match.playerIDs.contains(currentPlayer.id))")
                 }
             } catch {
                 print("Error loading data: \(error.localizedDescription)")
