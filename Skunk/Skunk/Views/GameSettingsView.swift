@@ -7,6 +7,24 @@
         case losersOnly
     }
 
+    struct RadioButton: View {
+        let title: String
+        let isSelected: Bool
+        let action: () -> Void
+
+        var body: some View {
+            Button(action: action) {
+                HStack {
+                    Text(title)
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Image(systemName: isSelected ? "checkmark" : "")
+                        .foregroundColor(.blue)
+                }
+            }
+        }
+    }
+
     struct GameSettingsView: View {
         @Binding var title: String
         @Binding var isBinaryScore: Bool
@@ -66,23 +84,49 @@
                     )
                     .toggleStyle(.switch)
 
-                    if !isBinaryScore {
-
-                        Picker("Winning Condition", selection: $highestScoreWins) {
-                            Text("Highest Score Wins").tag(true)
-                            Text("Lowest Score Wins").tag(false)
-                        }
-
-                        Picker("Total Score Calculation", selection: scoreCountingMode) {
-                            Text("All Players").tag(ScoreCountingMode.all)
-                            Text("Winner Only").tag(ScoreCountingMode.winnerOnly)
-                            Text("Add Loser's Score to Winner").tag(ScoreCountingMode.losersOnly)
-                        }
-
-                    }
-
                     Toggle("Multiple Rounds", isOn: $supportsMultipleRounds)
                         .toggleStyle(.switch)
+                }
+
+                if !isBinaryScore {
+                    Section("Winning Condition") {
+                        RadioButton(
+                            title: "Highest Score Wins",
+                            isSelected: highestScoreWins
+                        ) {
+                            highestScoreWins = true
+                        }
+
+                        RadioButton(
+                            title: "Lowest Score Wins",
+                            isSelected: !highestScoreWins
+                        ) {
+                            highestScoreWins = false
+                        }
+                    }
+
+                    Section("Total Score Calculation") {
+                        RadioButton(
+                            title: "All Players' Scores Count",
+                            isSelected: scoreCountingMode.wrappedValue == .all
+                        ) {
+                            scoreCountingMode.wrappedValue = .all
+                        }
+
+                        RadioButton(
+                            title: "Only Winner's Score Counts",
+                            isSelected: scoreCountingMode.wrappedValue == .winnerOnly
+                        ) {
+                            scoreCountingMode.wrappedValue = .winnerOnly
+                        }
+
+                        RadioButton(
+                            title: "Winner Gets Sum of Losers' Scores",
+                            isSelected: scoreCountingMode.wrappedValue == .losersOnly
+                        ) {
+                            scoreCountingMode.wrappedValue = .losersOnly
+                        }
+                    }
                 }
 
                 Section("Player Count") {
