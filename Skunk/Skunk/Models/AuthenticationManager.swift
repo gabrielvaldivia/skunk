@@ -92,6 +92,19 @@ import SwiftUI
             userID = appleIDCredential.user
             UserDefaults.standard.set(appleIDCredential.user, forKey: "userID")
 
+            // Set the Apple user ID in the CloudKit user record
+            do {
+                let container = CKContainer(identifier: "iCloud.com.gvaldivia.skunkapp")
+                let recordID = try await container.userRecordID()
+                let database = container.publicCloudDatabase
+                let userRecord = try await database.record(for: recordID)
+                userRecord["appleUserID"] = appleIDCredential.user as CKRecordValue
+                _ = try await database.save(userRecord)
+                print("🟢 AuthenticationManager: Saved Apple user ID to CloudKit user record")
+            } catch {
+                print("🔴 AuthenticationManager: Failed to save Apple user ID to CloudKit: \(error)")
+            }
+
             // Create or update player
             do {
                 print(

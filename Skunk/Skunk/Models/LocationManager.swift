@@ -1,4 +1,5 @@
 import CoreLocation
+import FirebaseAnalytics
 import Foundation
 import SwiftUI
 
@@ -61,28 +62,63 @@ import SwiftUI
         }
 
         private func syncLocationToCloudKit() async throws {
-            guard let location = currentLocation,
-                let lastUpdate = lastLocationUpdate,
-                Date().timeIntervalSince(lastUpdate) >= updateInterval
-            else {
+            guard let location = currentLocation else {
+                print("📍 LocationManager: No current location available")
                 return
             }
 
-            // Get the current user's player record
+            // Skip if we've updated recently, unless this is our first update
+            if let lastUpdate = lastLocationUpdate {
+                let timeSinceLastUpdate = Date().timeIntervalSince(lastUpdate)
+                if timeSinceLastUpdate < updateInterval {
+                    print(
+                        "📍 LocationManager: Not enough time since last update (\(Int(timeSinceLastUpdate))s)"
+                    )
+                    return
+                }
+            } else {
+                print("📍 LocationManager: First location update, syncing immediately")
+            }
+
+            print("📍 LocationManager: Starting location sync to CloudKit")
+            print(
+                "📍 LocationManager: Coordinates: \(location.coordinate.latitude), \(location.coordinate.longitude)"
+            )
+            Analytics.logEvent(
+                "location_sync_started",
+                parameters: [
+                    "latitude": location.coordinate.latitude,
+                    "longitude": location.coordinate.longitude,
+                    "accuracy": location.horizontalAccuracy,
+                ])
+
             let cloudKitManager = await getCKManager()
             let userID = try await cloudKitManager.userID
 
             guard let userID = userID else {
+                print("📍 LocationManager: Failed to get userID")
+                Analytics.logEvent(
+                    "location_sync_failed",
+                    parameters: [
+                        "reason": "no_user_id"
+                    ])
                 throw NSError(
                     domain: "LocationManager", code: -1,
                     userInfo: [NSLocalizedDescriptionKey: "Could not find current user ID"])
             }
 
-            // Find the current user's player
+            print("📍 LocationManager: Found userID: \(userID)")
             let currentUser = try await cloudKitManager.findPlayer(byAppleUserID: userID)
+            print("📍 LocationManager: Found current user: \(currentUser.name)")
 
-            // Update the location in CloudKit
             try await cloudKitManager.updatePlayerLocation(currentUser, location: location)
+            print("📍 LocationManager: Successfully updated location in CloudKit")
+            Analytics.logEvent(
+                "location_sync_success",
+                parameters: [
+                    "user_id": userID,
+                    "player_name": currentUser.name,
+                ])
             lastLocationUpdate = Date()
         }
 
@@ -94,13 +130,51 @@ import SwiftUI
         func distanceToPlayer(_ player: Player) -> CLLocationDistance? {
             guard let currentLocation = currentLocation,
                 let playerLocation = player.location,
-                // Only consider locations updated in the last 5 minutes
                 let lastUpdate = player.lastLocationUpdate,
                 Date().timeIntervalSince(lastUpdate) < 300
             else {
+                print("📍 LocationManager: Cannot calculate distance to player \(player.name)")
+                if currentLocation == nil {
+                    print("📍 LocationManager: No current location available")
+                }
+                if player.location == nil {
+                    print("📍 LocationManager: Player has no location")
+                }
+                if let lastUpdate = player.lastLocationUpdate {
+                    let timeSince = Date().timeIntervalSince(lastUpdate)
+                    if timeSince >= 300 {
+                        print("📍 LocationManager: Player location too old: \(Int(timeSince))s")
+                    }
+                } else {
+                    print("📍 LocationManager: Player has no last update time")
+                }
+                Analytics.logEvent(
+                    "distance_calculation_failed",
+                    parameters: [
+                        "player_name": player.name,
+                        "reason": currentLocation == nil
+                            ? "no_current_location"
+                            : player.location == nil
+                                ? "no_player_location"
+                                : player.lastLocationUpdate == nil
+                                    ? "no_last_update" : "location_too_old",
+                        "time_since_update": player.lastLocationUpdate.map {
+                            String(Int(Date().timeIntervalSince($0)))
+                        } ?? "none",
+                    ])
                 return nil
             }
-            return currentLocation.distance(from: playerLocation)
+
+            let distance = currentLocation.distance(from: playerLocation)
+            print("📍 LocationManager: Distance to \(player.name): \(Int(distance))m")
+            Analytics.logEvent(
+                "distance_calculated",
+                parameters: [
+                    "player_name": player.name,
+                    "distance_meters": Int(distance),
+                    "is_nearby": distance <= 30.48 ? "true" : "false",
+                ])
+            return distance
         }
     }
 
@@ -124,6 +198,11 @@ import SwiftUI
             guard let location = locations.last else { return }
             currentLocation = location
 
+            // If this is our first location, set lastLocationUpdate to trigger an immediate sync
+            if lastLocationUpdate == nil {
+                lastLocationUpdate = Date().addingTimeInterval(-updateInterval)
+            }
+
             // Trigger a sync when we get a new location
             Task { @MainActor in
                 do {
@@ -135,7 +214,13 @@ import SwiftUI
         }
 
         func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-            print("Location manager failed with error: \(error)")
+            print("📍 LocationManager: Failed with error: \(error.localizedDescription)")
+            Analytics.logEvent(
+                "location_manager_error",
+                parameters: [
+                    "error_description": error.localizedDescription,
+                    "error_code": String(describing: (error as NSError).code),
+                ])
         }
     }
 #endif

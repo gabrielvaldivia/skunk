@@ -1,5 +1,6 @@
 import CloudKit
 import CoreLocation
+import FirebaseAnalytics
 import SwiftUI
 
 extension Sequence {
@@ -105,6 +106,13 @@ extension Sequence {
             allPlayers.filter { player in
                 // Don't show players that are already selected
                 guard !players.compactMap { $0 }.contains(where: { $0.id == player.id }) else {
+                    print("👥 NewMatchView: Player \(player.name) already selected")
+                    Analytics.logEvent(
+                        "player_filtered",
+                        parameters: [
+                            "player_name": player.name,
+                            "reason": "already_selected",
+                        ])
                     return false
                 }
 
@@ -115,13 +123,38 @@ extension Sequence {
                     (player.ownerID == userID && player.appleUserID == nil)
                         || player.appleUserID == userID
                 {
+                    print("👥 NewMatchView: Player \(player.name) is managed or current user")
+                    Analytics.logEvent(
+                        "player_available",
+                        parameters: [
+                            "player_name": player.name,
+                            "reason": "managed_or_current_user",
+                        ])
                     return true
                 }
 
                 if let distance = locationManager.distanceToPlayer(player) {
-                    return distance <= 30.48  // 100 feet in meters
+                    let isNearby = distance <= 30.48  // 100 feet in meters
+                    print(
+                        "👥 NewMatchView: Player \(player.name) distance: \(Int(distance))m, isNearby: \(isNearby)"
+                    )
+                    Analytics.logEvent(
+                        "player_distance_check",
+                        parameters: [
+                            "player_name": player.name,
+                            "distance_meters": Int(distance),
+                            "is_nearby": isNearby ? "true" : "false",
+                        ])
+                    return isNearby
                 }
 
+                print("👥 NewMatchView: Player \(player.name) has no valid distance")
+                Analytics.logEvent(
+                    "player_filtered",
+                    parameters: [
+                        "player_name": player.name,
+                        "reason": "no_valid_distance",
+                    ])
                 return false
             }.sorted { player1, player2 in
                 // Sort current user first, then managed players, then by distance
@@ -404,11 +437,30 @@ extension Sequence {
         private func loadPlayers() async {
             isLoading = true
             do {
-                print("Loading all players...")
+                print("👥 NewMatchView: Starting to load players...")
+                Analytics.logEvent("loading_players_started", parameters: nil)
                 allPlayers = try await cloudKitManager.fetchPlayers()
 
                 // Filter to only include real users (players with Apple IDs)
-                guard let userID = authManager.userID else { return }
+                guard let userID = authManager.userID else {
+                    print("👥 NewMatchView: Failed to load players - no user ID")
+                    Analytics.logEvent(
+                        "loading_players_failed",
+                        parameters: [
+                            "reason": "no_user_id"
+                        ])
+                    return
+                }
+
+                print("👥 NewMatchView: Successfully loaded \(allPlayers.count) players")
+                Analytics.logEvent(
+                    "players_loaded",
+                    parameters: [
+                        "total_count": allPlayers.count,
+                        "user_id": userID,
+                    ])
+
+                // Filter to only include real users (players with Apple IDs)
                 allPlayers = allPlayers.filter { player in
                     player.appleUserID != nil  // Is a real user
                         || (player.ownerID == userID && player.appleUserID == nil)  // Or is a managed player
@@ -472,9 +524,14 @@ extension Sequence {
                     }
                 }
 
-                print("Initial players array: \(players.map { $0?.name ?? "nil" })")
+                print("👥 NewMatchView: Initial players array: \(players.map { $0?.name ?? "nil" })")
             } catch {
-                print("Error loading players: \(error.localizedDescription)")
+                print("👥 NewMatchView: Error loading players: \(error.localizedDescription)")
+                Analytics.logEvent(
+                    "loading_players_error",
+                    parameters: [
+                        "error": error.localizedDescription
+                    ])
                 self.error = error
                 showingError = true
             }

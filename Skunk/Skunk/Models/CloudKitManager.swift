@@ -38,9 +38,19 @@ import SwiftUI
                     let accountStatus = try await container.accountStatus()
                     guard accountStatus == .available else { return nil }
 
-                    // Get the user record ID directly
+                    // Get the current user's record
                     let recordID = try await container.userRecordID()
-                    return recordID.recordName
+                    let userRecord = try await database.record(for: recordID)
+
+                    // Try to get the Apple user ID from the user record
+                    if let appleUserID = userRecord["appleUserID"] as? String {
+                        print("🟣 CloudKitManager: Found Apple user ID: \(appleUserID)")
+                        return appleUserID
+                    }
+
+                    // If no Apple user ID found, we can't proceed
+                    print("🟣 CloudKitManager: No Apple user ID found in user record")
+                    return nil
                 } catch {
                     print("Error getting user ID: \(error)")
                     return nil
@@ -51,20 +61,6 @@ import SwiftUI
         init() {
             self.container = CKContainer(identifier: "iCloud.com.gvaldivia.skunkapp")
             self.database = container.publicCloudDatabase
-
-            // Ensure proper initialization of CloudKit
-            Task {
-                do {
-                    let status = try await container.accountStatus()
-                    if status == .available {
-                        // Create default zone if needed
-                        let defaultZone = CKRecordZone(zoneName: "_defaultZone")
-                        try await database.modifyRecordZones(saving: [defaultZone], deleting: [])
-                    }
-                } catch {
-                    print("CloudKit initialization error: \(error)")
-                }
-            }
         }
 
         // MARK: - Schema Setup
@@ -522,19 +518,14 @@ import SwiftUI
         // MARK: - Matches
 
         func fetchMatches(for game: Game) async throws -> [Match] {
-            // Return cached matches if available
-            if let cachedMatches = matchCache[game.id] {
-                return cachedMatches
-            }
-
+            print("🟣 CloudKitManager: Fetching matches for game: \(game.id)")
             do {
-                print("🟣 CloudKitManager: Fetching matches for game: \(game.id)")
-                let query = CKQuery(
-                    recordType: "Match", predicate: NSPredicate(format: "gameID == %@", game.id))
-                query.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+                let predicate = NSPredicate(format: "gameID == %@", game.id)
+                let query = CKQuery(recordType: "Match", predicate: predicate)
 
                 let (results, _) = try await database.records(matching: query)
-                print("🟣 CloudKitManager: Found \(results.count) match records in CloudKit")
+
+                print("🟣 CloudKitManager: Found \(results.count) match records")
 
                 let matches = results.compactMap { result -> Match? in
                     guard let record = try? result.1.get() else {
@@ -568,6 +559,15 @@ import SwiftUI
             print("🟣 CloudKitManager: Saving match with ID: \(match.id)")
             var updatedMatch = match
             let record = match.toRecord()
+
+            // Set up record permissions
+            if let creatorID = match.createdByID {
+                record["creatorReference"] = CKRecord.Reference(
+                    recordID: CKRecord.ID(recordName: creatorID),
+                    action: .deleteSelf
+                )
+            }
+
             let savedRecord = try await database.save(record)
             updatedMatch.recordID = savedRecord.recordID
             updatedMatch.record = savedRecord
@@ -593,6 +593,14 @@ import SwiftUI
             guard let recordID = match.recordID else {
                 throw CloudKitError.missingData
             }
+
+            // Only allow deletion if user is creator or participant
+            if let currentUserID = await userID {
+                if match.createdByID != currentUserID && !match.playerIDs.contains(currentUserID) {
+                    throw CloudKitError.permissionDenied
+                }
+            }
+
             try await database.deleteRecord(withID: recordID)
 
             // Update cache and game's matches
@@ -686,9 +694,21 @@ import SwiftUI
 
         // MARK: - Error Handling
 
-        enum CloudKitError: Error {
+        enum CloudKitError: LocalizedError {
             case missingData
             case duplicateGameTitle
+            case permissionDenied
+
+            var errorDescription: String? {
+                switch self {
+                case .missingData:
+                    return "Required data is missing"
+                case .duplicateGameTitle:
+                    return "A game with this title already exists"
+                case .permissionDenied:
+                    return "You don't have permission to perform this action"
+                }
+            }
         }
 
         func deleteAllPlayers() async throws {
@@ -1071,7 +1091,28 @@ import SwiftUI
         }
 
         func updatePlayerLocation(_ player: Player, location: CLLocation) async throws {
-            guard let record = player.record else { return }
+            // First check if this is the current user's record
+            let currentUserID = await userID
+            guard let currentUserID = currentUserID,
+                player.appleUserID == currentUserID
+            else {
+                print(
+                    "☁️ CloudKitManager: Cannot update location - player record belongs to a different user"
+                )
+                return
+            }
+
+            guard let record = player.record else {
+                print(
+                    "☁️ CloudKitManager: Cannot update location - no record for player \(player.name)"
+                )
+                return
+            }
+
+            print("☁️ CloudKitManager: Updating location for player \(player.name)")
+            print(
+                "☁️ CloudKitManager: New coordinates: \(location.coordinate.latitude), \(location.coordinate.longitude)"
+            )
 
             // Create a location object for CloudKit
             let location = CLLocation(
@@ -1087,15 +1128,17 @@ import SwiftUI
 
             do {
                 let savedRecord = try await database.save(record)
+                print("☁️ CloudKitManager: Successfully saved location to CloudKit")
                 // Update cache with new record
                 if let updatedPlayer = Player(from: savedRecord) {
+                    print("☁️ CloudKitManager: Updated local cache for player \(updatedPlayer.name)")
                     playerCache[updatedPlayer.id] = updatedPlayer
                     if let index = players.firstIndex(where: { $0.id == updatedPlayer.id }) {
                         players[index] = updatedPlayer
                     }
                 }
             } catch {
-                print("Error updating player location: \(error)")
+                print("☁️ CloudKitManager: Error updating player location: \(error)")
                 throw error
             }
         }
@@ -1106,16 +1149,84 @@ import SwiftUI
         }
 
         // Add a method to find player by Apple user ID
-        func findPlayer(byAppleUserID userID: String) async throws -> Player {
-            let matchingPlayer = players.first(where: { $0.appleUserID == userID })
-            if let player = matchingPlayer {
+        func findPlayer(byAppleUserID appleUserID: String) async throws -> Player {
+            // First try to find the player in the cache
+            if let player = players.first(where: { $0.appleUserID == appleUserID }) {
+                print("🟣 CloudKitManager: Found player in cache: \(player.name)")
                 return player
             }
+
+            // Try to find by Apple user ID
+            let appleIDQuery = CKQuery(
+                recordType: "Player",
+                predicate: NSPredicate(format: "appleUserID = %@", appleUserID)
+            )
+            let (appleIDResults, _) = try await database.records(matching: appleIDQuery)
+            if let record = try? appleIDResults.first?.1.get(),
+                let player = Player(from: record)
+            {
+                print("🟣 CloudKitManager: Found player with Apple user ID match")
+                return player
+            }
+
+            // Try to find by owner ID
+            let ownerQuery = CKQuery(
+                recordType: "Player",
+                predicate: NSPredicate(format: "ownerID = %@", appleUserID)
+            )
+            let (ownerResults, _) = try await database.records(matching: ownerQuery)
+            if let record = try? ownerResults.first?.1.get(),
+                let player = Player(from: record)
+            {
+                print("🟣 CloudKitManager: Found player with owner ID match")
+                // Update the player's Apple user ID for next time
+                var updatedPlayer = player
+                updatedPlayer.appleUserID = appleUserID
+                try await savePlayer(updatedPlayer)
+                return updatedPlayer
+            }
+
+            // Try to find by current user's record ID
+            let recordID = try await container.userRecordID()
+            let recordQuery = CKQuery(
+                recordType: "Player",
+                predicate: NSPredicate(format: "ownerID = %@", recordID.recordName)
+            )
+            let (recordResults, _) = try await database.records(matching: recordQuery)
+            if let record = try? recordResults.first?.1.get(),
+                let player = Player(from: record)
+            {
+                print("🟣 CloudKitManager: Found player with record ID match")
+                // Update the player's Apple user ID for next time
+                var updatedPlayer = player
+                updatedPlayer.appleUserID = appleUserID
+                try await savePlayer(updatedPlayer)
+                return updatedPlayer
+            }
+
+            // Try to find by ID directly
+            let idQuery = CKQuery(
+                recordType: "Player",
+                predicate: NSPredicate(format: "id = %@", appleUserID)
+            )
+            let (idResults, _) = try await database.records(matching: idQuery)
+            if let record = try? idResults.first?.1.get(),
+                let player = Player(from: record)
+            {
+                print("🟣 CloudKitManager: Found player with ID match")
+                // Update the player's Apple user ID for next time
+                var updatedPlayer = player
+                updatedPlayer.appleUserID = appleUserID
+                try await savePlayer(updatedPlayer)
+                return updatedPlayer
+            }
+
             throw NSError(
                 domain: "CloudKitManager",
                 code: -1,
                 userInfo: [
-                    NSLocalizedDescriptionKey: "Could not find player with Apple user ID: \(userID)"
+                    NSLocalizedDescriptionKey:
+                        "Could not find player with Apple user ID: \(appleUserID)"
                 ]
             )
         }
