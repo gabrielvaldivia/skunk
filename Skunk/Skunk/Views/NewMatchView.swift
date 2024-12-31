@@ -491,7 +491,27 @@ extension Sequence {
             Section("Total Scores") {
                 let totalScores = rounds.reduce(Array(repeating: 0, count: players.count)) {
                     totals, roundScores in
-                    zip(totals, roundScores.map { $0 ?? 0 }).map(+)
+                    if let game = selectedGame ?? self.game, game.countLosersOnly {
+                        // Find the winner of this round
+                        let scores = roundScores.map { $0 ?? 0 }
+                        let winnerIndex =
+                            game.highestScoreWins
+                            ? scores.firstIndex(of: scores.max() ?? 0) ?? 0
+                            : scores.firstIndex(of: scores.min() ?? 0) ?? 0
+
+                        // Add up all losers' scores
+                        let losersTotal = scores.enumerated()
+                            .filter { $0.offset != winnerIndex }
+                            .map { $0.element }
+                            .reduce(0, +)
+
+                        // Add losers' total to the running total for the winner
+                        var newTotals = totals
+                        newTotals[winnerIndex] += losersTotal
+                        return newTotals
+                    } else {
+                        return zip(totals, roundScores.map { $0 ?? 0 }).map(+)
+                    }
                 }
 
                 ForEach(players.indices, id: \.self) { index in

@@ -67,16 +67,18 @@
                     .toggleStyle(.switch)
 
                     if !isBinaryScore {
-                        Picker("Score Counting", selection: scoreCountingMode) {
-                            Text("All Players").tag(ScoreCountingMode.all)
-                            Text("Winner Only").tag(ScoreCountingMode.winnerOnly)
-                            Text("Losers Only").tag(ScoreCountingMode.losersOnly)
+
+                        Picker("Winning Condition", selection: $highestScoreWins) {
+                            Text("Highest Score Wins").tag(true)
+                            Text("Lowest Score Wins").tag(false)
                         }
 
-                        Picker("Winning Score", selection: $highestScoreWins) {
-                            Text("Highest").tag(true)
-                            Text("Lowest").tag(false)
+                        Picker("Total Score Calculation", selection: scoreCountingMode) {
+                            Text("All Players").tag(ScoreCountingMode.all)
+                            Text("Winner Only").tag(ScoreCountingMode.winnerOnly)
+                            Text("Add Loser's Score to Winner").tag(ScoreCountingMode.losersOnly)
                         }
+
                     }
 
                     Toggle("Multiple Rounds", isOn: $supportsMultipleRounds)

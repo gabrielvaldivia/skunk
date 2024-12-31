@@ -98,7 +98,27 @@ import SwiftUI
                                 Array(repeating: 0, count: match.playerIDs.count)
                             ) {
                                 totals, roundScores in
-                                zip(totals, roundScores).map(+)
+                                if let game = match.game, game.countLosersOnly {
+                                    // Find the winner of this round
+                                    let scores = roundScores
+                                    let winnerIndex =
+                                        game.highestScoreWins
+                                        ? scores.firstIndex(of: scores.max() ?? 0) ?? 0
+                                        : scores.firstIndex(of: scores.min() ?? 0) ?? 0
+
+                                    // Add up all losers' scores
+                                    let losersTotal = scores.enumerated()
+                                        .filter { $0.offset != winnerIndex }
+                                        .map { $0.element }
+                                        .reduce(0, +)
+
+                                    // Add losers' total to the running total for the winner
+                                    var newTotals = totals
+                                    newTotals[winnerIndex] += losersTotal
+                                    return newTotals
+                                } else {
+                                    return zip(totals, roundScores).map(+)
+                                }
                             }
                             ForEach(
                                 Array(zip(match.playerIDs, totalScores).enumerated()), id: \.offset
