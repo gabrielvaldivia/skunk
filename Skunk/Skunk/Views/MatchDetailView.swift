@@ -23,9 +23,21 @@ import SwiftUI
                             Text("Game")
                                 .foregroundStyle(.secondary)
                             Spacer()
-                            Text(game.title)
-                                .font(.body)
-                                .fontWeight(.bold)
+                            ZStack {
+                                NavigationLink(destination: GameDetailView(game: game)) {
+                                    EmptyView()
+                                }
+                                .opacity(0)
+
+                                HStack(spacing: 8) {
+                                    Text(game.title)
+                                        .font(.body)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(.secondary)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                            }
                         }
                     }
                     HStack {
