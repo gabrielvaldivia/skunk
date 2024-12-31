@@ -6,7 +6,6 @@ import Foundation
         let id: String
         var title: String
         var isBinaryScore: Bool
-        var supportsMultipleRounds: Bool
         var supportedPlayerCounts: Set<Int>
         var createdByID: String?
         var countAllScores: Bool
@@ -18,7 +17,7 @@ import Foundation
         var creationDate: Date?
 
         init(
-            title: String, isBinaryScore: Bool, supportsMultipleRounds: Bool = false,
+            title: String, isBinaryScore: Bool,
             supportedPlayerCounts: Set<Int>, createdByID: String? = nil,
             countAllScores: Bool = true, countLosersOnly: Bool = false,
             highestScoreWins: Bool = true
@@ -26,7 +25,6 @@ import Foundation
             self.id = UUID().uuidString
             self.title = title
             self.isBinaryScore = isBinaryScore
-            self.supportsMultipleRounds = supportsMultipleRounds
             self.supportedPlayerCounts = supportedPlayerCounts
             self.createdByID = createdByID
             self.countAllScores = countAllScores
@@ -44,8 +42,6 @@ import Foundation
             self.id = id
             self.title = title
             self.isBinaryScore = record.value(forKey: "isBinaryScore") as? Bool ?? false
-            self.supportsMultipleRounds =
-                record.value(forKey: "supportsMultipleRounds") as? Bool ?? false
             self.countAllScores = record.value(forKey: "countAllScores") as? Bool ?? true
             self.countLosersOnly = record.value(forKey: "countLosersOnly") as? Bool ?? false
             self.highestScoreWins = record.value(forKey: "highestScoreWins") as? Bool ?? true
@@ -74,7 +70,6 @@ import Foundation
             record.setValue(id, forKey: "id")
             record.setValue(title, forKey: "title")
             record.setValue(isBinaryScore, forKey: "isBinaryScore")
-            record.setValue(supportsMultipleRounds, forKey: "supportsMultipleRounds")
             record.setValue(countAllScores, forKey: "countAllScores")
             record.setValue(countLosersOnly, forKey: "countLosersOnly")
             record.setValue(highestScoreWins, forKey: "highestScoreWins")

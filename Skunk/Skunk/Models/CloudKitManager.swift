@@ -196,7 +196,6 @@ import SwiftUI
                 let gameFields: [(String, CKRecordValue)] = [
                     ("title", "" as CKRecordValue),
                     ("isBinaryScore", 0 as CKRecordValue),
-                    ("supportsMultipleRounds", 0 as CKRecordValue),
                     ("supportedPlayerCounts", Data() as CKRecordValue),
                     ("createdByID", "" as CKRecordValue),
                     ("id", "" as CKRecordValue),
@@ -317,8 +316,6 @@ import SwiftUI
                     // Update record fields
                     record["title"] = game.title as CKRecordValue
                     record["isBinaryScore"] = NSNumber(value: game.isBinaryScore) as CKRecordValue
-                    record["supportsMultipleRounds"] =
-                        NSNumber(value: game.supportsMultipleRounds) as CKRecordValue
                     record["supportedPlayerCounts"] =
                         try JSONEncoder().encode(game.supportedPlayerCounts) as CKRecordValue
                     record["createdByID"] =

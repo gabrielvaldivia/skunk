@@ -7,7 +7,6 @@
         let game: Game
         @State private var title: String
         @State private var isBinaryScore: Bool
-        @State private var supportsMultipleRounds: Bool
         @State private var showingError = false
         @State private var errorMessage = ""
         @State private var minPlayers: Int
@@ -22,7 +21,6 @@
             self.game = game
             _title = State(initialValue: game.title)
             _isBinaryScore = State(initialValue: game.isBinaryScore)
-            _supportsMultipleRounds = State(initialValue: game.supportsMultipleRounds)
             _minPlayers = State(initialValue: game.supportedPlayerCounts.min() ?? 2)
             _maxPlayers = State(initialValue: game.supportedPlayerCounts.max() ?? 4)
             _countAllScores = State(initialValue: game.countAllScores)
@@ -44,7 +42,6 @@
                     GameSettingsView(
                         title: $title,
                         isBinaryScore: $isBinaryScore,
-                        supportsMultipleRounds: $supportsMultipleRounds,
                         minPlayers: $minPlayers,
                         maxPlayers: $maxPlayers,
                         countAllScores: $countAllScores,
@@ -115,7 +112,6 @@
             var updatedGame = game
             updatedGame.title = title
             updatedGame.isBinaryScore = isBinaryScore
-            updatedGame.supportsMultipleRounds = supportsMultipleRounds
             updatedGame.supportedPlayerCounts = Set(minPlayers...maxPlayers)
             updatedGame.countAllScores = !isBinaryScore ? countAllScores : false
             updatedGame.countLosersOnly = !isBinaryScore ? countLosersOnly : false

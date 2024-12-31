@@ -51,15 +51,12 @@ extension Sequence {
                 if game.isBinaryScore {
                     // For binary score games, check that exactly one player is marked as winner
                     return scores.count == players.count && scores.filter { $0 == 1 }.count == 1
-                } else if game.supportsMultipleRounds {
-                    // For multiple rounds, check that we have at least one round
+                } else {
+                    // For all other games, check that we have at least one round
                     return !rounds.isEmpty
                         && rounds.allSatisfy { roundScores in
                             roundScores.count == players.count
                         }
-                } else {
-                    // For single round, check that all scores are set
-                    return scores.count == players.count
                 }
             }
             return false
@@ -74,11 +71,24 @@ extension Sequence {
             self.onMatchSaved = onMatchSaved
             let initialPlayers = defaultPlayerIDs?.map { _ in nil as Player? } ?? [nil, nil]
             _players = State(initialValue: initialPlayers)
-            _scores = State(initialValue: Array(repeating: nil, count: initialPlayers.count))
             _selectedGame = State(initialValue: game)
-            _rounds = State(
-                initialValue: game?.supportsMultipleRounds == true
-                    ? [Array(repeating: nil, count: initialPlayers.count)] : [])
+
+            // Initialize scores and rounds based on game type
+            if let game = game {
+                if game.isBinaryScore {
+                    _scores = State(
+                        initialValue: Array(repeating: nil, count: initialPlayers.count))
+                    _rounds = State(initialValue: [])
+                } else {
+                    _scores = State(initialValue: [])
+                    _rounds = State(initialValue: [
+                        Array(repeating: nil, count: initialPlayers.count)
+                    ])
+                }
+            } else {
+                _scores = State(initialValue: Array(repeating: nil, count: initialPlayers.count))
+                _rounds = State(initialValue: [Array(repeating: nil, count: initialPlayers.count)])
+            }
         }
 
         private func adjustToLastMatchPlayerCount() {
@@ -241,10 +251,8 @@ extension Sequence {
                                 let minPlayers = game.supportedPlayerCounts.min() ?? 2
                                 players = Array(repeating: nil, count: minPlayers)
                                 scores = Array(repeating: nil, count: minPlayers)
-                                // Initialize first round
-                                if game.supportsMultipleRounds {
-                                    rounds = [Array(repeating: nil, count: minPlayers)]
-                                }
+                                // Always initialize with one round
+                                rounds = [Array(repeating: nil, count: minPlayers)]
                             }
                         }
 
@@ -343,48 +351,15 @@ extension Sequence {
                                 scores[index] = 1
                             }
                     }
-                } else if !currentGame.isBinaryScore {
-                    if currentGame.supportsMultipleRounds {
-                        if !rounds.isEmpty {
-                            let score = rounds[0][index] ?? 0
-                            let scores = rounds[0].compactMap { $0 }
-                            HStack(spacing: 8) {
-                                if score > 0 && !scores.isEmpty {
-                                    let isWinner =
-                                        currentGame.highestScoreWins
-                                        ? score == scores.max() : score == scores.min()
-                                    if isWinner {
-                                        Image(systemName: "crown.fill")
-                                            .foregroundStyle(.yellow)
-                                    }
-                                }
-                                TextField(
-                                    "0",
-                                    text: Binding(
-                                        get: { rounds[0][index].map(String.init) ?? "" },
-                                        set: { str in
-                                            if let value = Int(str) {
-                                                rounds[0][index] = value
-                                            } else if str.isEmpty {
-                                                rounds[0][index] = nil
-                                            }
-                                        }
-                                    )
-                                )
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
-                                .fixedSize(horizontal: true, vertical: false)
-                                .frame(minWidth: 10)
-                            }
-                        }
-                    } else {
-                        let score = scores[index] ?? 0
-                        let allScores = scores.compactMap { $0 }
+                } else {
+                    if !rounds.isEmpty {
+                        let score = rounds[0][index] ?? 0
+                        let scores = rounds[0].compactMap { $0 }
                         HStack(spacing: 8) {
-                            if score > 0 && !allScores.isEmpty {
+                            if score > 0 && !scores.isEmpty {
                                 let isWinner =
                                     currentGame.highestScoreWins
-                                    ? score == allScores.max() : score == allScores.min()
+                                    ? score == scores.max() : score == scores.min()
                                 if isWinner {
                                     Image(systemName: "crown.fill")
                                         .foregroundStyle(.yellow)
@@ -393,12 +368,12 @@ extension Sequence {
                             TextField(
                                 "0",
                                 text: Binding(
-                                    get: { scores[index].map(String.init) ?? "" },
+                                    get: { rounds[0][index].map(String.init) ?? "" },
                                     set: { str in
                                         if let value = Int(str) {
-                                            scores[index] = value
+                                            rounds[0][index] = value
                                         } else if str.isEmpty {
-                                            scores[index] = nil
+                                            rounds[0][index] = nil
                                         }
                                     }
                                 )
@@ -414,7 +389,7 @@ extension Sequence {
         }
 
         private func playersSection(for currentGame: Game) -> some View {
-            Section(currentGame.supportsMultipleRounds ? "Round 1" : "Players") {
+            Section("Round 1") {
                 ForEach(players.indices, id: \.self) { index in
                     playerRow(for: index, in: currentGame)
                 }
@@ -423,10 +398,8 @@ extension Sequence {
                     Button(action: {
                         players.append(nil)
                         scores.append(nil)
-                        if currentGame.supportsMultipleRounds {
-                            for i in 0..<rounds.count {
-                                rounds[i].append(nil)
-                            }
+                        for i in 0..<rounds.count {
+                            rounds[i].append(nil)
                         }
                     }) {
                         Text("Add Player")
@@ -437,8 +410,6 @@ extension Sequence {
 
         private func roundSection(index: Int, currentGame: Game) -> some View {
             Section("Round \(index + 1)") {
-                let roundScores = rounds[index]
-
                 ForEach(players.indices, id: \.self) { playerIndex in
                     if let player = players[playerIndex] {
                         HStack {
@@ -446,9 +417,23 @@ extension Sequence {
                                 .clipShape(Circle())
                             Text(player.name)
                             Spacer()
-                            if !currentGame.isBinaryScore {
-                                let currentScore = roundScores[playerIndex] ?? 0
-                                let scores = roundScores.compactMap { $0 }
+                            if currentGame.isBinaryScore {
+                                Image(systemName: "crown.fill")
+                                    .foregroundStyle(
+                                        rounds[index][playerIndex] == 1
+                                            ? .yellow : .gray.opacity(0.3)
+                                    )
+                                    .onTapGesture {
+                                        // Reset all scores in this round to 0
+                                        for i in rounds[index].indices {
+                                            rounds[index][i] = 0
+                                        }
+                                        // Set this player as winner for this round
+                                        rounds[index][playerIndex] = 1
+                                    }
+                            } else {
+                                let currentScore = rounds[index][playerIndex] ?? 0
+                                let scores = rounds[index].compactMap { $0 }
                                 HStack(spacing: 8) {
                                     if currentScore > 0 && !scores.isEmpty {
                                         let isWinner =
@@ -546,17 +531,7 @@ extension Sequence {
 
         private var addRoundButton: some View {
             Button(action: {
-                if rounds.isEmpty {
-                    // First round - initialize with current scores
-                    rounds.append(scores.map { $0 ?? 0 })
-                }
-                rounds.append(Array(repeating: nil, count: players.count))
-                Analytics.logEvent(
-                    "round_added",
-                    parameters: [
-                        "round_number": rounds.count,
-                        "player_count": players.count,
-                    ])
+                addRound()
             }) {
                 Label("Add Round", systemImage: "plus.circle.fill")
                     .font(.headline)
@@ -579,35 +554,17 @@ extension Sequence {
 
             if game.isBinaryScore {
                 // For binary score, find the player with score of 1
-                if let winnerIndex = scores.firstIndex(where: { $0 == 1 }),
-                    let winner = players[winnerIndex]
-                {
-                    return (winner, 1)
+                if let winnerIndex = scores.firstIndex(of: 1) {
+                    return (players[winnerIndex]!, 1)
                 }
-            } else if game.supportsMultipleRounds {
-                // For multiple rounds, calculate total scores
+            } else {
+                // For all non-binary score games, calculate total scores
                 var playerScores: [(player: Player, score: Int)] = []
                 for (index, player) in validPlayers.enumerated() {
                     let totalScore = rounds.reduce(0) { total, roundScores in
                         total + (roundScores[index] ?? 0)
                     }
                     playerScores.append((player, totalScore))
-                }
-
-                // Sort by score (highest or lowest depending on game rules)
-                playerScores.sort { p1, p2 in
-                    game.highestScoreWins ? p1.score > p2.score : p1.score < p2.score
-                }
-
-                // Return the first player (highest or lowest score)
-                return playerScores.first
-            } else {
-                // For single round, find the player with highest/lowest score
-                var playerScores: [(player: Player, score: Int)] = []
-                for (index, player) in validPlayers.enumerated() {
-                    if let score = scores[index] {
-                        playerScores.append((player, score))
-                    }
                 }
 
                 // Sort by score (highest or lowest depending on game rules)
@@ -630,8 +587,8 @@ extension Sequence {
                     if let currentGame = selectedGame ?? game {
                         playersSection(for: currentGame)
 
-                        if currentGame.supportsMultipleRounds {
-                            // Only show additional rounds if there are any
+                        if !players.contains(nil) {
+                            // Show additional rounds if there are any
                             if rounds.count > 1 {
                                 ForEach(1..<rounds.count, id: \.self) { roundIndex in
                                     roundSection(index: roundIndex, currentGame: currentGame)
@@ -641,7 +598,6 @@ extension Sequence {
                             }
                         }
                     }
-
                 }
                 .navigationTitle("New Match")
                 .navigationBarTitleDisplayMode(.inline)
@@ -660,7 +616,8 @@ extension Sequence {
                 }
                 .safeAreaInset(edge: .bottom) {
                     if let currentGame = selectedGame ?? game,
-                        currentGame.supportsMultipleRounds
+                        !players.contains(nil),
+                        hasWinnerInCurrentRound(game: currentGame)
                     {
                         addRoundButton
                     }
@@ -684,7 +641,7 @@ extension Sequence {
                         adjustToLastMatchPlayerCount()
                     }
                     await loadPlayers()
-                    locationManager.startUpdatingLocation()  // Start location updates when view appears
+                    locationManager.startUpdatingLocation()
                 }
                 .alert("Error", isPresented: $showingError) {
                     Button("OK", role: .cancel) {}
@@ -729,74 +686,72 @@ extension Sequence {
 
         private func saveMatch() {
             guard let game = selectedGame ?? self.game else { return }
-
-            var match = Match(createdByID: authManager.userID, game: game)
-            match.playerIDs = players.compactMap { $0?.id }
-            match.playerOrder = match.playerIDs
-            match.isMultiplayer = players.count > 1
-
-            if game.isBinaryScore {
-                // For binary score games, find the winner from scores array
-                if let winnerIndex = scores.firstIndex(of: 1) {
-                    match.winnerID = match.playerIDs[winnerIndex]
-                }
-                match.scores = scores.map { $0 ?? 0 }
-            } else if game.supportsMultipleRounds {
-                // For multiple rounds, calculate total scores
-                let totalScores = rounds.reduce(Array(repeating: 0, count: players.count)) {
-                    totals, roundScores in
-                    zip(totals, roundScores.map { $0 ?? 0 }).map(+)
-                }
-                match.scores = totalScores
-                match.rounds = rounds.map { roundScores in
-                    roundScores.map { $0 ?? 0 }
-                }
-
-                // Set winner based on highest total score
-                if let maxScore = totalScores.max(),
-                    let winnerIndex = totalScores.firstIndex(of: maxScore)
-                {
-                    match.winnerID = match.playerIDs[winnerIndex]
-                }
-            } else {
-                // For single round games
-                match.scores = scores.map { $0 ?? 0 }
-                if let maxScore = match.scores.max(),
-                    let winnerIndex = match.scores.firstIndex(of: maxScore)
-                {
-                    match.winnerID = match.playerIDs[winnerIndex]
-                }
-            }
-
-            #if canImport(FirebaseAnalytics)
-                Analytics.logEvent(
-                    "match_saved",
-                    parameters: [
-                        "game_title": game.title,
-                        "player_count": match.playerIDs.count,
-                        "is_multiplayer": match.isMultiplayer ? "true" : "false",
-                        "is_binary_score": game.isBinaryScore ? "true" : "false",
-                        "has_multiple_rounds": game.supportsMultipleRounds ? "true" : "false",
-                        "round_count": rounds.count,
-                    ])
-            #endif
+            isLoading = true
 
             Task {
                 do {
+                    var match = Match(createdByID: authManager.userID, game: game)
+                    match.playerIDs = players.compactMap { $0?.id }
+                    match.playerOrder = match.playerIDs
+                    match.isMultiplayer = players.count > 1
+                    match.date = Date()
+
+                    // Calculate total scores from rounds for both game types
+                    let totalScores = rounds.reduce(Array(repeating: 0, count: players.count)) {
+                        totals, roundScores in
+                        zip(totals, roundScores.map { $0 ?? 0 }).map(+)
+                    }
+                    match.scores = totalScores
+                    match.rounds = rounds.map { roundScores in
+                        roundScores.map { $0 ?? 0 }
+                    }
+
+                    // Set winner based on game type
+                    if game.isBinaryScore {
+                        // For binary score games, winner is the player with the most wins
+                        let winCounts = totalScores
+                        if let maxWins = winCounts.max(),
+                            let winnerIndex = winCounts.firstIndex(of: maxWins)
+                        {
+                            match.winnerID = match.playerIDs[winnerIndex]
+                        }
+                    } else {
+                        // For non-binary score games, winner is based on highest/lowest total score
+                        if let maxScore = totalScores.max(),
+                            let minScore = totalScores.min()
+                        {
+                            let winnerIndex =
+                                game.highestScoreWins
+                                ? totalScores.firstIndex(of: maxScore)
+                                : totalScores.firstIndex(of: minScore)
+                            if let winnerIndex = winnerIndex {
+                                match.winnerID = match.playerIDs[winnerIndex]
+                            }
+                        }
+                    }
+
                     try await cloudKitManager.saveMatch(match)
                     onMatchSaved?(match)
                     dismiss()
                 } catch {
                     self.error = error
                     showingError = true
-                    #if canImport(FirebaseAnalytics)
-                        Analytics.logEvent(
-                            "match_save_error",
-                            parameters: [
-                                "error": error.localizedDescription
-                            ])
-                    #endif
                 }
+                isLoading = false
+            }
+        }
+
+        private func hasWinnerInCurrentRound(game: Game) -> Bool {
+            let currentRoundScores = rounds.isEmpty ? scores : rounds[rounds.count - 1]
+
+            if game.isBinaryScore {
+                // For binary score games, check if someone has been crowned
+                return currentRoundScores.contains(1)
+            } else {
+                // For non-binary score games, treat nil scores as 0
+                let scores = currentRoundScores.map { $0 ?? 0 }
+                // Check if any score is non-zero
+                return scores.contains { $0 != 0 }
             }
         }
     }

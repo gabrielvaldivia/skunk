@@ -28,7 +28,6 @@
     struct GameSettingsView: View {
         @Binding var title: String
         @Binding var isBinaryScore: Bool
-        @Binding var supportsMultipleRounds: Bool
         @Binding var minPlayers: Int
         @Binding var maxPlayers: Int
         @Binding var countAllScores: Bool
@@ -74,6 +73,14 @@
                     }
                 }
 
+                Section("Player Count") {
+                    Stepper(
+                        "Minimum \(minPlayers) Players", value: $minPlayers, in: 1...maxPlayers)
+                    Stepper(
+                        "Maximum \(maxPlayers) Players", value: $maxPlayers, in: minPlayers...99
+                    )
+                }
+
                 Section("Game Rules") {
                     Toggle(
                         "Track Score",
@@ -83,9 +90,6 @@
                         )
                     )
                     .toggleStyle(.switch)
-
-                    Toggle("Multiple Rounds", isOn: $supportsMultipleRounds)
-                        .toggleStyle(.switch)
                 }
 
                 if !isBinaryScore {
@@ -127,14 +131,6 @@
                             scoreCountingMode.wrappedValue = .losersOnly
                         }
                     }
-                }
-
-                Section("Player Count") {
-                    Stepper(
-                        "Minimum \(minPlayers) Players", value: $minPlayers, in: 1...maxPlayers)
-                    Stepper(
-                        "Maximum \(maxPlayers) Players", value: $maxPlayers, in: minPlayers...99
-                    )
                 }
             }
             .onAppear {

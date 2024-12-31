@@ -8,7 +8,6 @@
 
         @State private var title = ""
         @State private var isBinaryScore = true
-        @State private var supportsMultipleRounds = false
         @State private var showingError = false
         @State private var errorMessage = ""
         @State private var minPlayers = 2
@@ -23,7 +22,6 @@
                     GameSettingsView(
                         title: $title,
                         isBinaryScore: $isBinaryScore,
-                        supportsMultipleRounds: $supportsMultipleRounds,
                         minPlayers: $minPlayers,
                         maxPlayers: $maxPlayers,
                         countAllScores: $countAllScores,
@@ -60,7 +58,6 @@
             var game = Game(
                 title: title,
                 isBinaryScore: isBinaryScore,
-                supportsMultipleRounds: supportsMultipleRounds,
                 supportedPlayerCounts: supportedCounts,
                 createdByID: authManager.userID,
                 countAllScores: !isBinaryScore ? countAllScores : false,
@@ -71,17 +68,10 @@
             Task {
                 do {
                     try await cloudKitManager.saveGame(game)
-                    print("Successfully added game: \(title)")
                     dismiss()
-                } catch CloudKitManager.CloudKitError.duplicateGameTitle {
-                    errorMessage =
-                        "A game with this title already exists. Please choose a different title."
-                    showingError = true
-                    print("Failed to save game: duplicate title")
                 } catch {
                     errorMessage = error.localizedDescription
                     showingError = true
-                    print("Failed to save game: \(error)")
                 }
             }
         }
