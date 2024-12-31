@@ -133,21 +133,23 @@ extension Sequence {
 
                 // Show player if either:
                 // 1. It's a managed player (owned by current user and no Apple ID)
-                // 2. It's a nearby player (within 100 feet)
-                if let userID = authManager.userID,
-                    (player.ownerID == userID && player.appleUserID == nil)
+                // 2. It's the current user's player (matches Apple ID)
+                // 3. It's a nearby player (within 100 feet)
+                if let userID = authManager.userID {
+                    if (player.ownerID == userID && player.appleUserID == nil)
                         || player.appleUserID == userID
-                {
-                    print("👥 NewMatchView: Player \(player.name) is managed or current user")
-                    #if canImport(FirebaseAnalytics)
-                        Analytics.logEvent(
-                            "player_available",
-                            parameters: [
-                                "player_name": player.name,
-                                "reason": "managed_or_current_user",
-                            ])
-                    #endif
-                    return true
+                    {
+                        print("👥 NewMatchView: Player \(player.name) is managed or current user")
+                        #if canImport(FirebaseAnalytics)
+                            Analytics.logEvent(
+                                "player_available",
+                                parameters: [
+                                    "player_name": player.name,
+                                    "reason": "managed_or_current_user",
+                                ])
+                        #endif
+                        return true
+                    }
                 }
 
                 if let distance = locationManager.distanceToPlayer(player) {
@@ -178,7 +180,10 @@ extension Sequence {
                 #endif
                 return false
             }.sorted { player1, player2 in
-                // Sort current user first, then managed players, then by distance
+                // Sort by:
+                // 1. Current user first
+                // 2. Then managed players
+                // 3. Then by distance
                 let isCurrentUser1 = player1.appleUserID == authManager.userID
                 let isCurrentUser2 = player2.appleUserID == authManager.userID
                 if isCurrentUser1 != isCurrentUser2 {
@@ -275,8 +280,20 @@ extension Sequence {
             HStack {
                 Menu {
                     ForEach(availablePlayers) { player in
-                        Button(player.name) {
+                        Button {
                             players[index] = player
+                        } label: {
+                            HStack {
+                                Text(player.name)
+                                if let distance = locationManager.distanceToPlayer(player),
+                                    player.appleUserID != authManager.userID
+                                        && (player.ownerID != authManager.userID
+                                            || player.appleUserID != nil)
+                                {
+                                    Text(formatDistance(distance))
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
                         }
                     }
 
@@ -529,6 +546,7 @@ extension Sequence {
                         adjustToLastMatchPlayerCount()
                     }
                     await loadPlayers()
+                    locationManager.startUpdatingLocation()  // Start location updates when view appears
                 }
                 .alert("Error", isPresented: $showingError) {
                     Button("OK", role: .cancel) {}
