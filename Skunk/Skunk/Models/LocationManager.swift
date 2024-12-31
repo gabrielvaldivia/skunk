@@ -1,7 +1,10 @@
 import CoreLocation
-import FirebaseAnalytics
 import Foundation
 import SwiftUI
+
+#if canImport(FirebaseAnalytics)
+    import FirebaseAnalytics
+#endif
 
 #if canImport(UIKit)
     class LocationManager: NSObject, ObservableObject {
@@ -84,24 +87,28 @@ import SwiftUI
             print(
                 "📍 LocationManager: Coordinates: \(location.coordinate.latitude), \(location.coordinate.longitude)"
             )
-            Analytics.logEvent(
-                "location_sync_started",
-                parameters: [
-                    "latitude": location.coordinate.latitude,
-                    "longitude": location.coordinate.longitude,
-                    "accuracy": location.horizontalAccuracy,
-                ])
+            #if canImport(FirebaseAnalytics)
+                Analytics.logEvent(
+                    "location_sync_started",
+                    parameters: [
+                        "latitude": location.coordinate.latitude,
+                        "longitude": location.coordinate.longitude,
+                        "accuracy": location.horizontalAccuracy,
+                    ])
+            #endif
 
             let cloudKitManager = await getCKManager()
             let userID = try await cloudKitManager.userID
 
             guard let userID = userID else {
                 print("📍 LocationManager: Failed to get userID")
-                Analytics.logEvent(
-                    "location_sync_failed",
-                    parameters: [
-                        "reason": "no_user_id"
-                    ])
+                #if canImport(FirebaseAnalytics)
+                    Analytics.logEvent(
+                        "location_sync_failed",
+                        parameters: [
+                            "reason": "no_user_id"
+                        ])
+                #endif
                 throw NSError(
                     domain: "LocationManager", code: -1,
                     userInfo: [NSLocalizedDescriptionKey: "Could not find current user ID"])
@@ -113,12 +120,14 @@ import SwiftUI
 
             try await cloudKitManager.updatePlayerLocation(currentUser, location: location)
             print("📍 LocationManager: Successfully updated location in CloudKit")
-            Analytics.logEvent(
-                "location_sync_success",
-                parameters: [
-                    "user_id": userID,
-                    "player_name": currentUser.name,
-                ])
+            #if canImport(FirebaseAnalytics)
+                Analytics.logEvent(
+                    "location_sync_success",
+                    parameters: [
+                        "user_id": userID,
+                        "player_name": currentUser.name,
+                    ])
+            #endif
             lastLocationUpdate = Date()
         }
 
@@ -148,32 +157,36 @@ import SwiftUI
                 } else {
                     print("📍 LocationManager: Player has no last update time")
                 }
-                Analytics.logEvent(
-                    "distance_calculation_failed",
-                    parameters: [
-                        "player_name": player.name,
-                        "reason": currentLocation == nil
-                            ? "no_current_location"
-                            : player.location == nil
-                                ? "no_player_location"
-                                : player.lastLocationUpdate == nil
-                                    ? "no_last_update" : "location_too_old",
-                        "time_since_update": player.lastLocationUpdate.map {
-                            String(Int(Date().timeIntervalSince($0)))
-                        } ?? "none",
-                    ])
+                #if canImport(FirebaseAnalytics)
+                    Analytics.logEvent(
+                        "distance_calculation_failed",
+                        parameters: [
+                            "player_name": player.name,
+                            "reason": currentLocation == nil
+                                ? "no_current_location"
+                                : player.location == nil
+                                    ? "no_player_location"
+                                    : player.lastLocationUpdate == nil
+                                        ? "no_last_update" : "location_too_old",
+                            "time_since_update": player.lastLocationUpdate.map {
+                                String(Int(Date().timeIntervalSince($0)))
+                            } ?? "none",
+                        ])
+                #endif
                 return nil
             }
 
             let distance = currentLocation.distance(from: playerLocation)
             print("📍 LocationManager: Distance to \(player.name): \(Int(distance))m")
-            Analytics.logEvent(
-                "distance_calculated",
-                parameters: [
-                    "player_name": player.name,
-                    "distance_meters": Int(distance),
-                    "is_nearby": distance <= 30.48 ? "true" : "false",
-                ])
+            #if canImport(FirebaseAnalytics)
+                Analytics.logEvent(
+                    "distance_calculated",
+                    parameters: [
+                        "player_name": player.name,
+                        "distance_meters": Int(distance),
+                        "is_nearby": distance <= 30.48 ? "true" : "false",
+                    ])
+            #endif
             return distance
         }
     }
@@ -211,16 +224,6 @@ import SwiftUI
                     print("Error syncing location: \(error)")
                 }
             }
-        }
-
-        func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-            print("📍 LocationManager: Failed with error: \(error.localizedDescription)")
-            Analytics.logEvent(
-                "location_manager_error",
-                parameters: [
-                    "error_description": error.localizedDescription,
-                    "error_code": String(describing: (error as NSError).code),
-                ])
         }
     }
 #endif

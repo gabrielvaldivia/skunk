@@ -1,6 +1,9 @@
-import FirebaseAnalytics
-import FirebaseCore
 import SwiftUI
+
+#if canImport(FirebaseAnalytics)
+    import FirebaseAnalytics
+    import FirebaseCore
+#endif
 
 #if canImport(UIKit)
     import UIKit
@@ -11,7 +14,9 @@ import SwiftUI
             didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? =
                 nil
         ) -> Bool {
-            FirebaseApp.configure()
+            #if canImport(FirebaseAnalytics)
+                FirebaseApp.configure()
+            #endif
             return true
         }
     }
@@ -49,11 +54,13 @@ import SwiftUI
                         print(
                             "🔴 SkunkApp: Error during initialization: \(error.localizedDescription)"
                         )
-                        Analytics.logEvent(
-                            "app_initialization_error",
-                            parameters: [
-                                "error_description": error.localizedDescription
-                            ])
+                        #if canImport(FirebaseAnalytics)
+                            Analytics.logEvent(
+                                "app_initialization_error",
+                                parameters: [
+                                    "error_description": error.localizedDescription
+                                ])
+                        #endif
                     }
                     isInitializing = false
                 }

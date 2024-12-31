@@ -6,6 +6,7 @@ import Foundation
         let id: String
         var title: String
         var isBinaryScore: Bool
+        var supportsMultipleRounds: Bool
         var supportedPlayerCounts: Set<Int>
         var createdByID: String?
         var record: CKRecord?
@@ -14,12 +15,13 @@ import Foundation
         var creationDate: Date?
 
         init(
-            title: String, isBinaryScore: Bool, supportedPlayerCounts: Set<Int>,
-            createdByID: String? = nil
+            title: String, isBinaryScore: Bool, supportsMultipleRounds: Bool = false,
+            supportedPlayerCounts: Set<Int>, createdByID: String? = nil
         ) {
             self.id = UUID().uuidString
             self.title = title
             self.isBinaryScore = isBinaryScore
+            self.supportsMultipleRounds = supportsMultipleRounds
             self.supportedPlayerCounts = supportedPlayerCounts
             self.createdByID = createdByID
             self.matches = []
@@ -34,6 +36,8 @@ import Foundation
             self.id = id
             self.title = title
             self.isBinaryScore = record.value(forKey: "isBinaryScore") as? Bool ?? false
+            self.supportsMultipleRounds =
+                record.value(forKey: "supportsMultipleRounds") as? Bool ?? false
             if let countsData = record.value(forKey: "supportedPlayerCounts") as? Data,
                 let counts = try? JSONDecoder().decode([Int].self, from: countsData)
             {
@@ -59,6 +63,7 @@ import Foundation
             record.setValue(id, forKey: "id")
             record.setValue(title, forKey: "title")
             record.setValue(isBinaryScore, forKey: "isBinaryScore")
+            record.setValue(supportsMultipleRounds, forKey: "supportsMultipleRounds")
             if let countsData = try? JSONEncoder().encode(Array(supportedPlayerCounts)) {
                 record.setValue(countsData, forKey: "supportedPlayerCounts")
             }

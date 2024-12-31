@@ -73,6 +73,7 @@ import SwiftUI
                 let gameFields: [(String, CKRecordValue)] = [
                     ("title", "" as CKRecordValue),
                     ("isBinaryScore", 0 as CKRecordValue),  // Changed to number
+                    ("supportsMultipleRounds", 0 as CKRecordValue),
                     ("supportedPlayerCounts", Data() as CKRecordValue),
                     ("createdByID", "" as CKRecordValue),
                     ("id", "" as CKRecordValue),
@@ -99,6 +100,8 @@ import SwiftUI
                     ("createdByID", "" as CKRecordValue),
                     ("gameID", "" as CKRecordValue),
                     ("id", "" as CKRecordValue),
+                    ("scores", Data() as CKRecordValue),
+                    ("rounds", Data() as CKRecordValue),
                 ]
 
                 let playerGroupFields: [(String, CKRecordValue)] = [

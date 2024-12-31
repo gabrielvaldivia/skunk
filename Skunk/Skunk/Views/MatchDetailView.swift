@@ -52,97 +52,187 @@ import SwiftUI
                     }
                 }
 
-                Section("Players") {
-                    if isLoading {
-                        ProgressView()
-                    } else if match.playerIDs.isEmpty {
-                        Text("No players")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        let playerList =
-                            match.playerOrder.isEmpty ? match.playerIDs : match.playerOrder
-                        ForEach(playerList, id: \.self) { playerID in
-                            if let player = cloudKitManager.players.first(where: {
-                                $0.id == playerID
-                            }) {
-                                HStack {
-                                    HStack(spacing: 12) {
-                                        PlayerAvatar(player: player)
-                                            .frame(width: 32, height: 32)
-
-                                        Text(player.name)
-                                            .font(.body)
-                                    }
-
-                                    Spacer()
-
-                                    if let game = match.game, !game.isBinaryScore,
-                                        let playerIndex = match.playerIDs.firstIndex(of: player.id),
-                                        playerIndex < match.scores.count
-                                    {
-                                        Text("\(match.scores[playerIndex])")
-                                            .font(.body)
-                                            .foregroundStyle(.secondary)
-                                            .padding(.trailing, 8)
-                                    }
-
-                                    if match.status == "completed" {
-                                        if match.winnerID == player.id {
-                                            Image(systemName: "crown.fill")
-                                                .foregroundStyle(.yellow)
-                                        }
-                                    } else {
-                                        Image(systemName: "crown.fill")
-                                            .foregroundStyle(
-                                                match.winnerID == player.id
-                                                    ? .yellow : .gray.opacity(0.3)
-                                            )
-                                            .onTapGesture {
-                                                var updatedMatch = match
-                                                updatedMatch.winnerID =
-                                                    match.winnerID == player.id ? nil : player.id
-                                                updatedMatch.status =
-                                                    updatedMatch.winnerID != nil
-                                                    ? "completed" : "active"
-                                                Task {
-                                                    do {
-                                                        try await cloudKitManager.saveMatch(
-                                                            updatedMatch)
-                                                        match = updatedMatch
-                                                    } catch {
-                                                        self.error = error
-                                                        showingError = true
-                                                    }
-                                                }
+                if let game = match.game {
+                    if !game.isBinaryScore && match.rounds.count > 0 {
+                        // Show rounds for multiple round games
+                        ForEach(Array(match.rounds.enumerated()), id: \.offset) {
+                            roundIndex, roundScores in
+                            Section("Round \(roundIndex + 1)") {
+                                ForEach(
+                                    Array(zip(match.playerIDs, roundScores).enumerated()),
+                                    id: \.offset
+                                ) { _, pair in
+                                    let (playerID, score) = pair
+                                    if let player = cloudKitManager.players.first(where: {
+                                        $0.id == playerID
+                                    }) {
+                                        HStack {
+                                            HStack(spacing: 12) {
+                                                PlayerAvatar(player: player)
+                                                    .frame(width: 32, height: 32)
+                                                Text(player.name)
+                                                    .font(.body)
                                             }
+                                            Spacer()
+                                            // Show crown for round winner
+                                            if let maxScore = roundScores.max(),
+                                                score == maxScore,
+                                                maxScore > 0  // Only show crown if there's a non-zero score
+                                            {
+                                                Image(systemName: "crown.fill")
+                                                    .foregroundStyle(.yellow)
+                                            }
+                                            Text("\(score)")
+                                                .font(.body)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        .padding(.vertical, 8)
                                     }
                                 }
-                                .padding(.vertical, 8)
                             }
                         }
-                    }
-                }
 
-                if match.isMultiplayer {
-                    Section("Multiplayer Status") {
-                        if match.invitedPlayerIDs.isEmpty {
-                            Text("No invited players")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            ForEach(match.invitedPlayerIDs, id: \.self) { playerID in
+                        Section("Total Scores") {
+                            let totalScores = match.rounds.reduce(
+                                Array(repeating: 0, count: match.playerIDs.count)
+                            ) {
+                                totals, roundScores in
+                                zip(totals, roundScores).map(+)
+                            }
+                            ForEach(
+                                Array(zip(match.playerIDs, totalScores).enumerated()), id: \.offset
+                            ) { _, pair in
+                                let (playerID, totalScore) = pair
                                 if let player = cloudKitManager.players.first(where: {
                                     $0.id == playerID
                                 }) {
                                     HStack {
-                                        Text(player.name)
-                                        Spacer()
-                                        if match.acceptedPlayerIDs.contains(playerID) {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundStyle(.green)
-                                        } else {
-                                            Text("Pending")
-                                                .foregroundStyle(.secondary)
+                                        HStack(spacing: 12) {
+                                            PlayerAvatar(player: player)
+                                                .frame(width: 32, height: 32)
+                                            Text(player.name)
+                                                .font(.body)
                                         }
+                                        Spacer()
+
+                                        if match.winnerID == player.id {
+                                            Image(systemName: "crown.fill")
+                                                .foregroundStyle(.yellow)
+                                                .onTapGesture {
+                                                    if match.status != "completed" {
+                                                        var updatedMatch = match
+                                                        updatedMatch.winnerID = nil
+                                                        updatedMatch.status = "active"
+                                                        Task {
+                                                            do {
+                                                                try await cloudKitManager.saveMatch(
+                                                                    updatedMatch)
+                                                                match = updatedMatch
+                                                            } catch {
+                                                                self.error = error
+                                                                showingError = true
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                        } else if match.status != "completed" {
+                                            Image(systemName: "crown.fill")
+                                                .foregroundStyle(.gray.opacity(0))
+                                                .onTapGesture {
+                                                    var updatedMatch = match
+                                                    updatedMatch.winnerID = player.id
+                                                    updatedMatch.status = "completed"
+                                                    Task {
+                                                        do {
+                                                            try await cloudKitManager.saveMatch(
+                                                                updatedMatch)
+                                                            match = updatedMatch
+                                                        } catch {
+                                                            self.error = error
+                                                            showingError = true
+                                                        }
+                                                    }
+                                                }
+                                        }
+
+                                        Text("\(totalScore)")
+                                            .font(.body)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .padding(.vertical, 8)
+                                }
+                            }
+                        }
+                    } else {
+                        // Show regular players section for single round or binary score games
+                        Section("Players") {
+                            if isLoading {
+                                ProgressView()
+                            } else if match.playerIDs.isEmpty {
+                                Text("No players")
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                let playerList =
+                                    match.playerOrder.isEmpty ? match.playerIDs : match.playerOrder
+                                ForEach(playerList, id: \.self) { playerID in
+                                    if let player = cloudKitManager.players.first(where: {
+                                        $0.id == playerID
+                                    }) {
+                                        HStack {
+                                            HStack(spacing: 12) {
+                                                PlayerAvatar(player: player)
+                                                    .frame(width: 32, height: 32)
+
+                                                Text(player.name)
+                                                    .font(.body)
+                                            }
+
+                                            Spacer()
+
+                                            if !game.isBinaryScore,
+                                                let playerIndex = match.playerIDs.firstIndex(
+                                                    of: player.id),
+                                                playerIndex < match.scores.count
+                                            {
+                                                Text("\(match.scores[playerIndex])")
+                                                    .font(.body)
+                                                    .foregroundStyle(.secondary)
+                                                    .padding(.trailing, 8)
+                                            }
+
+                                            if match.status == "completed" {
+                                                if match.winnerID == player.id {
+                                                    Image(systemName: "crown.fill")
+                                                        .foregroundStyle(.yellow)
+                                                }
+                                            } else {
+                                                Image(systemName: "crown.fill")
+                                                    .foregroundStyle(
+                                                        match.winnerID == player.id
+                                                            ? .yellow : .gray.opacity(0.3)
+                                                    )
+                                                    .onTapGesture {
+                                                        var updatedMatch = match
+                                                        updatedMatch.winnerID =
+                                                            match.winnerID == player.id
+                                                            ? nil : player.id
+                                                        updatedMatch.status =
+                                                            updatedMatch.winnerID != nil
+                                                            ? "completed" : "active"
+                                                        Task {
+                                                            do {
+                                                                try await cloudKitManager.saveMatch(
+                                                                    updatedMatch)
+                                                                match = updatedMatch
+                                                            } catch {
+                                                                self.error = error
+                                                                showingError = true
+                                                            }
+                                                        }
+                                                    }
+                                            }
+                                        }
+                                        .padding(.vertical, 8)
                                     }
                                 }
                             }
@@ -150,7 +240,7 @@ import SwiftUI
                     }
                 }
 
-                if !match.isMultiplayer || match.status == "completed" {
+                Section {
                     // Check if user is admin or participated in the match
                     let adminEmail = "valdivia.gabriel@gmail.com"
                     let isAdmin = currentPlayer?.appleUserID == adminEmail
@@ -159,44 +249,42 @@ import SwiftUI
                         || (currentPlayer != nil && match.playerIDs.contains(currentPlayer!.id))
 
                     if canDelete {
-                        Section {
-                            Button(role: .destructive) {
-                                showingDeleteConfirmation = true
-                            } label: {
-                                if isLoading {
-                                    ProgressView()
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                } else {
-                                    Text("Delete Match")
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                }
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            if isLoading {
+                                ProgressView()
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                            } else {
+                                Text("Delete Match")
+                                    .frame(maxWidth: .infinity, alignment: .center)
                             }
-                            .disabled(isLoading)
-                            .confirmationDialog(
-                                "Delete Match",
-                                isPresented: $showingDeleteConfirmation,
-                                titleVisibility: .visible
-                            ) {
-                                Button("Delete", role: .destructive) {
-                                    Task {
-                                        isLoading = true
-                                        do {
-                                            try await cloudKitManager.deleteMatch(match)
-                                            isLoading = false
-                                            dismiss()
-                                        } catch {
-                                            isLoading = false
-                                            self.error = error
-                                            showingError = true
-                                        }
+                        }
+                        .disabled(isLoading)
+                        .confirmationDialog(
+                            "Delete Match",
+                            isPresented: $showingDeleteConfirmation,
+                            titleVisibility: .visible
+                        ) {
+                            Button("Delete", role: .destructive) {
+                                Task {
+                                    isLoading = true
+                                    do {
+                                        try await cloudKitManager.deleteMatch(match)
+                                        isLoading = false
+                                        dismiss()
+                                    } catch {
+                                        isLoading = false
+                                        self.error = error
+                                        showingError = true
                                     }
                                 }
-                                Button("Cancel", role: .cancel) {}
-                            } message: {
-                                Text(
-                                    "Are you sure you want to delete this match? This action cannot be undone."
-                                )
                             }
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text(
+                                "Are you sure you want to delete this match? This action cannot be undone."
+                            )
                         }
                     }
                 }

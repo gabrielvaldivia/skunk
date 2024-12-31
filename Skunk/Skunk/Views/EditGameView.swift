@@ -7,6 +7,7 @@
         let game: Game
         @State private var title: String
         @State private var isBinaryScore: Bool
+        @State private var supportsMultipleRounds: Bool
         @State private var showingError = false
         @State private var errorMessage = ""
         @State private var minPlayers: Int
@@ -18,6 +19,7 @@
             self.game = game
             _title = State(initialValue: game.title)
             _isBinaryScore = State(initialValue: game.isBinaryScore)
+            _supportsMultipleRounds = State(initialValue: game.supportsMultipleRounds)
             _minPlayers = State(initialValue: game.supportedPlayerCounts.min() ?? 2)
             _maxPlayers = State(initialValue: game.supportedPlayerCounts.max() ?? 4)
         }
@@ -46,6 +48,9 @@
                     )
                     .toggleStyle(.switch)
 
+                    Toggle("Multiple Rounds", isOn: $supportsMultipleRounds)
+                        .toggleStyle(.switch)
+
                     Section("Player Count") {
                         Stepper(
                             "Minimum \(minPlayers) Players", value: $minPlayers, in: 1...maxPlayers)
@@ -54,25 +59,20 @@
                         )
                     }
 
-                    if let creatorName {
-                        Section("Created By") {
-                            HStack(spacing: 4) {
-                                Text(creatorName)
-                                    .foregroundStyle(.secondary)
-                                Text("on")
-                                    .foregroundStyle(.secondary)
-                                Text(formattedDate)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-
                     Section {
                         Button(role: .destructive) {
                             showingDeleteConfirmation = true
                         } label: {
                             Text("Delete Game")
                                 .frame(maxWidth: .infinity)
+                        }
+                    }
+
+                    if let creatorName = creatorName {
+                        Section {
+                            Text("Created by \(creatorName) on \(formattedDate)")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -96,18 +96,22 @@
                 } message: {
                     Text(errorMessage)
                 }
-                .alert("Delete Game", isPresented: $showingDeleteConfirmation) {
-                    Button("Cancel", role: .cancel) {}
+                .confirmationDialog(
+                    "Are you sure you want to delete this game?",
+                    isPresented: $showingDeleteConfirmation,
+                    titleVisibility: .visible
+                ) {
                     Button("Delete", role: .destructive) {
                         deleteGame()
                     }
                 } message: {
-                    Text("Are you sure you want to delete this game? This action cannot be undone.")
+                    Text("This action cannot be undone.")
                 }
                 .task {
-                    if let creatorID = game.createdByID {
-                        let players = try? await cloudKitManager.fetchPlayers()
-                        creatorName = players?.first(where: { $0.appleUserID == creatorID })?.name
+                    if let createdByID = game.createdByID,
+                        let player = cloudKitManager.getPlayer(id: createdByID)
+                    {
+                        creatorName = player.name
                     }
                 }
             }
@@ -117,6 +121,7 @@
             var updatedGame = game
             updatedGame.title = title
             updatedGame.isBinaryScore = isBinaryScore
+            updatedGame.supportsMultipleRounds = supportsMultipleRounds
             updatedGame.supportedPlayerCounts = Set(minPlayers...maxPlayers)
 
             Task {

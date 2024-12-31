@@ -1,7 +1,10 @@
 import CloudKit
 import CoreLocation
-import FirebaseAnalytics
 import SwiftUI
+
+#if canImport(FirebaseAnalytics)
+    import FirebaseAnalytics
+#endif
 
 extension Sequence {
     func uniqued<T: Hashable>(by keyPath: KeyPath<Element, T>) -> [Element] {
@@ -16,79 +19,86 @@ extension Sequence {
         @EnvironmentObject private var cloudKitManager: CloudKitManager
         @EnvironmentObject private var authManager: AuthenticationManager
         @StateObject private var locationManager = LocationManager()
-        @AppStorage("lastMatchPlayerIDs") private var lastMatchPlayerIDsString: String = "[]"
-        @AppStorage("lastMatchPlayerCount") private var lastMatchPlayerCount: Int = 0
-        @State private var showingAddGame = false
 
-        private var lastMatchPlayerIDs: [String] {
-            (try? JSONDecoder().decode([String].self, from: Data(lastMatchPlayerIDsString.utf8)))
-                ?? []
-        }
-
-        private func setLastMatchPlayerIDs(_ ids: [String]) {
-            if let encoded = try? JSONEncoder().encode(ids),
-                let string = String(data: encoded, encoding: .utf8)
-            {
-                lastMatchPlayerIDsString = string
-            }
-        }
-
-        let defaultGame: Game?
+        let game: Game?
         let defaultPlayerIDs: [String]?
         let onMatchSaved: ((Match) -> Void)?
+
         @State private var selectedGame: Game?
         @State private var players: [Player?]
-        @State private var scores: [Int]
-        @State private var currentPlayerCount: Int
-        @State private var allPlayers: [Player] = []
-        @State private var isLoading = false
-        @State private var error: Error?
-        @State private var showingError = false
-        @State private var selectedWinnerIndex: Int?
+        @State private var scores: [Int?]
+        @State private var currentRound = 0
+        @State private var rounds: [[Int?]] = []
+        @State private var showingAddGame = false
         @State private var showingAddPlayer = false
+        @State private var showingError = false
+        @State private var error: Error?
+        @State private var isLoading = false
+
+        private var canSave: Bool {
+            if let game = selectedGame ?? self.game {
+                let validPlayers = players.compactMap { $0 }
+                let hasValidPlayerCount = game.supportedPlayerCounts.contains(validPlayers.count)
+                let allPlayersSelected = !players.contains(nil)
+                let hasValidScores = game.isBinaryScore || validateScores()
+                return hasValidPlayerCount && allPlayersSelected && hasValidScores
+            }
+            return false
+        }
+
+        private func validateScores() -> Bool {
+            if let game = selectedGame ?? self.game {
+                if game.supportsMultipleRounds {
+                    // For multiple rounds, check that we have at least one round
+                    return !rounds.isEmpty
+                        && rounds.allSatisfy { roundScores in
+                            roundScores.count == players.count
+                        }
+                } else {
+                    // For single round, check that all scores are set
+                    return scores.count == players.count
+                }
+            }
+            return false
+        }
 
         init(
             game: Game? = nil, defaultPlayerIDs: [String]? = nil,
             onMatchSaved: ((Match) -> Void)? = nil
         ) {
-            self.defaultGame = game
+            self.game = game
             self.defaultPlayerIDs = defaultPlayerIDs
             self.onMatchSaved = onMatchSaved
-
-            // If we have a game and default players and their count is supported, use that count
-            let playerCount: Int
-            if let game = game,
-                let defaultCount = defaultPlayerIDs?.count,
-                game.supportedPlayerCounts.contains(defaultCount)
-            {
-                playerCount = defaultCount
-            } else {
-                playerCount = 2  // Default to 2 players if no game selected
-            }
-
+            let initialPlayers = defaultPlayerIDs?.map { _ in nil as Player? } ?? [nil, nil]
+            _players = State(initialValue: initialPlayers)
+            _scores = State(initialValue: Array(repeating: nil, count: initialPlayers.count))
             _selectedGame = State(initialValue: game)
-            _currentPlayerCount = State(initialValue: playerCount)
-            _players = State(initialValue: Array(repeating: nil, count: playerCount))
-            _scores = State(initialValue: Array(repeating: 0, count: playerCount))
+            _rounds = State(
+                initialValue: game?.supportsMultipleRounds == true
+                    ? [Array(repeating: nil, count: initialPlayers.count)] : [])
         }
 
         private func adjustToLastMatchPlayerCount() {
-            // Adjust to last match player count if valid
-            guard let game = selectedGame else { return }
-            if game.supportedPlayerCounts.contains(lastMatchPlayerCount) && lastMatchPlayerCount > 0
-            {
-                let currentCount = players.count
-                if lastMatchPlayerCount > currentCount {
-                    // Add more player slots
-                    players.append(
-                        contentsOf: Array(
-                            repeating: nil, count: lastMatchPlayerCount - currentCount))
-                    scores.append(
-                        contentsOf: Array(repeating: 0, count: lastMatchPlayerCount - currentCount))
-                } else if lastMatchPlayerCount < currentCount {
-                    // Remove excess player slots
-                    players.removeLast(currentCount - lastMatchPlayerCount)
-                    scores.removeLast(currentCount - lastMatchPlayerCount)
+            guard let game = selectedGame ?? self.game else { return }
+            Task {
+                do {
+                    let matches = try await cloudKitManager.fetchMatches(for: game)
+                    if let lastMatch = matches.first {
+                        let count = lastMatch.playerIDs.count
+                        if game.supportedPlayerCounts.contains(count) {
+                            await MainActor.run {
+                                players = Array(repeating: nil, count: count)
+                                scores = Array(repeating: nil, count: count)
+                            }
+                        }
+                    }
+                } catch {
+                    print("Error fetching matches: \(error)")
+                    Analytics.logEvent(
+                        "match_fetch_error",
+                        parameters: [
+                            "error": error.localizedDescription
+                        ])
                 }
             }
         }
@@ -103,16 +113,18 @@ extension Sequence {
         }
 
         var availablePlayers: [Player] {
-            allPlayers.filter { player in
+            cloudKitManager.players.filter { player in
                 // Don't show players that are already selected
                 guard !players.compactMap { $0 }.contains(where: { $0.id == player.id }) else {
                     print("👥 NewMatchView: Player \(player.name) already selected")
-                    Analytics.logEvent(
-                        "player_filtered",
-                        parameters: [
-                            "player_name": player.name,
-                            "reason": "already_selected",
-                        ])
+                    #if canImport(FirebaseAnalytics)
+                        Analytics.logEvent(
+                            "player_filtered",
+                            parameters: [
+                                "player_name": player.name,
+                                "reason": "already_selected",
+                            ])
+                    #endif
                     return false
                 }
 
@@ -124,12 +136,14 @@ extension Sequence {
                         || player.appleUserID == userID
                 {
                     print("👥 NewMatchView: Player \(player.name) is managed or current user")
-                    Analytics.logEvent(
-                        "player_available",
-                        parameters: [
-                            "player_name": player.name,
-                            "reason": "managed_or_current_user",
-                        ])
+                    #if canImport(FirebaseAnalytics)
+                        Analytics.logEvent(
+                            "player_available",
+                            parameters: [
+                                "player_name": player.name,
+                                "reason": "managed_or_current_user",
+                            ])
+                    #endif
                     return true
                 }
 
@@ -138,23 +152,27 @@ extension Sequence {
                     print(
                         "👥 NewMatchView: Player \(player.name) distance: \(Int(distance))m, isNearby: \(isNearby)"
                     )
-                    Analytics.logEvent(
-                        "player_distance_check",
-                        parameters: [
-                            "player_name": player.name,
-                            "distance_meters": Int(distance),
-                            "is_nearby": isNearby ? "true" : "false",
-                        ])
+                    #if canImport(FirebaseAnalytics)
+                        Analytics.logEvent(
+                            "player_distance_check",
+                            parameters: [
+                                "player_name": player.name,
+                                "distance_meters": Int(distance),
+                                "is_nearby": isNearby ? "true" : "false",
+                            ])
+                    #endif
                     return isNearby
                 }
 
                 print("👥 NewMatchView: Player \(player.name) has no valid distance")
-                Analytics.logEvent(
-                    "player_filtered",
-                    parameters: [
-                        "player_name": player.name,
-                        "reason": "no_valid_distance",
-                    ])
+                #if canImport(FirebaseAnalytics)
+                    Analytics.logEvent(
+                        "player_filtered",
+                        parameters: [
+                            "player_name": player.name,
+                            "reason": "no_valid_distance",
+                        ])
+                #endif
                 return false
             }.sorted { player1, player2 in
                 // Sort current user first, then managed players, then by distance
@@ -176,206 +194,279 @@ extension Sequence {
             }
         }
 
-        var body: some View {
-            NavigationStack {
-                Form {
-                    Section("Game") {
-                        Menu {
-                            ForEach(cloudKitManager.games) { game in
-                                Button {
-                                    selectedGame = game
-                                    // Adjust player count to match game's minimum
-                                    let minPlayers = game.supportedPlayerCounts.min() ?? 2
-                                    if players.count < minPlayers {
-                                        players = Array(repeating: nil, count: minPlayers)
-                                        scores = Array(repeating: 0, count: minPlayers)
-                                    }
-                                } label: {
-                                    Text(game.title)
+        private func addRound() {
+            rounds.append(Array(repeating: nil, count: players.count))
+            currentRound = rounds.count - 1
+            #if canImport(FirebaseAnalytics)
+                Analytics.logEvent(
+                    "round_added",
+                    parameters: [
+                        "round_number": rounds.count,
+                        "player_count": players.count,
+                    ])
+            #endif
+        }
+
+        private func deleteRound(_ index: Int) {
+            rounds.remove(at: index)
+            if currentRound >= rounds.count {
+                currentRound = max(0, rounds.count - 1)
+            }
+            #if canImport(FirebaseAnalytics)
+                Analytics.logEvent(
+                    "round_deleted",
+                    parameters: [
+                        "round_index": index,
+                        "remaining_rounds": rounds.count,
+                    ])
+            #endif
+        }
+
+        private var gameSelectionSection: some View {
+            Section("Game") {
+                if game == nil {
+                    Menu {
+                        ForEach(cloudKitManager.games) { game in
+                            Button(game.title) {
+                                selectedGame = game
+                                // Reset players and scores for new game
+                                let minPlayers = game.supportedPlayerCounts.min() ?? 2
+                                players = Array(repeating: nil, count: minPlayers)
+                                scores = Array(repeating: nil, count: minPlayers)
+                                // Initialize first round
+                                if game.supportsMultipleRounds {
+                                    rounds = [Array(repeating: nil, count: minPlayers)]
                                 }
                             }
+                        }
 
-                            Divider()
+                        Divider()
 
-                            Button {
-                                showingAddGame = true
-                            } label: {
-                                HStack {
-                                    Text("Add Game")
-                                    Spacer()
-                                    Image(systemName: "plus.circle.fill")
-                                }
-                            }
+                        Button {
+                            showingAddGame = true
                         } label: {
                             HStack {
-                                Text(selectedGame?.title ?? "Select Game")
-                                    .foregroundColor(selectedGame == nil ? .secondary : .primary)
+                                Text("Add Game")
                                 Spacer()
-                                Image(systemName: "chevron.up.chevron.down")
-                                    .foregroundColor(.secondary)
-                                    .font(.footnote)
+                                Image(systemName: "plus.circle.fill")
                             }
+                        }
+                    } label: {
+                        HStack {
+                            Text(selectedGame?.title ?? "Select Game")
+                                .foregroundColor(selectedGame == nil ? .secondary : .primary)
+                            Spacer()
+                            Image(systemName: "chevron.up.chevron.down")
+                                .foregroundColor(.secondary)
+                                .font(.footnote)
+                        }
+                    }
+                } else if let currentGame = game {
+                    Text(currentGame.title)
+                        .foregroundColor(.primary)
+                }
+            }
+        }
+
+        private func playerRow(for index: Int, in currentGame: Game) -> some View {
+            HStack {
+                Menu {
+                    ForEach(availablePlayers) { player in
+                        Button(player.name) {
+                            players[index] = player
                         }
                     }
 
-                    Section("Players") {
-                        ForEach(Array(players.enumerated()), id: \.offset) { index, player in
-                            HStack {
-                                Menu {
-                                    let managedPlayers = availablePlayers.filter { player in
-                                        player.ownerID == authManager.userID
-                                            || player.appleUserID == authManager.userID
-                                    }
-                                    let nearbyPlayers = availablePlayers.filter { player in
-                                        player.ownerID != authManager.userID
-                                            && player.appleUserID != authManager.userID
-                                            && player.appleUserID != nil
-                                    }.sorted { player1, player2 in
-                                        let distance1 =
-                                            locationManager.distanceToPlayer(player1)
-                                            ?? .infinity
-                                        let distance2 =
-                                            locationManager.distanceToPlayer(player2)
-                                            ?? .infinity
-                                        return distance1 < distance2
-                                    }
+                    Divider()
 
-                                    if !managedPlayers.isEmpty {
-                                        ForEach(managedPlayers) { newPlayer in
-                                            Button {
-                                                players[index] = newPlayer
-                                            } label: {
-                                                Text(newPlayer.name)
-                                            }
-                                        }
-                                    }
+                    Button {
+                        showingAddPlayer = true
+                    } label: {
+                        HStack {
+                            Text("Add Player")
+                            Spacer()
+                            Image(systemName: "plus.circle.fill")
+                        }
+                    }
+                } label: {
+                    HStack {
+                        if let player = players[index] {
+                            PlayerAvatar(player: player, size: 40)
+                                .clipShape(Circle())
+                            Text(player.name)
+                                .foregroundColor(.primary)
+                        } else {
+                            Circle()
+                                .fill(Color(.systemGray5))
+                                .frame(width: 40, height: 40)
+                            Text("Select Player")
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.up.chevron.down")
+                            .foregroundColor(.secondary)
+                            .font(.footnote)
+                    }
+                }
 
-                                    Button {
-                                        showingAddPlayer = true
-                                    } label: {
-                                        HStack {
-                                            Image(systemName: "plus.circle.fill")
-                                            Text("Add Player")
+                if !currentGame.isBinaryScore {
+                    if currentGame.supportsMultipleRounds {
+                        if !rounds.isEmpty {
+                            TextField(
+                                "Score",
+                                text: Binding(
+                                    get: { rounds[0][index].map(String.init) ?? "" },
+                                    set: { str in
+                                        if let value = Int(str) {
+                                            rounds[0][index] = value
+                                        } else if str.isEmpty {
+                                            rounds[0][index] = nil
                                         }
                                     }
-                                    .accentColor(.blue)
-
-                                    Section("Nearby Players") {
-                                        switch locationManager.authorizationStatus {
-                                        case .notDetermined:
-                                            Button {
-                                                locationManager.requestLocationPermission()
-                                            } label: {
-                                                HStack {
-                                                    Image(systemName: "location.circle.fill")
-                                                    Text("Enable Location Access")
-                                                }
-                                            }
-                                            .accentColor(.blue)
-                                        case .restricted, .denied:
-                                            Text(
-                                                "Location access is required to find nearby players"
-                                            )
-                                            .foregroundColor(.secondary)
-                                        case .authorizedWhenInUse, .authorizedAlways:
-                                            if nearbyPlayers.isEmpty {
-                                                Text("No players within 100 feet")
-                                                    .foregroundColor(.secondary)
-                                            } else {
-                                                ForEach(nearbyPlayers) { newPlayer in
-                                                    Button {
-                                                        players[index] = newPlayer
-                                                    } label: {
-                                                        HStack {
-                                                            Text(newPlayer.name)
-                                                            Spacer()
-                                                            if let distance =
-                                                                locationManager.distanceToPlayer(
-                                                                    newPlayer)
-                                                            {
-                                                                Text(formatDistance(distance))
-                                                                    .foregroundColor(.secondary)
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        @unknown default:
-                                            Text(
-                                                "Location access is required to find nearby players"
-                                            )
-                                            .foregroundColor(.secondary)
-                                        }
-                                    }
-                                } label: {
-                                    HStack {
-                                        if let player = player {
-                                            Text(player.name)
-                                                .foregroundColor(.primary)
-                                            if let distance = locationManager.distanceToPlayer(
-                                                player)
-                                            {
-                                                Text(formatDistance(distance))
-                                                    .foregroundColor(.secondary)
-                                            }
-                                            Image(systemName: "chevron.up.chevron.down")
-                                                .foregroundColor(.secondary)
-                                                .font(.footnote)
-                                        } else {
-                                            Text("Select Player")
-                                                .foregroundColor(.secondary)
-                                            Image(systemName: "chevron.up.chevron.down")
-                                                .foregroundColor(.secondary)
-                                                .font(.footnote)
-                                        }
-                                        Spacer()
+                                )
+                            )
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 60)
+                        }
+                    } else {
+                        TextField(
+                            "Score",
+                            text: Binding(
+                                get: { scores[index].map(String.init) ?? "" },
+                                set: { str in
+                                    if let value = Int(str) {
+                                        scores[index] = value
+                                    } else if str.isEmpty {
+                                        scores[index] = nil
                                     }
                                 }
+                            )
+                        )
+                        .keyboardType(.numberPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 60)
+                    }
+                }
+            }
+        }
 
-                                if player != nil && selectedGame != nil {
-                                    if selectedGame!.isBinaryScore {
-                                        Toggle(
-                                            "",
-                                            isOn: Binding(
-                                                get: { selectedWinnerIndex == index },
-                                                set: { isWinner in
-                                                    selectedWinnerIndex = isWinner ? index : nil
-                                                }
-                                            )
-                                        )
-                                        .tint(.green)
-                                    } else {
-                                        TextField(
-                                            "Score", value: $scores[index], format: .number
-                                        )
-                                        .keyboardType(.numberPad)
-                                        .multilineTextAlignment(.trailing)
-                                        .frame(width: 80)
-                                    }
+        private func playersSection(for currentGame: Game) -> some View {
+            Section(currentGame.supportsMultipleRounds ? "Round 1" : "Players") {
+                ForEach(players.indices, id: \.self) { index in
+                    playerRow(for: index, in: currentGame)
+                }
+
+                if currentGame.supportedPlayerCounts.contains(players.count + 1) {
+                    Button(action: {
+                        players.append(nil)
+                        scores.append(nil)
+                        if currentGame.supportsMultipleRounds {
+                            for i in 0..<rounds.count {
+                                rounds[i].append(nil)
+                            }
+                        }
+                    }) {
+                        Text("Add Player")
+                    }
+                }
+            }
+        }
+
+        private func roundSection(index: Int, currentGame: Game) -> some View {
+            Section("Round \(index + 1)") {
+                ForEach(players.indices, id: \.self) { playerIndex in
+                    if let player = players[playerIndex] {
+                        HStack {
+                            PlayerAvatar(player: player, size: 40)
+                                .clipShape(Circle())
+                            Text(player.name)
+                            Spacer()
+                            if !currentGame.isBinaryScore {
+                                TextField(
+                                    "Score",
+                                    text: Binding(
+                                        get: { rounds[index][playerIndex].map(String.init) ?? "" },
+                                        set: { str in
+                                            if let value = Int(str) {
+                                                rounds[index][playerIndex] = value
+                                            } else if str.isEmpty {
+                                                rounds[index][playerIndex] = nil
+                                            }
+                                        }
+                                    )
+                                )
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.trailing)
+                                .frame(width: 60)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private var totalScoresSection: some View {
+            Section("Total Scores") {
+                let totalScores = rounds.reduce(Array(repeating: 0, count: players.count)) {
+                    totals, roundScores in
+                    zip(totals, roundScores.map { $0 ?? 0 }).map(+)
+                }
+                ForEach(players.indices, id: \.self) { index in
+                    if let player = players[index] {
+                        HStack {
+                            Text(player.name)
+                            Spacer()
+                            Text("\(totalScores[index])")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+        }
+
+        private var addRoundButton: some View {
+            Button(action: {
+                if rounds.isEmpty {
+                    // First round - initialize with current scores
+                    rounds.append(scores.map { $0 ?? 0 })
+                }
+                rounds.append(Array(repeating: nil, count: players.count))
+                Analytics.logEvent(
+                    "round_added",
+                    parameters: [
+                        "round_number": rounds.count,
+                        "player_count": players.count,
+                    ])
+            }) {
+                Label("Add Round", systemImage: "plus.circle.fill")
+                    .font(.headline)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .clipShape(Capsule())
+            }
+            .padding()
+            .background(Color(.systemGroupedBackground))
+        }
+
+        var body: some View {
+            NavigationStack {
+                Form {
+                    gameSelectionSection
+
+                    if let currentGame = selectedGame ?? game {
+                        playersSection(for: currentGame)
+
+                        if currentGame.supportsMultipleRounds {
+                            // Only show additional rounds if there are any
+                            if rounds.count > 1 {
+                                ForEach(1..<rounds.count, id: \.self) { roundIndex in
+                                    roundSection(index: roundIndex, currentGame: currentGame)
                                 }
-                            }
-                        }
-                        .onDelete { indexSet in
-                            guard let index = indexSet.first,
-                                index >= (selectedGame?.supportedPlayerCounts.min() ?? 2)
-                            else { return }
-                            players.remove(at: index)
-                            scores.remove(at: index)
-                            if selectedWinnerIndex == index {
-                                selectedWinnerIndex = nil
-                            } else if let winner = selectedWinnerIndex, winner > index {
-                                selectedWinnerIndex = winner - 1
-                            }
-                        }
 
-                        if let game = selectedGame,
-                            game.supportedPlayerCounts.contains(players.count + 1)
-                        {
-                            Button(action: {
-                                players.append(nil)
-                                scores.append(0)
-                            }) {
-                                Text("Add Player")
+                                totalScoresSection
                             }
                         }
                     }
@@ -395,6 +486,13 @@ extension Sequence {
                         .disabled(!canSave)
                     }
                 }
+                .safeAreaInset(edge: .bottom) {
+                    if let currentGame = selectedGame ?? game,
+                        currentGame.supportsMultipleRounds
+                    {
+                        addRoundButton
+                    }
+                }
                 .sheet(isPresented: $showingAddGame) {
                     AddGameView()
                 }
@@ -410,7 +508,6 @@ extension Sequence {
                     }
                 }
                 .task {
-                    // Only adjust player count if we don't have default players
                     if defaultPlayerIDs == nil {
                         adjustToLastMatchPlayerCount()
                     }
@@ -427,157 +524,104 @@ extension Sequence {
             }
         }
 
-        private var canSave: Bool {
-            guard let game = selectedGame else { return false }
-            let filledPlayers = players.compactMap { $0 }
-            return !filledPlayers.isEmpty
-                && filledPlayers.count >= (game.supportedPlayerCounts.min() ?? 2)
-        }
-
         private func loadPlayers() async {
-            isLoading = true
             do {
-                print("👥 NewMatchView: Starting to load players...")
-                Analytics.logEvent("loading_players_started", parameters: nil)
-                allPlayers = try await cloudKitManager.fetchPlayers()
-
-                // Filter to only include real users (players with Apple IDs)
-                guard let userID = authManager.userID else {
-                    print("👥 NewMatchView: Failed to load players - no user ID")
-                    Analytics.logEvent(
-                        "loading_players_failed",
-                        parameters: [
-                            "reason": "no_user_id"
-                        ])
-                    return
-                }
-
-                print("👥 NewMatchView: Successfully loaded \(allPlayers.count) players")
-                Analytics.logEvent(
-                    "players_loaded",
-                    parameters: [
-                        "total_count": allPlayers.count,
-                        "user_id": userID,
-                    ])
-
-                // Filter to only include real users (players with Apple IDs)
-                allPlayers = allPlayers.filter { player in
-                    player.appleUserID != nil  // Is a real user
-                        || (player.ownerID == userID && player.appleUserID == nil)  // Or is a managed player
-                }
-
-                // Sort to match PlayersView order but without sections
-                let currentUser = allPlayers.first { $0.appleUserID == userID }
-                let managedPlayers = allPlayers.filter { player in
-                    player.ownerID == userID && player.appleUserID != userID
-                }
-                let otherUsers = allPlayers.filter { player in
-                    player.appleUserID != nil && player.appleUserID != userID
-                        && player.ownerID != userID
-                }
-
-                // Reorder allPlayers to match the structure
-                var orderedPlayers: [Player] = []
-                if let currentUser = currentUser {
-                    orderedPlayers.append(currentUser)
-                }
-                orderedPlayers.append(contentsOf: managedPlayers)
-                orderedPlayers.append(contentsOf: otherUsers)
-                allPlayers = orderedPlayers
-
-                print("Loaded \(allPlayers.count) players: \(allPlayers.map { $0.name })")
-
-                // If we have default player IDs, use those and ensure exact match
                 if let defaultPlayerIDs = defaultPlayerIDs {
-                    print("Using default players: \(defaultPlayerIDs)")
-                    // Reset players array to match default count
-                    players = Array(repeating: nil, count: defaultPlayerIDs.count)
-                    scores = Array(repeating: 0, count: defaultPlayerIDs.count)
-
-                    // Fill in all players in the exact order
+                    let allPlayers = try await cloudKitManager.fetchPlayers()
                     for (index, playerId) in defaultPlayerIDs.enumerated() {
                         if let player = allPlayers.first(where: { $0.id == playerId }) {
                             players[index] = player
                         }
                     }
+                    #if canImport(FirebaseAnalytics)
+                        Analytics.logEvent(
+                            "default_players_loaded",
+                            parameters: [
+                                "count": defaultPlayerIDs.count
+                            ])
+                    #endif
                 }
-                // If no default players, use last match players
-                else if !lastMatchPlayerIDs.isEmpty {
-                    print("Found last match players: \(lastMatchPlayerIDs)")
-                    // Fill in as many slots as we have players and supported count allows
-                    let lastPlayers = lastMatchPlayerIDs.compactMap { id in
-                        allPlayers.first { $0.id == id }
-                    }
-
-                    for (index, player) in lastPlayers.enumerated() {
-                        if index < players.count {
-                            players[index] = player
-                        }
-                    }
-                } else {
-                    // First time - just set current user as player 1
-                    if let currentUser = allPlayers.first(where: {
-                        $0.appleUserID == authManager.userID
-                    }) {
-                        print("Setting current user: \(currentUser.name)")
-                        players[0] = currentUser
-                    }
-                }
-
-                print("👥 NewMatchView: Initial players array: \(players.map { $0?.name ?? "nil" })")
             } catch {
-                print("👥 NewMatchView: Error loading players: \(error.localizedDescription)")
-                Analytics.logEvent(
-                    "loading_players_error",
-                    parameters: [
-                        "error": error.localizedDescription
-                    ])
                 self.error = error
                 showingError = true
+                #if canImport(FirebaseAnalytics)
+                    Analytics.logEvent(
+                        "player_load_error",
+                        parameters: [
+                            "error": error.localizedDescription
+                        ])
+                #endif
             }
-            isLoading = false
         }
 
         private func saveMatch() {
+            guard let game = selectedGame ?? self.game else { return }
+
+            var match = Match(createdByID: authManager.userID, game: game)
+            match.playerIDs = players.compactMap { $0?.id }
+            match.playerOrder = match.playerIDs
+            match.isMultiplayer = players.count > 1
+
+            if game.isBinaryScore {
+                // For binary score games, the winner is the first player
+                match.winnerID = match.playerIDs.first
+                match.scores = Array(repeating: 0, count: players.count)
+                match.scores[0] = 1
+            } else if game.supportsMultipleRounds {
+                // For multiple rounds, calculate total scores
+                let totalScores = rounds.reduce(Array(repeating: 0, count: players.count)) {
+                    totals, roundScores in
+                    zip(totals, roundScores.map { $0 ?? 0 }).map(+)
+                }
+                match.scores = totalScores
+                match.rounds = rounds.map { roundScores in
+                    roundScores.map { $0 ?? 0 }
+                }
+
+                // Set winner based on highest total score
+                if let maxScore = totalScores.max(),
+                    let winnerIndex = totalScores.firstIndex(of: maxScore)
+                {
+                    match.winnerID = match.playerIDs[winnerIndex]
+                }
+            } else {
+                // For single round games
+                match.scores = scores.map { $0 ?? 0 }
+                if let maxScore = match.scores.max(),
+                    let winnerIndex = match.scores.firstIndex(of: maxScore)
+                {
+                    match.winnerID = match.playerIDs[winnerIndex]
+                }
+            }
+
+            #if canImport(FirebaseAnalytics)
+                Analytics.logEvent(
+                    "match_saved",
+                    parameters: [
+                        "game_title": game.title,
+                        "player_count": match.playerIDs.count,
+                        "is_multiplayer": match.isMultiplayer ? "true" : "false",
+                        "is_binary_score": game.isBinaryScore ? "true" : "false",
+                        "has_multiple_rounds": game.supportsMultipleRounds ? "true" : "false",
+                        "round_count": rounds.count,
+                    ])
+            #endif
+
             Task {
                 do {
-                    guard let game = selectedGame else { return }
-                    var match = Match(date: Date(), createdByID: authManager.userID, game: game)
-                    let filledPlayers = players.compactMap { $0 }
-
-                    // Save the current players and count
-                    setLastMatchPlayerIDs(filledPlayers.map { $0.id })
-                    lastMatchPlayerCount = players.count
-
-                    // Use the existing player IDs directly
-                    match.playerIDs = filledPlayers.map { $0.id }
-                    match.playerOrder = match.playerIDs
-                    match.status = selectedWinnerIndex != nil ? "completed" : "active"
-
-                    if game.isBinaryScore {
-                        if let winnerIndex = selectedWinnerIndex,
-                            let winner = players[winnerIndex]
-                        {
-                            match.winnerID = winner.id
-                        }
-                    } else {
-                        // For games with scores, find the winner based on highest score
-                        if let maxScoreIndex = scores.enumerated()
-                            .max(by: { $0.element < $1.element })?.offset,
-                            let winner = players[maxScoreIndex]
-                        {
-                            match.winnerID = winner.id
-                        }
-                        match.scores = scores
-                    }
-
                     try await cloudKitManager.saveMatch(match)
                     onMatchSaved?(match)
                     dismiss()
                 } catch {
-                    print("Error saving match: \(error.localizedDescription)")
                     self.error = error
                     showingError = true
+                    #if canImport(FirebaseAnalytics)
+                        Analytics.logEvent(
+                            "match_save_error",
+                            parameters: [
+                                "error": error.localizedDescription
+                            ])
+                    #endif
                 }
             }
         }

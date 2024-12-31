@@ -19,6 +19,7 @@ import Foundation
         var game: Game?
         var recordID: CKRecord.ID?
         var scores: [Int]
+        var rounds: [[Int]]  // Array of score arrays, one for each round
 
         init(date: Date = Date(), createdByID: String? = nil, game: Game? = nil) {
             self.id = UUID().uuidString
@@ -36,6 +37,7 @@ import Foundation
             self.game = game
             self.recordID = nil
             self.scores = []
+            self.rounds = []
         }
 
         init?(from record: CKRecord) {
@@ -96,6 +98,14 @@ import Foundation
             } else {
                 self.scores = []
             }
+
+            if let roundsData = record.value(forKey: "rounds") as? Data,
+                let rounds = try? JSONDecoder().decode([[Int]].self, from: roundsData)
+            {
+                self.rounds = rounds
+            } else {
+                self.rounds = []
+            }
         }
 
         func toRecord() -> CKRecord {
@@ -131,6 +141,10 @@ import Foundation
 
             if let scoresData = try? JSONEncoder().encode(scores) {
                 record.setValue(scoresData, forKey: "scores")
+            }
+
+            if let roundsData = try? JSONEncoder().encode(rounds) {
+                record.setValue(roundsData, forKey: "rounds")
             }
 
             return record

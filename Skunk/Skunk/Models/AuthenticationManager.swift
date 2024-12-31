@@ -1,8 +1,11 @@
 import AuthenticationServices
 import CloudKit
-import FirebaseAnalytics
 import Foundation
 import SwiftUI
+
+#if canImport(FirebaseAnalytics)
+    import FirebaseAnalytics
+#endif
 
 #if canImport(UIKit)
     import UIKit
@@ -81,11 +84,13 @@ import SwiftUI
                     as? ASAuthorizationAppleIDCredential
             else {
                 print("🔴 AuthenticationManager: Invalid credential type")
-                Analytics.logEvent(
-                    "sign_in_error",
-                    parameters: [
-                        "error_type": "invalid_credential"
-                    ])
+                #if canImport(FirebaseAnalytics)
+                    Analytics.logEvent(
+                        "sign_in_error",
+                        parameters: [
+                            "error_type": "invalid_credential"
+                        ])
+                #endif
                 throw AuthenticationError.invalidCredential
             }
 
@@ -115,11 +120,13 @@ import SwiftUI
                     userID: appleIDCredential.user)
                 {
                     print("🟢 AuthenticationManager: Found existing player")
-                    Analytics.logEvent(
-                        "player_found",
-                        parameters: [
-                            "player_name": player.name
-                        ])
+                    #if canImport(FirebaseAnalytics)
+                        Analytics.logEvent(
+                            "player_found",
+                            parameters: [
+                                "player_name": player.name
+                            ])
+                    #endif
                     // Update existing player if needed
                     if let fullName = appleIDCredential.fullName,
                         let givenName = fullName.givenName,
@@ -132,20 +139,24 @@ import SwiftUI
                             print(
                                 "🟢 AuthenticationManager: Successfully updated player name to \(updatedPlayer.name)"
                             )
-                            Analytics.logEvent(
-                                "player_name_updated",
-                                parameters: [
-                                    "new_name": updatedPlayer.name
-                                ])
+                            #if canImport(FirebaseAnalytics)
+                                Analytics.logEvent(
+                                    "player_name_updated",
+                                    parameters: [
+                                        "new_name": updatedPlayer.name
+                                    ])
+                            #endif
                         } catch {
                             print(
                                 "🔴 AuthenticationManager: Failed to update player name: \(error.localizedDescription)"
                             )
-                            Analytics.logEvent(
-                                "player_update_error",
-                                parameters: [
-                                    "error_description": error.localizedDescription
-                                ])
+                            #if canImport(FirebaseAnalytics)
+                                Analytics.logEvent(
+                                    "player_update_error",
+                                    parameters: [
+                                        "error_description": error.localizedDescription
+                                    ])
+                            #endif
                         }
                     }
                 } else {
@@ -168,23 +179,27 @@ import SwiftUI
                     do {
                         try await CloudKitManager.shared.savePlayer(newPlayer)
                         print("🟢 AuthenticationManager: Successfully created new player")
-                        Analytics.logEvent(
-                            "new_player_created",
-                            parameters: [
-                                "player_name": name
-                            ])
+                        #if canImport(FirebaseAnalytics)
+                            Analytics.logEvent(
+                                "new_player_created",
+                                parameters: [
+                                    "player_name": name
+                                ])
+                        #endif
                     } catch let error as CKError {
                         print(
                             "🔴 AuthenticationManager: CloudKit error creating player: \(error.localizedDescription)"
                         )
                         print("🔴 AuthenticationManager: Error code: \(error.code.rawValue)")
-                        Analytics.logEvent(
-                            "player_creation_error",
-                            parameters: [
-                                "error_type": "cloudkit",
-                                "error_code": String(error.code.rawValue),
-                                "error_description": error.localizedDescription,
-                            ])
+                        #if canImport(FirebaseAnalytics)
+                            Analytics.logEvent(
+                                "player_creation_error",
+                                parameters: [
+                                    "error_type": "cloudkit",
+                                    "error_code": String(error.code.rawValue),
+                                    "error_description": error.localizedDescription,
+                                ])
+                        #endif
                         if error.code == .serverRejectedRequest {
                             print(
                                 "🔴 AuthenticationManager: Server rejected the request. This might be a CloudKit permissions issue."
@@ -195,12 +210,14 @@ import SwiftUI
                         print(
                             "🔴 AuthenticationManager: Unknown error creating player: \(error.localizedDescription)"
                         )
-                        Analytics.logEvent(
-                            "player_creation_error",
-                            parameters: [
-                                "error_type": "unknown",
-                                "error_description": error.localizedDescription,
-                            ])
+                        #if canImport(FirebaseAnalytics)
+                            Analytics.logEvent(
+                                "player_creation_error",
+                                parameters: [
+                                    "error_type": "unknown",
+                                    "error_description": error.localizedDescription,
+                                ])
+                        #endif
                         throw error
                     }
                 }
@@ -209,12 +226,14 @@ import SwiftUI
                     "🔴 AuthenticationManager: CloudKit error in player handling: \(error.localizedDescription)"
                 )
                 print("🔴 AuthenticationManager: Error code: \(error.code.rawValue)")
-                Analytics.logEvent(
-                    "cloudkit_error",
-                    parameters: [
-                        "error_code": String(error.code.rawValue),
-                        "error_description": error.localizedDescription,
-                    ])
+                #if canImport(FirebaseAnalytics)
+                    Analytics.logEvent(
+                        "cloudkit_error",
+                        parameters: [
+                            "error_code": String(error.code.rawValue),
+                            "error_description": error.localizedDescription,
+                        ])
+                #endif
                 if error.code == .networkFailure {
                     throw AuthenticationError.networkError
                 } else if error.code == .serverRejectedRequest {
@@ -226,16 +245,20 @@ import SwiftUI
                 print(
                     "🔴 AuthenticationManager: Error in player handling: \(error.localizedDescription)"
                 )
-                Analytics.logEvent(
-                    "authentication_error",
-                    parameters: [
-                        "error_description": error.localizedDescription
-                    ])
+                #if canImport(FirebaseAnalytics)
+                    Analytics.logEvent(
+                        "authentication_error",
+                        parameters: [
+                            "error_description": error.localizedDescription
+                        ])
+                #endif
                 throw error
             }
 
             isAuthenticated = true
-            Analytics.logEvent("sign_in_success", parameters: nil)
+            #if canImport(FirebaseAnalytics)
+                Analytics.logEvent("sign_in_success", parameters: nil)
+            #endif
         }
 
         func signOut() async {

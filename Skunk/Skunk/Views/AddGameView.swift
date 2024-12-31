@@ -8,6 +8,7 @@
 
         @State private var title = ""
         @State private var isBinaryScore = true
+        @State private var supportsMultipleRounds = false
         @State private var showingError = false
         @State private var errorMessage = ""
         @State private var minPlayers = 2
@@ -28,6 +29,9 @@
                         )
                     )
                     .toggleStyle(.switch)
+
+                    Toggle("Multiple Rounds", isOn: $supportsMultipleRounds)
+                        .toggleStyle(.switch)
 
                     Section("Player Count") {
                         Stepper(
@@ -68,6 +72,7 @@
             var game = Game(
                 title: title,
                 isBinaryScore: isBinaryScore,
+                supportsMultipleRounds: supportsMultipleRounds,
                 supportedPlayerCounts: supportedCounts,
                 createdByID: authManager.userID
             )
