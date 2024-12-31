@@ -151,8 +151,14 @@ import SwiftUI
                 }
 
                 if !match.isMultiplayer || match.status == "completed" {
-                    if let currentPlayer = currentPlayer, match.playerIDs.contains(currentPlayer.id)
-                    {
+                    // Check if user is admin or participated in the match
+                    let adminEmail = "valdivia.gabriel@gmail.com"
+                    let isAdmin = currentPlayer?.appleUserID == adminEmail
+                    let canDelete =
+                        isAdmin || match.createdByID == currentUserID
+                        || (currentPlayer != nil && match.playerIDs.contains(currentPlayer!.id))
+
+                    if canDelete {
                         Section {
                             Button(role: .destructive) {
                                 showingDeleteConfirmation = true

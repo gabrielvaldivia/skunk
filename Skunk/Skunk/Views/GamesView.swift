@@ -186,6 +186,9 @@ import SwiftUI
             isLoading = true
             do {
                 games = try await cloudKitManager.fetchGames()
+                games.sort {
+                    $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
+                }
             } catch {
                 self.error = error
                 showingError = true
@@ -196,10 +199,40 @@ import SwiftUI
         private func deleteGames(at offsets: IndexSet) {
             Task {
                 do {
+                    // Get the current user's ID
+                    guard let currentUserID = authManager.userID else {
+                        self.error = NSError(
+                            domain: "", code: 0,
+                            userInfo: [
+                                NSLocalizedDescriptionKey: "You must be signed in to delete games."
+                            ])
+                        showingError = true
+                        return
+                    }
+
+                    // Check if the user is the admin (you)
+                    let adminEmail = "valdivia.gabriel@gmail.com"
+                    let isAdmin =
+                        await cloudKitManager.getCurrentUser(withID: currentUserID)?.appleUserID
+                        == adminEmail
+
                     for index in offsets {
                         let game = games[index]
-                        try await cloudKitManager.deleteGame(game)
-                        games.remove(at: index)
+
+                        // Allow deletion if user is admin or created the game
+                        if isAdmin || game.createdByID == currentUserID {
+                            try await cloudKitManager.deleteGame(game)
+                            games.remove(at: index)
+                        } else {
+                            self.error = NSError(
+                                domain: "", code: 0,
+                                userInfo: [
+                                    NSLocalizedDescriptionKey:
+                                        "You can only delete games that you created."
+                                ])
+                            showingError = true
+                            return
+                        }
                     }
                 } catch {
                     self.error = error
