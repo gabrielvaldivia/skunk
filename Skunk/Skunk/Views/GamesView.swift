@@ -124,6 +124,7 @@ import SwiftUI
 
     struct GamesView: View {
         @EnvironmentObject private var cloudKitManager: CloudKitManager
+        @EnvironmentObject private var authManager: AuthenticationManager
         @State private var games: [Game] = []
         @State private var showingAddGame = false
         @State private var isLoading = false
