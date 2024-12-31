@@ -23,23 +23,30 @@
                             .foregroundStyle(.secondary)
                     } else {
                         ForEach(sortedMatches) { match in
-                            ActivityRow(match: match)
+                            ZStack {
+                                NavigationLink(destination: MatchDetailView(match: match)) {
+                                    EmptyView()
+                                }
+                                .opacity(0)
+
+                                ActivityRow(match: match)
+                            }
                         }
                     }
                 }
-                .listStyle(.plain)
-                .navigationTitle("Activity")
-                .refreshable {
-                    await loadMatches()
-                }
-                .task {
-                    await loadMatches()
-                }
-                .alert("Error", isPresented: $showingError) {
-                    Button("OK", role: .cancel) {}
-                } message: {
-                    Text(error?.localizedDescription ?? "An unknown error occurred")
-                }
+            }
+            .listStyle(.plain)
+            .navigationTitle("Activity")
+            .refreshable {
+                await loadMatches()
+            }
+            .task {
+                await loadMatches()
+            }
+            .alert("Error", isPresented: $showingError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(error?.localizedDescription ?? "An unknown error occurred")
             }
         }
 

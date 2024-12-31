@@ -348,11 +348,16 @@ import SwiftUI
         }
 
         private var playersView: some View {
-            List(allPlayers) { player in
-                NavigationLink {
-                    PlayerDetailView(player: player)
-                } label: {
-                    PlayerRow(player: player, group: nil)
+            List {
+                ForEach(allPlayers) { player in
+                    ZStack {
+                        NavigationLink(destination: PlayerDetailView(player: player)) {
+                            EmptyView()
+                        }
+                        .opacity(0)
+
+                        PlayerRow(player: player, group: nil)
+                    }
                 }
             }
             .listStyle(.plain)
