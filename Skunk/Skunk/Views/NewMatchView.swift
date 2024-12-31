@@ -48,7 +48,10 @@ extension Sequence {
 
         private func validateScores() -> Bool {
             if let game = selectedGame ?? self.game {
-                if game.supportsMultipleRounds {
+                if game.isBinaryScore {
+                    // For binary score games, check that exactly one player is marked as winner
+                    return scores.count == players.count && scores.filter { $0 == 1 }.count == 1
+                } else if game.supportsMultipleRounds {
                     // For multiple rounds, check that we have at least one round
                     return !rounds.isEmpty
                         && rounds.allSatisfy { roundScores in
@@ -295,21 +298,35 @@ extension Sequence {
                                 .clipShape(Circle())
                             Text(player.name)
                                 .foregroundColor(.primary)
-                        } else {
-                            Circle()
-                                .fill(Color(.systemGray5))
-                                .frame(width: 40, height: 40)
-                            Text("Select Player")
+                            Image(systemName: "chevron.up.chevron.down")
                                 .foregroundColor(.secondary)
+                                .font(.footnote)
+                        } else {
+                            Text("Player \(index + 1)")
+                                .foregroundColor(.secondary)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .foregroundColor(.secondary)
+                                .font(.footnote)
                         }
-                        Spacer()
-                        Image(systemName: "chevron.up.chevron.down")
-                            .foregroundColor(.secondary)
-                            .font(.footnote)
                     }
                 }
 
-                if !currentGame.isBinaryScore {
+                Spacer()
+
+                if currentGame.isBinaryScore {
+                    if let player = players[index] {
+                        Image(systemName: "crown.fill")
+                            .foregroundStyle(scores[index] == 1 ? .yellow : .gray.opacity(0.3))
+                            .onTapGesture {
+                                // Reset all scores to 0
+                                for i in scores.indices {
+                                    scores[i] = 0
+                                }
+                                // Set this player as winner
+                                scores[index] = 1
+                            }
+                    }
+                } else if !currentGame.isBinaryScore {
                     if currentGame.supportsMultipleRounds {
                         if !rounds.isEmpty {
                             TextField(
@@ -563,10 +580,11 @@ extension Sequence {
             match.isMultiplayer = players.count > 1
 
             if game.isBinaryScore {
-                // For binary score games, the winner is the first player
-                match.winnerID = match.playerIDs.first
-                match.scores = Array(repeating: 0, count: players.count)
-                match.scores[0] = 1
+                // For binary score games, find the winner from scores array
+                if let winnerIndex = scores.firstIndex(of: 1) {
+                    match.winnerID = match.playerIDs[winnerIndex]
+                }
+                match.scores = scores.map { $0 ?? 0 }
             } else if game.supportsMultipleRounds {
                 // For multiple rounds, calculate total scores
                 let totalScores = rounds.reduce(Array(repeating: 0, count: players.count)) {

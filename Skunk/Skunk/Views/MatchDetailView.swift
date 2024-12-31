@@ -74,6 +74,10 @@ import SwiftUI
                                                     .font(.body)
                                             }
                                             Spacer()
+                                            Text("\(score)")
+                                                .font(.body)
+                                                .foregroundStyle(.secondary)
+
                                             // Show crown for round winner
                                             if let maxScore = roundScores.max(),
                                                 score == maxScore,
@@ -82,9 +86,6 @@ import SwiftUI
                                                 Image(systemName: "crown.fill")
                                                     .foregroundStyle(.yellow)
                                             }
-                                            Text("\(score)")
-                                                .font(.body)
-                                                .foregroundStyle(.secondary)
                                         }
                                         .padding(.vertical, 8)
                                     }
@@ -114,34 +115,29 @@ import SwiftUI
                                                 .font(.body)
                                         }
                                         Spacer()
+                                        Text("\(totalScore)")
+                                            .font(.body)
+                                            .foregroundStyle(.secondary)
 
-                                        if match.winnerID == player.id {
+                                        if match.status == "completed" {
+                                            if match.winnerID == player.id {
+                                                Image(systemName: "crown.fill")
+                                                    .foregroundStyle(.yellow)
+                                            }
+                                        } else {
                                             Image(systemName: "crown.fill")
-                                                .foregroundStyle(.yellow)
-                                                .onTapGesture {
-                                                    if match.status != "completed" {
-                                                        var updatedMatch = match
-                                                        updatedMatch.winnerID = nil
-                                                        updatedMatch.status = "active"
-                                                        Task {
-                                                            do {
-                                                                try await cloudKitManager.saveMatch(
-                                                                    updatedMatch)
-                                                                match = updatedMatch
-                                                            } catch {
-                                                                self.error = error
-                                                                showingError = true
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                        } else if match.status != "completed" {
-                                            Image(systemName: "crown.fill")
-                                                .foregroundStyle(.gray.opacity(0))
+                                                .foregroundStyle(
+                                                    match.winnerID == player.id
+                                                        ? .yellow : .gray.opacity(0.3)
+                                                )
                                                 .onTapGesture {
                                                     var updatedMatch = match
-                                                    updatedMatch.winnerID = player.id
-                                                    updatedMatch.status = "completed"
+                                                    updatedMatch.winnerID =
+                                                        match.winnerID == player.id
+                                                        ? nil : player.id
+                                                    updatedMatch.status =
+                                                        updatedMatch.winnerID != nil
+                                                        ? "completed" : "active"
                                                     Task {
                                                         do {
                                                             try await cloudKitManager.saveMatch(
@@ -154,10 +150,6 @@ import SwiftUI
                                                     }
                                                 }
                                         }
-
-                                        Text("\(totalScore)")
-                                            .font(.body)
-                                            .foregroundStyle(.secondary)
                                     }
                                     .padding(.vertical, 8)
                                 }
