@@ -77,6 +77,9 @@ import SwiftUI
                     ("supportedPlayerCounts", Data() as CKRecordValue),
                     ("createdByID", "" as CKRecordValue),
                     ("id", "" as CKRecordValue),
+                    ("countAllScores", 0 as CKRecordValue),
+                    ("countLosersOnly", 0 as CKRecordValue),
+                    ("highestScoreWins", 0 as CKRecordValue),
                 ]
 
                 let playerFields: [(String, CKRecordValue)] = [

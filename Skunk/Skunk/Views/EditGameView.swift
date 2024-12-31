@@ -12,6 +12,9 @@
         @State private var errorMessage = ""
         @State private var minPlayers: Int
         @State private var maxPlayers: Int
+        @State private var countAllScores: Bool
+        @State private var countLosersOnly: Bool
+        @State private var highestScoreWins: Bool
         @State private var showingDeleteConfirmation = false
         @State private var creatorName: String?
 
@@ -22,6 +25,9 @@
             _supportsMultipleRounds = State(initialValue: game.supportsMultipleRounds)
             _minPlayers = State(initialValue: game.supportedPlayerCounts.min() ?? 2)
             _maxPlayers = State(initialValue: game.supportedPlayerCounts.max() ?? 4)
+            _countAllScores = State(initialValue: game.countAllScores)
+            _countLosersOnly = State(initialValue: game.countLosersOnly)
+            _highestScoreWins = State(initialValue: game.highestScoreWins)
         }
 
         private var formattedDate: String {
@@ -35,29 +41,17 @@
         var body: some View {
             NavigationStack {
                 Form {
-                    Section {
-                        TextField("Game Title", text: $title)
-                    }
-
-                    Toggle(
-                        "Track Score",
-                        isOn: Binding(
-                            get: { !isBinaryScore },
-                            set: { isBinaryScore = !$0 }
-                        )
+                    GameSettingsView(
+                        title: $title,
+                        isBinaryScore: $isBinaryScore,
+                        supportsMultipleRounds: $supportsMultipleRounds,
+                        minPlayers: $minPlayers,
+                        maxPlayers: $maxPlayers,
+                        countAllScores: $countAllScores,
+                        countLosersOnly: $countLosersOnly,
+                        highestScoreWins: $highestScoreWins,
+                        showTitle: true
                     )
-                    .toggleStyle(.switch)
-
-                    Toggle("Multiple Rounds", isOn: $supportsMultipleRounds)
-                        .toggleStyle(.switch)
-
-                    Section("Player Count") {
-                        Stepper(
-                            "Minimum \(minPlayers) Players", value: $minPlayers, in: 1...maxPlayers)
-                        Stepper(
-                            "Maximum \(maxPlayers) Players", value: $maxPlayers, in: minPlayers...99
-                        )
-                    }
 
                     Section {
                         Button(role: .destructive) {
@@ -123,6 +117,9 @@
             updatedGame.isBinaryScore = isBinaryScore
             updatedGame.supportsMultipleRounds = supportsMultipleRounds
             updatedGame.supportedPlayerCounts = Set(minPlayers...maxPlayers)
+            updatedGame.countAllScores = !isBinaryScore ? countAllScores : false
+            updatedGame.countLosersOnly = !isBinaryScore ? countLosersOnly : false
+            updatedGame.highestScoreWins = !isBinaryScore ? highestScoreWins : true
 
             Task {
                 do {

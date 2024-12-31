@@ -9,6 +9,9 @@ import Foundation
         var supportsMultipleRounds: Bool
         var supportedPlayerCounts: Set<Int>
         var createdByID: String?
+        var countAllScores: Bool
+        var countLosersOnly: Bool
+        var highestScoreWins: Bool
         var record: CKRecord?
         var matches: [Match]?
         var recordID: CKRecord.ID?
@@ -16,7 +19,9 @@ import Foundation
 
         init(
             title: String, isBinaryScore: Bool, supportsMultipleRounds: Bool = false,
-            supportedPlayerCounts: Set<Int>, createdByID: String? = nil
+            supportedPlayerCounts: Set<Int>, createdByID: String? = nil,
+            countAllScores: Bool = true, countLosersOnly: Bool = false,
+            highestScoreWins: Bool = true
         ) {
             self.id = UUID().uuidString
             self.title = title
@@ -24,6 +29,9 @@ import Foundation
             self.supportsMultipleRounds = supportsMultipleRounds
             self.supportedPlayerCounts = supportedPlayerCounts
             self.createdByID = createdByID
+            self.countAllScores = countAllScores
+            self.countLosersOnly = countLosersOnly
+            self.highestScoreWins = highestScoreWins
             self.matches = []
             self.recordID = nil
             self.creationDate = Date()
@@ -38,6 +46,9 @@ import Foundation
             self.isBinaryScore = record.value(forKey: "isBinaryScore") as? Bool ?? false
             self.supportsMultipleRounds =
                 record.value(forKey: "supportsMultipleRounds") as? Bool ?? false
+            self.countAllScores = record.value(forKey: "countAllScores") as? Bool ?? true
+            self.countLosersOnly = record.value(forKey: "countLosersOnly") as? Bool ?? false
+            self.highestScoreWins = record.value(forKey: "highestScoreWins") as? Bool ?? true
             if let countsData = record.value(forKey: "supportedPlayerCounts") as? Data,
                 let counts = try? JSONDecoder().decode([Int].self, from: countsData)
             {
@@ -64,6 +75,9 @@ import Foundation
             record.setValue(title, forKey: "title")
             record.setValue(isBinaryScore, forKey: "isBinaryScore")
             record.setValue(supportsMultipleRounds, forKey: "supportsMultipleRounds")
+            record.setValue(countAllScores, forKey: "countAllScores")
+            record.setValue(countLosersOnly, forKey: "countLosersOnly")
+            record.setValue(highestScoreWins, forKey: "highestScoreWins")
             if let countsData = try? JSONEncoder().encode(Array(supportedPlayerCounts)) {
                 record.setValue(countsData, forKey: "supportedPlayerCounts")
             }

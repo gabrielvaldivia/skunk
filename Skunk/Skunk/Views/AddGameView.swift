@@ -13,33 +13,24 @@
         @State private var errorMessage = ""
         @State private var minPlayers = 2
         @State private var maxPlayers = 4
-        @FocusState private var isTitleFocused: Bool
+        @State private var countAllScores = true
+        @State private var countLosersOnly = false
+        @State private var highestScoreWins = true
 
         var body: some View {
             NavigationStack {
                 Form {
-                    TextField("Game Title", text: $title)
-                        .focused($isTitleFocused)
-
-                    Toggle(
-                        "Track Score",
-                        isOn: Binding(
-                            get: { !isBinaryScore },
-                            set: { isBinaryScore = !$0 }
-                        )
+                    GameSettingsView(
+                        title: $title,
+                        isBinaryScore: $isBinaryScore,
+                        supportsMultipleRounds: $supportsMultipleRounds,
+                        minPlayers: $minPlayers,
+                        maxPlayers: $maxPlayers,
+                        countAllScores: $countAllScores,
+                        countLosersOnly: $countLosersOnly,
+                        highestScoreWins: $highestScoreWins,
+                        autofocusTitle: true
                     )
-                    .toggleStyle(.switch)
-
-                    Toggle("Multiple Rounds", isOn: $supportsMultipleRounds)
-                        .toggleStyle(.switch)
-
-                    Section("Player Count") {
-                        Stepper(
-                            "Minimum \(minPlayers) Players", value: $minPlayers, in: 1...maxPlayers)
-                        Stepper(
-                            "Maximum \(maxPlayers) Players", value: $maxPlayers, in: minPlayers...99
-                        )
-                    }
                 }
                 .navigationTitle("New Game")
                 .navigationBarTitleDisplayMode(.inline)
@@ -61,9 +52,6 @@
                 } message: {
                     Text(errorMessage)
                 }
-                .onAppear {
-                    isTitleFocused = true
-                }
             }
         }
 
@@ -74,7 +62,10 @@
                 isBinaryScore: isBinaryScore,
                 supportsMultipleRounds: supportsMultipleRounds,
                 supportedPlayerCounts: supportedCounts,
-                createdByID: authManager.userID
+                createdByID: authManager.userID,
+                countAllScores: !isBinaryScore ? countAllScores : false,
+                countLosersOnly: !isBinaryScore ? countLosersOnly : false,
+                highestScoreWins: !isBinaryScore ? highestScoreWins : true
             )
 
             Task {

@@ -346,40 +346,68 @@ extension Sequence {
                 } else if !currentGame.isBinaryScore {
                     if currentGame.supportsMultipleRounds {
                         if !rounds.isEmpty {
+                            let score = rounds[0][index] ?? 0
+                            let scores = rounds[0].compactMap { $0 }
+                            HStack(spacing: 8) {
+                                if score > 0 && !scores.isEmpty {
+                                    let isWinner =
+                                        currentGame.highestScoreWins
+                                        ? score == scores.max() : score == scores.min()
+                                    if isWinner {
+                                        Image(systemName: "crown.fill")
+                                            .foregroundStyle(.yellow)
+                                    }
+                                }
+                                TextField(
+                                    "0",
+                                    text: Binding(
+                                        get: { rounds[0][index].map(String.init) ?? "" },
+                                        set: { str in
+                                            if let value = Int(str) {
+                                                rounds[0][index] = value
+                                            } else if str.isEmpty {
+                                                rounds[0][index] = nil
+                                            }
+                                        }
+                                    )
+                                )
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.trailing)
+                                .fixedSize(horizontal: true, vertical: false)
+                                .frame(minWidth: 10)
+                            }
+                        }
+                    } else {
+                        let score = scores[index] ?? 0
+                        let allScores = scores.compactMap { $0 }
+                        HStack(spacing: 8) {
+                            if score > 0 && !allScores.isEmpty {
+                                let isWinner =
+                                    currentGame.highestScoreWins
+                                    ? score == allScores.max() : score == allScores.min()
+                                if isWinner {
+                                    Image(systemName: "crown.fill")
+                                        .foregroundStyle(.yellow)
+                                }
+                            }
                             TextField(
-                                "Score",
+                                "0",
                                 text: Binding(
-                                    get: { rounds[0][index].map(String.init) ?? "" },
+                                    get: { scores[index].map(String.init) ?? "" },
                                     set: { str in
                                         if let value = Int(str) {
-                                            rounds[0][index] = value
+                                            scores[index] = value
                                         } else if str.isEmpty {
-                                            rounds[0][index] = nil
+                                            scores[index] = nil
                                         }
                                     }
                                 )
                             )
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
-                            .frame(width: 60)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .frame(minWidth: 10)
                         }
-                    } else {
-                        TextField(
-                            "Score",
-                            text: Binding(
-                                get: { scores[index].map(String.init) ?? "" },
-                                set: { str in
-                                    if let value = Int(str) {
-                                        scores[index] = value
-                                    } else if str.isEmpty {
-                                        scores[index] = nil
-                                    }
-                                }
-                            )
-                        )
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 60)
                     }
                 }
             }
@@ -409,6 +437,8 @@ extension Sequence {
 
         private func roundSection(index: Int, currentGame: Game) -> some View {
             Section("Round \(index + 1)") {
+                let roundScores = rounds[index]
+
                 ForEach(players.indices, id: \.self) { playerIndex in
                     if let player = players[playerIndex] {
                         HStack {
@@ -417,22 +447,39 @@ extension Sequence {
                             Text(player.name)
                             Spacer()
                             if !currentGame.isBinaryScore {
-                                TextField(
-                                    "Score",
-                                    text: Binding(
-                                        get: { rounds[index][playerIndex].map(String.init) ?? "" },
-                                        set: { str in
-                                            if let value = Int(str) {
-                                                rounds[index][playerIndex] = value
-                                            } else if str.isEmpty {
-                                                rounds[index][playerIndex] = nil
-                                            }
+                                let currentScore = roundScores[playerIndex] ?? 0
+                                let scores = roundScores.compactMap { $0 }
+                                HStack(spacing: 8) {
+                                    if currentScore > 0 && !scores.isEmpty {
+                                        let isWinner =
+                                            currentGame.highestScoreWins
+                                            ? currentScore == scores.max()
+                                            : currentScore == scores.min()
+                                        if isWinner {
+                                            Image(systemName: "crown.fill")
+                                                .foregroundStyle(.yellow)
                                         }
+                                    }
+                                    TextField(
+                                        "0",
+                                        text: Binding(
+                                            get: {
+                                                rounds[index][playerIndex].map(String.init) ?? ""
+                                            },
+                                            set: { str in
+                                                if let value = Int(str) {
+                                                    rounds[index][playerIndex] = value
+                                                } else if str.isEmpty {
+                                                    rounds[index][playerIndex] = nil
+                                                }
+                                            }
+                                        )
                                     )
-                                )
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
-                                .frame(width: 60)
+                                    .keyboardType(.numberPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .fixedSize(horizontal: true, vertical: false)
+                                    .frame(minWidth: 10)
+                                }
                             }
                         }
                     }
@@ -446,13 +493,31 @@ extension Sequence {
                     totals, roundScores in
                     zip(totals, roundScores.map { $0 ?? 0 }).map(+)
                 }
+
                 ForEach(players.indices, id: \.self) { index in
-                    if let player = players[index] {
+                    if let player = players[index],
+                        let game = selectedGame ?? self.game
+                    {
                         HStack {
                             Text(player.name)
                             Spacer()
-                            Text("\(totalScores[index])")
-                                .foregroundStyle(.secondary)
+                            HStack(spacing: 8) {
+                                let score = totalScores[index]
+                                if score > 0 {
+                                    let isWinner =
+                                        game.highestScoreWins
+                                        ? score == totalScores.max() : score == totalScores.min()
+                                    if isWinner {
+                                        Image(systemName: "crown.fill")
+                                            .foregroundStyle(.yellow)
+                                    }
+                                }
+                                Text("\(totalScores[index])")
+                                    .foregroundStyle(.secondary)
+                                    .monospacedDigit()
+                                    .fixedSize(horizontal: true, vertical: false)
+                                    .frame(minWidth: 10)
+                            }
                         }
                     }
                 }
@@ -485,6 +550,58 @@ extension Sequence {
             .background(Color(.systemGroupedBackground))
         }
 
+        private var currentWinner: (player: Player, score: Int)? {
+            guard let game = selectedGame ?? self.game,
+                !players.contains(nil)
+            else { return nil }
+
+            let validPlayers = players.compactMap { $0 }
+
+            if game.isBinaryScore {
+                // For binary score, find the player with score of 1
+                if let winnerIndex = scores.firstIndex(where: { $0 == 1 }),
+                    let winner = players[winnerIndex]
+                {
+                    return (winner, 1)
+                }
+            } else if game.supportsMultipleRounds {
+                // For multiple rounds, calculate total scores
+                var playerScores: [(player: Player, score: Int)] = []
+                for (index, player) in validPlayers.enumerated() {
+                    let totalScore = rounds.reduce(0) { total, roundScores in
+                        total + (roundScores[index] ?? 0)
+                    }
+                    playerScores.append((player, totalScore))
+                }
+
+                // Sort by score (highest or lowest depending on game rules)
+                playerScores.sort { p1, p2 in
+                    game.highestScoreWins ? p1.score > p2.score : p1.score < p2.score
+                }
+
+                // Return the first player (highest or lowest score)
+                return playerScores.first
+            } else {
+                // For single round, find the player with highest/lowest score
+                var playerScores: [(player: Player, score: Int)] = []
+                for (index, player) in validPlayers.enumerated() {
+                    if let score = scores[index] {
+                        playerScores.append((player, score))
+                    }
+                }
+
+                // Sort by score (highest or lowest depending on game rules)
+                playerScores.sort { p1, p2 in
+                    game.highestScoreWins ? p1.score > p2.score : p1.score < p2.score
+                }
+
+                // Return the first player (highest or lowest score)
+                return playerScores.first
+            }
+
+            return nil
+        }
+
         var body: some View {
             NavigationStack {
                 Form {
@@ -504,6 +621,7 @@ extension Sequence {
                             }
                         }
                     }
+
                 }
                 .navigationTitle("New Match")
                 .navigationBarTitleDisplayMode(.inline)
