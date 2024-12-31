@@ -864,37 +864,35 @@ import SwiftUI
                 // Get the current user ID
                 let userID = await self.userID
 
-                // Create a predicate that includes groups created by the user or containing the user's player
-                let predicate: NSPredicate
-                if let userID = userID,
-                    let currentPlayer = getCurrentUser(withID: userID)
-                {
-                    let playerIDsData = try JSONEncoder().encode([currentPlayer.id])
-                    predicate = NSPredicate(
-                        format: "createdByID == %@ OR playerIDs CONTAINS %@",
-                        userID, playerIDsData as CVarArg
-                    )
+                // Create a predicate that includes groups created by the user
+                if let userID = userID {
+                    let predicate = NSPredicate(format: "createdByID == %@", userID)
+                    let query = CKQuery(recordType: "PlayerGroup", predicate: predicate)
+                    let (results, _) = try await database.records(matching: query)
+                    let groups = results.compactMap { result -> PlayerGroup? in
+                        guard let record = try? result.1.get(),
+                            let group = PlayerGroup(from: record)
+                        else { return nil }
+                        return group
+                    }
+
+                    // Update everything at once to avoid UI flicker
+                    await MainActor.run {
+                        self.playerGroups = groups
+                        groups.forEach { playerGroupCache[$0.id] = $0 }
+                        lastPlayerGroupRefreshTime = now
+                    }
+
+                    return groups
                 } else {
-                    predicate = NSPredicate(value: false)  // No user, no groups
+                    // If no user is logged in, return empty array without querying CloudKit
+                    await MainActor.run {
+                        self.playerGroups = []
+                        playerGroupCache.removeAll()
+                        lastPlayerGroupRefreshTime = now
+                    }
+                    return []
                 }
-
-                let query = CKQuery(recordType: "PlayerGroup", predicate: predicate)
-                let (results, _) = try await database.records(matching: query)
-                let groups = results.compactMap { result -> PlayerGroup? in
-                    guard let record = try? result.1.get(),
-                        let group = PlayerGroup(from: record)
-                    else { return nil }
-                    return group
-                }
-
-                // Update everything at once to avoid UI flicker
-                await MainActor.run {
-                    self.playerGroups = groups
-                    groups.forEach { playerGroupCache[$0.id] = $0 }
-                    lastPlayerGroupRefreshTime = now
-                }
-
-                return groups
             } catch let error as CKError {
                 handleCloudKitError(error)
                 throw error
