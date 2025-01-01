@@ -3,7 +3,8 @@
 
     struct EditGameView: View {
         @Environment(\.dismiss) private var dismiss
-        @EnvironmentObject private var cloudKitManager: CloudKitManager
+        @StateObject private var cloudKitManager = CloudKitManager.shared
+        @EnvironmentObject private var authManager: AuthenticationManager
         let game: Game
         @State private var title: String
         @State private var isBinaryScore: Bool
@@ -119,6 +120,15 @@
 
             Task {
                 do {
+                    // Check if current user is the creator or an admin
+                    guard let currentUserID = authManager.userID,
+                        game.createdByID == currentUserID || cloudKitManager.isAdmin(currentUserID)
+                    else {
+                        errorMessage = "You can only edit games that you created."
+                        showingError = true
+                        return
+                    }
+
                     try await cloudKitManager.saveGame(updatedGame)
                     print("Successfully updated game: \(title)")
                     dismiss()
@@ -133,6 +143,15 @@
         private func deleteGame() {
             Task {
                 do {
+                    // Check if current user is the creator or an admin
+                    guard let currentUserID = authManager.userID,
+                        game.createdByID == currentUserID || cloudKitManager.isAdmin(currentUserID)
+                    else {
+                        errorMessage = "You can only delete games that you created."
+                        showingError = true
+                        return
+                    }
+
                     // Delete all matches associated with this game
                     if let matches = try? await cloudKitManager.fetchMatches(for: game) {
                         for match in matches {

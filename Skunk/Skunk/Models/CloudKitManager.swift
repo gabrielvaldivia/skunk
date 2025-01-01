@@ -25,6 +25,7 @@ import SwiftUI
         private let playerRefreshDebounceInterval: TimeInterval = 2.0  // 2 seconds debounce
         private var playerGroupCache: [String: PlayerGroup] = [:]
         private var lastPlayerGroupRefreshTime: Date = .distantPast
+        private let adminUserID = "000697.08cebe0a4edc475ca4a09155face4314.0206"  // Admin user ID
 
         @Published var games: [Game] = []
         @Published private(set) var players: [Player] = []  // Make players private(set)
@@ -365,11 +366,31 @@ import SwiftUI
         }
 
         func deleteGame(_ game: Game) async throws {
-            guard let recordID = game.recordID else {
-                throw CloudKitError.missingData
+            try await ensureCloudKitAccess()
+
+            // Get current user ID
+            guard let currentUserID = await userID else {
+                throw CloudKitError.notAuthenticated
             }
-            try await database.deleteRecord(withID: recordID)
-            games.removeAll { $0.id == game.id }
+
+            let recordID = CKRecord.ID(recordName: game.id)
+
+            // If user is admin or creator, try to delete directly
+            if isAdmin(currentUserID) || game.createdByID == currentUserID {
+                do {
+                    try await database.deleteRecord(withID: recordID)
+                } catch {
+                    print("🔴 CloudKitManager: Error deleting game: \(error.localizedDescription)")
+                    throw error
+                }
+            } else {
+                throw CloudKitError.permissionDenied
+            }
+
+            // Remove from cache
+            if let index = games.firstIndex(where: { $0.id == game.id }) {
+                games.remove(at: index)
+            }
         }
 
         // MARK: - Players
@@ -1436,6 +1457,10 @@ import SwiftUI
                 )
                 throw error
             }
+        }
+
+        func isAdmin(_ userID: String) -> Bool {
+            return userID == adminUserID
         }
     }
 #endif
