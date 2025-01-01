@@ -5,22 +5,12 @@ import SwiftUI
     struct MatchRow: View {
         @EnvironmentObject private var cloudKitManager: CloudKitManager
         let match: Match
-        let hideGameTitle: Bool
-
-        init(match: Match, hideGameTitle: Bool = false) {
-            self.match = match
-            self.hideGameTitle = hideGameTitle
-        }
+        var hideGameTitle: Bool = false
 
         private var relativeTimeString: String {
-            let timeInterval = Date().timeIntervalSince(match.date)
-            if timeInterval < 60 {  // Less than a minute ago
-                return "just now"
-            } else {
-                let formatter = RelativeDateTimeFormatter()
-                formatter.unitsStyle = .abbreviated
-                return formatter.localizedString(for: match.date, relativeTo: Date())
-            }
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = .full
+            return formatter.localizedString(for: match.date, relativeTo: Date())
         }
 
         var body: some View {
@@ -36,13 +26,41 @@ import SwiftUI
                             .compactMap { id in cloudKitManager.getPlayer(id: id) }
                             .map { $0.name }
 
-                        if !otherPlayers.isEmpty {
+                        if otherPlayers.isEmpty {
+                            Text("\(winner.name)").fontWeight(.semibold) + Text(" won")
+                        } else if otherPlayers.count == 1 {
                             if hideGameTitle {
                                 Text("\(winner.name)").fontWeight(.semibold) + Text(" beat ")
                                     + Text("\(otherPlayers[0])").fontWeight(.semibold)
                             } else if let game = match.game {
                                 Text("\(winner.name)").fontWeight(.semibold) + Text(" beat ")
                                     + Text("\(otherPlayers[0])").fontWeight(.semibold)
+                                    + Text(" at ") + Text(game.title).fontWeight(.semibold)
+                            }
+                        } else if otherPlayers.count == 2 {
+                            if hideGameTitle {
+                                Text("\(winner.name)").fontWeight(.semibold) + Text(" beat ")
+                                    + Text("\(otherPlayers[0])").fontWeight(.semibold)
+                                    + Text(" and ")
+                                    + Text("\(otherPlayers[1])").fontWeight(.semibold)
+                            } else if let game = match.game {
+                                Text("\(winner.name)").fontWeight(.semibold) + Text(" beat ")
+                                    + Text("\(otherPlayers[0])").fontWeight(.semibold)
+                                    + Text(" and ")
+                                    + Text("\(otherPlayers[1])").fontWeight(.semibold)
+                                    + Text(" at ") + Text(game.title).fontWeight(.semibold)
+                            }
+                        } else {
+                            let allButLast = otherPlayers.dropLast().joined(separator: ", ")
+                            let last = otherPlayers.last!
+                            if hideGameTitle {
+                                Text("\(winner.name)").fontWeight(.semibold) + Text(" beat ")
+                                    + Text(allButLast).fontWeight(.semibold) + Text(", and ")
+                                    + Text(last).fontWeight(.semibold)
+                            } else if let game = match.game {
+                                Text("\(winner.name)").fontWeight(.semibold) + Text(" beat ")
+                                    + Text(allButLast).fontWeight(.semibold) + Text(", and ")
+                                    + Text(last).fontWeight(.semibold)
                                     + Text(" at ") + Text(game.title).fontWeight(.semibold)
                             }
                         }
