@@ -343,12 +343,15 @@ extension Sequence {
                         Image(systemName: "crown.fill")
                             .foregroundStyle(scores[index] == 1 ? .yellow : .gray.opacity(0.3))
                             .onTapGesture {
-                                // Reset all scores to 0
-                                for i in scores.indices {
-                                    scores[i] = 0
+                                let currentValue = scores[index] ?? 0
+                                // Toggle between 0 and 1 for the tapped player
+                                scores[index] = currentValue == 1 ? 0 : 1
+                                // Reset other players to 0 if this player was set to 1
+                                if scores[index] == 1 {
+                                    for i in scores.indices where i != index {
+                                        scores[i] = 0
+                                    }
                                 }
-                                // Set this player as winner
-                                scores[index] = 1
                             }
                     }
                 } else {
@@ -708,11 +711,8 @@ extension Sequence {
 
                     // Set winner based on game type
                     if game.isBinaryScore {
-                        // For binary score games, winner is the player with the most wins
-                        let winCounts = totalScores
-                        if let maxWins = winCounts.max(),
-                            let winnerIndex = winCounts.firstIndex(of: maxWins)
-                        {
+                        // For binary score games, winner is the player marked with 1
+                        if let winnerIndex = scores.firstIndex(where: { $0 == 1 }) {
                             match.winnerID = match.playerIDs[winnerIndex]
                         }
                     } else {
