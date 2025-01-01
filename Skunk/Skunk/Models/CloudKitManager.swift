@@ -7,14 +7,22 @@ import SwiftUI
     class CloudKitManager: ObservableObject {
         static let shared = CloudKitManager()
         private let container: CKContainer
-        private var database: CKDatabase
+        private let database: CKDatabase
         private var lastRefreshTime: Date = .distantPast
         private var lastGamesRefreshTime: Date = .distantPast
         private var isRefreshing = false
-        private var matchCache: [String: [Match]] = [:]  // Cache matches by game ID
-        private var playerMatchesCache: [String: [Match]] = [:]  // Cache matches by player ID
-        private var groupMatchesCache: [String: [Match]] = [:]  // Cache matches by group ID
-        private var playerCache: [String: Player] = [:]  // Cache players by ID
+
+        // New enum for cache types
+        private enum CacheType: Hashable {
+            case game(String)  // gameId
+            case player(String)  // playerId
+            case group(String)  // groupId
+        }
+
+        // Unified cache structure
+        private var matchCache: [CacheType: [Match]] = [:]
+        private var playerCache: [String: Player] = [:]  // Keep this separate as it's a different type
+
         private var refreshDebounceTask: Task<Void, Never>?
         private let debounceInterval: TimeInterval = 2.0  // 2 seconds debounce
         private let cacheTimeout: TimeInterval = 30.0  // 30 seconds cache timeout
@@ -546,7 +554,7 @@ import SwiftUI
                     // Update local state
                     await MainActor.run {
                         games.removeAll { $0.id == game.id }
-                        matchCache.removeValue(forKey: game.id)
+                        matchCache.removeValue(forKey: .game(game.id))
                     }
 
                     // Reset refresh time to ensure next fetch gets latest data
@@ -563,7 +571,7 @@ import SwiftUI
                         print("🟣 CloudKitManager: Record already deleted")
                         await MainActor.run {
                             games.removeAll { $0.id == game.id }
-                            matchCache.removeValue(forKey: game.id)
+                            matchCache.removeValue(forKey: .game(game.id))
                         }
                         return
                     }
@@ -875,7 +883,7 @@ import SwiftUI
                 print("🟣 CloudKitManager: Successfully parsed \(matches.count) matches")
 
                 // Update cache
-                matchCache[game.id] = matches
+                matchCache[.game(game.id)] = matches
 
                 // Update game's matches without triggering a refresh
                 if let index = games.firstIndex(where: { $0.id == game.id }) {
@@ -908,13 +916,13 @@ import SwiftUI
 
             // Update cache and game's matches
             if let gameId = match.game?.id {
-                var matches = matchCache[gameId] ?? []
+                var matches = matchCache[.game(gameId)] ?? []
                 if let index = matches.firstIndex(where: { $0.id == match.id }) {
                     matches[index] = updatedMatch
                 } else {
                     matches.append(updatedMatch)
                 }
-                matchCache[gameId] = matches
+                matchCache[.game(gameId)] = matches
 
                 // Update game's matches without triggering a refresh
                 if let gameIndex = games.firstIndex(where: { $0.id == gameId }) {
@@ -939,9 +947,9 @@ import SwiftUI
 
             // Update cache and game's matches
             if let gameId = match.game?.id {
-                matchCache[gameId]?.removeAll { $0.id == match.id }
+                matchCache[.game(gameId)]?.removeAll { $0.id == match.id }
                 if let gameIndex = games.firstIndex(where: { $0.id == gameId }) {
-                    games[gameIndex].matches = matchCache[gameId]
+                    games[gameIndex].matches = matchCache[.game(gameId)]
                 }
             }
         }
@@ -1176,17 +1184,20 @@ import SwiftUI
 
         // Add a method to get matches for a player
         func getPlayerMatches(_ playerId: String) -> [Match]? {
-            return playerMatchesCache[playerId]
+            return matchCache[.player(playerId)]
         }
 
         // Add a method to cache matches for a player
         func cachePlayerMatches(_ matches: [Match], for playerId: String) {
-            playerMatchesCache[playerId] = matches
+            matchCache[.player(playerId)] = matches
         }
 
         // Add a method to clear player matches cache
         func clearPlayerMatchesCache() {
-            playerMatchesCache.removeAll()
+            matchCache = matchCache.filter { key, _ in
+                if case .player = key { return false }
+                return true
+            }
         }
 
         // MARK: - Player Groups
@@ -1383,17 +1394,20 @@ import SwiftUI
 
         // Add a method to get matches for a group
         func getGroupMatches(_ groupId: String) -> [Match]? {
-            return groupMatchesCache[groupId]
+            return matchCache[.group(groupId)]
         }
 
         // Add a method to cache matches for a group
         func cacheGroupMatches(_ matches: [Match], for groupId: String) {
-            groupMatchesCache[groupId] = matches
+            matchCache[.group(groupId)] = matches
         }
 
         // Add a method to clear group matches cache
         func clearGroupMatchesCache() {
-            groupMatchesCache.removeAll()
+            matchCache = matchCache.filter { key, _ in
+                if case .group = key { return false }
+                return true
+            }
         }
 
         // Update loadGroupsAndMatches to return matches
@@ -1734,27 +1748,27 @@ import SwiftUI
         // MARK: - Match Cache Methods
 
         func getMatchesForGame(_ gameId: String) -> [Match]? {
-            return matchCache[gameId]
+            return matchCache[.game(gameId)]
         }
 
         func cacheMatchesForGame(_ matches: [Match], gameId: String) {
-            matchCache[gameId] = matches
+            matchCache[.game(gameId)] = matches
         }
 
         func getMatchesForPlayer(_ playerId: String) -> [Match]? {
-            return playerMatchesCache[playerId]
+            return matchCache[.player(playerId)]
         }
 
         func cacheMatchesForPlayer(_ matches: [Match], playerId: String) {
-            playerMatchesCache[playerId] = matches
+            matchCache[.player(playerId)] = matches
         }
 
         func getMatchesForGroup(_ groupId: String) -> [Match]? {
-            return groupMatchesCache[groupId]
+            return matchCache[.group(groupId)]
         }
 
         func cacheMatchesForGroup(_ matches: [Match], groupId: String) {
-            groupMatchesCache[groupId] = matches
+            matchCache[.group(groupId)] = matches
         }
 
         // MARK: - Activity Methods
