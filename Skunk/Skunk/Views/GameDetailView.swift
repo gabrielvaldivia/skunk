@@ -290,7 +290,16 @@ import SwiftUI
                 }
             }
             .sheet(isPresented: $showingEditGame) {
-                EditGameView(game: game)
+                EditGameView(game: game) {
+                    Task {
+                        // First dismiss the views
+                        dismiss()
+
+                        // Then force a fresh fetch with cache clearing
+                        try? await Task.sleep(for: .seconds(1))  // Give CloudKit time to propagate
+                        try? await cloudKitManager.fetchGames(forceRefresh: true)
+                    }
+                }
             }
             .navigationDestination(for: Match.self) { match in
                 MatchDetailView(match: match)

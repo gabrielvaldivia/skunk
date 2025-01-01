@@ -15,41 +15,23 @@ import SwiftUI
                 return "Loading..."
             }
 
-            print("🔍 GameRow: Calculating subtitle")
-            print("🔍 GameRow: Current player = \(currentPlayer?.name ?? "nil")")
-            print("🔍 GameRow: Total matches = \(matches.count)")
-
             guard let player = currentPlayer else {
-                print("🔍 GameRow: No current player")
                 return "No matches yet"
             }
-
-            print(
-                "🔍 GameRow: Matches with player = \(matches.filter { $0.playerIDs.contains(player.id) }.count)"
-            )
 
             guard let lastMatch = matches.first(where: { $0.playerIDs.contains(player.id) }) else {
-                print("🔍 GameRow: No matches found for player")
                 return "No matches yet"
             }
-
-            print("🔍 GameRow: Found last match with date \(lastMatch.date)")
-            print("🔍 GameRow: Match players = \(lastMatch.playerIDs)")
 
             let otherPlayers = lastMatch.playerIDs
                 .filter { $0 != player.id }
                 .compactMap { id -> Player? in
-                    let player = cloudKitManager.getPlayer(id: id)
-                    print("🔍 GameRow: Looking up player \(id): \(player?.name ?? "not found")")
-                    return player
+                    cloudKitManager.getPlayer(id: id)
                 }
 
             guard let opponent = otherPlayers.first else {
-                print("🔍 GameRow: No opponent found")
                 return "No matches yet"
             }
-
-            print("🔍 GameRow: Found opponent: \(opponent.name)")
 
             let formatter = RelativeDateTimeFormatter()
             formatter.unitsStyle = .full
@@ -67,7 +49,6 @@ import SwiftUI
                     .foregroundStyle(.secondary)
             }
             .task {
-                print("🔍 GameRow: Loading data for \(game.title)")
                 await loadMatches()
             }
         }
@@ -78,44 +59,36 @@ import SwiftUI
             defer { isLoading = false }
 
             do {
-                print("🔍 GameRow: Loading players")
                 let players = try await cloudKitManager.fetchPlayers(forceRefresh: false)
-                print("🔍 GameRow: Loaded \(players.count) players")
 
-                // Find the current player
+                // Set current player
                 if let appleUserID = authManager.userID {
                     currentPlayer = players.first { $0.appleUserID == appleUserID }
-                    print("🔍 GameRow: Found current player: \(currentPlayer?.name ?? "nil")")
                 }
 
-                print("🔍 GameRow: Loading matches for \(game.title)")
+                // Get matches for this game
                 let gameMatches = try await cloudKitManager.fetchMatches(for: game)
-                print("🔍 GameRow: Loaded \(gameMatches.count) matches")
 
-                // Check if we need to fetch any missing players
-                let allPlayerIDs = Set(gameMatches.flatMap { $0.playerIDs })
-                let missingPlayerIDs = allPlayerIDs.filter { playerID in
-                    cloudKitManager.getPlayer(id: playerID) == nil
+                // Get all player IDs from matches
+                let matchPlayerIDs = Set(gameMatches.flatMap { $0.playerIDs })
+
+                // Find missing player IDs
+                let missingPlayerIDs = matchPlayerIDs.filter { id in
+                    !players.contains { $0.id == id }
                 }
-
-                print("🔍 GameRow: Missing \(missingPlayerIDs.count) players")
 
                 // If we're missing any players, force refresh the players
                 if !missingPlayerIDs.isEmpty {
-                    print("🔍 GameRow: Refreshing players")
                     let refreshedPlayers = try await cloudKitManager.fetchPlayers(
                         forceRefresh: true)
-                    print("🔍 GameRow: Refreshed \(refreshedPlayers.count) players")
 
                     // Update current player if needed
                     if let appleUserID = authManager.userID {
                         currentPlayer = refreshedPlayers.first { $0.appleUserID == appleUserID }
-                        print("🔍 GameRow: Updated current player: \(currentPlayer?.name ?? "nil")")
                     }
                 }
 
                 matches = gameMatches.sorted { $0.date > $1.date }
-                print("🔍 GameRow: Set \(matches.count) sorted matches")
             } catch {
                 print("🔴 GameRow Error loading matches: \(error)")
             }

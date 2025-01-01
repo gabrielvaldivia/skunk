@@ -6,6 +6,7 @@
         @StateObject private var cloudKitManager = CloudKitManager.shared
         @EnvironmentObject private var authManager: AuthenticationManager
         let game: Game
+        let onDelete: () -> Void
         @State private var title: String
         @State private var isBinaryScore: Bool
         @State private var showingError = false
@@ -18,8 +19,9 @@
         @State private var showingDeleteConfirmation = false
         @State private var creatorName: String?
 
-        init(game: Game) {
+        init(game: Game, onDelete: @escaping () -> Void) {
             self.game = game
+            self.onDelete = onDelete
             _title = State(initialValue: game.title)
             _isBinaryScore = State(initialValue: game.isBinaryScore)
             _minPlayers = State(initialValue: game.supportedPlayerCounts.min() ?? 2)
@@ -38,73 +40,71 @@
         }
 
         var body: some View {
-            NavigationStack {
-                Form {
-                    GameSettingsView(
-                        title: $title,
-                        isBinaryScore: $isBinaryScore,
-                        minPlayers: $minPlayers,
-                        maxPlayers: $maxPlayers,
-                        countAllScores: $countAllScores,
-                        countLosersOnly: $countLosersOnly,
-                        highestScoreWins: $highestScoreWins,
-                        showTitle: true
-                    )
+            Form {
+                GameSettingsView(
+                    title: $title,
+                    isBinaryScore: $isBinaryScore,
+                    minPlayers: $minPlayers,
+                    maxPlayers: $maxPlayers,
+                    countAllScores: $countAllScores,
+                    countLosersOnly: $countLosersOnly,
+                    highestScoreWins: $highestScoreWins,
+                    showTitle: true
+                )
 
+                Section {
+                    Button(role: .destructive) {
+                        showingDeleteConfirmation = true
+                    } label: {
+                        Text("Delete Game")
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+
+                if let creatorName = creatorName {
                     Section {
-                        Button(role: .destructive) {
-                            showingDeleteConfirmation = true
-                        } label: {
-                            Text("Delete Game")
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-
-                    if let creatorName = creatorName {
-                        Section {
-                            Text("Created by \(creatorName) on \(formattedDate)")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
+                        Text("Created by \(creatorName) on \(formattedDate)")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                .navigationTitle("Edit Game")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            dismiss()
-                        }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") {
-                            saveGame()
-                        }
-                        .disabled(title.isEmpty)
+            }
+            .navigationTitle("Edit Game")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
                     }
                 }
-                .alert("Error", isPresented: $showingError) {
-                    Button("OK", role: .cancel) {}
-                } message: {
-                    Text(errorMessage)
-                }
-                .confirmationDialog(
-                    "Are you sure you want to delete this game?",
-                    isPresented: $showingDeleteConfirmation,
-                    titleVisibility: .visible
-                ) {
-                    Button("Delete", role: .destructive) {
-                        deleteGame()
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        saveGame()
                     }
-                } message: {
-                    Text("This action cannot be undone.")
+                    .disabled(title.isEmpty)
                 }
-                .task {
-                    if let createdByID = game.createdByID,
-                        let player = cloudKitManager.getPlayer(id: createdByID)
-                    {
-                        creatorName = player.name
-                    }
+            }
+            .alert("Error", isPresented: $showingError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(errorMessage)
+            }
+            .confirmationDialog(
+                "Are you sure you want to delete this game?",
+                isPresented: $showingDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) {
+                    deleteGame()
+                }
+            } message: {
+                Text("This action cannot be undone.")
+            }
+            .task {
+                if let createdByID = game.createdByID,
+                    let player = cloudKitManager.getPlayer(id: createdByID)
+                {
+                    creatorName = player.name
                 }
             }
         }
@@ -162,6 +162,7 @@
                     // Finally delete the game
                     try await cloudKitManager.deleteGame(game)
                     dismiss()
+                    onDelete()
                 } catch {
                     errorMessage = error.localizedDescription
                     showingError = true

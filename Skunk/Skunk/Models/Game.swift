@@ -36,25 +36,25 @@ import Foundation
         }
 
         init?(from record: CKRecord) {
-            guard let title = record.value(forKey: "title") as? String else { return nil }
-            guard let id = record.value(forKey: "id") as? String else { return nil }
+            guard let id = record["id"] as? String,
+                let title = record["title"] as? String,
+                let isBinaryScore = record["isBinaryScore"] as? Int,
+                let supportedPlayerCountsData = record["supportedPlayerCounts"] as? Data,
+                let supportedPlayerCounts = try? JSONDecoder().decode(
+                    Set<Int>.self, from: supportedPlayerCountsData)
+            else {
+                return nil
+            }
 
             self.id = id
             self.title = title
-            self.isBinaryScore = record.value(forKey: "isBinaryScore") as? Bool ?? false
-            self.countAllScores = record.value(forKey: "countAllScores") as? Bool ?? true
-            self.countLosersOnly = record.value(forKey: "countLosersOnly") as? Bool ?? false
-            self.highestScoreWins = record.value(forKey: "highestScoreWins") as? Bool ?? true
-            if let countsData = record.value(forKey: "supportedPlayerCounts") as? Data,
-                let counts = try? JSONDecoder().decode([Int].self, from: countsData)
-            {
-                self.supportedPlayerCounts = Set(counts)
-            } else {
-                self.supportedPlayerCounts = []
-            }
-            self.createdByID = record.value(forKey: "createdByID") as? String
+            self.isBinaryScore = isBinaryScore == 1
+            self.supportedPlayerCounts = supportedPlayerCounts
+            self.createdByID = record["createdByID"] as? String
+            self.countAllScores = (record["countAllScores"] as? Int ?? 0) == 1
+            self.countLosersOnly = (record["countLosersOnly"] as? Int ?? 0) == 1
+            self.highestScoreWins = (record["highestScoreWins"] as? Int ?? 1) == 1
             self.record = record
-            self.matches = []
             self.recordID = record.recordID
             self.creationDate = record.creationDate
         }
@@ -69,14 +69,22 @@ import Foundation
 
             record.setValue(id, forKey: "id")
             record.setValue(title, forKey: "title")
-            record.setValue(isBinaryScore, forKey: "isBinaryScore")
-            record.setValue(countAllScores, forKey: "countAllScores")
-            record.setValue(countLosersOnly, forKey: "countLosersOnly")
-            record.setValue(highestScoreWins, forKey: "highestScoreWins")
+            record.setValue(isBinaryScore ? 1 : 0, forKey: "isBinaryScore")
+            record.setValue(countAllScores ? 1 : 0, forKey: "countAllScores")
+            record.setValue(countLosersOnly ? 1 : 0, forKey: "countLosersOnly")
+            record.setValue(highestScoreWins ? 1 : 0, forKey: "highestScoreWins")
             if let countsData = try? JSONEncoder().encode(Array(supportedPlayerCounts)) {
                 record.setValue(countsData, forKey: "supportedPlayerCounts")
             }
             record.setValue(createdByID, forKey: "createdByID")
+
+            // Set up sharing permissions
+            if let creatorID = createdByID {
+                record["creatorReference"] = CKRecord.Reference(
+                    recordID: CKRecord.ID(recordName: creatorID),
+                    action: .none
+                )
+            }
 
             return record
         }
