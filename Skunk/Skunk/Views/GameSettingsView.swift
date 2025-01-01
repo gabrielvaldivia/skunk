@@ -33,6 +33,7 @@
         @Binding var countAllScores: Bool
         @Binding var countLosersOnly: Bool
         @Binding var highestScoreWins: Bool
+        @Binding var highestRoundScoreWins: Bool
         @FocusState private var isTitleFocused: Bool
         var showTitle: Bool = true
         var autofocusTitle: Bool = false
@@ -93,19 +94,35 @@
                 }
 
                 if !isBinaryScore {
-                    Section("Winning Condition") {
+                    Section("Game Winning Condition") {
                         RadioButton(
-                            title: "Highest Score Wins",
+                            title: "Highest Total Score Wins Game",
                             isSelected: highestScoreWins
                         ) {
                             highestScoreWins = true
                         }
 
                         RadioButton(
-                            title: "Lowest Score Wins",
+                            title: "Lowest Total Score Wins Game",
                             isSelected: !highestScoreWins
                         ) {
                             highestScoreWins = false
+                        }
+                    }
+
+                    Section("Round Winning Condition") {
+                        RadioButton(
+                            title: "Highest Score Wins Round",
+                            isSelected: highestRoundScoreWins
+                        ) {
+                            highestRoundScoreWins = true
+                        }
+
+                        RadioButton(
+                            title: "Lowest Score Wins Round",
+                            isSelected: !highestRoundScoreWins
+                        ) {
+                            highestRoundScoreWins = false
                         }
                     }
 

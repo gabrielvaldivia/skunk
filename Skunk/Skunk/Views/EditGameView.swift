@@ -16,6 +16,7 @@
         @State private var countAllScores: Bool
         @State private var countLosersOnly: Bool
         @State private var highestScoreWins: Bool
+        @State private var highestRoundScoreWins: Bool
         @State private var showingDeleteConfirmation = false
         @State private var creatorName: String?
 
@@ -29,6 +30,7 @@
             _countAllScores = State(initialValue: game.countAllScores)
             _countLosersOnly = State(initialValue: game.countLosersOnly)
             _highestScoreWins = State(initialValue: game.highestScoreWins)
+            _highestRoundScoreWins = State(initialValue: game.highestRoundScoreWins ?? true)
         }
 
         private var formattedDate: String {
@@ -49,6 +51,7 @@
                     countAllScores: $countAllScores,
                     countLosersOnly: $countLosersOnly,
                     highestScoreWins: $highestScoreWins,
+                    highestRoundScoreWins: $highestRoundScoreWins,
                     showTitle: true
                 )
 

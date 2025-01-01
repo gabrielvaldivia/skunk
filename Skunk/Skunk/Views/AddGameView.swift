@@ -15,6 +15,7 @@
         @State private var countAllScores = true
         @State private var countLosersOnly = false
         @State private var highestScoreWins = true
+        @State private var highestRoundScoreWins = true
 
         var body: some View {
             NavigationStack {
@@ -27,6 +28,7 @@
                         countAllScores: $countAllScores,
                         countLosersOnly: $countLosersOnly,
                         highestScoreWins: $highestScoreWins,
+                        highestRoundScoreWins: $highestRoundScoreWins,
                         autofocusTitle: true
                     )
                 }
@@ -62,7 +64,8 @@
                 createdByID: authManager.userID,
                 countAllScores: !isBinaryScore ? countAllScores : false,
                 countLosersOnly: !isBinaryScore ? countLosersOnly : false,
-                highestScoreWins: !isBinaryScore ? highestScoreWins : true
+                highestScoreWins: !isBinaryScore ? highestScoreWins : true,
+                highestRoundScoreWins: !isBinaryScore ? highestRoundScoreWins : true
             )
 
             Task {

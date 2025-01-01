@@ -11,6 +11,7 @@ import Foundation
         var countAllScores: Bool
         var countLosersOnly: Bool
         var highestScoreWins: Bool
+        var highestRoundScoreWins: Bool
         var record: CKRecord?
         var matches: [Match]?
         var recordID: CKRecord.ID?
@@ -20,7 +21,7 @@ import Foundation
             title: String, isBinaryScore: Bool,
             supportedPlayerCounts: Set<Int>, createdByID: String? = nil,
             countAllScores: Bool = true, countLosersOnly: Bool = false,
-            highestScoreWins: Bool = true
+            highestScoreWins: Bool = true, highestRoundScoreWins: Bool = true
         ) {
             self.id = UUID().uuidString
             self.title = title
@@ -30,6 +31,7 @@ import Foundation
             self.countAllScores = countAllScores
             self.countLosersOnly = countLosersOnly
             self.highestScoreWins = highestScoreWins
+            self.highestRoundScoreWins = highestRoundScoreWins
             self.matches = []
             self.recordID = nil
             self.creationDate = Date()
@@ -54,6 +56,7 @@ import Foundation
             self.countAllScores = (record["countAllScores"] as? Int ?? 0) == 1
             self.countLosersOnly = (record["countLosersOnly"] as? Int ?? 0) == 1
             self.highestScoreWins = (record["highestScoreWins"] as? Int ?? 1) == 1
+            self.highestRoundScoreWins = (record["highestRoundScoreWins"] as? Int ?? 1) == 1
             self.record = record
             self.recordID = record.recordID
             self.creationDate = record.creationDate
@@ -73,18 +76,11 @@ import Foundation
             record.setValue(countAllScores ? 1 : 0, forKey: "countAllScores")
             record.setValue(countLosersOnly ? 1 : 0, forKey: "countLosersOnly")
             record.setValue(highestScoreWins ? 1 : 0, forKey: "highestScoreWins")
+            record.setValue(highestRoundScoreWins ? 1 : 0, forKey: "highestRoundScoreWins")
             if let countsData = try? JSONEncoder().encode(Array(supportedPlayerCounts)) {
                 record.setValue(countsData, forKey: "supportedPlayerCounts")
             }
             record.setValue(createdByID, forKey: "createdByID")
-
-            // Set up sharing permissions
-            if let creatorID = createdByID {
-                record["creatorReference"] = CKRecord.Reference(
-                    recordID: CKRecord.ID(recordName: creatorID),
-                    action: .none
-                )
-            }
 
             return record
         }
