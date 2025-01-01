@@ -14,10 +14,6 @@ import SwiftUI
         @Environment(\.dismiss) private var dismiss
         @State private var showingSignOut = false
         @State private var showingDeleteAccount = false
-        @State private var isResettingSchema = false
-        @State private var showingResetComplete = false
-        @State private var showingResetError = false
-        @State private var resetError: Error?
         @State private var nearbyPlayers: [Player] = []
         @State private var refreshTask: Task<Void, Never>?
 
@@ -26,7 +22,8 @@ import SwiftUI
                 List {
                     Section("Location") {
                         HStack {
-                            Label("Location Sharing", systemImage: "location")
+                            Text("Location Sharing")
+                                .foregroundColor(.primary)
                             Spacer()
                             switch locationManager.authorizationStatus {
                             case .authorizedWhenInUse, .authorizedAlways:
@@ -66,7 +63,8 @@ import SwiftUI
                             || locationManager.authorizationStatus == .authorizedAlways
                         {
                             HStack {
-                                Label("Nearby Players", systemImage: "person.2")
+                                Text("Nearby Players")
+                                    .foregroundColor(.primary)
                                 Spacer()
                                 if let location = locationManager.currentLocation {
                                     Text("\(nearbyPlayers.count)")
@@ -93,7 +91,7 @@ import SwiftUI
                     }
 
                     Section {
-                        Button(role: .destructive) {
+                        Button {
                             showingSignOut = true
                         } label: {
                             if authManager.isSigningOut {
@@ -103,7 +101,8 @@ import SwiftUI
                                     Text("Signing Out...")
                                 }
                             } else {
-                                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                                Text("Sign Out")
+                                    .foregroundColor(.primary)
                             }
                         }
                         .disabled(authManager.isSigningOut)
@@ -119,9 +118,10 @@ import SwiftUI
                                         .controlSize(.small)
                                     Text("Deleting Account...")
                                 }
+                                .frame(maxWidth: .infinity, alignment: .center)
                             } else {
-                                Label(
-                                    "Delete Account", systemImage: "person.crop.circle.badge.minus")
+                                Text("Delete Account")
+                                    .frame(maxWidth: .infinity, alignment: .center)
                             }
                         }
                         .disabled(authManager.isDeletingAccount)
@@ -129,32 +129,9 @@ import SwiftUI
                         Text(
                             "Deleting your account will permanently remove all your data and revoke Apple ID access."
                         )
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .multilineTextAlignment(.center)
                     }
-
-                    Button(role: .destructive) {
-                        Task {
-                            isResettingSchema = true
-                            do {
-                                try await cloudKitManager.forceSchemaReset()
-                                showingResetComplete = true
-                            } catch {
-                                resetError = error
-                                showingResetError = true
-                            }
-                            isResettingSchema = false
-                        }
-                    } label: {
-                        if isResettingSchema {
-                            HStack {
-                                ProgressView()
-                                    .controlSize(.small)
-                                Text("Resetting Schema...")
-                            }
-                        } else {
-                            Label("Reset CloudKit Schema", systemImage: "arrow.clockwise")
-                        }
-                    }
-                    .disabled(isResettingSchema)
                 }
                 .navigationTitle("Settings")
                 .onAppear {
@@ -167,39 +144,31 @@ import SwiftUI
                     locationManager.stopUpdatingLocation()
                     refreshTask?.cancel()
                 }
-                .alert("Sign Out", isPresented: $showingSignOut) {
-                    Button("Cancel", role: .cancel) {}
+                .confirmationDialog(
+                    "Are you sure you want to sign out?",
+                    isPresented: $showingSignOut,
+                    titleVisibility: .visible
+                ) {
                     Button("Sign Out", role: .destructive) {
                         Task {
                             await authManager.signOut()
+                            dismiss()
                         }
                     }
-                } message: {
-                    Text("Are you sure you want to sign out?")
                 }
-                .alert("Delete Account", isPresented: $showingDeleteAccount) {
-                    Button("Cancel", role: .cancel) {}
+                .confirmationDialog(
+                    "Are you sure you want to delete your account?",
+                    isPresented: $showingDeleteAccount,
+                    titleVisibility: .visible
+                ) {
                     Button("Delete Account", role: .destructive) {
                         Task {
                             await authManager.deleteAccount()
+                            dismiss()
                         }
                     }
                 } message: {
                     Text("This action cannot be undone. All your data will be permanently deleted.")
-                }
-                .alert("Schema Reset Complete", isPresented: $showingResetComplete) {
-                    Button("OK", role: .cancel) {}
-                } message: {
-                    Text(
-                        "The CloudKit schema has been successfully reset. You can now try adding photos again."
-                    )
-                }
-                .alert("Schema Reset Error", isPresented: $showingResetError) {
-                    Button("OK", role: .cancel) {}
-                } message: {
-                    Text(
-                        resetError?.localizedDescription
-                            ?? "An unknown error occurred while resetting the schema.")
                 }
                 .task {
                     await updateNearbyPlayers()
@@ -232,19 +201,18 @@ import SwiftUI
                         return false
                     }
 
-                    guard let distance = locationManager.distanceToPlayer(player) else {
-                        print("📍 No distance available for player: \(player.name)")
-                        return false
+                    if let distance = locationManager.distanceToPlayer(player) {
+                        let isNearby = distance <= 30.48  // 100 feet in meters
+                        print(
+                            "📍 Player \(player.name) is \(Int(distance))m away, isNearby: \(isNearby)"
+                        )
+                        return isNearby
                     }
-                    let isNearby = distance <= 30.48  // 100 feet in meters
-                    print(
-                        "📍 Player \(player.name) is \(String(format: "%.1f", distance))m away (nearby: \(isNearby))"
-                    )
-                    return isNearby
+                    return false
                 }
                 print("📍 Found \(nearbyPlayers.count) nearby players")
             } catch {
-                print("📍 Error fetching nearby players: \(error)")
+                print("📍 Error updating nearby players: \(error)")
             }
         }
     }

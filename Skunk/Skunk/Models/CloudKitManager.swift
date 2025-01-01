@@ -966,32 +966,6 @@ import SwiftUI
             players.removeAll { $0.id == playerId }
         }
 
-        func forceSchemaReset() async throws {
-            print("🟣 CloudKitManager: Starting schema reset")
-
-            do {
-                // Set up the schema
-                try await setupSchema()
-
-                // Set up subscriptions
-                try await setupSubscriptions()
-
-                // Clear local caches
-                matchCache.removeAll()
-                playerCache.removeAll()
-                players.removeAll()
-                games.removeAll()
-
-                print("🟣 CloudKitManager: Schema reset complete")
-            } catch {
-                print("🔴 CloudKitManager: Schema reset error: \(error.localizedDescription)")
-                if let ckError = error as? CKError {
-                    print("🔴 CloudKitManager: CloudKit error code: \(ckError.code.rawValue)")
-                }
-                throw error
-            }
-        }
-
         // Add a method to get matches for a player
         func getPlayerMatches(_ playerId: String) -> [Match]? {
             return playerMatchesCache[playerId]
