@@ -133,7 +133,7 @@ import SwiftUI
 
         private func getCKManager() async -> CloudKitManager {
             // CloudKitManager.shared is not optional and can be accessed directly
-            return CloudKitManager.shared
+            return await CloudKitManager.shared
         }
 
         func distanceToPlayer(_ player: Player) -> CLLocationDistance? {

@@ -77,6 +77,7 @@ import SwiftUI
         @EnvironmentObject var authManager: AuthenticationManager
         @ObservedObject var cloudKitManager: CloudKitManager
         private let playerId: String
+        @MainActor
         private var player: Player {
             cloudKitManager.players.first(where: { $0.id == playerId })
                 ?? cloudKitManager.players[0]
@@ -91,12 +92,19 @@ import SwiftUI
         @State private var lastRefreshTime: Date = .distantPast
         private let cacheTimeout: TimeInterval = 30  // Refresh cache after 30 seconds
 
-        init(player: Player, cloudKitManager: CloudKitManager = .shared) {
+        @MainActor
+        init(player: Player, cloudKitManager: CloudKitManager) {
             print("🔵 PlayerDetailView: Initializing with player: \(player.name)")
             self.playerId = player.id
             self.cloudKitManager = cloudKitManager
         }
 
+        @MainActor
+        static func create(player: Player) async -> PlayerDetailView {
+            return PlayerDetailView(player: player, cloudKitManager: .shared)
+        }
+
+        @MainActor
         var isCurrentUserProfile: Bool {
             player.appleUserID == authManager.userID
         }
@@ -130,7 +138,7 @@ import SwiftUI
                     for game in cloudKitManager.games {
                         if let gameMatches = game.matches {
                             newMatches.append(
-                                contentsOf: gameMatches.filter { $0.playerIDs.contains(player.id) })
+                                contentsOf: gameMatches.filter { $0.playerIDs.contains(playerId) })
                         }
                     }
                 }
@@ -154,7 +162,7 @@ import SwiftUI
                         group.addTask {
                             guard !Task.isCancelled else { return [] }
                             if let matches = try? await cloudKitManager.fetchMatches(for: game) {
-                                return matches.filter { $0.playerIDs.contains(player.id) }
+                                return matches.filter { $0.playerIDs.contains(playerId) }
                             }
                             return []
                         }

@@ -82,7 +82,7 @@ import Foundation
             // Set game to nil initially, but store the gameID in the record
             // This will be used to fetch the game later
             self.game = nil
-            if let gameID = record.value(forKey: "gameID") as? String,
+            if record.value(forKey: "gameID") as? String != nil,
                 let gameRecord = record.value(forKey: "game") as? CKRecord,
                 let game = Game(from: gameRecord)
             {

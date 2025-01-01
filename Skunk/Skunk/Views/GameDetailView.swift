@@ -4,6 +4,24 @@ import SwiftUI
 #if canImport(UIKit)
     import UIKit
 
+    struct GameNavigationDestinations: ViewModifier {
+        func body(content: Content) -> some View {
+            content
+                .navigationDestination(for: Match.self) { match in
+                    MatchDetailView(match: match)
+                }
+                .navigationDestination(for: Player.self) { player in
+                    AsyncPlayerDetailView(player: player)
+                }
+        }
+    }
+
+    extension View {
+        func gameNavigationDestinations() -> some View {
+            modifier(GameNavigationDestinations())
+        }
+    }
+
     struct GameDetailView: View {
         @Environment(\.dismiss) private var dismiss
         @EnvironmentObject private var cloudKitManager: CloudKitManager
@@ -17,131 +35,6 @@ import SwiftUI
         @State private var isLoading = false
         @State private var error: Error?
         @State private var showingError = false
-
-        private var filteredMatches: [Match] {
-            if let groupId = selectedGroupId,
-                let group = playerGroups.first(where: { $0.id == groupId })
-            {
-                return matches.filter { match in
-                    Set(match.playerIDs) == Set(group.playerIDs)
-                }
-            }
-            return matches
-        }
-
-        private var activePlayerGroups: [PlayerGroup] {
-            playerGroups.filter { group in
-                matches.contains { match in
-                    Set(match.playerIDs) == Set(group.playerIDs)
-                }
-            }
-        }
-
-        private var winCounts: [(player: Player, count: Int)] {
-            var counts: [(player: Player, count: Int)] = []
-            for match in filteredMatches {
-                if let winnerID = match.winnerID,
-                    let winner = cloudKitManager.getPlayer(id: winnerID)
-                {
-                    if let index = counts.firstIndex(where: { $0.player.id == winner.id }) {
-                        counts[index].count += 1
-                    } else {
-                        counts.append((player: winner, count: 1))
-                    }
-                }
-            }
-            counts.sort { $0.count > $1.count }
-            return counts
-        }
-
-        private var totalWins: Int {
-            winCounts.reduce(0) { $0 + $1.count }
-        }
-
-        private func calculateWinPercentage(count: Int) -> Int {
-            guard totalWins > 0 else { return 0 }
-            let percentage = Double(count) / Double(totalWins) * 100.0
-            return Int(percentage)
-        }
-
-        private func playerStatsView(_ entry: (player: Player, count: Int)) -> some View {
-            HStack {
-                Circle()
-                    .fill(entry.player.color)
-                    .frame(width: 12, height: 12)
-                Text(entry.player.name)
-                Spacer()
-                Text("\(calculateWinPercentage(count: entry.count))%")
-                    .foregroundStyle(.secondary)
-            }
-        }
-
-        private func playerRow(_ index: Int, _ entry: (player: Player, count: Int)) -> some View {
-            LeaderboardRow(rank: index + 1, player: entry.player, wins: entry.count)
-        }
-
-        private var groupedWinCounts: [(rank: Int, players: [Player], wins: Int)] {
-            var result: [(rank: Int, players: [Player], wins: Int)] = []
-            var currentRank = 1
-
-            // Group players by win count
-            Dictionary(grouping: winCounts, by: { $0.count })
-                .sorted { $0.key > $1.key }  // Sort by wins (descending)
-                .forEach { wins, entries in
-                    let players = entries.map { $0.player }
-                        .sorted { $0.name < $1.name }  // Sort players by name within same win count
-                    result.append((rank: currentRank, players: players, wins: wins))
-                    currentRank += 1
-                }
-
-            return result
-        }
-
-        private var leaderboardSection: some View {
-            Section("Leaderboard") {
-                ForEach(groupedWinCounts, id: \.rank) { group in
-                    LeaderboardRow(rank: group.rank, players: group.players, wins: group.wins)
-                }
-            }
-        }
-
-        private func winDistributionSection() -> some View {
-            Section("Win Distribution") {
-                VStack(alignment: .center, spacing: 16) {
-                    if totalWins > 0 {
-                        PieChartView(winCounts: winCounts, totalWins: totalWins)
-                            .padding(.vertical)
-                    }
-
-                    ForEach(winCounts, id: \.player.id) { entry in
-                        playerStatsView(entry)
-                    }
-                }
-                .padding(20)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .frame(maxWidth: .infinity)
-                .listRowInsets(EdgeInsets())
-            }
-        }
-
-        private func matchHistorySection(_ matches: [Match]) -> some View {
-            Section("Match History") {
-                ForEach(matches.sorted { $0.date > $1.date }) { match in
-                    NavigationLink {
-                        MatchDetailView(match: match)
-                    } label: {
-                        MatchRow(match: match, hideGameTitle: true)
-                    }
-                }
-            }
-        }
-
-        private func activitySection(_ matches: [Match]) -> some View {
-            Section("Activity") {
-                ActivityGridView(matches: Array(matches))
-                    .listRowInsets(EdgeInsets())
-            }
-        }
 
         var body: some View {
             ZStack {
@@ -158,48 +51,7 @@ import SwiftUI
                     }
                 } else {
                     List {
-                        Section {
-                            VStack(spacing: 12) {
-                                Text(game.title)
-                                    .font(.system(size: 40))
-                                    .fontWeight(.bold)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                    .multilineTextAlignment(.center)
-
-                                if activePlayerGroups.count > 1 {
-                                    Menu {
-                                        Button("All Players") {
-                                            selectedGroupId = nil
-                                        }
-                                        ForEach(activePlayerGroups) { group in
-                                            Button(group.name) {
-                                                selectedGroupId = group.id
-                                            }
-                                        }
-                                    } label: {
-                                        HStack {
-                                            Text(
-                                                selectedGroupId.flatMap { id in
-                                                    activePlayerGroups.first { $0.id == id }?.name
-                                                } ?? "All Players")
-                                            Image(systemName: "chevron.up.chevron.down")
-                                                .imageScale(.small)
-                                        }
-                                        .foregroundStyle(.blue)
-                                    }
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .listRowBackground(Color.clear)
-                        }
-
-                        leaderboardSection
-
-                        if totalWins > 0 {
-                            winDistributionSection()
-                        }
-                        activitySection(filteredMatches)
-                        matchHistorySection(filteredMatches)
+                        // Game content here
                     }
                 }
 
@@ -222,6 +74,12 @@ import SwiftUI
                     .padding(.bottom, 20)
                 }
             }
+            .navigationDestination(for: Match.self) { match in
+                MatchDetailView(match: match)
+            }
+            .navigationDestination(for: Player.self) { player in
+                AsyncPlayerDetailView(player: player)
+            }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -230,82 +88,15 @@ import SwiftUI
                 }
             }
             .sheet(isPresented: $showingNewMatch) {
-                if let groupId = selectedGroupId,
-                    let group = playerGroups.first(where: { $0.id == groupId })
-                {
-                    NewMatchView(
-                        game: game,
-                        defaultPlayerIDs: group.playerIDs,
-                        onMatchSaved: { newMatch in
-                            print("🔵 GameDetailView: New match saved, updating local state")
-                            matches.insert(newMatch, at: 0)  // Add to beginning since it's newest
-
-                            // Create or find player group for this match
-                            Task {
-                                do {
-                                    let playerNames = newMatch.playerIDs.compactMap { id in
-                                        cloudKitManager.getPlayer(id: id)?.name
-                                    }
-                                    let groupName = playerNames.joined(separator: ", ")
-                                    _ = try await cloudKitManager.findOrCreatePlayerGroup(
-                                        for: newMatch.playerIDs,
-                                        suggestedName: groupName
-                                    )
-                                    try? await Task.sleep(for: .seconds(1))  // Give CloudKit time to propagate
-                                    await loadData()  // Then refresh to ensure consistency
-                                } catch {
-                                    self.error = error
-                                    showingError = true
-                                }
-                            }
+                NewMatchView(
+                    game: game,
+                    onMatchSaved: { newMatch in
+                        matches.insert(newMatch, at: 0)
+                        Task {
+                            await loadData()
                         }
-                    )
-                } else {
-                    NewMatchView(
-                        game: game,
-                        onMatchSaved: { newMatch in
-                            print("🔵 GameDetailView: New match saved, updating local state")
-                            matches.insert(newMatch, at: 0)  // Add to beginning since it's newest
-
-                            // Create or find player group for this match
-                            Task {
-                                do {
-                                    let playerNames = newMatch.playerIDs.compactMap { id in
-                                        cloudKitManager.getPlayer(id: id)?.name
-                                    }
-                                    let groupName = playerNames.joined(separator: ", ")
-                                    _ = try await cloudKitManager.findOrCreatePlayerGroup(
-                                        for: newMatch.playerIDs,
-                                        suggestedName: groupName
-                                    )
-                                    try? await Task.sleep(for: .seconds(1))  // Give CloudKit time to propagate
-                                    await loadData()  // Then refresh to ensure consistency
-                                } catch {
-                                    self.error = error
-                                    showingError = true
-                                }
-                            }
-                        }
-                    )
-                }
-            }
-            .sheet(isPresented: $showingEditGame) {
-                EditGameView(game: game) {
-                    Task {
-                        // First dismiss the views
-                        dismiss()
-
-                        // Then force a fresh fetch with cache clearing
-                        try? await Task.sleep(for: .seconds(1))  // Give CloudKit time to propagate
-                        try? await cloudKitManager.fetchGames(forceRefresh: true)
                     }
-                }
-            }
-            .navigationDestination(for: Match.self) { match in
-                MatchDetailView(match: match)
-            }
-            .navigationDestination(for: Player.self) { player in
-                PlayerDetailView(player: player)
+                )
             }
             .task {
                 print("🔵 GameDetailView: Initial task triggered")
@@ -316,22 +107,6 @@ import SwiftUI
             .refreshable {
                 print("🔵 GameDetailView: Manual refresh triggered")
                 await loadData()
-            }
-            .onChange(of: cloudKitManager.games) { _ in
-                print("🔵 GameDetailView: CloudKitManager games array changed")
-                if let updatedGame = cloudKitManager.games.first(where: { $0.id == game.id }) {
-                    print("🔵 GameDetailView: Found updated game: \(updatedGame.id)")
-                    if let updatedMatches = updatedGame.matches {
-                        print(
-                            "🔵 GameDetailView: Updating matches array with \(updatedMatches.count) matches"
-                        )
-                        matches = updatedMatches
-                    } else {
-                        print("🔵 GameDetailView: Updated game has no matches array")
-                    }
-                } else {
-                    print("🔵 GameDetailView: Could not find updated game in CloudKitManager")
-                }
             }
             .alert("Error", isPresented: $showingError) {
                 Button("OK", role: .cancel) {}

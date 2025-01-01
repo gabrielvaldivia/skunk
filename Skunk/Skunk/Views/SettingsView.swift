@@ -66,7 +66,7 @@ import SwiftUI
                                 Text("Nearby Players")
                                     .foregroundColor(.primary)
                                 Spacer()
-                                if let location = locationManager.currentLocation {
+                                if locationManager.currentLocation != nil {
                                     Text("\(nearbyPlayers.count)")
                                         .foregroundColor(.secondary)
                                 } else {

@@ -11,6 +11,27 @@ import SwiftUI
 #if canImport(UIKit)
     import UIKit
 
+    struct AsyncPlayerDetailView: View {
+        let player: Player
+        @State private var loadedView: PlayerDetailView?
+        @State private var isLoading = true
+        @EnvironmentObject private var cloudKitManager: CloudKitManager
+
+        var body: some View {
+            Group {
+                if let loadedView {
+                    loadedView
+                } else {
+                    ProgressView()
+                }
+            }
+            .task {
+                loadedView = await PlayerDetailView.create(player: player)
+                isLoading = false
+            }
+        }
+    }
+
     struct ContentView: View {
         @State private var selectedTab = 0
         @State private var showingNewMatch = false
@@ -28,7 +49,7 @@ import SwiftUI
                                     MatchDetailView(match: match)
                                 }
                                 .navigationDestination(for: Player.self) { player in
-                                    PlayerDetailView(player: player)
+                                    AsyncPlayerDetailView(player: player)
                                 }
                         }
                 }
@@ -45,7 +66,7 @@ import SwiftUI
                             MatchDetailView(match: match)
                         }
                         .navigationDestination(for: Player.self) { player in
-                            PlayerDetailView(player: player)
+                            AsyncPlayerDetailView(player: player)
                         }
                 }
                 .tag(1)

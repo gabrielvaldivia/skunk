@@ -132,37 +132,29 @@ import SwiftUI
             isLoading = true
             defer { isLoading = false }
 
-            do {
-                var allMatches: [Match] = []
-
-                if let group = group {
-                    // For groups, fetch only the most recent match
-                    if let lastMatch = try? await cloudKitManager.fetchRecentMatches(
-                        forGroup: group.id, limit: 1
-                    ).first {
-                        allMatches = [lastMatch]
+            if let group = group {
+                Task {
+                    // First check cache
+                    if let matches = cloudKitManager.getGroupMatches(group.id) {
+                        self.matches = matches
+                        return
                     }
-                } else if let player = player {
-                    // For players, fetch only the most recent match
-                    if let lastMatch = try? await cloudKitManager.fetchRecentMatches(
-                        forPlayer: player.id, limit: 1
-                    ).first {
-                        allMatches = [lastMatch]
+
+                    // Otherwise fetch from CloudKit
+                    if let matches = try? await cloudKitManager.fetchRecentMatches(
+                        forGroup: group.id, limit: 10)
+                    {
+                        self.matches = matches
+                        cloudKitManager.cacheGroupMatches(matches, for: group.id)
                     }
                 }
-
-                if !allMatches.isEmpty {
-                    if let group = group {
-                        cloudKitManager.cacheMatchesForGroup(allMatches, groupId: group.id)
-                    } else if let player = player {
-                        cloudKitManager.cacheMatchesForPlayer(allMatches, playerId: player.id)
-                    }
-                    await MainActor.run {
-                        matches = allMatches
-                    }
+            } else if let player = player {
+                // For players, fetch only the most recent match
+                if let lastMatch = try? await cloudKitManager.fetchRecentMatches(
+                    forPlayer: player.id, limit: 1
+                ).first {
+                    matches = [lastMatch]
                 }
-            } catch {
-                print("Error loading matches: \(error)")
             }
         }
 

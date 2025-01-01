@@ -30,7 +30,7 @@
             _countAllScores = State(initialValue: game.countAllScores)
             _countLosersOnly = State(initialValue: game.countLosersOnly)
             _highestScoreWins = State(initialValue: game.highestScoreWins)
-            _highestRoundScoreWins = State(initialValue: game.highestRoundScoreWins ?? true)
+            _highestRoundScoreWins = State(initialValue: game.highestRoundScoreWins)
         }
 
         private var formattedDate: String {
@@ -115,7 +115,7 @@
         }
 
         private func saveGame() {
-            var updatedGame = game
+            let updatedGame = game
             updatedGame.title = title
             updatedGame.isBinaryScore = isBinaryScore
             updatedGame.supportedPlayerCounts = Set(minPlayers...maxPlayers)

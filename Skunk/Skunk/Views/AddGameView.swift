@@ -57,7 +57,7 @@
 
         private func addGame() {
             let supportedCounts = Set(minPlayers...maxPlayers)
-            var game = Game(
+            let game = Game(
                 title: title,
                 isBinaryScore: isBinaryScore,
                 supportedPlayerCounts: supportedCounts,

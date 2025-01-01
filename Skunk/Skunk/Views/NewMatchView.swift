@@ -128,7 +128,7 @@ extension Sequence {
         var availablePlayers: [Player] {
             cloudKitManager.players.filter { player in
                 // Don't show players that are already selected
-                guard !players.compactMap { $0 }.contains(where: { $0.id == player.id }) else {
+                guard !players.compactMap({ $0 }).contains(where: { $0.id == player.id }) else {
                     print("👥 NewMatchView: Player \(player.name) already selected")
                     #if canImport(FirebaseAnalytics)
                         Analytics.logEvent(
@@ -243,40 +243,51 @@ extension Sequence {
         private var gameSelectionSection: some View {
             Section("Game") {
                 if game == nil {
-                    Menu {
-                        ForEach(cloudKitManager.games) { game in
-                            Button(game.title) {
-                                selectedGame = game
-                                // Reset players and scores for new game
-                                let minPlayers = game.supportedPlayerCounts.min() ?? 2
-                                players = Array(repeating: nil, count: minPlayers)
-                                scores = Array(repeating: nil, count: minPlayers)
-                                // Always initialize with one round
-                                rounds = [Array(repeating: nil, count: minPlayers)]
+                    Menu(
+                        content: {
+                            ForEach(cloudKitManager.games) { game in
+                                Button(
+                                    action: {
+                                        selectedGame = game
+                                        // Reset players and scores for new game
+                                        let minPlayers = game.supportedPlayerCounts.min() ?? 2
+                                        players = Array(repeating: nil, count: minPlayers)
+                                        scores = Array(repeating: nil, count: minPlayers)
+                                        // Always initialize with one round
+                                        rounds = [Array(repeating: nil, count: minPlayers)]
+                                    },
+                                    label: {
+                                        Text(game.title)
+                                    }
+                                )
                             }
-                        }
 
-                        Divider()
+                            Divider()
 
-                        Button {
-                            showingAddGame = true
-                        } label: {
+                            Button(
+                                action: {
+                                    showingAddGame = true
+                                },
+                                label: {
+                                    HStack {
+                                        Text("Add Game")
+                                        Spacer()
+                                        Image(systemName: "plus.circle.fill")
+                                    }
+                                }
+                            )
+                        },
+                        label: {
                             HStack {
-                                Text("Add Game")
+                                Text(selectedGame?.title ?? "Select Game")
+                                    .foregroundColor(selectedGame == nil ? .secondary : .primary)
                                 Spacer()
-                                Image(systemName: "plus.circle.fill")
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .foregroundColor(.secondary)
+                                    .font(.footnote)
                             }
                         }
-                    } label: {
-                        HStack {
-                            Text(selectedGame?.title ?? "Select Game")
-                                .foregroundColor(selectedGame == nil ? .secondary : .primary)
-                            Spacer()
-                            Image(systemName: "chevron.up.chevron.down")
-                                .foregroundColor(.secondary)
-                                .font(.footnote)
-                        }
-                    }
+                    )
                 } else if let currentGame = game {
                     Text(currentGame.title)
                         .foregroundColor(.primary)
@@ -286,60 +297,67 @@ extension Sequence {
 
         private func playerRow(for index: Int, in currentGame: Game) -> some View {
             HStack {
-                Menu {
-                    ForEach(availablePlayers) { player in
-                        Button {
-                            players[index] = player
-                        } label: {
-                            HStack {
-                                Text(player.name)
-                                if let distance = locationManager.distanceToPlayer(player),
-                                    player.appleUserID != authManager.userID
-                                        && (player.ownerID != authManager.userID
-                                            || player.appleUserID != nil)
-                                {
-                                    Text(formatDistance(distance))
-                                        .foregroundStyle(.secondary)
+                Menu(
+                    content: {
+                        ForEach(availablePlayers) { player in
+                            Button(
+                                action: {
+                                    players[index] = player
+                                },
+                                label: {
+                                    HStack {
+                                        Text(player.name)
+                                        if let distance = locationManager.distanceToPlayer(player),
+                                            player.appleUserID != authManager.userID
+                                                && (player.ownerID != authManager.userID
+                                                    || player.appleUserID != nil)
+                                        {
+                                            Text(formatDistance(distance))
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                })
+                        }
+
+                        Divider()
+
+                        Button(
+                            action: {
+                                showingAddPlayer = true
+                            },
+                            label: {
+                                HStack {
+                                    Text("Add Player")
+                                    Spacer()
+                                    Image(systemName: "plus.circle.fill")
                                 }
+                            })
+                    },
+                    label: {
+                        HStack {
+                            if players[index] != nil {
+                                PlayerAvatar(player: players[index]!, size: 40)
+                                    .clipShape(Circle())
+                                Text(players[index]!.name)
+                                    .foregroundColor(.primary)
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .foregroundColor(.secondary)
+                                    .font(.footnote)
+                            } else {
+                                Text("Player \(index + 1)")
+                                    .foregroundColor(.secondary)
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .foregroundColor(.secondary)
+                                    .font(.footnote)
                             }
                         }
                     }
-
-                    Divider()
-
-                    Button {
-                        showingAddPlayer = true
-                    } label: {
-                        HStack {
-                            Text("Add Player")
-                            Spacer()
-                            Image(systemName: "plus.circle.fill")
-                        }
-                    }
-                } label: {
-                    HStack {
-                        if let player = players[index] {
-                            PlayerAvatar(player: player, size: 40)
-                                .clipShape(Circle())
-                            Text(player.name)
-                                .foregroundColor(.primary)
-                            Image(systemName: "chevron.up.chevron.down")
-                                .foregroundColor(.secondary)
-                                .font(.footnote)
-                        } else {
-                            Text("Player \(index + 1)")
-                                .foregroundColor(.secondary)
-                            Image(systemName: "chevron.up.chevron.down")
-                                .foregroundColor(.secondary)
-                                .font(.footnote)
-                        }
-                    }
-                }
+                )
 
                 Spacer()
 
                 if currentGame.isBinaryScore {
-                    if let player = players[index] {
+                    if players[index] != nil {
                         Image(systemName: "crown.fill")
                             .foregroundStyle(scores[index] == 1 ? .yellow : .gray.opacity(0.3))
                             .onTapGesture {

@@ -312,7 +312,7 @@ import SwiftUI
                 }
 
                 // Add floating action button
-                if let selectedGame = games.first(where: { $0.id == selectedGameId }) {
+                if games.first(where: { $0.id == selectedGameId }) != nil {
                     VStack {
                         Spacer()
                         HStack {
