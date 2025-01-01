@@ -7,22 +7,14 @@ import SwiftUI
     class CloudKitManager: ObservableObject {
         static let shared = CloudKitManager()
         private let container: CKContainer
-        private let database: CKDatabase
+        private var database: CKDatabase
         private var lastRefreshTime: Date = .distantPast
         private var lastGamesRefreshTime: Date = .distantPast
         private var isRefreshing = false
-
-        // New enum for cache types
-        private enum CacheType: Hashable {
-            case game(String)  // gameId
-            case player(String)  // playerId
-            case group(String)  // groupId
-        }
-
-        // Unified cache structure
-        private var matchCache: [CacheType: [Match]] = [:]
-        private var playerCache: [String: Player] = [:]  // Keep this separate as it's a different type
-
+        private var matchCache: [String: [Match]] = [:]  // Cache matches by game ID
+        private var playerMatchesCache: [String: [Match]] = [:]  // Cache matches by player ID
+        private var groupMatchesCache: [String: [Match]] = [:]  // Cache matches by group ID
+        private var playerCache: [String: Player] = [:]  // Cache players by ID
         private var refreshDebounceTask: Task<Void, Never>?
         private let debounceInterval: TimeInterval = 2.0  // 2 seconds debounce
         private let cacheTimeout: TimeInterval = 30.0  // 30 seconds cache timeout
@@ -554,7 +546,7 @@ import SwiftUI
                     // Update local state
                     await MainActor.run {
                         games.removeAll { $0.id == game.id }
-                        matchCache.removeValue(forKey: .game(game.id))
+                        matchCache.removeValue(forKey: game.id)
                     }
 
                     // Reset refresh time to ensure next fetch gets latest data
@@ -571,7 +563,7 @@ import SwiftUI
                         print("🟣 CloudKitManager: Record already deleted")
                         await MainActor.run {
                             games.removeAll { $0.id == game.id }
-                            matchCache.removeValue(forKey: .game(game.id))
+                            matchCache.removeValue(forKey: game.id)
                         }
                         return
                     }
@@ -883,7 +875,7 @@ import SwiftUI
                 print("🟣 CloudKitManager: Successfully parsed \(matches.count) matches")
 
                 // Update cache
-                matchCache[.game(game.id)] = matches
+                matchCache[game.id] = matches
 
                 // Update game's matches without triggering a refresh
                 if let index = games.firstIndex(where: { $0.id == game.id }) {
@@ -916,13 +908,13 @@ import SwiftUI
 
             // Update cache and game's matches
             if let gameId = match.game?.id {
-                var matches = matchCache[.game(gameId)] ?? []
+                var matches = matchCache[gameId] ?? []
                 if let index = matches.firstIndex(where: { $0.id == match.id }) {
                     matches[index] = updatedMatch
                 } else {
                     matches.append(updatedMatch)
                 }
-                matchCache[.game(gameId)] = matches
+                matchCache[gameId] = matches
 
                 // Update game's matches without triggering a refresh
                 if let gameIndex = games.firstIndex(where: { $0.id == gameId }) {
@@ -947,9 +939,9 @@ import SwiftUI
 
             // Update cache and game's matches
             if let gameId = match.game?.id {
-                matchCache[.game(gameId)]?.removeAll { $0.id == match.id }
+                matchCache[gameId]?.removeAll { $0.id == match.id }
                 if let gameIndex = games.firstIndex(where: { $0.id == gameId }) {
-                    games[gameIndex].matches = matchCache[.game(gameId)]
+                    games[gameIndex].matches = matchCache[gameId]
                 }
             }
         }
@@ -1184,20 +1176,17 @@ import SwiftUI
 
         // Add a method to get matches for a player
         func getPlayerMatches(_ playerId: String) -> [Match]? {
-            return matchCache[.player(playerId)]
+            return playerMatchesCache[playerId]
         }
 
         // Add a method to cache matches for a player
         func cachePlayerMatches(_ matches: [Match], for playerId: String) {
-            matchCache[.player(playerId)] = matches
+            playerMatchesCache[playerId] = matches
         }
 
         // Add a method to clear player matches cache
         func clearPlayerMatchesCache() {
-            matchCache = matchCache.filter { key, _ in
-                if case .player = key { return false }
-                return true
-            }
+            playerMatchesCache.removeAll()
         }
 
         // MARK: - Player Groups
@@ -1394,20 +1383,17 @@ import SwiftUI
 
         // Add a method to get matches for a group
         func getGroupMatches(_ groupId: String) -> [Match]? {
-            return matchCache[.group(groupId)]
+            return groupMatchesCache[groupId]
         }
 
         // Add a method to cache matches for a group
         func cacheGroupMatches(_ matches: [Match], for groupId: String) {
-            matchCache[.group(groupId)] = matches
+            groupMatchesCache[groupId] = matches
         }
 
         // Add a method to clear group matches cache
         func clearGroupMatchesCache() {
-            matchCache = matchCache.filter { key, _ in
-                if case .group = key { return false }
-                return true
-            }
+            groupMatchesCache.removeAll()
         }
 
         // Update loadGroupsAndMatches to return matches
@@ -1664,70 +1650,52 @@ import SwiftUI
             return userID == adminUserID
         }
 
-        private enum FetchType {
-            case game(String)
-            case player(String)
-            case group([String])
-
-            var predicate: NSPredicate {
-                switch self {
-                case .game(let gameId):
-                    return NSPredicate(format: "gameID == %@", gameId)
-                case .player(let playerId):
-                    return NSPredicate(format: "playerIDs CONTAINS %@", playerId)
-                case .group(let playerIds):
-                    var format = "playerIDs CONTAINS %@"
-                    var args: [String] = [playerIds[0]]
-                    for id in playerIds.dropFirst() {
-                        format += " AND playerIDs CONTAINS %@"
-                        args.append(id)
-                    }
-                    return NSPredicate(format: format, argumentArray: args)
-                }
-            }
-        }
-
-        // Add unified fetch method
-        private func fetchRecentMatches(type: FetchType, limit: Int? = nil) async throws -> [Match]
-        {
+        func fetchRecentMatches(forGame gameId: String, limit: Int) async throws -> [Match] {
             try await ensureCloudKitAccess()
 
-            let query = CKQuery(recordType: "Match", predicate: type.predicate)
-            query.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+            let predicate = NSPredicate(format: "gameID == %@", gameId)
+            let sort = NSSortDescriptor(key: "date", ascending: false)
+            let query = CKQuery(recordType: "Match", predicate: predicate)
+            query.sortDescriptors = [sort]
 
             let (results, _) = try await database.records(
                 matching: query,
-                resultsLimit: limit ?? 0  // 0 means no limit
+                resultsLimit: limit
             )
 
             let matches = try results.compactMap { result -> Match? in
                 guard let record = try? result.1.get() else { return nil }
-                var match = try? Match(from: record)
-
-                // Attach game to match if needed
-                if let gameId = record["gameID"] as? String,
-                    let game = games.first(where: { $0.id == gameId })
-                {
-                    match?.game = game
-                }
-
-                return match
+                return try? Match(from: record)
             }
 
-            return matches.sorted { $0.date > $1.date }
-        }
-
-        // Replace existing methods with new implementations
-        func fetchRecentMatches(forGame gameId: String, limit: Int) async throws -> [Match] {
-            return try await fetchRecentMatches(type: .game(gameId), limit: limit)
+            return matches
         }
 
         func fetchRecentMatches(forPlayer playerId: String, limit: Int) async throws -> [Match] {
-            return try await fetchRecentMatches(type: .player(playerId), limit: limit)
+            try await ensureCloudKitAccess()
+
+            let predicate = NSPredicate(format: "playerIDs CONTAINS %@", playerId)
+            let sort = NSSortDescriptor(key: "date", ascending: false)
+            let query = CKQuery(recordType: "Match", predicate: predicate)
+            query.sortDescriptors = [sort]
+
+            let (results, _) = try await database.records(
+                matching: query,
+                resultsLimit: limit
+            )
+
+            let matches = try results.compactMap { result -> Match? in
+                guard let record = try? result.1.get() else { return nil }
+                return try? Match(from: record)
+            }
+
+            return matches
         }
 
         func fetchRecentMatches(forGroup groupId: String, limit: Int) async throws -> [Match] {
-            // First get the player IDs for the group
+            try await ensureCloudKitAccess()
+
+            // Get the player IDs for this group
             let groupRecordID = CKRecord.ID(recordName: groupId)
             let groupRecord = try await database.record(for: groupRecordID)
             guard let groupData = groupRecord["playerIDs"] as? Data,
@@ -1736,33 +1704,57 @@ import SwiftUI
                 return []
             }
 
-            return try await fetchRecentMatches(type: .group(playerIDs), limit: limit)
+            // Create a predicate that matches matches containing ALL players in the group
+            var format = "playerIDs CONTAINS %@"
+            var args: [String] = [playerIDs[0]]
+
+            for id in playerIDs.dropFirst() {
+                format += " AND playerIDs CONTAINS %@"
+                args.append(id)
+            }
+
+            let predicate = NSPredicate(format: format, argumentArray: args)
+            let sort = NSSortDescriptor(key: "date", ascending: false)
+            let query = CKQuery(recordType: "Match", predicate: predicate)
+            query.sortDescriptors = [sort]
+
+            let (results, _) = try await database.records(
+                matching: query,
+                resultsLimit: limit
+            )
+
+            let matches = try results.compactMap { result -> Match? in
+                guard let record = try? result.1.get() else { return nil }
+                return try? Match(from: record)
+            }
+
+            return matches
         }
 
         // MARK: - Match Cache Methods
 
         func getMatchesForGame(_ gameId: String) -> [Match]? {
-            return matchCache[.game(gameId)]
+            return matchCache[gameId]
         }
 
         func cacheMatchesForGame(_ matches: [Match], gameId: String) {
-            matchCache[.game(gameId)] = matches
+            matchCache[gameId] = matches
         }
 
         func getMatchesForPlayer(_ playerId: String) -> [Match]? {
-            return matchCache[.player(playerId)]
+            return playerMatchesCache[playerId]
         }
 
         func cacheMatchesForPlayer(_ matches: [Match], playerId: String) {
-            matchCache[.player(playerId)] = matches
+            playerMatchesCache[playerId] = matches
         }
 
         func getMatchesForGroup(_ groupId: String) -> [Match]? {
-            return matchCache[.group(groupId)]
+            return groupMatchesCache[groupId]
         }
 
         func cacheMatchesForGroup(_ matches: [Match], groupId: String) {
-            matchCache[.group(groupId)] = matches
+            groupMatchesCache[groupId] = matches
         }
 
         // MARK: - Activity Methods

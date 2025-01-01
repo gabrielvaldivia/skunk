@@ -132,29 +132,37 @@ import SwiftUI
             isLoading = true
             defer { isLoading = false }
 
-            if let group = group {
-                Task {
-                    // First check cache
-                    if let matches = cloudKitManager.getGroupMatches(group.id) {
-                        self.matches = matches
-                        return
-                    }
+            do {
+                var allMatches: [Match] = []
 
-                    // Otherwise fetch from CloudKit
-                    if let matches = try? await cloudKitManager.fetchRecentMatches(
-                        forGroup: group.id, limit: 10)
-                    {
-                        self.matches = matches
-                        cloudKitManager.cacheGroupMatches(matches, for: group.id)
+                if let group = group {
+                    // For groups, fetch only the most recent match
+                    if let lastMatch = try? await cloudKitManager.fetchRecentMatches(
+                        forGroup: group.id, limit: 1
+                    ).first {
+                        allMatches = [lastMatch]
+                    }
+                } else if let player = player {
+                    // For players, fetch only the most recent match
+                    if let lastMatch = try? await cloudKitManager.fetchRecentMatches(
+                        forPlayer: player.id, limit: 1
+                    ).first {
+                        allMatches = [lastMatch]
                     }
                 }
-            } else if let player = player {
-                // For players, fetch only the most recent match
-                if let lastMatch = try? await cloudKitManager.fetchRecentMatches(
-                    forPlayer: player.id, limit: 1
-                ).first {
-                    matches = [lastMatch]
+
+                if !allMatches.isEmpty {
+                    if let group = group {
+                        cloudKitManager.cacheMatchesForGroup(allMatches, groupId: group.id)
+                    } else if let player = player {
+                        cloudKitManager.cacheMatchesForPlayer(allMatches, playerId: player.id)
+                    }
+                    await MainActor.run {
+                        matches = allMatches
+                    }
                 }
+            } catch {
+                print("Error loading matches: \(error)")
             }
         }
 

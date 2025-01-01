@@ -167,7 +167,7 @@ import SwiftUI
                     // Check if the user is the admin (you)
                     let adminEmail = "valdivia.gabriel@gmail.com"
                     let isAdmin =
-                        cloudKitManager.getCurrentUser(withID: currentUserID)?.appleUserID
+                        await cloudKitManager.getCurrentUser(withID: currentUserID)?.appleUserID
                         == adminEmail
 
                     for index in offsets {

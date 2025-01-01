@@ -351,7 +351,7 @@ import SwiftUI
             List {
                 ForEach(allPlayers) { player in
                     ZStack {
-                        NavigationLink(destination: AsyncPlayerDetailView(player: player)) {
+                        NavigationLink(destination: PlayerDetailView(player: player)) {
                             EmptyView()
                         }
                         .opacity(0)
