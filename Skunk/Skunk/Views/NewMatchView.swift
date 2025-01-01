@@ -361,8 +361,9 @@ extension Sequence {
                         HStack(spacing: 8) {
                             if score > 0 && !scores.isEmpty {
                                 let isWinner =
-                                    currentGame.highestScoreWins
-                                    ? score == scores.max() : score == scores.min()
+                                    currentGame.highestRoundScoreWins
+                                    ? score == scores.max()
+                                    : score == scores.min()
                                 if isWinner {
                                     Image(systemName: "crown.fill")
                                         .foregroundStyle(.yellow)
@@ -451,7 +452,7 @@ extension Sequence {
                                 HStack(spacing: 8) {
                                     if currentScore > 0 && !scores.isEmpty {
                                         let isWinner =
-                                            currentGame.highestScoreWins
+                                            currentGame.highestRoundScoreWins
                                             ? currentScore == scores.max()
                                             : currentScore == scores.min()
                                         if isWinner {
@@ -494,7 +495,7 @@ extension Sequence {
                         // Find the winner of this round
                         let scores = roundScores.map { $0 ?? 0 }
                         let winnerIndex =
-                            game.highestScoreWins
+                            game.highestRoundScoreWins
                             ? scores.firstIndex(of: scores.max() ?? 0) ?? 0
                             : scores.firstIndex(of: scores.min() ?? 0) ?? 0
 
@@ -504,9 +505,9 @@ extension Sequence {
                             .map { $0.element }
                             .reduce(0, +)
 
-                        // Add losers' total to the running total for the winner
-                        var newTotals = totals
-                        newTotals[winnerIndex] += losersTotal
+                        // Winner only gets the sum of losers' scores (not their own score)
+                        var newTotals = Array(repeating: 0, count: totals.count)
+                        newTotals[winnerIndex] = totals[winnerIndex] + losersTotal
                         return newTotals
                     } else {
                         return zip(totals, roundScores.map { $0 ?? 0 }).map(+)
@@ -728,15 +729,57 @@ extension Sequence {
                         }
                     } else {
                         // For non-binary score games, winner is based on highest/lowest total score
-                        if let maxScore = totalScores.max(),
-                            let minScore = totalScores.min()
-                        {
-                            let winnerIndex =
-                                game.highestScoreWins
-                                ? totalScores.firstIndex(of: maxScore)
-                                : totalScores.firstIndex(of: minScore)
-                            if let winnerIndex = winnerIndex {
-                                match.winnerID = match.playerIDs[winnerIndex]
+                        if game.countLosersOnly {
+                            // Calculate total scores by summing up losers' scores for each round's winner
+                            let totalScores = rounds.reduce(
+                                Array(repeating: 0, count: players.count)
+                            ) { totals, roundScores in
+                                let scores = roundScores.map { $0 ?? 0 }
+                                let winnerIndex =
+                                    game.highestRoundScoreWins
+                                    ? scores.firstIndex(of: scores.max() ?? 0) ?? 0
+                                    : scores.firstIndex(of: scores.min() ?? 0) ?? 0
+
+                                let losersTotal = scores.enumerated()
+                                    .filter { $0.offset != winnerIndex }
+                                    .map { $0.element }
+                                    .reduce(0, +)
+
+                                var newTotals = totals
+                                newTotals[winnerIndex] += losersTotal
+                                return newTotals
+                            }
+
+                            // Determine winner based on game's highestScoreWins setting
+                            if let maxScore = totalScores.max(),
+                                let minScore = totalScores.min()
+                            {
+                                let winnerIndex =
+                                    game.highestScoreWins
+                                    ? totalScores.firstIndex(of: maxScore)
+                                    : totalScores.firstIndex(of: minScore)
+                                if let winnerIndex = winnerIndex {
+                                    match.winnerID = match.playerIDs[winnerIndex]
+                                }
+                            }
+                        } else {
+                            // Regular scoring - just sum up all scores
+                            let totalScores = rounds.reduce(
+                                Array(repeating: 0, count: players.count)
+                            ) { totals, roundScores in
+                                zip(totals, roundScores.map { $0 ?? 0 }).map(+)
+                            }
+
+                            if let maxScore = totalScores.max(),
+                                let minScore = totalScores.min()
+                            {
+                                let winnerIndex =
+                                    game.highestScoreWins
+                                    ? totalScores.firstIndex(of: maxScore)
+                                    : totalScores.firstIndex(of: minScore)
+                                if let winnerIndex = winnerIndex {
+                                    match.winnerID = match.playerIDs[winnerIndex]
+                                }
                             }
                         }
                     }

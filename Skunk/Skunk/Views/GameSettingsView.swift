@@ -94,16 +94,16 @@
                 }
 
                 if !isBinaryScore {
-                    Section("Game Winning Condition") {
+                    Section("Match Winning Condition") {
                         RadioButton(
-                            title: "Highest Total Score Wins Game",
+                            title: "Highest Total Score",
                             isSelected: highestScoreWins
                         ) {
                             highestScoreWins = true
                         }
 
                         RadioButton(
-                            title: "Lowest Total Score Wins Game",
+                            title: "Lowest Total Score",
                             isSelected: !highestScoreWins
                         ) {
                             highestScoreWins = false
@@ -112,14 +112,14 @@
 
                     Section("Round Winning Condition") {
                         RadioButton(
-                            title: "Highest Score Wins Round",
+                            title: "Highest Score",
                             isSelected: highestRoundScoreWins
                         ) {
                             highestRoundScoreWins = true
                         }
 
                         RadioButton(
-                            title: "Lowest Score Wins Round",
+                            title: "Lowest Score",
                             isSelected: !highestRoundScoreWins
                         ) {
                             highestRoundScoreWins = false

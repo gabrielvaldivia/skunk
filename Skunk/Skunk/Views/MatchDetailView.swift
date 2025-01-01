@@ -79,12 +79,19 @@ import SwiftUI
                                                 .foregroundStyle(.secondary)
 
                                             // Show crown for round winner
-                                            if let maxScore = roundScores.max(),
-                                                score == maxScore,
-                                                maxScore > 0  // Only show crown if there's a non-zero score
+                                            if let game = match.game,
+                                                let maxScore = roundScores.max(),
+                                                let minScore = roundScores.min(),
+                                                score > 0  // Only show crown if there's a non-zero score
                                             {
-                                                Image(systemName: "crown.fill")
-                                                    .foregroundStyle(.yellow)
+                                                let isWinner =
+                                                    game.highestRoundScoreWins
+                                                    ? score == maxScore
+                                                    : score == minScore
+                                                if isWinner {
+                                                    Image(systemName: "crown.fill")
+                                                        .foregroundStyle(.yellow)
+                                                }
                                             }
                                         }
                                         .padding(.vertical, 8)
@@ -102,7 +109,7 @@ import SwiftUI
                                     // Find the winner of this round
                                     let scores = roundScores
                                     let winnerIndex =
-                                        game.highestScoreWins
+                                        game.highestRoundScoreWins
                                         ? scores.firstIndex(of: scores.max() ?? 0) ?? 0
                                         : scores.firstIndex(of: scores.min() ?? 0) ?? 0
 
@@ -112,9 +119,9 @@ import SwiftUI
                                         .map { $0.element }
                                         .reduce(0, +)
 
-                                    // Add losers' total to the running total for the winner
-                                    var newTotals = totals
-                                    newTotals[winnerIndex] += losersTotal
+                                    // Winner only gets the sum of losers' scores (not their own score)
+                                    var newTotals = Array(repeating: 0, count: totals.count)
+                                    newTotals[winnerIndex] = totals[winnerIndex] + losersTotal
                                     return newTotals
                                 } else {
                                     return zip(totals, roundScores).map(+)
