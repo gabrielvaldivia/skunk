@@ -1060,37 +1060,6 @@ import SwiftUI
             }
         }
 
-        func deleteAllPlayers() async throws {
-            try await withThrowingTaskGroup(of: Void.self) { group in
-                for player in players {
-                    group.addTask {
-                        try await self.deletePlayer(player)
-                    }
-                }
-                try await group.waitForAll()
-            }
-            players.removeAll()
-        }
-
-        func deletePlayersWithoutAppleID() async throws {
-            // Only delete players that have no Apple ID AND are not owned by anyone
-            let playersToDelete = players.filter { player in
-                player.appleUserID == nil && player.ownerID == nil
-            }
-            try await withThrowingTaskGroup(of: Void.self) { group in
-                for player in playersToDelete {
-                    group.addTask {
-                        try await self.deletePlayer(player)
-                    }
-                }
-                try await group.waitForAll()
-            }
-            players.removeAll { player in
-                player.appleUserID == nil && player.ownerID == nil
-            }
-        }
-
-        // Add a method to handle specific record changes
         func handleRecordChange(_ record: CKRecord) async {
             switch record.recordType {
             case "Player":
