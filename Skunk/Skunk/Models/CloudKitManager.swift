@@ -1066,24 +1066,22 @@ import SwiftUI
                 if let id = record.value(forKey: "id") as? String,
                     let player = Player(from: record)
                 {
-                    // Update cache directly with the record we already have
                     updatePlayerCache(player)
                 }
             case "Game":
                 _ = try? await fetchGames()
             case "Match":
                 matchCache.removeAll()
-                clearPlayerMatchesCache()  // Clear player matches cache when any match changes
+                clearPlayerMatchesCache()
+                clearGroupMatchesCache()
             default:
                 break
             }
         }
 
         func handleSubscriptionNotification(for recordType: String, recordID: CKRecord.ID? = nil) {
-            // Cancel any existing debounce task
             refreshDebounceTask?.cancel()
 
-            // Create a new debounce task
             refreshDebounceTask = Task { [weak self] in
                 do {
                     try await Task.sleep(for: .seconds(self?.debounceInterval ?? 2.0))
@@ -1092,7 +1090,6 @@ import SwiftUI
                     switch recordType {
                     case "Player":
                         if let recordID = recordID {
-                            // Fetch just this one record directly
                             let record = try? await self?.database.record(for: recordID)
                             if let record = record,
                                 let player = Player(from: record)
@@ -1105,14 +1102,9 @@ import SwiftUI
                     case "Game":
                         _ = try? await self?.fetchGames()
                     case "Match":
-                        // Only clear the specific match from cache if we have its ID
-                        if let recordID = recordID,
-                            let gameID = self?.matchCache.first(where: {
-                                $0.value.contains { $0.recordID == recordID }
-                            })?.key
-                        {
-                            self?.matchCache.removeValue(forKey: gameID)
-                        }
+                        self?.matchCache.removeAll()
+                        self?.clearPlayerMatchesCache()
+                        self?.clearGroupMatchesCache()
                     default:
                         break
                     }
