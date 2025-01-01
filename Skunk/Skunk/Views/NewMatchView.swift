@@ -126,9 +126,9 @@ extension Sequence {
         }
 
         var availablePlayers: [Player] {
-            cloudKitManager.players.filter { player in
+            cloudKitManager.players.filter({ player in
                 // Don't show players that are already selected
-                guard !players.compactMap { $0 }.contains(where: { $0.id == player.id }) else {
+                guard !players.compactMap({ $0 }).contains(where: { $0.id == player.id }) else {
                     print("👥 NewMatchView: Player \(player.name) already selected")
                     #if canImport(FirebaseAnalytics)
                         Analytics.logEvent(
@@ -189,7 +189,7 @@ extension Sequence {
                         ])
                 #endif
                 return false
-            }.sorted { player1, player2 in
+            }).sorted { player1, player2 in
                 // Sort by:
                 // 1. Current user first
                 // 2. Then managed players

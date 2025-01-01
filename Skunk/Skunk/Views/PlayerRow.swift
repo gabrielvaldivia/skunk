@@ -137,16 +137,18 @@ import SwiftUI
 
                 if let group = group {
                     // For groups, fetch only the most recent match
-                    if let lastMatch = try? await cloudKitManager.fetchRecentMatches(
+                    let recentMatches = try await cloudKitManager.fetchRecentMatches(
                         forGroup: group.id, limit: 1
-                    ).first {
+                    )
+                    if let lastMatch = recentMatches.first {
                         allMatches = [lastMatch]
                     }
                 } else if let player = player {
                     // For players, fetch only the most recent match
-                    if let lastMatch = try? await cloudKitManager.fetchRecentMatches(
+                    let recentMatches = try await cloudKitManager.fetchRecentMatches(
                         forPlayer: player.id, limit: 1
-                    ).first {
+                    )
+                    if let lastMatch = recentMatches.first {
                         allMatches = [lastMatch]
                     }
                 }
