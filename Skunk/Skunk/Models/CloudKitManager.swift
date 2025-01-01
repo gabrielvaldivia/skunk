@@ -1664,52 +1664,70 @@ import SwiftUI
             return userID == adminUserID
         }
 
-        func fetchRecentMatches(forGame gameId: String, limit: Int) async throws -> [Match] {
+        private enum FetchType {
+            case game(String)
+            case player(String)
+            case group([String])
+
+            var predicate: NSPredicate {
+                switch self {
+                case .game(let gameId):
+                    return NSPredicate(format: "gameID == %@", gameId)
+                case .player(let playerId):
+                    return NSPredicate(format: "playerIDs CONTAINS %@", playerId)
+                case .group(let playerIds):
+                    var format = "playerIDs CONTAINS %@"
+                    var args: [String] = [playerIds[0]]
+                    for id in playerIds.dropFirst() {
+                        format += " AND playerIDs CONTAINS %@"
+                        args.append(id)
+                    }
+                    return NSPredicate(format: format, argumentArray: args)
+                }
+            }
+        }
+
+        // Add unified fetch method
+        private func fetchRecentMatches(type: FetchType, limit: Int? = nil) async throws -> [Match]
+        {
             try await ensureCloudKitAccess()
 
-            let predicate = NSPredicate(format: "gameID == %@", gameId)
-            let sort = NSSortDescriptor(key: "date", ascending: false)
-            let query = CKQuery(recordType: "Match", predicate: predicate)
-            query.sortDescriptors = [sort]
+            let query = CKQuery(recordType: "Match", predicate: type.predicate)
+            query.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
 
             let (results, _) = try await database.records(
                 matching: query,
-                resultsLimit: limit
+                resultsLimit: limit ?? 0  // 0 means no limit
             )
 
             let matches = try results.compactMap { result -> Match? in
                 guard let record = try? result.1.get() else { return nil }
-                return try? Match(from: record)
+                var match = try? Match(from: record)
+
+                // Attach game to match if needed
+                if let gameId = record["gameID"] as? String,
+                    let game = games.first(where: { $0.id == gameId })
+                {
+                    match?.game = game
+                }
+
+                return match
             }
 
-            return matches
+            return matches.sorted { $0.date > $1.date }
+        }
+
+        // Replace existing methods with new implementations
+        func fetchRecentMatches(forGame gameId: String, limit: Int) async throws -> [Match] {
+            return try await fetchRecentMatches(type: .game(gameId), limit: limit)
         }
 
         func fetchRecentMatches(forPlayer playerId: String, limit: Int) async throws -> [Match] {
-            try await ensureCloudKitAccess()
-
-            let predicate = NSPredicate(format: "playerIDs CONTAINS %@", playerId)
-            let sort = NSSortDescriptor(key: "date", ascending: false)
-            let query = CKQuery(recordType: "Match", predicate: predicate)
-            query.sortDescriptors = [sort]
-
-            let (results, _) = try await database.records(
-                matching: query,
-                resultsLimit: limit
-            )
-
-            let matches = try results.compactMap { result -> Match? in
-                guard let record = try? result.1.get() else { return nil }
-                return try? Match(from: record)
-            }
-
-            return matches
+            return try await fetchRecentMatches(type: .player(playerId), limit: limit)
         }
 
         func fetchRecentMatches(forGroup groupId: String, limit: Int) async throws -> [Match] {
-            try await ensureCloudKitAccess()
-
-            // Get the player IDs for this group
+            // First get the player IDs for the group
             let groupRecordID = CKRecord.ID(recordName: groupId)
             let groupRecord = try await database.record(for: groupRecordID)
             guard let groupData = groupRecord["playerIDs"] as? Data,
@@ -1718,31 +1736,7 @@ import SwiftUI
                 return []
             }
 
-            // Create a predicate that matches matches containing ALL players in the group
-            var format = "playerIDs CONTAINS %@"
-            var args: [String] = [playerIDs[0]]
-
-            for id in playerIDs.dropFirst() {
-                format += " AND playerIDs CONTAINS %@"
-                args.append(id)
-            }
-
-            let predicate = NSPredicate(format: format, argumentArray: args)
-            let sort = NSSortDescriptor(key: "date", ascending: false)
-            let query = CKQuery(recordType: "Match", predicate: predicate)
-            query.sortDescriptors = [sort]
-
-            let (results, _) = try await database.records(
-                matching: query,
-                resultsLimit: limit
-            )
-
-            let matches = try results.compactMap { result -> Match? in
-                guard let record = try? result.1.get() else { return nil }
-                return try? Match(from: record)
-            }
-
-            return matches
+            return try await fetchRecentMatches(type: .group(playerIDs), limit: limit)
         }
 
         // MARK: - Match Cache Methods
