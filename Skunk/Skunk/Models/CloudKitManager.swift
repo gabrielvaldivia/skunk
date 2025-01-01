@@ -1756,5 +1756,40 @@ import SwiftUI
         func cacheMatchesForGroup(_ matches: [Match], groupId: String) {
             groupMatchesCache[groupId] = matches
         }
+
+        // MARK: - Activity Methods
+
+        func fetchRecentActivityMatches(limit: Int, daysBack: Int = 3) async throws -> [Match] {
+            try await ensureCloudKitAccess()
+
+            let calendar = Calendar.current
+            let startDate = calendar.date(byAdding: .day, value: -daysBack, to: Date()) ?? Date()
+
+            let predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
+            let sort = NSSortDescriptor(key: "date", ascending: false)
+            let query = CKQuery(recordType: "Match", predicate: predicate)
+            query.sortDescriptors = [sort]
+
+            let (results, _) = try await database.records(
+                matching: query,
+                resultsLimit: limit
+            )
+
+            let matches = try results.compactMap { result -> Match? in
+                guard let record = try? result.1.get() else { return nil }
+                var match = try? Match(from: record)
+
+                // Attach game to match
+                if let gameId = record["gameID"] as? String,
+                    let game = games.first(where: { $0.id == gameId })
+                {
+                    match?.game = game
+                }
+
+                return match
+            }
+
+            return matches.sorted { $0.date > $1.date }
+        }
     }
 #endif
