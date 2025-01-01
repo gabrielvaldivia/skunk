@@ -74,24 +74,25 @@ import SwiftUI
                                                     .font(.body)
                                             }
                                             Spacer()
-                                            Text("\(score)")
-                                                .font(.body)
-                                                .foregroundStyle(.secondary)
-
-                                            // Show crown for round winner
-                                            if let game = match.game,
-                                                let maxScore = roundScores.max(),
-                                                let minScore = roundScores.min(),
-                                                score > 0  // Only show crown if there's a non-zero score
-                                            {
-                                                let isWinner =
-                                                    game.highestRoundScoreWins
-                                                    ? score == maxScore
-                                                    : score == minScore
-                                                if isWinner {
-                                                    Image(systemName: "crown.fill")
-                                                        .foregroundStyle(.yellow)
+                                            HStack(spacing: 4) {
+                                                // Show crown for round winner
+                                                if let game = match.game,
+                                                    let maxScore = roundScores.max(),
+                                                    let minScore = roundScores.min(),
+                                                    score > 0  // Only show crown if there's a non-zero score
+                                                {
+                                                    let isWinner =
+                                                        game.highestRoundScoreWins
+                                                        ? score == maxScore
+                                                        : score == minScore
+                                                    if isWinner {
+                                                        Image(systemName: "crown.fill")
+                                                            .foregroundStyle(.yellow)
+                                                    }
                                                 }
+                                                Text("\(score)")
+                                                    .font(.body)
+                                                    .foregroundStyle(.secondary)
                                             }
                                         }
                                         .padding(.vertical, 8)
@@ -135,6 +136,7 @@ import SwiftUI
                                     $0.id == playerID
                                 }) {
                                     HStack {
+                                        // Show player name and score
                                         HStack(spacing: 12) {
                                             PlayerAvatar(player: player)
                                                 .frame(width: 32, height: 32)
@@ -142,40 +144,25 @@ import SwiftUI
                                                 .font(.body)
                                         }
                                         Spacer()
-                                        Text("\(totalScore)")
-                                            .font(.body)
-                                            .foregroundStyle(.secondary)
-
-                                        if match.status == "completed" {
-                                            if match.winnerID == player.id {
-                                                Image(systemName: "crown.fill")
-                                                    .foregroundStyle(.yellow)
-                                            }
-                                        } else {
-                                            Image(systemName: "crown.fill")
-                                                .foregroundStyle(
-                                                    match.winnerID == player.id
-                                                        ? .yellow : .gray.opacity(0.3)
-                                                )
-                                                .onTapGesture {
-                                                    var updatedMatch = match
-                                                    updatedMatch.winnerID =
-                                                        match.winnerID == player.id
-                                                        ? nil : player.id
-                                                    updatedMatch.status =
-                                                        updatedMatch.winnerID != nil
-                                                        ? "completed" : "active"
-                                                    Task {
-                                                        do {
-                                                            try await cloudKitManager.saveMatch(
-                                                                updatedMatch)
-                                                            match = updatedMatch
-                                                        } catch {
-                                                            self.error = error
-                                                            showingError = true
-                                                        }
-                                                    }
+                                        HStack(spacing: 4) {
+                                            // Show crown for total score winner
+                                            if let game = match.game,
+                                                let maxScore = totalScores.max(),
+                                                let minScore = totalScores.min(),
+                                                totalScore > 0  // Only show crown if there's a non-zero score
+                                            {
+                                                let isWinner =
+                                                    game.highestScoreWins
+                                                    ? totalScore == maxScore
+                                                    : totalScore == minScore
+                                                if isWinner {
+                                                    Image(systemName: "crown.fill")
+                                                        .foregroundStyle(.yellow)
                                                 }
+                                            }
+                                            Text("\(totalScore)")
+                                                .font(.body)
+                                                .foregroundStyle(.secondary)
                                         }
                                     }
                                     .padding(.vertical, 8)

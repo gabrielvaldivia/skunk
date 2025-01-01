@@ -135,18 +135,19 @@ import Foundation
                 self.winningConditions = conditions
                 // Extract highestRoundScoreWins from winningConditions string
                 let components = conditions.split(separator: "|")
-                if components.count > 1 {
-                    let roundComponent = components[1]
+                if let roundComponent = components.first(where: { $0.hasPrefix("round:") }) {
                     self.highestRoundScoreWins = roundComponent.contains("high")
                 } else {
-                    self.highestRoundScoreWins = true  // Default to true if not found
+                    self.highestRoundScoreWins = true  // Default to high if not found
                 }
             } else {
-                // If no winning conditions string exists, create one from highestScoreWins
+                // If no winning conditions string exists, create one from highestScoreWins and highestRoundScoreWins
                 let gameCondition = "game:" + (self.highestScoreWins ? "high" : "low")
-                let roundCondition = "round:high"  // Default to high
+                let roundCondition =
+                    "round:"
+                    + ((record["highestRoundScoreWins"] as? Int ?? 1) == 1 ? "high" : "low")
                 self.winningConditions = "\(gameCondition)|\(roundCondition)"
-                self.highestRoundScoreWins = true
+                self.highestRoundScoreWins = (record["highestRoundScoreWins"] as? Int ?? 1) == 1
             }
 
             self.record = record

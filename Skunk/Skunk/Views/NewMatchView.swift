@@ -359,7 +359,7 @@ extension Sequence {
                         let score = rounds[0][index] ?? 0
                         let scores = rounds[0].compactMap { $0 }
                         HStack(spacing: 8) {
-                            if score > 0 && !scores.isEmpty {
+                            if !scores.isEmpty {
                                 let isWinner =
                                     currentGame.highestRoundScoreWins
                                     ? score == scores.max()
@@ -450,7 +450,7 @@ extension Sequence {
                                 let currentScore = rounds[index][playerIndex] ?? 0
                                 let scores = rounds[index].compactMap { $0 }
                                 HStack(spacing: 8) {
-                                    if currentScore > 0 && !scores.isEmpty {
+                                    if !scores.isEmpty {
                                         let isWinner =
                                             currentGame.highestRoundScoreWins
                                             ? currentScore == scores.max()
