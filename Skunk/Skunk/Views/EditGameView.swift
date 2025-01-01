@@ -42,72 +42,74 @@
         }
 
         var body: some View {
-            Form {
-                GameSettingsView(
-                    title: $title,
-                    isBinaryScore: $isBinaryScore,
-                    minPlayers: $minPlayers,
-                    maxPlayers: $maxPlayers,
-                    countAllScores: $countAllScores,
-                    countLosersOnly: $countLosersOnly,
-                    highestScoreWins: $highestScoreWins,
-                    highestRoundScoreWins: $highestRoundScoreWins,
-                    showTitle: true
-                )
+            NavigationStack {
+                Form {
+                    GameSettingsView(
+                        title: $title,
+                        isBinaryScore: $isBinaryScore,
+                        minPlayers: $minPlayers,
+                        maxPlayers: $maxPlayers,
+                        countAllScores: $countAllScores,
+                        countLosersOnly: $countLosersOnly,
+                        highestScoreWins: $highestScoreWins,
+                        highestRoundScoreWins: $highestRoundScoreWins,
+                        showTitle: true
+                    )
 
-                Section {
-                    Button(role: .destructive) {
-                        showingDeleteConfirmation = true
-                    } label: {
-                        Text("Delete Game")
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-
-                if let creatorName = creatorName {
                     Section {
-                        Text("Created by \(creatorName) on \(formattedDate)")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            Text("Delete Game")
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+
+                    if let creatorName = creatorName {
+                        Section {
+                            Text("Created by \(creatorName) on \(formattedDate)")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
-            }
-            .navigationTitle("Edit Game")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
+                .navigationTitle("Edit Game")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            dismiss()
+                        }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") {
+                            saveGame()
+                        }
+                        .disabled(title.isEmpty)
                     }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        saveGame()
+                .alert("Error", isPresented: $showingError) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(errorMessage)
+                }
+                .confirmationDialog(
+                    "Are you sure you want to delete this game?",
+                    isPresented: $showingDeleteConfirmation,
+                    titleVisibility: .visible
+                ) {
+                    Button("Delete", role: .destructive) {
+                        deleteGame()
                     }
-                    .disabled(title.isEmpty)
+                } message: {
+                    Text("This action cannot be undone.")
                 }
-            }
-            .alert("Error", isPresented: $showingError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(errorMessage)
-            }
-            .confirmationDialog(
-                "Are you sure you want to delete this game?",
-                isPresented: $showingDeleteConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Delete", role: .destructive) {
-                    deleteGame()
-                }
-            } message: {
-                Text("This action cannot be undone.")
-            }
-            .task {
-                if let createdByID = game.createdByID,
-                    let player = cloudKitManager.getPlayer(id: createdByID)
-                {
-                    creatorName = player.name
+                .task {
+                    if let createdByID = game.createdByID,
+                        let player = cloudKitManager.getPlayer(id: createdByID)
+                    {
+                        creatorName = player.name
+                    }
                 }
             }
         }
@@ -120,6 +122,10 @@
             updatedGame.countAllScores = !isBinaryScore ? countAllScores : false
             updatedGame.countLosersOnly = !isBinaryScore ? countLosersOnly : false
             updatedGame.highestScoreWins = !isBinaryScore ? highestScoreWins : true
+            updatedGame.highestRoundScoreWins = !isBinaryScore ? highestRoundScoreWins : true
+            // Preserve the record and recordID
+            updatedGame.record = game.record
+            updatedGame.recordID = game.recordID
 
             Task {
                 do {

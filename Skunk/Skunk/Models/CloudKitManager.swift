@@ -98,6 +98,10 @@ import SwiftUI
                                     recordType: "User", recordID: userRecordID)
                                 _ = try await container.privateCloudDatabase.save(userRecord)
                             }
+
+                            // Set up schema with new field
+                            try await setupSchema()
+
                         } catch {
                             print(
                                 "🔴 CloudKitManager: Error getting user record ID: \(error.localizedDescription)"
@@ -172,6 +176,186 @@ import SwiftUI
 
         // MARK: - Schema Setup
 
+        struct CloudKitBackup {
+            var games: [(CKRecord, Game)]
+            var players: [(CKRecord, Player)]
+            var matches: [(CKRecord, Match)]
+        }
+
+        func backupData() async throws -> CloudKitBackup {
+            print("🟣 CloudKitManager: Starting data backup")
+
+            var backup = CloudKitBackup(games: [], players: [], matches: [])
+
+            // Backup games
+            let gameQuery = CKQuery(recordType: "Game", predicate: NSPredicate(value: true))
+            let (gameResults, _) = try await database.records(matching: gameQuery)
+            for result in gameResults {
+                if let record = try? result.1.get(),
+                    let game = try? Game(from: record)
+                {
+                    backup.games.append((record, game))
+                }
+            }
+            print("🟣 CloudKitManager: Backed up \(backup.games.count) games")
+
+            // Backup players
+            let playerQuery = CKQuery(recordType: "Player", predicate: NSPredicate(value: true))
+            let (playerResults, _) = try await database.records(matching: playerQuery)
+            for result in playerResults {
+                if let record = try? result.1.get(),
+                    let player = Player(from: record)
+                {
+                    backup.players.append((record, player))
+                }
+            }
+            print("🟣 CloudKitManager: Backed up \(backup.players.count) players")
+
+            // Backup matches
+            let matchQuery = CKQuery(recordType: "Match", predicate: NSPredicate(value: true))
+            let (matchResults, _) = try await database.records(matching: matchQuery)
+            for result in matchResults {
+                if let record = try? result.1.get(),
+                    let match = Match(from: record)
+                {
+                    backup.matches.append((record, match))
+                }
+            }
+            print("🟣 CloudKitManager: Backed up \(backup.matches.count) matches")
+
+            return backup
+        }
+
+        func restoreBackup(_ backup: CloudKitBackup) async throws {
+            print("🟣 CloudKitManager: Starting data restoration")
+
+            // Restore players first (since games and matches depend on them)
+            for (record, _) in backup.players {
+                try await database.save(record)
+            }
+            print("🟣 CloudKitManager: Restored \(backup.players.count) players")
+
+            // Restore games
+            for (record, _) in backup.games {
+                try await database.save(record)
+            }
+            print("🟣 CloudKitManager: Restored \(backup.games.count) games")
+
+            // Restore matches
+            for (record, _) in backup.matches {
+                try await database.save(record)
+            }
+            print("🟣 CloudKitManager: Restored \(backup.matches.count) matches")
+
+            // Refresh local caches
+            _ = try await fetchPlayers(forceRefresh: true)
+            _ = try await fetchGames(forceRefresh: true)
+
+            print("🟣 CloudKitManager: Data restoration complete")
+        }
+
+        func resetSchema() async throws {
+            print("🟣 CloudKitManager: Starting schema reset")
+
+            // Create backup first
+            let backup = try await backupData()
+            print(
+                "🟣 CloudKitManager: Created backup of \(backup.games.count) games, \(backup.players.count) players, and \(backup.matches.count) matches"
+            )
+
+            // Delete existing records
+            let gameQuery = CKQuery(recordType: "Game", predicate: NSPredicate(value: true))
+            let playerQuery = CKQuery(recordType: "Player", predicate: NSPredicate(value: true))
+            let matchQuery = CKQuery(recordType: "Match", predicate: NSPredicate(value: true))
+
+            do {
+                // Delete all game records
+                let (gameResults, _) = try await database.records(matching: gameQuery)
+                for result in gameResults {
+                    if let record = try? result.1.get() {
+                        try await database.deleteRecord(withID: record.recordID)
+                    }
+                }
+
+                // Delete all player records
+                let (playerResults, _) = try await database.records(matching: playerQuery)
+                for result in playerResults {
+                    if let record = try? result.1.get() {
+                        try await database.deleteRecord(withID: record.recordID)
+                    }
+                }
+
+                // Delete all match records
+                let (matchResults, _) = try await database.records(matching: matchQuery)
+                for result in matchResults {
+                    if let record = try? result.1.get() {
+                        try await database.deleteRecord(withID: record.recordID)
+                    }
+                }
+
+                print("🟣 CloudKitManager: Successfully deleted existing records")
+            } catch {
+                print("🔴 CloudKitManager: Error deleting records: \(error.localizedDescription)")
+            }
+
+            // Clear local caches
+            matchCache.removeAll()
+            playerCache.removeAll()
+            players.removeAll()
+            games.removeAll()
+
+            print("🟣 CloudKitManager: Schema reset complete")
+
+            // After schema is reset and new field is added, restore the backup
+            try await restoreBackup(backup)
+        }
+
+        func updateSchema() async throws {
+            print("🟣 CloudKitManager: Starting schema update")
+
+            // Get all existing game records
+            let gameQuery = CKQuery(recordType: "Game", predicate: NSPredicate(value: true))
+            let (gameResults, _) = try await database.records(matching: gameQuery)
+
+            // Update each game record with the new field
+            for result in gameResults {
+                if let record = try? result.1.get() {
+                    // Only add the field if it doesn't exist
+                    if record["highestRoundScoreWins"] == nil {
+                        record["highestRoundScoreWins"] = 1 as CKRecordValue  // Default to true
+                        try await database.save(record)
+                        print(
+                            "🟣 CloudKitManager: Updated game record with new field: \(record.recordID.recordName)"
+                        )
+                    }
+                }
+            }
+
+            // Create a sample record to establish the schema if no records exist
+            if gameResults.isEmpty {
+                print("🟣 CloudKitManager: No existing games, creating sample record")
+                let zone = CKRecordZone(zoneName: "_defaultZone")
+                let gameRecord = CKRecord(recordType: "Game", zoneID: zone.zoneID)
+
+                // Set all required fields
+                gameRecord["title"] = "" as CKRecordValue
+                gameRecord["isBinaryScore"] = 0 as CKRecordValue
+                gameRecord["supportedPlayerCounts"] = Data() as CKRecordValue
+                gameRecord["createdByID"] = "" as CKRecordValue
+                gameRecord["id"] = "" as CKRecordValue
+                gameRecord["countAllScores"] = 0 as CKRecordValue
+                gameRecord["countLosersOnly"] = 0 as CKRecordValue
+                gameRecord["highestScoreWins"] = 0 as CKRecordValue
+                gameRecord["highestRoundScoreWins"] = 1 as CKRecordValue
+                gameRecord["winningConditions"] = "game:high|round:high" as CKRecordValue
+
+                try await database.save(gameRecord)
+                print("🟣 CloudKitManager: Created sample record to establish schema")
+            }
+
+            print("🟣 CloudKitManager: Schema update complete")
+        }
+
         func setupSchema() async throws {
             do {
                 print("🟣 CloudKitManager: Starting schema setup")
@@ -179,81 +363,10 @@ import SwiftUI
                 // First verify the container setup
                 try await verifyContainerSetup()
 
-                print("🟣 CloudKitManager: Container verification successful")
-
-                // Create the default zone if it doesn't exist
-                let zone = CKRecordZone(zoneName: "_defaultZone")
-                do {
-                    try await database.save(zone)
-                    print("🟣 CloudKitManager: Created default zone")
-                } catch {
-                    print(
-                        "🟣 CloudKitManager: Default zone already exists or error: \(error.localizedDescription)"
-                    )
-                }
-
-                // Define the schema fields with their types
-                let gameFields: [(String, CKRecordValue)] = [
-                    ("title", "" as CKRecordValue),
-                    ("isBinaryScore", 0 as CKRecordValue),
-                    ("supportedPlayerCounts", Data() as CKRecordValue),
-                    ("createdByID", "" as CKRecordValue),
-                    ("id", "" as CKRecordValue),
-                    ("countAllScores", 0 as CKRecordValue),
-                    ("countLosersOnly", 0 as CKRecordValue),
-                    ("highestScoreWins", 0 as CKRecordValue),
-                ]
-
-                let playerFields: [(String, CKRecordValue)] = [
-                    ("name", "" as CKRecordValue),
-                    ("colorData", Data() as CKRecordValue),
-                    ("appleUserID", "" as CKRecordValue),
-                    ("ownerID", "" as CKRecordValue),
-                    ("id", "" as CKRecordValue),
-                ]
-
-                print("🟣 CloudKitManager: Creating sample records to establish schema")
-
-                // Create sample records in a do-catch block to handle potential errors
-                do {
-                    let gameRecord = CKRecord(recordType: "Game", zoneID: zone.zoneID)
-                    let playerRecord = CKRecord(recordType: "Player", zoneID: zone.zoneID)
-
-                    // Set field values
-                    for (field, value) in gameFields {
-                        gameRecord[field] = value
-                    }
-
-                    for (field, value) in playerFields {
-                        playerRecord[field] = value
-                    }
-
-                    // Save records
-                    print("🟣 CloudKitManager: Saving sample records")
-                    try await database.save(gameRecord)
-                    try await database.save(playerRecord)
-                    print("🟣 CloudKitManager: Sample records saved successfully")
-
-                } catch let error as CKError {
-                    if error.code == .partialFailure {
-                        // This is actually okay - it means the schema already exists
-                        print("🟣 CloudKitManager: Schema already exists")
-                    } else {
-                        print(
-                            "🔴 CloudKitManager: Error saving schema records: \(error.localizedDescription)"
-                        )
-                        throw error
-                    }
-                }
-
-                // Clear local caches
-                matchCache.removeAll()
-                playerCache.removeAll()
-                players.removeAll()
-                games.removeAll()
+                // Update the schema instead of resetting it
+                try await updateSchema()
 
                 print("🟣 CloudKitManager: Schema setup complete")
-
             } catch {
                 print("🔴 CloudKitManager: Schema setup error: \(error.localizedDescription)")
                 if let ckError = error as? CKError {
@@ -332,10 +445,30 @@ import SwiftUI
             try await ensureCloudKitAccess()
 
             do {
-                // Create or update the game record
-                let record = game.toRecord()
-                let savedRecord = try await database.save(record)
+                var record: CKRecord
+                if let recordID = game.recordID {
+                    // Fetch existing record to update
+                    let existingRecord = try await database.record(for: recordID)
+                    // Update existing record with new values
+                    existingRecord["id"] = game.id
+                    existingRecord["title"] = game.title
+                    existingRecord["isBinaryScore"] = game.isBinaryScore ? 1 : 0
+                    existingRecord["countAllScores"] = game.countAllScores ? 1 : 0
+                    existingRecord["countLosersOnly"] = game.countLosersOnly ? 1 : 0
+                    existingRecord["highestScoreWins"] = game.highestScoreWins ? 1 : 0
+                    existingRecord["highestRoundScoreWins"] = game.highestRoundScoreWins ? 1 : 0
+                    if let countsData = try? JSONEncoder().encode(Array(game.supportedPlayerCounts))
+                    {
+                        existingRecord["supportedPlayerCounts"] = countsData
+                    }
+                    existingRecord["createdByID"] = game.createdByID
+                    record = existingRecord
+                } else {
+                    // Create new record
+                    record = game.toRecord()
+                }
 
+                let savedRecord = try await database.save(record)
                 guard let updatedGame = try Game(from: savedRecord) else {
                     throw CloudKitError.recordConversionFailed
                 }

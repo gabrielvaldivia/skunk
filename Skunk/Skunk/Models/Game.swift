@@ -11,11 +11,27 @@ import Foundation
         var countAllScores: Bool
         var countLosersOnly: Bool
         var highestScoreWins: Bool
-        var highestRoundScoreWins: Bool
         var record: CKRecord?
         var matches: [Match]?
         var recordID: CKRecord.ID?
         var creationDate: Date?
+        private var winningConditions: String = "game:high|round:high"  // Default both to high
+
+        // Computed property for round winning condition
+        var highestRoundScoreWins: Bool {
+            get {
+                let conditions = winningConditions.split(separator: "|")
+                if let roundCondition = conditions.first(where: { $0.hasPrefix("round:") }) {
+                    return roundCondition.contains(":high")
+                }
+                return true  // Default to high score wins
+            }
+            set {
+                let gameCondition = "game:" + (highestScoreWins ? "high" : "low")
+                let roundCondition = "round:" + (newValue ? "high" : "low")
+                winningConditions = "\(gameCondition)|\(roundCondition)"
+            }
+        }
 
         init(
             title: String, isBinaryScore: Bool,
@@ -31,7 +47,9 @@ import Foundation
             self.countAllScores = countAllScores
             self.countLosersOnly = countLosersOnly
             self.highestScoreWins = highestScoreWins
-            self.highestRoundScoreWins = highestRoundScoreWins
+            let gameCondition = "game:" + (highestScoreWins ? "high" : "low")
+            let roundCondition = "round:" + (highestRoundScoreWins ? "high" : "low")
+            self.winningConditions = "\(gameCondition)|\(roundCondition)"
             self.matches = []
             self.recordID = nil
             self.creationDate = Date()
@@ -56,7 +74,17 @@ import Foundation
             self.countAllScores = (record["countAllScores"] as? Int ?? 0) == 1
             self.countLosersOnly = (record["countLosersOnly"] as? Int ?? 0) == 1
             self.highestScoreWins = (record["highestScoreWins"] as? Int ?? 1) == 1
-            self.highestRoundScoreWins = (record["highestRoundScoreWins"] as? Int ?? 1) == 1
+
+            // Parse winning conditions from string or use defaults
+            if let conditions = record["winningConditions"] as? String {
+                self.winningConditions = conditions
+            } else {
+                // If no winning conditions string exists, create one from highestScoreWins
+                let gameCondition = "game:" + (self.highestScoreWins ? "high" : "low")
+                let roundCondition = "round:" + (self.highestScoreWins ? "high" : "low")
+                self.winningConditions = "\(gameCondition)|\(roundCondition)"
+            }
+
             self.record = record
             self.recordID = record.recordID
             self.creationDate = record.creationDate
@@ -76,7 +104,7 @@ import Foundation
             record.setValue(countAllScores ? 1 : 0, forKey: "countAllScores")
             record.setValue(countLosersOnly ? 1 : 0, forKey: "countLosersOnly")
             record.setValue(highestScoreWins ? 1 : 0, forKey: "highestScoreWins")
-            record.setValue(highestRoundScoreWins ? 1 : 0, forKey: "highestRoundScoreWins")
+            record.setValue(winningConditions, forKey: "winningConditions")
             if let countsData = try? JSONEncoder().encode(Array(supportedPlayerCounts)) {
                 record.setValue(countsData, forKey: "supportedPlayerCounts")
             }

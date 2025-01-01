@@ -140,7 +140,7 @@ import SwiftUI
             guard let currentLocation = currentLocation,
                 let playerLocation = player.location,
                 let lastUpdate = player.lastLocationUpdate,
-                Date().timeIntervalSince(lastUpdate) < 300
+                Date().timeIntervalSince(lastUpdate) < 43200  // 12 hours in seconds
             else {
                 print("📍 LocationManager: Cannot calculate distance to player \(player.name)")
                 if currentLocation == nil {
@@ -151,7 +151,7 @@ import SwiftUI
                 }
                 if let lastUpdate = player.lastLocationUpdate {
                     let timeSince = Date().timeIntervalSince(lastUpdate)
-                    if timeSince >= 300 {
+                    if timeSince >= 43200 {  // 12 hours in seconds
                         print("📍 LocationManager: Player location too old: \(Int(timeSince))s")
                     }
                 } else {
