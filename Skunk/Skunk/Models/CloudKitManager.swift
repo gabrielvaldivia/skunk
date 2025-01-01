@@ -1649,5 +1649,112 @@ import SwiftUI
         func isAdmin(_ userID: String) -> Bool {
             return userID == adminUserID
         }
+
+        func fetchRecentMatches(forGame gameId: String, limit: Int) async throws -> [Match] {
+            try await ensureCloudKitAccess()
+
+            let predicate = NSPredicate(format: "gameID == %@", gameId)
+            let sort = NSSortDescriptor(key: "date", ascending: false)
+            let query = CKQuery(recordType: "Match", predicate: predicate)
+            query.sortDescriptors = [sort]
+
+            let (results, _) = try await database.records(
+                matching: query,
+                resultsLimit: limit
+            )
+
+            let matches = try results.compactMap { result -> Match? in
+                guard let record = try? result.1.get() else { return nil }
+                return try? Match(from: record)
+            }
+
+            return matches
+        }
+
+        func fetchRecentMatches(forPlayer playerId: String, limit: Int) async throws -> [Match] {
+            try await ensureCloudKitAccess()
+
+            let predicate = NSPredicate(format: "playerIDs CONTAINS %@", playerId)
+            let sort = NSSortDescriptor(key: "date", ascending: false)
+            let query = CKQuery(recordType: "Match", predicate: predicate)
+            query.sortDescriptors = [sort]
+
+            let (results, _) = try await database.records(
+                matching: query,
+                resultsLimit: limit
+            )
+
+            let matches = try results.compactMap { result -> Match? in
+                guard let record = try? result.1.get() else { return nil }
+                return try? Match(from: record)
+            }
+
+            return matches
+        }
+
+        func fetchRecentMatches(forGroup groupId: String, limit: Int) async throws -> [Match] {
+            try await ensureCloudKitAccess()
+
+            // Get the player IDs for this group
+            let groupRecordID = CKRecord.ID(recordName: groupId)
+            let groupRecord = try await database.record(for: groupRecordID)
+            guard let groupData = groupRecord["playerIDs"] as? Data,
+                let playerIDs = try? JSONDecoder().decode([String].self, from: groupData)
+            else {
+                return []
+            }
+
+            // Create a predicate that matches matches containing ALL players in the group
+            var format = "playerIDs CONTAINS %@"
+            var args: [String] = [playerIDs[0]]
+
+            for id in playerIDs.dropFirst() {
+                format += " AND playerIDs CONTAINS %@"
+                args.append(id)
+            }
+
+            let predicate = NSPredicate(format: format, argumentArray: args)
+            let sort = NSSortDescriptor(key: "date", ascending: false)
+            let query = CKQuery(recordType: "Match", predicate: predicate)
+            query.sortDescriptors = [sort]
+
+            let (results, _) = try await database.records(
+                matching: query,
+                resultsLimit: limit
+            )
+
+            let matches = try results.compactMap { result -> Match? in
+                guard let record = try? result.1.get() else { return nil }
+                return try? Match(from: record)
+            }
+
+            return matches
+        }
+
+        // MARK: - Match Cache Methods
+
+        func getMatchesForGame(_ gameId: String) -> [Match]? {
+            return matchCache[gameId]
+        }
+
+        func cacheMatchesForGame(_ matches: [Match], gameId: String) {
+            matchCache[gameId] = matches
+        }
+
+        func getMatchesForPlayer(_ playerId: String) -> [Match]? {
+            return playerMatchesCache[playerId]
+        }
+
+        func cacheMatchesForPlayer(_ matches: [Match], playerId: String) {
+            playerMatchesCache[playerId] = matches
+        }
+
+        func getMatchesForGroup(_ groupId: String) -> [Match]? {
+            return groupMatchesCache[groupId]
+        }
+
+        func cacheMatchesForGroup(_ matches: [Match], groupId: String) {
+            groupMatchesCache[groupId] = matches
+        }
     }
 #endif

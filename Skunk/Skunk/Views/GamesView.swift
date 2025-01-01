@@ -10,33 +10,8 @@ import SwiftUI
         @State private var isLoading = false
         @State private var currentPlayer: Player?
 
-        private var subtitle: String {
-            if isLoading {
-                return "Loading..."
-            }
-
-            guard let player = currentPlayer else {
-                return "No matches yet"
-            }
-
-            guard let lastMatch = matches.first(where: { $0.playerIDs.contains(player.id) }) else {
-                return "No matches yet"
-            }
-
-            let otherPlayers = lastMatch.playerIDs
-                .filter { $0 != player.id }
-                .compactMap { id -> Player? in
-                    cloudKitManager.getPlayer(id: id)
-                }
-
-            guard let opponent = otherPlayers.first else {
-                return "No matches yet"
-            }
-
-            let formatter = RelativeDateTimeFormatter()
-            formatter.unitsStyle = .full
-            let timeAgo = formatter.localizedString(for: lastMatch.date, relativeTo: Date())
-            return "Last played against \(opponent.name) \(timeAgo)"
+        private var cachedMatches: [Match]? {
+            cloudKitManager.getMatchesForGame(game.id)
         }
 
         var body: some View {
@@ -44,9 +19,13 @@ import SwiftUI
                 Text(game.title)
                     .font(.body)
                     .fontWeight(.semibold)
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                MatchSubtitle(
+                    matches: matches,
+                    isLoading: isLoading,
+                    currentPlayer: currentPlayer,
+                    showOpponent: true,
+                    cachedMatches: cachedMatches
+                )
             }
             .task {
                 await loadMatches()
@@ -54,6 +33,18 @@ import SwiftUI
         }
 
         private func loadMatches() async {
+            // If we have cached matches and current player, don't block on loading
+            if cachedMatches != nil, currentPlayer != nil {
+                Task {
+                    await loadMatchesFromNetwork()
+                }
+                return
+            }
+
+            await loadMatchesFromNetwork()
+        }
+
+        private func loadMatchesFromNetwork() async {
             guard !isLoading else { return }
             isLoading = true
             defer { isLoading = false }
@@ -66,29 +57,18 @@ import SwiftUI
                     currentPlayer = players.first { $0.appleUserID == appleUserID }
                 }
 
-                // Get matches for this game
-                let gameMatches = try await cloudKitManager.fetchMatches(for: game)
+                // Get only the most recent match for this game
+                if let lastMatch = try? await cloudKitManager.fetchRecentMatches(
+                    forGame: game.id, limit: 1
+                ).first {
+                    // Cache the match
+                    cloudKitManager.cacheMatchesForGame([lastMatch], gameId: game.id)
 
-                // Get all player IDs from matches
-                let matchPlayerIDs = Set(gameMatches.flatMap { $0.playerIDs })
-
-                // Find missing player IDs
-                let missingPlayerIDs = matchPlayerIDs.filter { id in
-                    !players.contains { $0.id == id }
-                }
-
-                // If we're missing any players, force refresh the players
-                if !missingPlayerIDs.isEmpty {
-                    let refreshedPlayers = try await cloudKitManager.fetchPlayers(
-                        forceRefresh: true)
-
-                    // Update current player if needed
-                    if let appleUserID = authManager.userID {
-                        currentPlayer = refreshedPlayers.first { $0.appleUserID == appleUserID }
+                    // Update the UI
+                    await MainActor.run {
+                        matches = [lastMatch]
                     }
                 }
-
-                matches = gameMatches.sorted { $0.date > $1.date }
             } catch {
                 print("🔴 GameRow Error loading matches: \(error)")
             }

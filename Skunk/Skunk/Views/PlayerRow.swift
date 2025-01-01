@@ -4,6 +4,61 @@ import SwiftUI
 #if canImport(UIKit)
     import UIKit
 
+    struct MatchSubtitle: View {
+        let matches: [Match]
+        let isLoading: Bool
+        let currentPlayer: Player?
+        let showOpponent: Bool
+        let cachedMatches: [Match]?
+        @EnvironmentObject private var cloudKitManager: CloudKitManager
+
+        var body: some View {
+            Text(subtitle)
+                .font(.caption)
+                .foregroundColor(Color(.secondaryLabel))
+        }
+
+        private var subtitle: String {
+            // Use cached matches first if available
+            let matchesToUse = cachedMatches ?? matches
+
+            if matchesToUse.isEmpty && !isLoading {
+                return "No matches yet"
+            }
+
+            if matchesToUse.isEmpty && isLoading {
+                return "Loading..."
+            }
+
+            guard let lastMatch = matchesToUse.first else {
+                return "No matches yet"
+            }
+
+            let formatter = RelativeDateTimeFormatter()
+            formatter.unitsStyle = .full
+            let timeAgo = formatter.localizedString(for: lastMatch.date, relativeTo: Date())
+
+            if showOpponent {
+                guard let player = currentPlayer else { return "No matches yet" }
+
+                let otherPlayers = lastMatch.playerIDs
+                    .filter { $0 != player.id }
+                    .compactMap { id -> Player? in
+                        cloudKitManager.getPlayer(id: id)
+                    }
+
+                guard let opponent = otherPlayers.first else {
+                    return "No matches yet"
+                }
+
+                return "Last played against \(opponent.name) \(timeAgo)"
+            } else {
+                guard let game = lastMatch.game else { return "No matches yet" }
+                return "Last played \(game.title) \(timeAgo)"
+            }
+        }
+    }
+
     struct PlayerRow: View {
         let player: Player?
         let group: PlayerGroup?
@@ -11,6 +66,15 @@ import SwiftUI
         @EnvironmentObject private var authManager: AuthenticationManager
         @State private var matches: [Match] = []
         @State private var isLoading = false
+
+        private var cachedMatches: [Match]? {
+            if let group = group {
+                return cloudKitManager.getMatchesForGroup(group.id)
+            } else if let player = player {
+                return cloudKitManager.getMatchesForPlayer(player.id)
+            }
+            return nil
+        }
 
         private var isCurrentUser: Bool {
             guard let userID = authManager.userID, let player = player else { return false }
@@ -52,85 +116,54 @@ import SwiftUI
         }
 
         private func loadMatches() async {
+            // If we have cached matches, don't block on loading
+            if cachedMatches != nil {
+                Task {
+                    await loadMatchesFromNetwork()
+                }
+                return
+            }
+
+            await loadMatchesFromNetwork()
+        }
+
+        private func loadMatchesFromNetwork() async {
             guard !isLoading else { return }
             isLoading = true
             defer { isLoading = false }
 
             do {
-                // Fetch games if needed
-                let games = try await cloudKitManager.fetchGames()
-
                 var allMatches: [Match] = []
-                // Fetch matches for each game
-                for game in games {
-                    if let gameMatches = try? await cloudKitManager.fetchMatches(for: game) {
-                        if let group = group {
-                            allMatches.append(
-                                contentsOf: gameMatches.filter { match in
-                                    Set(match.playerIDs) == Set(group.playerIDs)
-                                }
-                            )
-                        } else if let player = player {
-                            allMatches.append(
-                                contentsOf: gameMatches.filter { $0.playerIDs.contains(player.id) }
-                            )
-                        }
+
+                if let group = group {
+                    // For groups, fetch only the most recent match
+                    if let lastMatch = try? await cloudKitManager.fetchRecentMatches(
+                        forGroup: group.id, limit: 1
+                    ).first {
+                        allMatches = [lastMatch]
+                    }
+                } else if let player = player {
+                    // For players, fetch only the most recent match
+                    if let lastMatch = try? await cloudKitManager.fetchRecentMatches(
+                        forPlayer: player.id, limit: 1
+                    ).first {
+                        allMatches = [lastMatch]
                     }
                 }
 
                 if !allMatches.isEmpty {
-                    let sortedMatches = allMatches.sorted { $0.date > $1.date }
                     if let group = group {
-                        cloudKitManager.cacheGroupMatches(sortedMatches, for: group.id)
+                        cloudKitManager.cacheMatchesForGroup(allMatches, groupId: group.id)
                     } else if let player = player {
-                        cloudKitManager.cachePlayerMatches(sortedMatches, for: player.id)
+                        cloudKitManager.cacheMatchesForPlayer(allMatches, playerId: player.id)
                     }
                     await MainActor.run {
-                        matches = sortedMatches
+                        matches = allMatches
                     }
                 }
             } catch {
                 print("Error loading matches: \(error)")
             }
-        }
-
-        private var subtitle: String {
-            if isLoading {
-                return "Loading..."
-            }
-
-            // First check the cache
-            if let group = group,
-                let cachedMatches = cloudKitManager.getGroupMatches(group.id),
-                let lastMatch = cachedMatches.first,
-                let game = lastMatch.game
-            {
-                let formatter = RelativeDateTimeFormatter()
-                formatter.unitsStyle = .full
-                let timeAgo = formatter.localizedString(for: lastMatch.date, relativeTo: Date())
-                return "Last played \(game.title) \(timeAgo)"
-            } else if let player = player,
-                let cachedMatches = cloudKitManager.getPlayerMatches(player.id),
-                let lastMatch = cachedMatches.first,
-                let game = lastMatch.game
-            {
-                let formatter = RelativeDateTimeFormatter()
-                formatter.unitsStyle = .full
-                let timeAgo = formatter.localizedString(for: lastMatch.date, relativeTo: Date())
-                return "Last played \(game.title) \(timeAgo)"
-            }
-
-            // If not in cache, use the loaded matches
-            if let lastMatch = matches.first,
-                let game = lastMatch.game
-            {
-                let formatter = RelativeDateTimeFormatter()
-                formatter.unitsStyle = .full
-                let timeAgo = formatter.localizedString(for: lastMatch.date, relativeTo: Date())
-                return "Last played \(game.title) \(timeAgo)"
-            }
-
-            return "No matches yet"
         }
 
         var body: some View {
@@ -146,9 +179,13 @@ import SwiftUI
                                 .foregroundColor(Color(.secondaryLabel))
                         }
                     }
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundColor(Color(.secondaryLabel))
+                    MatchSubtitle(
+                        matches: matches,
+                        isLoading: isLoading,
+                        currentPlayer: player,
+                        showOpponent: false,
+                        cachedMatches: cachedMatches
+                    )
                 }
 
                 Spacer()
