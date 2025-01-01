@@ -396,6 +396,17 @@ extension Sequence {
                 ForEach(players.indices, id: \.self) { index in
                     playerRow(for: index, in: currentGame)
                 }
+                .onDelete { indexSet in
+                    // Only allow deletion if we'll still have at least the minimum required players
+                    if players.count > currentGame.supportedPlayerCounts.min() ?? 1 {
+                        players.remove(atOffsets: indexSet)
+                        scores.remove(atOffsets: indexSet)
+                        // Update all rounds to match new player count
+                        for i in 0..<rounds.count {
+                            rounds[i].remove(atOffsets: indexSet)
+                        }
+                    }
+                }
 
                 if currentGame.supportedPlayerCounts.contains(players.count + 1) {
                     Button(action: {
