@@ -76,11 +76,11 @@ import SwiftUI
 
         init() {
             container = CKContainer(identifier: "iCloud.com.gvaldivia.skunkapp")
-            database = container.privateCloudDatabase
+            database = container.publicCloudDatabase
             print(
                 "🟣 CloudKitManager: Initializing with container identifier: \(container.containerIdentifier ?? "unknown")"
             )
-            print("🟣 CloudKitManager: Using private database for development")
+            print("🟣 CloudKitManager: Using public database")
 
             // Verify container configuration immediately
             Task {
