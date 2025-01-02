@@ -34,11 +34,6 @@ import SwiftUI
             // Cache the result
             subtitleCache[cacheKey] = result
 
-            // Cleanup cache if it gets too large
-            if subtitleCache.count > 100 {
-                subtitleCache = [:]
-            }
-
             return result
         }
 
@@ -46,11 +41,7 @@ import SwiftUI
             matches: [Match], isLoading: Bool, currentPlayer: Player?, showOpponent: Bool,
             cloudKitManager: CloudKitManager
         ) -> String {
-            if matches.isEmpty && !isLoading {
-                return "No matches yet"
-            }
-
-            if matches.isEmpty && isLoading {
+            if isLoading && matches.isEmpty {
                 return "Loading..."
             }
 
@@ -99,13 +90,25 @@ import SwiftUI
                 .onChange(of: matches) { _ in
                     viewModel.invalidateCache()
                 }
+                .onChange(of: cachedMatches) { _ in
+                    viewModel.invalidateCache()
+                }
         }
 
         private var subtitle: String {
-            // Use cached matches first if available
-            let matchesToUse = cachedMatches ?? matches
+            // Use cached matches first if available and not empty
+            if let cached = cachedMatches, !cached.isEmpty {
+                print("🔵 PlayerRow: Using \(cached.count) cached matches for subtitle")
+                return viewModel.subtitle(
+                    for: cached, isLoading: false, currentPlayer: currentPlayer,
+                    showOpponent: showOpponent, cloudKitManager: cloudKitManager)
+            }
+
+            print(
+                "🔵 PlayerRow: Using \(matches.count) matches for subtitle (loading: \(isLoading))")
+            // Otherwise use matches and respect loading state
             return viewModel.subtitle(
-                for: matchesToUse, isLoading: isLoading, currentPlayer: currentPlayer,
+                for: matches, isLoading: isLoading, currentPlayer: currentPlayer,
                 showOpponent: showOpponent, cloudKitManager: cloudKitManager)
         }
     }
@@ -120,9 +123,16 @@ import SwiftUI
 
         private var cachedMatches: [Match]? {
             if let group = group {
-                return cloudKitManager.getMatchesForGroup(group.id)
+                let matches = cloudKitManager.getMatchesForGroup(group.id)
+                print(
+                    "🔵 PlayerRow: Got \(matches?.count ?? 0) cached matches for group \(group.id)")
+                return matches
             } else if let player = player {
-                return cloudKitManager.getMatchesForPlayer(player.id)
+                let matches = cloudKitManager.getMatchesForPlayer(player.id)
+                print(
+                    "🔵 PlayerRow: Got \(matches?.count ?? 0) cached matches for player \(player.id)"
+                )
+                return matches
             }
             return nil
         }
@@ -167,55 +177,82 @@ import SwiftUI
         }
 
         private func loadMatches() async {
-            // If we have cached matches, don't block on loading
-            if cachedMatches != nil {
+            print(
+                "🔵 PlayerRow: Starting loadMatches for \(player?.name ?? group?.name ?? "unknown")")
+            // If we have cached matches, show them immediately
+            if let cached = cachedMatches, !cached.isEmpty {
+                print("🔵 PlayerRow: Using \(cached.count) cached matches")
+                await MainActor.run {
+                    matches = cached
+                    isLoading = false
+                }
+                // Then refresh in the background
                 Task {
                     await loadMatchesFromNetwork()
                 }
                 return
             }
 
+            // No cache, show loading state and fetch
+            print("🔵 PlayerRow: No cached matches, loading from network")
+            await MainActor.run {
+                isLoading = true
+            }
             await loadMatchesFromNetwork()
         }
 
         private func loadMatchesFromNetwork() async {
-            guard !isLoading else { return }
-            isLoading = true
-            defer { isLoading = false }
+            print(
+                "🔵 PlayerRow: Starting network load for \(player?.name ?? group?.name ?? "unknown")"
+            )
+            // Don't show loading if we already have matches
+            if matches.isEmpty {
+                await MainActor.run { isLoading = true }
+            }
+            defer { Task { @MainActor in isLoading = false } }
 
             do {
                 var allMatches: [Match] = []
 
                 if let group = group {
+                    print("🔵 PlayerRow: Fetching matches for group \(group.id)")
                     // For groups, fetch only the most recent match
                     let recentMatches = try await cloudKitManager.fetchRecentMatches(
                         forGroup: group.id, limit: 1
                     )
+                    print("🔵 PlayerRow: Got \(recentMatches.count) matches for group")
                     if let lastMatch = recentMatches.first {
                         allMatches = [lastMatch]
                     }
                 } else if let player = player {
+                    print("🔵 PlayerRow: Fetching matches for player \(player.id)")
                     // For players, fetch only the most recent match
                     let recentMatches = try await cloudKitManager.fetchRecentMatches(
                         forPlayer: player.id, limit: 1
                     )
+                    print("🔵 PlayerRow: Got \(recentMatches.count) matches for player")
                     if let lastMatch = recentMatches.first {
                         allMatches = [lastMatch]
                     }
                 }
 
+                // Update cache if we got matches
                 if !allMatches.isEmpty {
+                    print("🔵 PlayerRow: Caching \(allMatches.count) matches")
                     if let group = group {
                         cloudKitManager.cacheMatchesForGroup(allMatches, groupId: group.id)
                     } else if let player = player {
                         cloudKitManager.cacheMatchesForPlayer(allMatches, playerId: player.id)
                     }
-                    await MainActor.run {
-                        matches = allMatches
-                    }
+                } else {
+                    print("🔵 PlayerRow: No matches found from network")
+                }
+
+                await MainActor.run {
+                    matches = allMatches
                 }
             } catch {
-                print("Error loading matches: \(error)")
+                print("🔴 PlayerRow: Error loading matches: \(error)")
             }
         }
 

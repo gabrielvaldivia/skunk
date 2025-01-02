@@ -1613,35 +1613,67 @@ import SwiftUI
             let allGames = try await fetchGames()
             print("🟣 CloudKitManager: Fetched \(allGames.count) games")
 
-            // Use a predicate that matches matches containing the player ID in the playerIDs field
-            // and ensures required fields are present
-            let predicate = NSPredicate(format: "gameID != nil AND playerIDs != nil")
+            // Create a query for matches with a date sort
             let sort = NSSortDescriptor(key: "date", ascending: false)
+            let startDate = Calendar.current.date(byAdding: .month, value: -6, to: Date()) ?? Date()
+            let predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
             let query = CKQuery(recordType: "Match", predicate: predicate)
             query.sortDescriptors = [sort]
 
             let (results, _) = try await database.records(
                 matching: query,
-                resultsLimit: limit * 2  // Fetch more to account for filtering
+                resultsLimit: limit * 5  // Fetch more to account for filtering
             )
             print("🟣 CloudKitManager: Found \(results.count) match records")
 
             let matches = try results.compactMap { result -> Match? in
-                guard let record = try? result.1.get() else { return nil }
+                do {
+                    let record = try result.1.get()
+                    print("🟣 CloudKitManager: Processing record: \(record.recordID.recordName)")
 
-                // Ensure required fields exist
-                guard let gameId = record["gameID"] as? String,
-                    let playerIDsData = record["playerIDs"] as? Data,
-                    let playerIDs = try? JSONDecoder().decode([String].self, from: playerIDsData),
-                    playerIDs.contains(playerId),
-                    let game = allGames.first(where: { $0.id == gameId })
-                else {
+                    // Ensure required fields exist
+                    guard let gameId = record["gameID"] as? String else {
+                        print("🟣 CloudKitManager: Missing gameID")
+                        return nil
+                    }
+
+                    guard let playerIDsData = record["playerIDs"] as? Data else {
+                        print("🟣 CloudKitManager: Missing playerIDs data")
+                        return nil
+                    }
+
+                    let playerIDs: [String]
+                    do {
+                        playerIDs = try JSONDecoder().decode([String].self, from: playerIDsData)
+                        print("🟣 CloudKitManager: Found playerIDs: \(playerIDs)")
+                    } catch {
+                        print("🟣 CloudKitManager: Failed to decode playerIDs: \(error)")
+                        return nil
+                    }
+
+                    guard playerIDs.contains(playerId) else {
+                        print("🟣 CloudKitManager: Player \(playerId) not in match")
+                        return nil
+                    }
+
+                    guard let game = allGames.first(where: { $0.id == gameId }) else {
+                        print("🟣 CloudKitManager: Game \(gameId) not found")
+                        return nil
+                    }
+
+                    guard let match = Match(from: record) else {
+                        print("🟣 CloudKitManager: Failed to create Match from record")
+                        return nil
+                    }
+
+                    var updatedMatch = match
+                    updatedMatch.game = game
+                    print("🟣 CloudKitManager: Successfully created match")
+                    return updatedMatch
+                } catch {
+                    print("🟣 CloudKitManager: Error processing record: \(error)")
                     return nil
                 }
-
-                var match = try? Match(from: record)
-                match?.game = game
-                return match
             }
             .prefix(limit)
 
@@ -1670,35 +1702,29 @@ import SwiftUI
                 return []
             }
 
-            // Create a predicate that matches matches containing ALL players in the group
-            var format = "gameID != nil AND playerIDs != nil AND playerIDs CONTAINS %@"
-            var args: [String] = [playerIDs[0]]
-
-            for id in playerIDs.dropFirst() {
-                format += " AND playerIDs CONTAINS %@"
-                args.append(id)
-            }
-
-            let predicate = NSPredicate(format: format, argumentArray: args)
+            // Create a query for matches with a date sort
             let sort = NSSortDescriptor(key: "date", ascending: false)
+            let startDate = Calendar.current.date(byAdding: .month, value: -6, to: Date()) ?? Date()
+            let predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
             let query = CKQuery(recordType: "Match", predicate: predicate)
             query.sortDescriptors = [sort]
 
             let (results, _) = try await database.records(
                 matching: query,
-                resultsLimit: limit
+                resultsLimit: limit * 5  // Fetch more to account for filtering
             )
 
             let matches = try results.compactMap { result -> Match? in
                 guard let record = try? result.1.get() else { return nil }
 
-                // Ensure required fields exist
+                // Ensure required fields exist and all group players are in the match
                 guard let gameId = record["gameID"] as? String,
                     let game = allGames.first(where: { $0.id == gameId }),
                     let playerIDsData = record["playerIDs"] as? Data,
                     let matchPlayerIDs = try? JSONDecoder().decode(
                         [String].self, from: playerIDsData),
-                    !matchPlayerIDs.isEmpty
+                    !matchPlayerIDs.isEmpty,
+                    Set(playerIDs).isSubset(of: Set(matchPlayerIDs))  // Check if all group players are in the match
                 else {
                     return nil
                 }
@@ -1707,8 +1733,9 @@ import SwiftUI
                 match?.game = game
                 return match
             }
+            .prefix(limit)
 
-            return matches.sorted { $0.date > $1.date }
+            return Array(matches).sorted { $0.date > $1.date }
         }
 
         // MARK: - Match Cache Methods
@@ -1722,10 +1749,15 @@ import SwiftUI
         }
 
         func getMatchesForPlayer(_ playerId: String) -> [Match]? {
-            return playerMatchesCache[playerId]
+            let matches = playerMatchesCache[playerId]
+            print(
+                "🟣 CloudKitManager: Getting \(matches?.count ?? 0) cached matches for player \(playerId)"
+            )
+            return matches
         }
 
         func cacheMatchesForPlayer(_ matches: [Match], playerId: String) {
+            print("🟣 CloudKitManager: Caching \(matches.count) matches for player \(playerId)")
             playerMatchesCache[playerId] = matches
         }
 
@@ -1751,7 +1783,7 @@ import SwiftUI
 
             // Update predicate to ensure we only get valid matches
             let predicate = NSPredicate(
-                format: "date >= %@ AND gameID != nil AND playerIDs != nil",
+                format: "date >= %@ AND gameID != ''",
                 startDate as NSDate
             )
             let sort = NSSortDescriptor(key: "date", ascending: false)
