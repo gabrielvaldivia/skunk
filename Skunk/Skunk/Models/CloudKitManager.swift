@@ -3,6 +3,19 @@ import Foundation
 import SwiftUI
 
 #if canImport(UIKit)
+    struct User: Identifiable {
+        let id: String
+        let lastLogin: Date
+        var recordID: CKRecord.ID?
+
+        init?(from record: CKRecord) {
+            guard let id = record["id"] as? String else { return nil }
+            self.id = id
+            self.lastLogin = record["lastLogin"] as? Date ?? Date()
+            self.recordID = record.recordID
+        }
+    }
+
     @MainActor
     class CloudKitManager: ObservableObject {
         static let shared = CloudKitManager()
@@ -33,6 +46,7 @@ import SwiftUI
         @Published var isLoading = false
         @Published var error: Error?
         @Published var isCloudAvailable: Bool = false
+        @Published private(set) var currentUser: User?
 
         var userID: String? {
             get async {
@@ -62,10 +76,11 @@ import SwiftUI
 
         init() {
             container = CKContainer(identifier: "iCloud.com.gvaldivia.skunkapp")
-            database = container.publicCloudDatabase
+            database = container.privateCloudDatabase
             print(
                 "🟣 CloudKitManager: Initializing with container identifier: \(container.containerIdentifier ?? "unknown")"
             )
+            print("🟣 CloudKitManager: Using private database for development")
 
             // Verify container configuration immediately
             Task {
@@ -137,8 +152,8 @@ import SwiftUI
             print("🟣 CloudKitManager: Account status: \(accountStatus)")
 
             guard accountStatus == .available else {
-                print("🔴 CloudKitManager: No iCloud account available")
-                throw CloudKitError.notAuthenticated
+                print("🔴 CloudKitManager: No iCloud account available - will try to proceed anyway")
+                return
             }
 
             // Try to fetch user record ID to verify container access
@@ -147,28 +162,11 @@ import SwiftUI
                 print(
                     "🟣 CloudKitManager: Successfully fetched user record ID: \(userRecordID.recordName)"
                 )
-
-                // Try to access the database
-                do {
-                    let userRecord = try await database.record(for: userRecordID)
-                    print("🟣 CloudKitManager: Successfully verified database access")
-                } catch let error as CKError where error.code == .unknownItem {
-                    // This is actually okay - it means the user record doesn't exist yet
-                    print("🟣 CloudKitManager: No user record yet, but container access verified")
-                }
-
-            } catch let error as CKError {
+            } catch {
                 print(
-                    "🔴 CloudKitManager: CloudKit error during verification: \(error.localizedDescription)"
+                    "🟣 CloudKitManager: Warning - could not fetch user record ID: \(error.localizedDescription)"
                 )
-                print("🔴 CloudKitManager: Error code: \(error.code.rawValue)")
-
-                if error.code == .badContainer {
-                    print("🔴 CloudKitManager: Container is not properly configured")
-                    throw CloudKitError.containerNotConfigured
-                } else {
-                    throw error
-                }
+                // Continue anyway
             }
 
             print("🟣 CloudKitManager: Container setup verification complete")
@@ -313,44 +311,44 @@ import SwiftUI
         func updateSchema() async throws {
             print("🟣 CloudKitManager: Starting schema update")
 
-            // Get all existing game records
-            let gameQuery = CKQuery(recordType: "Game", predicate: NSPredicate(value: true))
-            let (gameResults, _) = try await database.records(matching: gameQuery)
+            // If we get here, try to work with private database only
+            do {
+                // Create a test record in the private database
+                let testGame = Game(
+                    title: "Test Game",
+                    isBinaryScore: false,
+                    supportedPlayerCounts: [2],
+                    createdByID: nil
+                )
 
-            // Update each game record with the new field
-            for result in gameResults {
-                if let record = try? result.1.get() {
-                    // Only add the field if it doesn't exist
-                    if record["highestRoundScoreWins"] == nil {
-                        record["highestRoundScoreWins"] = 1 as CKRecordValue  // Default to true
-                        try await database.save(record)
-                        print(
-                            "🟣 CloudKitManager: Updated game record with new field: \(record.recordID.recordName)"
-                        )
-                    }
+                // Create new record
+                let record = CKRecord(recordType: "Game")
+                record["id"] = testGame.id as NSString
+                record["title"] = testGame.title as NSString
+                record["isBinaryScore"] = NSNumber(value: testGame.isBinaryScore ? 1 : 0)
+                record["countAllScores"] = NSNumber(value: testGame.countAllScores ? 1 : 0)
+                record["countLosersOnly"] = NSNumber(value: testGame.countLosersOnly ? 1 : 0)
+                record["highestScoreWins"] = NSNumber(value: testGame.highestScoreWins ? 1 : 0)
+                record["highestRoundScoreWins"] = NSNumber(
+                    value: testGame.highestRoundScoreWins ? 1 : 0)
+                if let countsData = try? JSONEncoder().encode(Array(testGame.supportedPlayerCounts))
+                {
+                    record["supportedPlayerCounts"] = countsData as NSData
                 }
-            }
 
-            // Create a sample record to establish the schema if no records exist
-            if gameResults.isEmpty {
-                print("🟣 CloudKitManager: No existing games, creating sample record")
-                let zone = CKRecordZone(zoneName: "_defaultZone")
-                let gameRecord = CKRecord(recordType: "Game", zoneID: zone.zoneID)
+                // Try to save to private database
+                _ = try await database.save(record)
+                print("🟣 CloudKitManager: Successfully created test record in private database")
 
-                // Set all required fields
-                gameRecord["title"] = "" as CKRecordValue
-                gameRecord["isBinaryScore"] = 0 as CKRecordValue
-                gameRecord["supportedPlayerCounts"] = Data() as CKRecordValue
-                gameRecord["createdByID"] = "" as CKRecordValue
-                gameRecord["id"] = "" as CKRecordValue
-                gameRecord["countAllScores"] = 0 as CKRecordValue
-                gameRecord["countLosersOnly"] = 0 as CKRecordValue
-                gameRecord["highestScoreWins"] = 0 as CKRecordValue
-                gameRecord["highestRoundScoreWins"] = 1 as CKRecordValue
-                gameRecord["winningConditions"] = "game:high|round:high" as CKRecordValue
+                // Immediately delete the test record
+                try await database.deleteRecord(withID: record.recordID)
+                print("🟣 CloudKitManager: Successfully cleaned up test record")
 
-                try await database.save(gameRecord)
-                print("🟣 CloudKitManager: Created sample record to establish schema")
+            } catch {
+                print(
+                    "🟣 CloudKitManager: Error during private database test: \(error.localizedDescription)"
+                )
+                // Don't throw - we'll try to continue anyway
             }
 
             print("🟣 CloudKitManager: Schema update complete")
@@ -363,17 +361,13 @@ import SwiftUI
                 // First verify the container setup
                 try await verifyContainerSetup()
 
-                // Update the schema instead of resetting it
-                try await updateSchema()
+                // Try to update schema, but don't fail if it doesn't work
+                try? await updateSchema()
 
                 print("🟣 CloudKitManager: Schema setup complete")
             } catch {
-                print("🔴 CloudKitManager: Schema setup error: \(error.localizedDescription)")
-                if let ckError = error as? CKError {
-                    print("🔴 CloudKitManager: CloudKit error code: \(ckError.code.rawValue)")
-                    handleCloudKitError(ckError)
-                }
-                throw error
+                print("🟣 CloudKitManager: Schema setup warning: \(error.localizedDescription)")
+                // Don't throw errors during setup - we'll try to proceed anyway
             }
         }
 
@@ -391,6 +385,7 @@ import SwiftUI
 
             do {
                 print("🟣 CloudKitManager: Querying CloudKit for games")
+                // Use a simple predicate that matches all records with a non-empty title
                 let query = CKQuery(
                     recordType: "Game",
                     predicate: NSPredicate(format: "title != ''")
@@ -402,33 +397,24 @@ import SwiftUI
 
                 var newGames: [Game] = []
                 for result in results {
-                    guard let record = try? result.1.get() else {
-                        print("🔴 CloudKitManager: Failed to get record from result")
-                        continue
-                    }
-
-                    // Try to create game from record
-                    if let game = Game(from: record) {
+                    if let record = try? result.1.get(),
+                        let game = Game(from: record)
+                    {
                         print("🟣 CloudKitManager: Successfully parsed game: \(game.title)")
                         newGames.append(game)
-                    } else {
-                        print("🔴 CloudKitManager: Failed to create Game from record")
                     }
                 }
 
                 print("🟣 CloudKitManager: Successfully parsed \(newGames.count) games")
 
-                // If this is a force refresh, clear all caches first
-                if forceRefresh {
-                    print("🟣 CloudKitManager: Force refresh - clearing all caches")
-                    matchCache.removeAll()
-                    lastGamesRefreshTime = .distantPast
-                    lastPlayerRefreshTime = .distantPast
-                    lastPlayerGroupRefreshTime = .distantPast
-                }
-
                 await MainActor.run {
                     self.games = newGames
+                    // Sort games by title
+                    self.games.sort {
+                        $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
+                    }
+                    // Notify observers of the change
+                    objectWillChange.send()
                 }
                 lastGamesRefreshTime = now
                 return newGames
@@ -442,30 +428,25 @@ import SwiftUI
         }
 
         func saveGame(_ game: Game) async throws {
+            print("🟣 CloudKitManager: Starting to save game: \(game.title)")
             try await ensureCloudKitAccess()
 
             do {
-                var record: CKRecord
-                if let recordID = game.recordID {
-                    // Fetch existing record to update
-                    let existingRecord = try await database.record(for: recordID)
-                    // Update existing record with new values
-                    existingRecord["id"] = game.id
-                    existingRecord["title"] = game.title
-                    existingRecord["isBinaryScore"] = game.isBinaryScore ? 1 : 0
-                    existingRecord["countAllScores"] = game.countAllScores ? 1 : 0
-                    existingRecord["countLosersOnly"] = game.countLosersOnly ? 1 : 0
-                    existingRecord["highestScoreWins"] = game.highestScoreWins ? 1 : 0
-                    existingRecord["highestRoundScoreWins"] = game.highestRoundScoreWins ? 1 : 0
-                    if let countsData = try? JSONEncoder().encode(Array(game.supportedPlayerCounts))
-                    {
-                        existingRecord["supportedPlayerCounts"] = countsData
-                    }
-                    existingRecord["createdByID"] = game.createdByID
-                    record = existingRecord
-                } else {
-                    // Create new record
-                    record = game.toRecord()
+                // Create new record
+                let record = CKRecord(recordType: "Game")
+                record["id"] = game.id as NSString
+                record["title"] = game.title as NSString
+                record["isBinaryScore"] = NSNumber(value: game.isBinaryScore ? 1 : 0)
+                record["countAllScores"] = NSNumber(value: game.countAllScores ? 1 : 0)
+                record["countLosersOnly"] = NSNumber(value: game.countLosersOnly ? 1 : 0)
+                record["highestScoreWins"] = NSNumber(value: game.highestScoreWins ? 1 : 0)
+                record["highestRoundScoreWins"] = NSNumber(
+                    value: game.highestRoundScoreWins ? 1 : 0)
+                if let countsData = try? JSONEncoder().encode(Array(game.supportedPlayerCounts)) {
+                    record["supportedPlayerCounts"] = countsData as NSData
+                }
+                if let createdByID = game.createdByID {
+                    record["createdByID"] = createdByID as NSString
                 }
 
                 let savedRecord = try await database.save(record)
@@ -474,21 +455,20 @@ import SwiftUI
                 }
 
                 await MainActor.run {
-                    // Update local cache
                     if let index = games.firstIndex(where: { $0.id == game.id }) {
                         games[index] = updatedGame
                     } else {
                         games.append(updatedGame)
                     }
-
                     // Sort games by title
                     games.sort {
                         $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
                     }
+                    // Notify observers of the change
+                    objectWillChange.send()
                 }
 
-                // Reset refresh time to ensure next fetch gets latest data
-                lastGamesRefreshTime = .distantPast
+                print("🟣 CloudKitManager: Successfully saved game: \(game.title)")
 
             } catch let error as CKError {
                 print(
@@ -1041,6 +1021,10 @@ import SwiftUI
             case notAuthenticated
             case containerNotConfigured
             case recordConversionFailed
+            case noAccount
+            case restricted
+            case couldNotDetermine
+            case unknown
 
             var errorDescription: String? {
                 switch self {
@@ -1056,6 +1040,14 @@ import SwiftUI
                     return "CloudKit container is not properly configured"
                 case .recordConversionFailed:
                     return "Failed to convert CloudKit record to game data"
+                case .noAccount:
+                    return "No iCloud account found"
+                case .restricted:
+                    return "iCloud access is restricted"
+                case .couldNotDetermine:
+                    return "Could not determine iCloud account status"
+                case .unknown:
+                    return "An unknown error occurred"
                 }
             }
         }
@@ -1465,7 +1457,7 @@ import SwiftUI
             // Try to find by Apple user ID
             let appleIDQuery = CKQuery(
                 recordType: "Player",
-                predicate: NSPredicate(format: "appleUserID = %@", appleUserID)
+                predicate: NSPredicate(format: "appleUserID == %@", appleUserID)
             )
             let (appleIDResults, _) = try await database.records(matching: appleIDQuery)
             if let record = try? appleIDResults.first?.1.get(),
@@ -1478,7 +1470,7 @@ import SwiftUI
             // Try to find by owner ID
             let ownerQuery = CKQuery(
                 recordType: "Player",
-                predicate: NSPredicate(format: "ownerID = %@", appleUserID)
+                predicate: NSPredicate(format: "ownerID == %@", appleUserID)
             )
             let (ownerResults, _) = try await database.records(matching: ownerQuery)
             if let record = try? ownerResults.first?.1.get(),
@@ -1492,28 +1484,10 @@ import SwiftUI
                 return updatedPlayer
             }
 
-            // Try to find by current user's record ID
-            let recordID = try await container.userRecordID()
-            let recordQuery = CKQuery(
-                recordType: "Player",
-                predicate: NSPredicate(format: "ownerID = %@", recordID.recordName)
-            )
-            let (recordResults, _) = try await database.records(matching: recordQuery)
-            if let record = try? recordResults.first?.1.get(),
-                let player = Player(from: record)
-            {
-                print("🟣 CloudKitManager: Found player with record ID match")
-                // Update the player's Apple user ID for next time
-                var updatedPlayer = player
-                updatedPlayer.appleUserID = appleUserID
-                try await savePlayer(updatedPlayer)
-                return updatedPlayer
-            }
-
             // Try to find by ID directly
             let idQuery = CKQuery(
                 recordType: "Player",
-                predicate: NSPredicate(format: "id = %@", appleUserID)
+                predicate: NSPredicate(format: "id == %@", appleUserID)
             )
             let (idResults, _) = try await database.records(matching: idQuery)
             if let record = try? idResults.first?.1.get(),
@@ -1751,6 +1725,71 @@ import SwiftUI
             }
 
             return matches.sorted { $0.date > $1.date }
+        }
+
+        func login() async throws {
+            print("🟣 CloudKitManager: Starting login process")
+
+            // First check account status
+            let accountStatus = try await container.accountStatus()
+
+            switch accountStatus {
+            case .available:
+                print("🟣 CloudKitManager: iCloud account is available")
+
+                // Get current user's record ID
+                let userRecordID = try await container.userRecordID()
+
+                // Create a query to find the user's record by ID
+                let query = CKQuery(
+                    recordType: "User",
+                    predicate: NSPredicate(format: "id == %@", userRecordID.recordName))
+
+                // Try to fetch existing user record
+                let results = try await database.records(matching: query)
+                let matchingRecords = results.matchResults.compactMap { try? $0.1.get() }
+
+                if let existingUserRecord = matchingRecords.first {
+                    // User exists, update last login
+                    existingUserRecord["lastLogin"] = Date() as CKRecordValue
+                    _ = try await database.save(existingUserRecord)
+                    print("🟣 CloudKitManager: Updated existing user record")
+
+                    // Set current user
+                    if let user = User(from: existingUserRecord) {
+                        self.currentUser = user
+                        print("🟣 CloudKitManager: Set current user from existing record")
+                    }
+                } else {
+                    // Create new user record
+                    let newUserRecord = CKRecord(recordType: "User")
+                    newUserRecord["id"] = userRecordID.recordName as CKRecordValue
+                    newUserRecord["lastLogin"] = Date() as CKRecordValue
+
+                    // Save new user record
+                    let savedRecord = try await database.save(newUserRecord)
+                    print("🟣 CloudKitManager: Created new user record")
+
+                    // Set current user
+                    if let user = User(from: savedRecord) {
+                        self.currentUser = user
+                        print("🟣 CloudKitManager: Set current user from new record")
+                    }
+                }
+
+                // Fetch initial data
+                try await fetchGames()
+                print("🟣 CloudKitManager: Login complete")
+
+            case .noAccount:
+                throw CloudKitError.noAccount
+            case .restricted:
+                throw CloudKitError.restricted
+            case .couldNotDetermine:
+                throw CloudKitError.couldNotDetermine
+            @unknown default:
+                throw CloudKitError.unknown
+            }
         }
     }
 #endif

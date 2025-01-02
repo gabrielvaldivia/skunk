@@ -21,6 +21,28 @@ import Foundation
         var scores: [Int]
         var rounds: [[Int]]  // Array of score arrays, one for each round
 
+        var computedWinnerID: String? {
+            guard let game = game, !scores.isEmpty else { return winnerID }
+
+            if game.isBinaryScore {
+                if let index = scores.firstIndex(of: 1),
+                    index < playerOrder.count
+                {
+                    return playerOrder[index]
+                }
+                return winnerID
+            }
+
+            if let index = game.highestScoreWins
+                ? scores.indices.max(by: { scores[$0] < scores[$1] })
+                : scores.indices.min(by: { scores[$0] < scores[$1] }),
+                index < playerOrder.count
+            {
+                return playerOrder[index]
+            }
+            return winnerID
+        }
+
         init(date: Date = Date(), createdByID: String? = nil, game: Game? = nil) {
             self.id = UUID().uuidString
             self.date = date
