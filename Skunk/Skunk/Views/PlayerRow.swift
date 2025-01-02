@@ -4,48 +4,68 @@ import SwiftUI
 #if canImport(UIKit)
     import UIKit
 
-    struct MatchSubtitle: View {
-        let matches: [Match]
-        let isLoading: Bool
-        let currentPlayer: Player?
-        let showOpponent: Bool
-        let cachedMatches: [Match]?
-        @EnvironmentObject private var cloudKitManager: CloudKitManager
+    @MainActor
+    class MatchSubtitleViewModel: ObservableObject {
+        private var subtitleCache: [String: String] = [:]
+        private let dateFormatter = RelativeDateTimeFormatter()
 
-        var body: some View {
-            Text(subtitle)
-                .font(.caption)
-                .foregroundColor(Color(.secondaryLabel))
+        init() {
+            dateFormatter.unitsStyle = .full
         }
 
-        private var subtitle: String {
-            // Use cached matches first if available
-            let matchesToUse = cachedMatches ?? matches
+        func subtitle(
+            for matches: [Match], isLoading: Bool, currentPlayer: Player?, showOpponent: Bool,
+            cloudKitManager: CloudKitManager
+        ) -> String {
+            // Generate a cache key based on the input parameters
+            let cacheKey =
+                "\(matches.first?.id ?? "none")-\(isLoading)-\(currentPlayer?.id ?? "none")-\(showOpponent)"
 
-            if matchesToUse.isEmpty && !isLoading {
+            // Return cached value if available
+            if let cached = subtitleCache[cacheKey] {
+                return cached
+            }
+
+            // Generate subtitle
+            let result = generateSubtitle(
+                matches: matches, isLoading: isLoading, currentPlayer: currentPlayer,
+                showOpponent: showOpponent, cloudKitManager: cloudKitManager)
+
+            // Cache the result
+            subtitleCache[cacheKey] = result
+
+            // Cleanup cache if it gets too large
+            if subtitleCache.count > 100 {
+                subtitleCache = [:]
+            }
+
+            return result
+        }
+
+        private func generateSubtitle(
+            matches: [Match], isLoading: Bool, currentPlayer: Player?, showOpponent: Bool,
+            cloudKitManager: CloudKitManager
+        ) -> String {
+            if matches.isEmpty && !isLoading {
                 return "No matches yet"
             }
 
-            if matchesToUse.isEmpty && isLoading {
+            if matches.isEmpty && isLoading {
                 return "Loading..."
             }
 
-            guard let lastMatch = matchesToUse.first else {
+            guard let lastMatch = matches.first else {
                 return "No matches yet"
             }
 
-            let formatter = RelativeDateTimeFormatter()
-            formatter.unitsStyle = .full
-            let timeAgo = formatter.localizedString(for: lastMatch.date, relativeTo: Date())
+            let timeAgo = dateFormatter.localizedString(for: lastMatch.date, relativeTo: Date())
 
             if showOpponent {
                 guard let player = currentPlayer else { return "No matches yet" }
 
                 let otherPlayers = lastMatch.playerIDs
                     .filter { $0 != player.id }
-                    .compactMap { id -> Player? in
-                        cloudKitManager.getPlayer(id: id)
-                    }
+                    .compactMap { cloudKitManager.getPlayer(id: $0) }
 
                 guard let opponent = otherPlayers.first else {
                     return "No matches yet"
@@ -56,6 +76,37 @@ import SwiftUI
                 guard let game = lastMatch.game else { return "No matches yet" }
                 return "Last played \(game.title) \(timeAgo)"
             }
+        }
+
+        func invalidateCache() {
+            subtitleCache.removeAll()
+        }
+    }
+
+    struct MatchSubtitle: View {
+        let matches: [Match]
+        let isLoading: Bool
+        let currentPlayer: Player?
+        let showOpponent: Bool
+        let cachedMatches: [Match]?
+        @EnvironmentObject private var cloudKitManager: CloudKitManager
+        @StateObject private var viewModel = MatchSubtitleViewModel()
+
+        var body: some View {
+            Text(subtitle)
+                .font(.caption)
+                .foregroundColor(Color(.secondaryLabel))
+                .onChange(of: matches) { _ in
+                    viewModel.invalidateCache()
+                }
+        }
+
+        private var subtitle: String {
+            // Use cached matches first if available
+            let matchesToUse = cachedMatches ?? matches
+            return viewModel.subtitle(
+                for: matchesToUse, isLoading: isLoading, currentPlayer: currentPlayer,
+                showOpponent: showOpponent, cloudKitManager: cloudKitManager)
         }
     }
 
