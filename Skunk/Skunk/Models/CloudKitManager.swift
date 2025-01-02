@@ -1607,24 +1607,54 @@ import SwiftUI
         }
 
         func fetchRecentMatches(forPlayer playerId: String, limit: Int) async throws -> [Match] {
+            print("🟣 CloudKitManager: Fetching recent matches for player: \(playerId)")
             try await ensureCloudKitAccess()
 
-            let predicate = NSPredicate(format: "playerIDs CONTAINS %@", playerId)
+            // First ensure we have the latest games
+            let allGames = try await fetchGames()
+            print("🟣 CloudKitManager: Fetched \(allGames.count) games")
+
+            // Use a predicate that matches matches containing the player ID in the playerIDs field
+            let predicate = NSPredicate(format: "id != ''")  // Simple predicate to get all matches
             let sort = NSSortDescriptor(key: "date", ascending: false)
             let query = CKQuery(recordType: "Match", predicate: predicate)
             query.sortDescriptors = [sort]
 
             let (results, _) = try await database.records(
                 matching: query,
-                resultsLimit: limit
+                resultsLimit: limit * 2  // Fetch more to account for filtering
             )
+            print("🟣 CloudKitManager: Found \(results.count) match records")
 
             let matches = try results.compactMap { result -> Match? in
                 guard let record = try? result.1.get() else { return nil }
-                return try? Match(from: record)
-            }
+                var match = try? Match(from: record)
 
-            return matches
+                // Attach game to match if possible
+                if let gameId = record["gameID"] as? String,
+                    let game = allGames.first(where: { $0.id == gameId })
+                {
+                    match?.game = game
+                }
+
+                // Check if this match includes the player by decoding playerIDs
+                if let playerIDsData = record["playerIDs"] as? Data,
+                    let playerIDs = try? JSONDecoder().decode([String].self, from: playerIDsData),
+                    playerIDs.contains(playerId)
+                {
+                    return match
+                }
+                return nil
+            }
+            .prefix(limit)
+
+            let sortedMatches = Array(matches).sorted { $0.date > $1.date }
+            print("🟣 CloudKitManager: Returning \(sortedMatches.count) matches for player")
+
+            // Cache the matches
+            cachePlayerMatches(sortedMatches, for: playerId)
+
+            return sortedMatches
         }
 
         func fetchRecentMatches(forGroup groupId: String, limit: Int) async throws -> [Match] {

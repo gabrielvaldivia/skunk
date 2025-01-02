@@ -4,8 +4,12 @@ import Foundation
 #if canImport(UIKit)
     struct Match: Identifiable, Hashable {
         let id: String
+        var recordID: CKRecord.ID?
+        var record: CKRecord?
+        var game: Game?
         var date: Date
         var playerIDs: [String]
+        var playerIDsString: String
         var playerOrder: [String]
         var winnerID: String?
         var winner: Player?
@@ -15,11 +19,8 @@ import Foundation
         var acceptedPlayerIDs: [String]
         var lastModified: Date
         var createdByID: String?
-        var record: CKRecord?
-        var game: Game?
-        var recordID: CKRecord.ID?
         var scores: [Int]
-        var rounds: [[Int]]  // Array of score arrays, one for each round
+        var rounds: [[Int]]
 
         var computedWinnerID: String? {
             guard let game = game, !scores.isEmpty else { return winnerID }
@@ -47,6 +48,7 @@ import Foundation
             self.id = UUID().uuidString
             self.date = date
             self.playerIDs = []
+            self.playerIDsString = ""
             self.playerOrder = []
             self.winnerID = nil
             self.winner = nil
@@ -65,14 +67,20 @@ import Foundation
         init?(from record: CKRecord) {
             guard let id = record.value(forKey: "id") as? String else { return nil }
             self.id = id
+            self.recordID = record.recordID
+            self.record = record
             self.date = record.value(forKey: "date") as? Date ?? Date()
+
             if let playerIDsData = record.value(forKey: "playerIDs") as? Data,
                 let ids = try? JSONDecoder().decode([String].self, from: playerIDsData)
             {
                 self.playerIDs = ids
+                self.playerIDsString = ids.sorted().joined(separator: ",")
             } else {
                 self.playerIDs = []
+                self.playerIDsString = ""
             }
+
             if let orderData = record.value(forKey: "playerOrder") as? Data,
                 let order = try? JSONDecoder().decode([String].self, from: orderData)
             {
@@ -99,7 +107,6 @@ import Foundation
             }
             self.lastModified = record.value(forKey: "lastModified") as? Date ?? Date()
             self.createdByID = record.value(forKey: "createdByID") as? String
-            self.record = record
 
             // Set game to nil initially, but store the gameID in the record
             // This will be used to fetch the game later
@@ -109,8 +116,6 @@ import Foundation
             {
                 self.game = game
             }
-
-            self.recordID = record.recordID
 
             if let scoresData = record.value(forKey: "scores") as? Data,
                 let scores = try? JSONDecoder().decode([Int].self, from: scoresData)
@@ -139,9 +144,13 @@ import Foundation
 
             record.setValue(id, forKey: "id")
             record.setValue(date, forKey: "date")
+
             if let playerIDsData = try? JSONEncoder().encode(playerIDs) {
                 record.setValue(playerIDsData, forKey: "playerIDs")
+                record.setValue(
+                    playerIDs.sorted().joined(separator: ","), forKey: "playerIDsString")
             }
+
             if let orderData = try? JSONEncoder().encode(playerOrder) {
                 record.setValue(orderData, forKey: "playerOrder")
             }
