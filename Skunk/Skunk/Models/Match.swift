@@ -7,6 +7,7 @@ import Foundation
         var recordID: CKRecord.ID?
         var record: CKRecord?
         var game: Game?
+        var gameID: String
         var date: Date
         var playerIDs: [String]
         var playerIDsString: String
@@ -59,76 +60,64 @@ import Foundation
             self.lastModified = date
             self.createdByID = createdByID
             self.game = game
+            self.gameID = game.id
             self.recordID = nil
             self.scores = []
             self.rounds = []
         }
 
         init?(from record: CKRecord) {
-            guard let id = record.value(forKey: "id") as? String,
-                let gameId = record.value(forKey: "gameID") as? String
+            guard let id = record["id"] as? String,
+                let playerIDsData = record["playerIDs"] as? Data,
+                let playerIDs = try? JSONDecoder().decode([String].self, from: playerIDsData),
+                let gameID = record["gameID"] as? String,
+                let date = record["date"] as? Date
             else { return nil }
 
             self.id = id
+            self.playerIDs = playerIDs
+            self.gameID = gameID
+            self.date = date
             self.recordID = record.recordID
             self.record = record
-            self.date = record.value(forKey: "date") as? Date ?? Date()
+            self.playerIDsString = playerIDs.sorted().joined(separator: ",")
 
-            if let playerIDsData = record.value(forKey: "playerIDs") as? Data,
-                let ids = try? JSONDecoder().decode([String].self, from: playerIDsData)
-            {
-                self.playerIDs = ids
-                self.playerIDsString = ids.sorted().joined(separator: ",")
-            } else {
-                self.playerIDs = []
-                self.playerIDsString = ""
-            }
-
-            if let orderData = record.value(forKey: "playerOrder") as? Data,
-                let order = try? JSONDecoder().decode([String].self, from: orderData)
-            {
-                self.playerOrder = order
-            } else {
-                self.playerOrder = []
-            }
-            self.winnerID = record.value(forKey: "winnerID") as? String
-            self.isMultiplayer = record.value(forKey: "isMultiplayer") as? Bool ?? false
-            self.status = record.value(forKey: "status") as? String ?? "pending"
-            if let invitedData = record.value(forKey: "invitedPlayerIDs") as? Data,
-                let invited = try? JSONDecoder().decode([String].self, from: invitedData)
-            {
-                self.invitedPlayerIDs = invited
-            } else {
-                self.invitedPlayerIDs = []
-            }
-            if let acceptedData = record.value(forKey: "acceptedPlayerIDs") as? Data,
-                let accepted = try? JSONDecoder().decode([String].self, from: acceptedData)
-            {
-                self.acceptedPlayerIDs = accepted
-            } else {
-                self.acceptedPlayerIDs = []
-            }
-            self.lastModified = record.value(forKey: "lastModified") as? Date ?? Date()
-            self.createdByID = record.value(forKey: "createdByID") as? String
-
-            // Set game to nil initially
-            self.game = nil
-
-            // Decode scores and rounds
-            if let scoresData = record.value(forKey: "scores") as? Data,
-                let scores = try? JSONDecoder().decode([Int].self, from: scoresData)
-            {
-                self.scores = scores
+            // Decode optional fields
+            if let scoresData = record["scores"] as? Data {
+                self.scores = (try? JSONDecoder().decode([Int].self, from: scoresData)) ?? []
             } else {
                 self.scores = []
             }
-
-            if let roundsData = record.value(forKey: "rounds") as? Data,
-                let rounds = try? JSONDecoder().decode([[Int]].self, from: roundsData)
-            {
-                self.rounds = rounds
+            if let roundsData = record["rounds"] as? Data {
+                self.rounds = (try? JSONDecoder().decode([[Int]].self, from: roundsData)) ?? []
             } else {
                 self.rounds = []
+            }
+            if let playerOrderData = record["playerOrder"] as? Data {
+                self.playerOrder =
+                    (try? JSONDecoder().decode([String].self, from: playerOrderData)) ?? playerIDs
+            } else {
+                self.playerOrder = playerIDs
+            }
+            self.createdByID = record["createdByID"] as? String
+            self.isMultiplayer = record["isMultiplayer"] as? Bool ?? (playerIDs.count > 1)
+            self.status = record["status"] as? String ?? "active"
+            self.winnerID = record["winnerID"] as? String
+            self.winner = nil
+            self.lastModified = record["lastModified"] as? Date ?? date
+
+            if let invitedData = record["invitedPlayerIDs"] as? Data {
+                self.invitedPlayerIDs =
+                    (try? JSONDecoder().decode([String].self, from: invitedData)) ?? []
+            } else {
+                self.invitedPlayerIDs = []
+            }
+
+            if let acceptedData = record["acceptedPlayerIDs"] as? Data {
+                self.acceptedPlayerIDs =
+                    (try? JSONDecoder().decode([String].self, from: acceptedData)) ?? []
+            } else {
+                self.acceptedPlayerIDs = []
             }
         }
 

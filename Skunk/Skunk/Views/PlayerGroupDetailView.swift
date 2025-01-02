@@ -365,18 +365,20 @@ import SwiftUI
         private func loadMatches() async {
             isLoading = true
             do {
-                let games = try await cloudKitManager.fetchGames()
-                var allMatches: [Match] = []
-
-                for game in games {
-                    let gameMatches = try await cloudKitManager.fetchMatches(for: game)
-                    let groupMatches = gameMatches.filter { match in
-                        Set(match.playerIDs) == Set(group.playerIDs)
-                    }
-                    allMatches.append(contentsOf: groupMatches)
+                // First check if we have cached matches
+                if let cachedMatches = cloudKitManager.getGroupMatches(group.id) {
+                    matches = cachedMatches.sorted { $0.date > $1.date }
+                    isLoading = false
+                    return
                 }
 
-                matches = allMatches.sorted { $0.date > $1.date }
+                // If no cache, fetch recent matches for the group
+                let recentMatches = try await cloudKitManager.fetchRecentMatches(
+                    forGroup: group.id, limit: 10)
+
+                // Cache the matches
+                cloudKitManager.cacheGroupMatches(recentMatches, for: group.id)
+                matches = recentMatches.sorted { $0.date > $1.date }
             } catch {
                 self.error = error
                 showingError = true

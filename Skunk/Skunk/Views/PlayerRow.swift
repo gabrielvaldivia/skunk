@@ -80,6 +80,7 @@ import SwiftUI
         let currentPlayer: Player?
         let showOpponent: Bool
         let cachedMatches: [Match]?
+        let group: PlayerGroup?
         @EnvironmentObject private var cloudKitManager: CloudKitManager
         @StateObject private var viewModel = MatchSubtitleViewModel()
 
@@ -96,7 +97,20 @@ import SwiftUI
         }
 
         private var subtitle: String {
-            // Use cached matches first if available and not empty
+            // For groups, only use cached matches
+            if let group = group {
+                if let cached = cloudKitManager.getGroupMatches(group.id) {
+                    print("🔵 PlayerRow: Using \(cached.count) cached matches for group subtitle")
+                    return viewModel.subtitle(
+                        for: cached, isLoading: false, currentPlayer: nil,
+                        showOpponent: false, cloudKitManager: cloudKitManager)
+                }
+                return viewModel.subtitle(
+                    for: [], isLoading: false, currentPlayer: nil,
+                    showOpponent: false, cloudKitManager: cloudKitManager)
+            }
+
+            // For players, use cached matches first if available
             if let cached = cachedMatches, !cached.isEmpty {
                 print("🔵 PlayerRow: Using \(cached.count) cached matches for subtitle")
                 return viewModel.subtitle(
@@ -177,83 +191,68 @@ import SwiftUI
         }
 
         private func loadMatches() async {
-            print(
-                "🔵 PlayerRow: Starting loadMatches for \(player?.name ?? group?.name ?? "unknown")")
-            // If we have cached matches, show them immediately
-            if let cached = cachedMatches, !cached.isEmpty {
-                print("🔵 PlayerRow: Using \(cached.count) cached matches")
-                await MainActor.run {
-                    matches = cached
-                    isLoading = false
-                }
-                // Then refresh in the background
-                Task {
-                    await loadMatchesFromNetwork()
-                }
-                return
-            }
-
-            // No cache, show loading state and fetch
-            print("🔵 PlayerRow: No cached matches, loading from network")
-            await MainActor.run {
-                isLoading = true
-            }
-            await loadMatchesFromNetwork()
-        }
-
-        private func loadMatchesFromNetwork() async {
-            print(
-                "🔵 PlayerRow: Starting network load for \(player?.name ?? group?.name ?? "unknown")"
-            )
-            // Don't show loading if we already have matches
-            if matches.isEmpty {
-                await MainActor.run { isLoading = true }
-            }
-            defer { Task { @MainActor in isLoading = false } }
-
+            isLoading = true
             do {
-                var allMatches: [Match] = []
-
-                if let group = group {
-                    print("🔵 PlayerRow: Fetching matches for group \(group.id)")
-                    // For groups, fetch only the most recent match
-                    let recentMatches = try await cloudKitManager.fetchRecentMatches(
-                        forGroup: group.id, limit: 1
-                    )
-                    print("🔵 PlayerRow: Got \(recentMatches.count) matches for group")
-                    if let lastMatch = recentMatches.first {
-                        allMatches = [lastMatch]
+                if let player = player {
+                    print("🔵 PlayerRow: Starting loadMatches for \(player.name)")
+                    // Check cache first
+                    if let cachedMatches = cloudKitManager.getPlayerMatches(player.id) {
+                        print(
+                            "🔵 PlayerRow: Got \(cachedMatches.count) cached matches for player \(player.id)"
+                        )
+                        matches = cachedMatches
+                        isLoading = false
+                        return
                     }
-                } else if let player = player {
+                    print("🔵 PlayerRow: No cached matches, loading from network")
+
+                    // Load from network
+                    print("🔵 PlayerRow: Starting network load for \(player.name)")
                     print("🔵 PlayerRow: Fetching matches for player \(player.id)")
-                    // For players, fetch only the most recent match
-                    let recentMatches = try await cloudKitManager.fetchRecentMatches(
-                        forPlayer: player.id, limit: 1
-                    )
-                    print("🔵 PlayerRow: Got \(recentMatches.count) matches for player")
-                    if let lastMatch = recentMatches.first {
-                        allMatches = [lastMatch]
-                    }
-                }
+                    let playerMatches = try await cloudKitManager.fetchRecentMatches(
+                        forPlayer: player.id, limit: 10)
+                    print("🔵 PlayerRow: Got \(playerMatches.count) matches for player")
 
-                // Update cache if we got matches
-                if !allMatches.isEmpty {
-                    print("🔵 PlayerRow: Caching \(allMatches.count) matches")
-                    if let group = group {
-                        cloudKitManager.cacheMatchesForGroup(allMatches, groupId: group.id)
-                    } else if let player = player {
-                        cloudKitManager.cacheMatchesForPlayer(allMatches, playerId: player.id)
+                    // Cache the matches
+                    if !playerMatches.isEmpty {
+                        print("🔵 PlayerRow: Caching \(playerMatches.count) matches")
+                        cloudKitManager.cachePlayerMatches(playerMatches, for: player.id)
+                    } else {
+                        print("🔵 PlayerRow: No matches found from network")
                     }
-                } else {
-                    print("🔵 PlayerRow: No matches found from network")
-                }
+                    matches = playerMatches
+                } else if let group = group {
+                    print("🔵 PlayerRow: Starting loadMatches for group \(group.id)")
+                    // Check cache first
+                    if let cachedMatches = cloudKitManager.getGroupMatches(group.id) {
+                        print(
+                            "🔵 PlayerRow: Got \(cachedMatches.count) cached matches for group \(group.id)"
+                        )
+                        matches = cachedMatches
+                        isLoading = false
+                        return
+                    }
+                    print("🔵 PlayerRow: No cached matches, loading from network")
 
-                await MainActor.run {
-                    matches = allMatches
+                    // Load from network
+                    print("🔵 PlayerRow: Starting network load for group \(group.id)")
+                    let groupMatches = try await cloudKitManager.fetchRecentMatches(
+                        forGroup: group.id, limit: 10)
+                    print("🔵 PlayerRow: Got \(groupMatches.count) matches for group")
+
+                    // Cache the matches
+                    if !groupMatches.isEmpty {
+                        print("🔵 PlayerRow: Caching \(groupMatches.count) matches")
+                        cloudKitManager.cacheGroupMatches(groupMatches, for: group.id)
+                    } else {
+                        print("🔵 PlayerRow: No matches found from network")
+                    }
+                    matches = groupMatches
                 }
             } catch {
                 print("🔴 PlayerRow: Error loading matches: \(error)")
             }
+            isLoading = false
         }
 
         var body: some View {
@@ -274,7 +273,8 @@ import SwiftUI
                         isLoading: isLoading,
                         currentPlayer: player,
                         showOpponent: false,
-                        cachedMatches: cachedMatches
+                        cachedMatches: cachedMatches,
+                        group: group
                     )
                 }
 

@@ -24,7 +24,8 @@ import SwiftUI
                     isLoading: isLoading,
                     currentPlayer: currentPlayer,
                     showOpponent: true,
-                    cachedMatches: cachedMatches
+                    cachedMatches: cachedMatches,
+                    group: nil
                 )
             }
             .task {
