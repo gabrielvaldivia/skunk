@@ -1099,6 +1099,10 @@ import SwiftUI
                         self?.matchCache.removeAll()
                         self?.clearPlayerMatchesCache()
                         self?.clearGroupMatchesCache()
+                    case "PlayerGroup":
+                        // Reset the refresh time to force a fresh fetch
+                        self?.lastPlayerGroupRefreshTime = .distantPast
+                        _ = try? await self?.fetchPlayerGroups()
                     default:
                         break
                     }
@@ -1162,16 +1166,36 @@ import SwiftUI
                 // Get the current user ID
                 let userID = await self.userID
 
-                // Create a predicate that includes groups created by the user
                 if let userID = userID {
-                    let predicate = NSPredicate(format: "createdByID == %@", userID)
+                    // Use a valid predicate that matches all groups by checking id field
+                    let predicate = NSPredicate(format: "id != %@", "")
                     let query = CKQuery(recordType: "PlayerGroup", predicate: predicate)
                     let (results, _) = try await database.records(matching: query)
+
+                    // Get all matches to filter groups
+                    let games = try await fetchGames()
+                    var allMatchPlayerSets: Set<Set<String>> = []
+
+                    // Collect all unique player combinations from matches
+                    for game in games {
+                        let matches = try await fetchMatches(for: game)
+                        for match in matches {
+                            allMatchPlayerSets.insert(Set(match.playerIDs))
+                        }
+                    }
+
+                    // Filter groups to only include those that match player combinations from matches
                     let groups = results.compactMap { result -> PlayerGroup? in
                         guard let record = try? result.1.get(),
                             let group = PlayerGroup(from: record)
                         else { return nil }
-                        return group
+
+                        // Only include groups that have matching player combinations in matches
+                        let groupPlayerSet = Set(group.playerIDs)
+                        if allMatchPlayerSets.contains(groupPlayerSet) {
+                            return group
+                        }
+                        return nil
                     }
 
                     // Update everything at once to avoid UI flicker
@@ -1267,26 +1291,33 @@ import SwiftUI
             let sortedPlayerIDs = playerIDs.sorted()
 
             // First check if we have an existing group with these exact players
-            let playerIDsData = try JSONEncoder().encode(sortedPlayerIDs)
-            let predicate = NSPredicate(format: "playerIDs == %@", playerIDsData as CVarArg)
+            let predicate = NSPredicate(format: "id != %@", "")
             let query = CKQuery(recordType: "PlayerGroup", predicate: predicate)
             let (results, _) = try await database.records(matching: query)
 
-            if let result = results.first,
-                let record = try? result.1.get(),
-                let group = PlayerGroup(from: record)
-            {
-                // Update the group name if it's different from the suggested name
-                if let suggestedName = suggestedName, group.name != suggestedName {
-                    var updatedGroup = group
-                    updatedGroup.name = suggestedName
-                    try await savePlayerGroup(updatedGroup)
-                    return updatedGroup
+            // Find a matching group by decoding and comparing playerIDs
+            for result in results {
+                guard let record = try? result.1.get(),
+                    let playerIDsData = record["playerIDs"] as? Data,
+                    let existingPlayerIDs = try? JSONDecoder().decode(
+                        [String].self, from: playerIDsData),
+                    let group = PlayerGroup(from: record)
+                else { continue }
+
+                // Compare sorted arrays
+                if Set(existingPlayerIDs) == Set(sortedPlayerIDs) {
+                    // Update the group name if it's different from the suggested name
+                    if let suggestedName = suggestedName, group.name != suggestedName {
+                        var updatedGroup = group
+                        updatedGroup.name = suggestedName
+                        try await savePlayerGroup(updatedGroup)
+                        return updatedGroup
+                    }
+                    return group
                 }
-                return group
             }
 
-            // Create a new group
+            // No matching group found, create a new one
             let name = suggestedName ?? generateGroupName(for: sortedPlayerIDs)
             let userID = await self.userID
             let group = PlayerGroup(name: name, playerIDs: sortedPlayerIDs, createdByID: userID)
@@ -1295,13 +1326,19 @@ import SwiftUI
                 try await savePlayerGroup(group)
                 return group
             } catch let error as CKError {
-                // On any CloudKit error, try to fetch the existing record
-                let (results, _) = try await database.records(matching: query)
-                if let result = results.first,
-                    let record = try? result.1.get(),
-                    let existingGroup = PlayerGroup(from: record)
-                {
-                    return existingGroup
+                // On any CloudKit error, try to fetch one more time
+                let (retryResults, _) = try await database.records(matching: query)
+                for result in retryResults {
+                    guard let record = try? result.1.get(),
+                        let playerIDsData = record["playerIDs"] as? Data,
+                        let existingPlayerIDs = try? JSONDecoder().decode(
+                            [String].self, from: playerIDsData),
+                        let existingGroup = PlayerGroup(from: record)
+                    else { continue }
+
+                    if Set(existingPlayerIDs) == Set(sortedPlayerIDs) {
+                        return existingGroup
+                    }
                 }
                 throw error
             }
