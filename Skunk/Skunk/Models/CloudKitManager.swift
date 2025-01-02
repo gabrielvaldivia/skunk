@@ -831,8 +831,9 @@ import SwiftUI
         func fetchMatches(for game: Game) async throws -> [Match] {
             print("🟣 CloudKitManager: Fetching matches for game: \(game.id)")
             do {
-                let predicate = NSPredicate(format: "gameID == %@", game.id)
+                let predicate = NSPredicate(format: "gameID == %@ AND playerIDs != nil", game.id)
                 let query = CKQuery(recordType: "Match", predicate: predicate)
+                query.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
 
                 let (results, _) = try await database.records(matching: query)
 
@@ -845,6 +846,17 @@ import SwiftUI
                     }
                     print(
                         "🟣 CloudKitManager: Processing match record: \(record.recordID.recordName)")
+
+                    // Ensure required fields exist
+                    guard let playerIDsData = record["playerIDs"] as? Data,
+                        let playerIDs = try? JSONDecoder().decode(
+                            [String].self, from: playerIDsData),
+                        !playerIDs.isEmpty
+                    else {
+                        print("🟣 CloudKitManager: Match record missing required fields")
+                        return nil
+                    }
+
                     var match = Match(from: record)
                     match?.game = game
                     return match
@@ -854,20 +866,22 @@ import SwiftUI
                 // Update cache
                 matchCache[game.id] = matches
 
-                // Update game's matches without triggering a refresh
-                if let index = games.firstIndex(where: { $0.id == game.id }) {
-                    games[index].matches = matches
-                }
-
                 return matches
-            } catch let error as CKError {
-                handleCloudKitError(error)
+            } catch {
+                print("🟣 CloudKitManager: Error fetching matches: \(error)")
                 throw error
             }
         }
 
         func saveMatch(_ match: Match) async throws {
             print("🟣 CloudKitManager: Saving match with ID: \(match.id)")
+
+            // Validate that match has required fields
+            guard let game = match.game else {
+                print("🟣 CloudKitManager: Cannot save match without game")
+                throw CloudKitError.missingData
+            }
+
             var updatedMatch = match
             let record = match.toRecord()
 
@@ -884,19 +898,17 @@ import SwiftUI
             updatedMatch.record = savedRecord
 
             // Update cache and game's matches
-            if let gameId = match.game?.id {
-                var matches = matchCache[gameId] ?? []
-                if let index = matches.firstIndex(where: { $0.id == match.id }) {
-                    matches[index] = updatedMatch
-                } else {
-                    matches.append(updatedMatch)
-                }
-                matchCache[gameId] = matches
+            var matches = matchCache[game.id] ?? []
+            if let index = matches.firstIndex(where: { $0.id == match.id }) {
+                matches[index] = updatedMatch
+            } else {
+                matches.append(updatedMatch)
+            }
+            matchCache[game.id] = matches
 
-                // Update game's matches without triggering a refresh
-                if let gameIndex = games.firstIndex(where: { $0.id == gameId }) {
-                    games[gameIndex].matches = matches
-                }
+            // Update game's matches without triggering a refresh
+            if let gameIndex = games.firstIndex(where: { $0.id == game.id }) {
+                games[gameIndex].matches = matches
             }
         }
 
@@ -1612,7 +1624,8 @@ import SwiftUI
             print("🟣 CloudKitManager: Fetched \(allGames.count) games")
 
             // Use a predicate that matches matches containing the player ID in the playerIDs field
-            let predicate = NSPredicate(format: "id != ''")  // Simple predicate to get all matches
+            // and ensures required fields are present
+            let predicate = NSPredicate(format: "gameID != nil AND playerIDs != nil")
             let sort = NSSortDescriptor(key: "date", ascending: false)
             let query = CKQuery(recordType: "Match", predicate: predicate)
             query.sortDescriptors = [sort]
@@ -1625,23 +1638,20 @@ import SwiftUI
 
             let matches = try results.compactMap { result -> Match? in
                 guard let record = try? result.1.get() else { return nil }
-                var match = try? Match(from: record)
 
-                // Attach game to match if possible
-                if let gameId = record["gameID"] as? String,
-                    let game = allGames.first(where: { $0.id == gameId })
-                {
-                    match?.game = game
-                }
-
-                // Check if this match includes the player by decoding playerIDs
-                if let playerIDsData = record["playerIDs"] as? Data,
+                // Ensure required fields exist
+                guard let gameId = record["gameID"] as? String,
+                    let playerIDsData = record["playerIDs"] as? Data,
                     let playerIDs = try? JSONDecoder().decode([String].self, from: playerIDsData),
-                    playerIDs.contains(playerId)
-                {
-                    return match
+                    playerIDs.contains(playerId),
+                    let game = allGames.first(where: { $0.id == gameId })
+                else {
+                    return nil
                 }
-                return nil
+
+                var match = try? Match(from: record)
+                match?.game = game
+                return match
             }
             .prefix(limit)
 
@@ -1657,6 +1667,10 @@ import SwiftUI
         func fetchRecentMatches(forGroup groupId: String, limit: Int) async throws -> [Match] {
             try await ensureCloudKitAccess()
 
+            // First ensure we have the latest games
+            let allGames = try await fetchGames()
+            print("🟣 CloudKitManager: Fetched \(allGames.count) games")
+
             // Get the player IDs for this group
             let groupRecordID = CKRecord.ID(recordName: groupId)
             let groupRecord = try await database.record(for: groupRecordID)
@@ -1667,7 +1681,7 @@ import SwiftUI
             }
 
             // Create a predicate that matches matches containing ALL players in the group
-            var format = "playerIDs CONTAINS %@"
+            var format = "gameID != nil AND playerIDs != nil AND playerIDs CONTAINS %@"
             var args: [String] = [playerIDs[0]]
 
             for id in playerIDs.dropFirst() {
@@ -1687,10 +1701,24 @@ import SwiftUI
 
             let matches = try results.compactMap { result -> Match? in
                 guard let record = try? result.1.get() else { return nil }
-                return try? Match(from: record)
+
+                // Ensure required fields exist
+                guard let gameId = record["gameID"] as? String,
+                    let game = allGames.first(where: { $0.id == gameId }),
+                    let playerIDsData = record["playerIDs"] as? Data,
+                    let matchPlayerIDs = try? JSONDecoder().decode(
+                        [String].self, from: playerIDsData),
+                    !matchPlayerIDs.isEmpty
+                else {
+                    return nil
+                }
+
+                var match = try? Match(from: record)
+                match?.game = game
+                return match
             }
 
-            return matches
+            return matches.sorted { $0.date > $1.date }
         }
 
         // MARK: - Match Cache Methods
@@ -1727,7 +1755,15 @@ import SwiftUI
             let calendar = Calendar.current
             let startDate = calendar.date(byAdding: .day, value: -daysBack, to: Date()) ?? Date()
 
-            let predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
+            // First ensure we have the latest games
+            let allGames = try await fetchGames()
+            print("🟣 CloudKitManager: Fetched \(allGames.count) games")
+
+            // Update predicate to ensure we only get valid matches
+            let predicate = NSPredicate(
+                format: "date >= %@ AND gameID != nil AND playerIDs != nil",
+                startDate as NSDate
+            )
             let sort = NSSortDescriptor(key: "date", ascending: false)
             let query = CKQuery(recordType: "Match", predicate: predicate)
             query.sortDescriptors = [sort]
@@ -1739,15 +1775,19 @@ import SwiftUI
 
             let matches = try results.compactMap { result -> Match? in
                 guard let record = try? result.1.get() else { return nil }
-                var match = try? Match(from: record)
 
-                // Attach game to match
-                if let gameId = record["gameID"] as? String,
-                    let game = games.first(where: { $0.id == gameId })
-                {
-                    match?.game = game
+                // Ensure the match has required fields
+                guard let gameId = record["gameID"] as? String,
+                    let playerIDsData = record["playerIDs"] as? Data,
+                    let playerIDs = try? JSONDecoder().decode([String].self, from: playerIDsData),
+                    !playerIDs.isEmpty,
+                    let game = allGames.first(where: { $0.id == gameId })
+                else {
+                    return nil
                 }
 
+                var match = try? Match(from: record)
+                match?.game = game
                 return match
             }
 

@@ -44,7 +44,7 @@ import Foundation
             return winnerID
         }
 
-        init(date: Date = Date(), createdByID: String? = nil, game: Game? = nil) {
+        init(date: Date = Date(), createdByID: String? = nil, game: Game) {
             self.id = UUID().uuidString
             self.date = date
             self.playerIDs = []
@@ -65,7 +65,10 @@ import Foundation
         }
 
         init?(from record: CKRecord) {
-            guard let id = record.value(forKey: "id") as? String else { return nil }
+            guard let id = record.value(forKey: "id") as? String,
+                let gameId = record.value(forKey: "gameID") as? String
+            else { return nil }
+
             self.id = id
             self.recordID = record.recordID
             self.record = record
@@ -108,15 +111,10 @@ import Foundation
             self.lastModified = record.value(forKey: "lastModified") as? Date ?? Date()
             self.createdByID = record.value(forKey: "createdByID") as? String
 
-            // Set game to nil initially, but store the gameID in the record
-            // This will be used to fetch the game later
+            // Set game to nil initially
             self.game = nil
-            if let gameRecord = record.value(forKey: "game") as? CKRecord,
-                let game = Game(from: gameRecord)
-            {
-                self.game = game
-            }
 
+            // Decode scores and rounds
             if let scoresData = record.value(forKey: "scores") as? Data,
                 let scores = try? JSONDecoder().decode([Int].self, from: scoresData)
             {
@@ -165,9 +163,12 @@ import Foundation
             }
             record.setValue(lastModified, forKey: "lastModified")
             record.setValue(createdByID, forKey: "createdByID")
-            if let gameID = game?.id {
-                record.setValue(gameID, forKey: "gameID")
+
+            // Always require a game ID
+            guard let gameID = game?.id else {
+                fatalError("Cannot create a match record without a game ID")
             }
+            record.setValue(gameID, forKey: "gameID")
 
             if let scoresData = try? JSONEncoder().encode(scores) {
                 record.setValue(scoresData, forKey: "scores")
