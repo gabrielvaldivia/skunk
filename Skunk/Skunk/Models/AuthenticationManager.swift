@@ -21,6 +21,7 @@ import SwiftUI
         @Published private(set) var isSigningOut = false
 
         private var isSigningIn = false
+        private var playerSetupTask: Task<Void, Never>?
 
         func checkExistingCredentials() async {
             guard !isCheckingCredentials && !isSigningIn else { return }
@@ -37,15 +38,21 @@ import SwiftUI
                     case .authorized:
                         userID = storedID
                         isAuthenticated = true
-                        // Try to find or create the user's player
-                        if let player = try? await CloudKitManager.shared.fetchCurrentUserPlayer(
-                            userID: storedID)
-                        {
-                            print("Found existing player: \(player.name)")
-                        } else {
-                            // Create new player if none exists
-                            let newPlayer = Player(name: "Player", appleUserID: storedID)
-                            try? await CloudKitManager.shared.savePlayer(newPlayer)
+
+                        // Defer player setup to a background task
+                        playerSetupTask?.cancel()
+                        playerSetupTask = Task { @MainActor in
+                            // Try to find or create the user's player
+                            if let player = try? await CloudKitManager.shared
+                                .fetchCurrentUserPlayer(
+                                    userID: storedID)
+                            {
+                                print("Found existing player: \(player.name)")
+                            } else {
+                                // Create new player if none exists
+                                let newPlayer = Player(name: "Player", appleUserID: storedID)
+                                try? await CloudKitManager.shared.savePlayer(newPlayer)
+                            }
                         }
                     case .revoked, .notFound, .transferred:
                         UserDefaults.standard.removeObject(forKey: "userID")
@@ -96,169 +103,67 @@ import SwiftUI
 
             userID = appleIDCredential.user
             UserDefaults.standard.set(appleIDCredential.user, forKey: "userID")
-
-            // Set the Apple user ID in the CloudKit user record
-            do {
-                let container = CKContainer(identifier: "iCloud.com.gvaldivia.skunkapp")
-                let recordID = try await container.userRecordID()
-                let database = container.publicCloudDatabase
-                let userRecord = try await database.record(for: recordID)
-                userRecord["appleUserID"] = appleIDCredential.user as CKRecordValue
-                _ = try await database.save(userRecord)
-                print("🟢 AuthenticationManager: Saved Apple user ID to CloudKit user record")
-            } catch {
-                print("🔴 AuthenticationManager: Failed to save Apple user ID to CloudKit: \(error)")
-            }
-
-            // Create or update player
-            do {
-                print(
-                    "🟢 AuthenticationManager: Starting player creation/update for user \(appleIDCredential.user)"
-                )
-
-                if let player = try await CloudKitManager.shared.fetchCurrentUserPlayer(
-                    userID: appleIDCredential.user)
-                {
-                    print("🟢 AuthenticationManager: Found existing player")
-                    #if canImport(FirebaseAnalytics)
-                        Analytics.logEvent(
-                            "player_found",
-                            parameters: [
-                                "player_name": player.name
-                            ])
-                    #endif
-                    // Update existing player if needed
-                    if let fullName = appleIDCredential.fullName,
-                        let givenName = fullName.givenName,
-                        player.name == "Player"  // Only update if it's the default name
-                    {
-                        var updatedPlayer = player
-                        updatedPlayer.name = givenName
-                        do {
-                            try await CloudKitManager.shared.updatePlayer(updatedPlayer)
-                            print(
-                                "🟢 AuthenticationManager: Successfully updated player name to \(updatedPlayer.name)"
-                            )
-                            #if canImport(FirebaseAnalytics)
-                                Analytics.logEvent(
-                                    "player_name_updated",
-                                    parameters: [
-                                        "new_name": updatedPlayer.name
-                                    ])
-                            #endif
-                        } catch {
-                            print(
-                                "🔴 AuthenticationManager: Failed to update player name: \(error.localizedDescription)"
-                            )
-                            #if canImport(FirebaseAnalytics)
-                                Analytics.logEvent(
-                                    "player_update_error",
-                                    parameters: [
-                                        "error_description": error.localizedDescription
-                                    ])
-                            #endif
-                        }
-                    }
-                } else {
-                    print("🟢 AuthenticationManager: No existing player found, creating new one")
-                    // Create new player
-                    let name: String
-                    if let fullName = appleIDCredential.fullName,
-                        let givenName = fullName.givenName
-                    {
-                        name = givenName
-                    } else {
-                        name = "Player"
-                    }
-
-                    print("🟢 AuthenticationManager: Creating new player with name: \(name)")
-                    let newPlayer = Player(
-                        name: name,
-                        appleUserID: appleIDCredential.user
-                    )
-                    do {
-                        try await CloudKitManager.shared.savePlayer(newPlayer)
-                        print("🟢 AuthenticationManager: Successfully created new player")
-                        #if canImport(FirebaseAnalytics)
-                            Analytics.logEvent(
-                                "new_player_created",
-                                parameters: [
-                                    "player_name": name
-                                ])
-                        #endif
-                    } catch let error as CKError {
-                        print(
-                            "🔴 AuthenticationManager: CloudKit error creating player: \(error.localizedDescription)"
-                        )
-                        print("🔴 AuthenticationManager: Error code: \(error.code.rawValue)")
-                        #if canImport(FirebaseAnalytics)
-                            Analytics.logEvent(
-                                "player_creation_error",
-                                parameters: [
-                                    "error_type": "cloudkit",
-                                    "error_code": String(error.code.rawValue),
-                                    "error_description": error.localizedDescription,
-                                ])
-                        #endif
-                        if error.code == .serverRejectedRequest {
-                            print(
-                                "🔴 AuthenticationManager: Server rejected the request. This might be a CloudKit permissions issue."
-                            )
-                        }
-                        throw error
-                    } catch {
-                        print(
-                            "🔴 AuthenticationManager: Unknown error creating player: \(error.localizedDescription)"
-                        )
-                        #if canImport(FirebaseAnalytics)
-                            Analytics.logEvent(
-                                "player_creation_error",
-                                parameters: [
-                                    "error_type": "unknown",
-                                    "error_description": error.localizedDescription,
-                                ])
-                        #endif
-                        throw error
-                    }
-                }
-            } catch let error as CKError {
-                print(
-                    "🔴 AuthenticationManager: CloudKit error in player handling: \(error.localizedDescription)"
-                )
-                print("🔴 AuthenticationManager: Error code: \(error.code.rawValue)")
-                #if canImport(FirebaseAnalytics)
-                    Analytics.logEvent(
-                        "cloudkit_error",
-                        parameters: [
-                            "error_code": String(error.code.rawValue),
-                            "error_description": error.localizedDescription,
-                        ])
-                #endif
-                if error.code == .networkFailure {
-                    throw AuthenticationError.networkError
-                } else if error.code == .serverRejectedRequest {
-                    throw AuthenticationError.cloudKitPermissionError
-                } else {
-                    throw error
-                }
-            } catch {
-                print(
-                    "🔴 AuthenticationManager: Error in player handling: \(error.localizedDescription)"
-                )
-                #if canImport(FirebaseAnalytics)
-                    Analytics.logEvent(
-                        "authentication_error",
-                        parameters: [
-                            "error_description": error.localizedDescription
-                        ])
-                #endif
-                throw error
-            }
-
             isAuthenticated = true
-            #if canImport(FirebaseAnalytics)
-                Analytics.logEvent("sign_in_success", parameters: nil)
-            #endif
+
+            // Defer CloudKit operations to a background task
+            Task {
+                do {
+                    // Set the Apple user ID in the CloudKit user record
+                    let container = CKContainer(identifier: "iCloud.com.gvaldivia.skunkapp")
+                    let recordID = try await container.userRecordID()
+                    let database = container.publicCloudDatabase
+                    let userRecord = try await database.record(for: recordID)
+                    userRecord["appleUserID"] = appleIDCredential.user as CKRecordValue
+                    _ = try await database.save(userRecord)
+                    print("🟢 AuthenticationManager: Saved Apple user ID to CloudKit user record")
+                } catch {
+                    print(
+                        "🔴 AuthenticationManager: Failed to save Apple user ID to CloudKit: \(error)"
+                    )
+                }
+
+                // Create or update player
+                do {
+                    print(
+                        "🟢 AuthenticationManager: Starting player creation/update for user \(appleIDCredential.user)"
+                    )
+
+                    if let player = try await CloudKitManager.shared.fetchCurrentUserPlayer(
+                        userID: appleIDCredential.user)
+                    {
+                        print("🟢 AuthenticationManager: Found existing player")
+                        #if canImport(FirebaseAnalytics)
+                            Analytics.logEvent(
+                                "player_found",
+                                parameters: [
+                                    "player_name": player.name
+                                ])
+                        #endif
+                        // Update existing player if needed
+                        if let fullName = appleIDCredential.fullName,
+                            let givenName = fullName.givenName,
+                            player.name == "Player"  // Only update if it's the default name
+                        {
+                            var updatedPlayer = player
+                            updatedPlayer.name = givenName
+                            try await CloudKitManager.shared.updatePlayer(updatedPlayer)
+                        }
+                    } else {
+                        print("🟢 AuthenticationManager: No existing player found, creating new one")
+                        // Create new player
+                        let name = appleIDCredential.fullName?.givenName ?? "Player"
+                        let newPlayer = Player(
+                            name: name,
+                            appleUserID: appleIDCredential.user
+                        )
+                        try await CloudKitManager.shared.savePlayer(newPlayer)
+                    }
+                } catch {
+                    print(
+                        "🔴 AuthenticationManager: Error in player handling: \(error.localizedDescription)"
+                    )
+                }
+            }
         }
 
         func signOut() async {

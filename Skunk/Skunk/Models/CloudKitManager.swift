@@ -24,10 +24,12 @@ import SwiftUI
         private var lastRefreshTime: Date = .distantPast
         private var lastGamesRefreshTime: Date = .distantPast
         private var isRefreshing = false
-        private var matchCache: [String: [Match]] = [:]  // Cache matches by game ID
-        private var playerMatchesCache: [String: [Match]] = [:]  // Cache matches by player ID
-        private var groupMatchesCache: [String: [Match]] = [:]  // Cache matches by group ID
-        private var playerCache: [String: Player] = [:]  // Cache players by ID
+        private var isInitialized = false
+        private var initializationTask: Task<Void, Never>?
+        private lazy var matchCache: [String: [Match]] = [:]  // Cache matches by game ID
+        private lazy var playerMatchesCache: [String: [Match]] = [:]  // Cache matches by player ID
+        private lazy var groupMatchesCache: [String: [Match]] = [:]  // Cache matches by group ID
+        private lazy var playerCache: [String: Player] = [:]  // Cache players by ID
         private var refreshDebounceTask: Task<Void, Never>?
         private let debounceInterval: TimeInterval = 2.0  // 2 seconds debounce
         private let cacheTimeout: TimeInterval = 30.0  // 30 seconds cache timeout
@@ -36,7 +38,7 @@ import SwiftUI
         private var isRefreshingPlayers = false
         private var playerRefreshDebounceTask: Task<Void, Never>?
         private let playerRefreshDebounceInterval: TimeInterval = 2.0  // 2 seconds debounce
-        private var playerGroupCache: [String: PlayerGroup] = [:]
+        private lazy var playerGroupCache: [String: PlayerGroup] = [:]
         private var lastPlayerGroupRefreshTime: Date = .distantPast
         private let adminUserID = "000697.08cebe0a4edc475ca4a09155face4314.0206"  // Admin user ID
 
@@ -82,64 +84,59 @@ import SwiftUI
             )
             print("🟣 CloudKitManager: Using public database")
 
-            // Verify container configuration immediately
-            Task {
-                do {
-                    // First check if the container exists
-                    let containerExists = try await CKContainer.default().containerIdentifier != nil
-                    print("🟣 CloudKitManager: Default container exists: \(containerExists)")
+            // Defer container verification to a background task
+            initializationTask = Task { @MainActor in
+                await initializeInBackground()
+            }
+        }
 
-                    // Then check account status
-                    let accountStatus = try await container.accountStatus()
-                    print("🟣 CloudKitManager: Account status: \(accountStatus.rawValue)")
+        private func initializeInBackground() async {
+            guard !isInitialized else { return }
 
-                    switch accountStatus {
-                    case .available:
-                        print("🟣 CloudKitManager: iCloud account is available")
-                        do {
-                            let userRecordID = try await container.userRecordID()
-                            print(
-                                "🟣 CloudKitManager: Successfully got user record ID: \(userRecordID.recordName)"
-                            )
+            do {
+                // First check if the container exists
+                let containerExists = try await CKContainer.default().containerIdentifier != nil
+                print("🟣 CloudKitManager: Default container exists: \(containerExists)")
 
-                            // Try to create user record in private database if it doesn't exist
-                            do {
-                                let privateRecord = try await container.privateCloudDatabase.record(
-                                    for: userRecordID)
-                                print("🟣 CloudKitManager: User record exists in private database")
-                            } catch {
-                                print("🟣 CloudKitManager: Creating user record in private database")
-                                let userRecord = CKRecord(
-                                    recordType: "User", recordID: userRecordID)
-                                _ = try await container.privateCloudDatabase.save(userRecord)
-                            }
+                // Then check account status
+                let accountStatus = try await container.accountStatus()
+                print("🟣 CloudKitManager: Account status: \(accountStatus.rawValue)")
 
-                            // Set up schema with new field
-                            try await setupSchema()
-
-                        } catch {
-                            print(
-                                "🔴 CloudKitManager: Error getting user record ID: \(error.localizedDescription)"
-                            )
-                        }
-                    case .noAccount:
+                if accountStatus == .available {
+                    print("🟣 CloudKitManager: iCloud account is available")
+                    do {
+                        let userRecordID = try await container.userRecordID()
                         print(
-                            "🔴 CloudKitManager: No iCloud account found - please sign in to iCloud")
-                    case .restricted:
-                        print("🔴 CloudKitManager: iCloud account is restricted")
-                    case .couldNotDetermine:
-                        print("🔴 CloudKitManager: Could not determine iCloud account status")
-                    @unknown default:
-                        print("🔴 CloudKitManager: Unknown iCloud account status: \(accountStatus)")
+                            "🟣 CloudKitManager: Successfully got user record ID: \(userRecordID.recordName)"
+                        )
+
+                        // Try to create user record in private database if it doesn't exist
+                        do {
+                            let privateRecord = try await container.privateCloudDatabase.record(
+                                for: userRecordID)
+                            print("🟣 CloudKitManager: User record exists in private database")
+                        } catch {
+                            print("🟣 CloudKitManager: Creating user record in private database")
+                            let userRecord = CKRecord(recordType: "User", recordID: userRecordID)
+                            _ = try await container.privateCloudDatabase.save(userRecord)
+                        }
+
+                        // Set up schema with new field
+                        try await setupSchema()
+                    } catch {
+                        print(
+                            "🔴 CloudKitManager: Error getting user record ID: \(error.localizedDescription)"
+                        )
                     }
-                } catch {
-                    print(
-                        "🔴 CloudKitManager: Error during initialization: \(error.localizedDescription)"
-                    )
-                    if let ckError = error as? CKError {
-                        print("🔴 CloudKitManager: CKError code: \(ckError.code.rawValue)")
-                        handleCloudKitError(ckError)
-                    }
+                }
+
+                isInitialized = true
+            } catch {
+                print(
+                    "🔴 CloudKitManager: Error during initialization: \(error.localizedDescription)")
+                if let ckError = error as? CKError {
+                    print("🔴 CloudKitManager: CKError code: \(ckError.code.rawValue)")
+                    handleCloudKitError(ckError)
                 }
             }
         }
