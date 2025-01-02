@@ -821,11 +821,14 @@ import SwiftUI
         func fetchMatches(for game: Game) async throws -> [Match] {
             print("🟣 CloudKitManager: Fetching matches for game: \(game.id)")
             do {
-                let predicate = NSPredicate(format: "gameID == %@ AND playerIDs != nil", game.id)
+                let predicate = NSPredicate(format: "gameID == %@", game.id)
                 let query = CKQuery(recordType: "Match", predicate: predicate)
                 query.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
 
-                let (results, _) = try await database.records(matching: query)
+                let (results, _) = try await database.records(
+                    matching: query,
+                    resultsLimit: 100  // Assuming a default limit
+                )
 
                 print("🟣 CloudKitManager: Found \(results.count) match records")
 
