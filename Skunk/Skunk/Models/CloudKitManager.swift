@@ -1160,54 +1160,9 @@ import SwiftUI
             defer { Task { @MainActor in isLoading = false } }
 
             do {
-                // First ensure we have the latest player data
-                _ = try await fetchPlayers(forceRefresh: true)
-
                 // Get the current user ID
                 let userID = await self.userID
-
-                if let userID = userID {
-                    // Use a valid predicate that matches all groups by checking id field
-                    let predicate = NSPredicate(format: "id != %@", "")
-                    let query = CKQuery(recordType: "PlayerGroup", predicate: predicate)
-                    let (results, _) = try await database.records(matching: query)
-
-                    // Get all matches to filter groups
-                    let games = try await fetchGames()
-                    var allMatchPlayerSets: Set<Set<String>> = []
-
-                    // Collect all unique player combinations from matches
-                    for game in games {
-                        let matches = try await fetchMatches(for: game)
-                        for match in matches {
-                            allMatchPlayerSets.insert(Set(match.playerIDs))
-                        }
-                    }
-
-                    // Filter groups to only include those that match player combinations from matches
-                    let groups = results.compactMap { result -> PlayerGroup? in
-                        guard let record = try? result.1.get(),
-                            let group = PlayerGroup(from: record)
-                        else { return nil }
-
-                        // Only include groups that have matching player combinations in matches
-                        let groupPlayerSet = Set(group.playerIDs)
-                        if allMatchPlayerSets.contains(groupPlayerSet) {
-                            return group
-                        }
-                        return nil
-                    }
-
-                    // Update everything at once to avoid UI flicker
-                    await MainActor.run {
-                        self.playerGroups = groups
-                        groups.forEach { playerGroupCache[$0.id] = $0 }
-                        lastPlayerGroupRefreshTime = now
-                    }
-
-                    return groups
-                } else {
-                    // If no user is logged in, return empty array without querying CloudKit
+                guard let userID = userID else {
                     await MainActor.run {
                         self.playerGroups = []
                         playerGroupCache.removeAll()
@@ -1215,6 +1170,60 @@ import SwiftUI
                     }
                     return []
                 }
+
+                // Fetch groups and matches in parallel
+                async let groupsTask = database.records(
+                    matching: CKQuery(
+                        recordType: "PlayerGroup",
+                        predicate: NSPredicate(format: "id != %@", "")
+                    )
+                )
+
+                // Only fetch recent matches from the last month to improve performance
+                let oneMonthAgo =
+                    Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+                let matchPredicate = NSPredicate(format: "date >= %@", oneMonthAgo as NSDate)
+                let matchQuery = CKQuery(recordType: "Match", predicate: matchPredicate)
+                matchQuery.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
+                async let matchesTask = database.records(matching: matchQuery)
+
+                // Wait for both fetches to complete
+                let (groupResults, _) = try await groupsTask
+                let (matchResults, _) = try await matchesTask
+
+                // Process matches first to get player combinations
+                var allMatchPlayerSets: Set<Set<String>> = []
+                for result in matchResults {
+                    guard let record = try? result.1.get(),
+                        let playerIDsData = record["playerIDs"] as? Data,
+                        let playerIDs = try? JSONDecoder().decode(
+                            [String].self, from: playerIDsData)
+                    else { continue }
+                    allMatchPlayerSets.insert(Set(playerIDs))
+                }
+
+                // Process groups and filter them
+                let groups = groupResults.compactMap { result -> PlayerGroup? in
+                    guard let record = try? result.1.get(),
+                        let group = PlayerGroup(from: record)
+                    else { return nil }
+
+                    // Only include groups that have matching player combinations in matches
+                    let groupPlayerSet = Set(group.playerIDs)
+                    if allMatchPlayerSets.contains(groupPlayerSet) {
+                        return group
+                    }
+                    return nil
+                }
+
+                // Update everything at once to avoid UI flicker
+                await MainActor.run {
+                    self.playerGroups = groups
+                    groups.forEach { playerGroupCache[$0.id] = $0 }
+                    lastPlayerGroupRefreshTime = now
+                }
+
+                return groups
             } catch let error as CKError {
                 handleCloudKitError(error)
                 throw error
