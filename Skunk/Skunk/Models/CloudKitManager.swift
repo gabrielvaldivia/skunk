@@ -56,19 +56,9 @@ import SwiftUI
                     let accountStatus = try await container.accountStatus()
                     guard accountStatus == .available else { return nil }
 
-                    // Get the current user's record
+                    // Get the current user's record ID
                     let recordID = try await container.userRecordID()
-                    let userRecord = try await database.record(for: recordID)
-
-                    // Try to get the Apple user ID from the user record
-                    if let appleUserID = userRecord["appleUserID"] as? String {
-                        print("🟣 CloudKitManager: Found Apple user ID: \(appleUserID)")
-                        return appleUserID
-                    }
-
-                    // If no Apple user ID found, we can't proceed
-                    print("🟣 CloudKitManager: No Apple user ID found in user record")
-                    return nil
+                    return recordID.recordName
                 } catch {
                     print("Error getting user ID: \(error)")
                     return nil
