@@ -40,7 +40,7 @@ import SwiftUI
         private let playerRefreshDebounceInterval: TimeInterval = 2.0  // 2 seconds debounce
         private lazy var playerGroupCache: [String: PlayerGroup] = [:]
         private var lastPlayerGroupRefreshTime: Date = .distantPast
-        private let adminUserID = "000697.08cebe0a4edc475ca4a09155face4314.0206"  // Admin user ID
+        private let adminUserID = "_a14224e45b63646ed996a87dc9da2edc"  // Admin user ID
 
         @Published var games: [Game] = []
         @Published private(set) var players: [Player] = []  // Make players private(set)
@@ -434,6 +434,12 @@ import SwiftUI
                 }
                 if let createdByID = game.createdByID {
                     record["createdByID"] = createdByID as NSString
+                    // Set up creator reference for permissions
+                    let creatorReference = CKRecord.Reference(
+                        recordID: CKRecord.ID(recordName: createdByID),
+                        action: .none
+                    )
+                    record["creatorReference"] = creatorReference
                 }
 
                 let savedRecord = try await database.save(record)

@@ -165,11 +165,8 @@ import SwiftUI
                         return
                     }
 
-                    // Check if the user is the admin (you)
-                    let adminEmail = "valdivia.gabriel@gmail.com"
-                    let isAdmin =
-                        cloudKitManager.getCurrentUser(withID: currentUserID)?.appleUserID
-                        == adminEmail
+                    // Check if the user is the admin using CloudKitManager's isAdmin function
+                    let isAdmin = cloudKitManager.isAdmin(currentUserID)
 
                     for index in offsets {
                         let game = games[index]
