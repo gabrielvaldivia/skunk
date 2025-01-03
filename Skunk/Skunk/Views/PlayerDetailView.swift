@@ -1,3 +1,4 @@
+import Charts
 import SwiftData
 import SwiftUI
 
@@ -53,6 +54,81 @@ import SwiftUI
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
+        }
+    }
+
+    struct WinRateChartView: View {
+        private struct WinRatePoint: Identifiable {
+            let id = UUID()
+            let date: Date
+            let rate: Double
+            let totalGames: Int
+        }
+
+        private let dataPoints: [WinRatePoint]
+
+        init(matches: [Match], playerId: String) {
+            let sortedMatches = matches.sorted { $0.date < $1.date }
+            var points: [WinRatePoint] = []
+            var wins = 0
+            var total = 0
+
+            for match in sortedMatches {
+                total += 1
+                if match.winnerID == playerId {
+                    wins += 1
+                }
+                let rate = Double(wins) / Double(total) * 100.0
+                points.append(WinRatePoint(date: match.date, rate: rate, totalGames: total))
+            }
+
+            self.dataPoints = points
+        }
+
+        var body: some View {
+            Section("Win Rate Over Time") {
+                if dataPoints.isEmpty {
+                    Text("No matches played")
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical)
+                } else {
+                    Chart(dataPoints) { point in
+                        LineMark(
+                            x: .value("Date", point.date),
+                            y: .value("Win Rate", point.rate)
+                        )
+                        .foregroundStyle(Color.blue.gradient)
+                        .lineStyle(StrokeStyle(lineWidth: 2))
+
+                        AreaMark(
+                            x: .value("Date", point.date),
+                            y: .value("Win Rate", point.rate)
+                        )
+                        .foregroundStyle(Color.blue.opacity(0.1).gradient)
+                    }
+                    .chartYAxis {
+                        AxisMarks(position: .leading) { value in
+                            AxisValueLabel {
+                                if let rate = value.as(Double.self) {
+                                    Text("\(Int(rate))%")
+                                }
+                            }
+                        }
+                    }
+                    .chartXAxis {
+                        AxisMarks(values: .stride(by: .month)) { value in
+                            AxisValueLabel {
+                                if let date = value.as(Date.self) {
+                                    Text(date.formatted(.dateTime.month(.abbreviated)))
+                                }
+                            }
+                        }
+                    }
+                    .frame(height: 200)
+                    .padding(.vertical)
+                }
+            }
         }
     }
 
@@ -180,6 +256,7 @@ import SwiftUI
             Group {
                 if !playerMatches.isEmpty {
                     StatsGridView(matches: playerMatches, playerId: playerId)
+                    WinRateChartView(matches: playerMatches, playerId: playerId)
                     matchHistorySection(playerMatches)
                 }
             }
