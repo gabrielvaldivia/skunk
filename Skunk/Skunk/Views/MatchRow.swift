@@ -67,7 +67,7 @@ import SwiftUI
                     }
 
                     Text(relativeTimeString)
-                        .font(.subheadline)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 

@@ -6,16 +6,27 @@ import SwiftUI
     import UIKit
 
     struct StatsGridView: View {
-        private let stats: (played: Int, won: Int, rate: Int, streak: Int)
+        private let stats:
+            (
+                played: Int,
+                won: Int,
+                rate: Int,
+                currentStreak: Int,
+                maxStreak: Int,
+                recentRate: Int
+            )
 
         init(matches: [Match], playerId: String) {
             let played = matches.count
             let won = matches.filter { $0.winnerID == playerId }.count
             let rate = played > 0 ? Int(Double(won) / Double(played) * 100) : 0
 
+            // Calculate streaks
             var currentStreak = 0
             var maxStreak = 0
-            for match in matches.sorted(by: { $0.date < $1.date }) {
+            let sortedMatches = matches.sorted(by: { $0.date < $1.date })
+
+            for match in sortedMatches {
                 if match.winnerID == playerId {
                     currentStreak += 1
                     maxStreak = max(maxStreak, currentStreak)
@@ -24,7 +35,14 @@ import SwiftUI
                 }
             }
 
-            stats = (played, won, rate, maxStreak)
+            // Calculate recent performance (last 10 matches)
+            let recentMatches = Array(matches.sorted(by: { $0.date > $1.date }).prefix(10))
+            let recentWins = recentMatches.filter { $0.winnerID == playerId }.count
+            let recentRate =
+                recentMatches.isEmpty
+                ? 0 : Int(Double(recentWins) / Double(recentMatches.count) * 100)
+
+            stats = (played, won, rate, currentStreak, maxStreak, recentRate)
         }
 
         var body: some View {
@@ -32,8 +50,10 @@ import SwiftUI
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 20) {
                     StatItemView(value: "\(stats.played)", label: "Matches Played")
                     StatItemView(value: "\(stats.won)", label: "Matches Won")
-                    StatItemView(value: "\(stats.rate)%", label: "Win Rate")
-                    StatItemView(value: "\(stats.streak)", label: "Longest Streak")
+                    StatItemView(value: "\(stats.rate)%", label: "Overall Win Rate")
+                    StatItemView(value: "\(stats.recentRate)%", label: "Recent Win Rate")
+                    StatItemView(value: "\(stats.currentStreak)", label: "Current Streak")
+                    StatItemView(value: "\(stats.maxStreak)", label: "Longest Streak")
                 }
                 .padding(.vertical)
             }
@@ -127,6 +147,153 @@ import SwiftUI
                     }
                     .frame(height: 200)
                     .padding(.vertical)
+                }
+            }
+        }
+    }
+
+    struct FrequentOpponentsView: View {
+        private struct OpponentStats: Identifiable {
+            let id: String
+            let player: Player
+            let matchesPlayed: Int
+            let wins: Int
+            let winRate: Int
+        }
+
+        private let opponents: [OpponentStats]
+
+        init(matches: [Match], playerId: String, cloudKitManager: CloudKitManager) {
+            // Group matches by opponent
+            var opponentMatches: [String: [Match]] = [:]
+            var opponentWins: [String: Int] = [:]
+
+            for match in matches {
+                // Find opponent ID (the other player in the match)
+                let opponentId = match.playerIDs.first { $0 != playerId } ?? ""
+                if !opponentId.isEmpty {
+                    opponentMatches[opponentId, default: []].append(match)
+                    if match.winnerID == playerId {
+                        opponentWins[opponentId, default: 0] += 1
+                    }
+                }
+            }
+
+            // Convert to OpponentStats and sort by number of matches
+            opponents = opponentMatches.compactMap { opponentId, matches in
+                guard let player = cloudKitManager.players.first(where: { $0.id == opponentId })
+                else {
+                    return nil
+                }
+                let wins = opponentWins[opponentId] ?? 0
+                let winRate = Int(Double(wins) / Double(matches.count) * 100)
+                return OpponentStats(
+                    id: opponentId,
+                    player: player,
+                    matchesPlayed: matches.count,
+                    wins: wins,
+                    winRate: winRate
+                )
+            }
+            .sorted { $0.matchesPlayed > $1.matchesPlayed }
+        }
+
+        var body: some View {
+            Section("Most Frequent Opponents") {
+                if opponents.isEmpty {
+                    Text("No matches played")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(Array(opponents.prefix(5))) { opponent in
+                        NavigationLink {
+                            PlayerDetailView(player: opponent.player)
+                        } label: {
+                            HStack {
+                                PlayerAvatar(player: opponent.player, size: 36)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(opponent.player.name)
+                                        .font(.headline)
+                                    Text(
+                                        "\(opponent.matchesPlayed) matches • \(opponent.winRate)% win rate"
+                                    )
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+        }
+    }
+
+    struct FrequentGamesView: View {
+        private struct GameStats: Identifiable {
+            let id: String
+            let game: Game
+            let matchesPlayed: Int
+            let wins: Int
+            let winRate: Int
+        }
+
+        private let games: [GameStats]
+
+        init(matches: [Match], playerId: String) {
+            // Group matches by game
+            var gameMatches: [String: [Match]] = [:]
+            var gameWins: [String: Int] = [:]
+            var uniqueGames: [String: Game] = [:]
+
+            for match in matches {
+                if let game = match.game {
+                    gameMatches[game.id, default: []].append(match)
+                    uniqueGames[game.id] = game
+                    if match.winnerID == playerId {
+                        gameWins[game.id, default: 0] += 1
+                    }
+                }
+            }
+
+            // Convert to GameStats and sort by number of matches
+            games = gameMatches.compactMap { gameId, matches in
+                guard let game = uniqueGames[gameId] else { return nil }
+                let wins = gameWins[gameId] ?? 0
+                let winRate = Int(Double(wins) / Double(matches.count) * 100)
+                return GameStats(
+                    id: gameId,
+                    game: game,
+                    matchesPlayed: matches.count,
+                    wins: wins,
+                    winRate: winRate
+                )
+            }
+            .sorted { $0.matchesPlayed > $1.matchesPlayed }
+        }
+
+        var body: some View {
+            Section("Most Played Games") {
+                if games.isEmpty {
+                    Text("No matches played")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(Array(games.prefix(5))) { gameStats in
+                        NavigationLink {
+                            GameDetailView(game: gameStats.game)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(gameStats.game.title)
+                                    .font(.headline)
+                                Text(
+                                    "\(gameStats.matchesPlayed) matches • \(gameStats.winRate)% win rate"
+                                )
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
                 }
             }
         }
@@ -257,6 +424,10 @@ import SwiftUI
                 if !playerMatches.isEmpty {
                     StatsGridView(matches: playerMatches, playerId: playerId)
                     WinRateChartView(matches: playerMatches, playerId: playerId)
+                    FrequentOpponentsView(
+                        matches: playerMatches, playerId: playerId, cloudKitManager: cloudKitManager
+                    )
+                    FrequentGamesView(matches: playerMatches, playerId: playerId)
                     matchHistorySection(playerMatches)
                 }
             }

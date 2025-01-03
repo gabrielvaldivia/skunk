@@ -25,7 +25,7 @@
                     } else {
                         ForEach(sortedMatches) { match in
                             NavigationLink(destination: MatchDetailView(match: match)) {
-                                ActivityRow(match: match)
+                                MatchRow(match: match, hideGameTitle: false)
                             }
                         }
                     }
