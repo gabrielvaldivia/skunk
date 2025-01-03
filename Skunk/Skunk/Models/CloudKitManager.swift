@@ -435,12 +435,6 @@ import SwiftUI
                 }
                 if let createdByID = game.createdByID {
                     record["createdByID"] = createdByID as NSString
-                    // Set up creator reference for permissions
-                    let creatorReference = CKRecord.Reference(
-                        recordID: CKRecord.ID(recordName: createdByID),
-                        action: .none
-                    )
-                    record["creatorReference"] = creatorReference
                 }
 
                 let savedRecord = try await database.save(record)
@@ -485,37 +479,16 @@ import SwiftUI
             if isAdmin(currentUserID) || game.createdByID == currentUserID {
                 print("🟣 CloudKitManager: User has permission to delete game")
                 do {
-                    // For existing games, try to update permissions first
+                    // Delete the game record
+                    let recordIDToDelete: CKRecord.ID
                     if let recordID = game.recordID {
-                        do {
-                            // Fetch the current record
-                            let record = try await database.record(for: recordID)
-
-                            // Update permissions
-                            if let creatorID = game.createdByID {
-                                record["creatorReference"] = CKRecord.Reference(
-                                    recordID: CKRecord.ID(recordName: creatorID),
-                                    action: .none
-                                )
-                                // Save the updated record
-                                try await database.save(record)
-                            }
-
-                            // Now try to delete it
-                            try await database.deleteRecord(withID: recordID)
-                        } catch {
-                            print(
-                                "🔴 CloudKitManager: Error updating game permissions: \(error.localizedDescription)"
-                            )
-                            // Try deleting with a new record ID as fallback
-                            let gameRecordID = CKRecord.ID(recordName: game.id)
-                            try await database.deleteRecord(withID: gameRecordID)
-                        }
+                        recordIDToDelete = recordID
                     } else {
-                        // Fallback to using the game ID
-                        let gameRecordID = CKRecord.ID(recordName: game.id)
-                        try await database.deleteRecord(withID: gameRecordID)
+                        recordIDToDelete = CKRecord.ID(recordName: game.id)
                     }
+
+                    // Delete using modifyRecords
+                    try await database.modifyRecords(saving: [], deleting: [recordIDToDelete])
 
                     // Update local state
                     await MainActor.run {
