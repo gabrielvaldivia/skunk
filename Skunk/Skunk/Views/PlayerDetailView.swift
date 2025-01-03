@@ -428,6 +428,10 @@ import SwiftUI
                         matches: playerMatches, playerId: playerId, cloudKitManager: cloudKitManager
                     )
                     FrequentGamesView(matches: playerMatches, playerId: playerId)
+                    Section("Activity") {
+                        ActivityGridView(matches: playerMatches)
+                            .listRowInsets(EdgeInsets())
+                    }
                     matchHistorySection(playerMatches)
                 }
             }
