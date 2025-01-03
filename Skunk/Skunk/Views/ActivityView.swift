@@ -8,7 +8,7 @@
         @State private var isLoading = false
         @State private var error: Error?
         @State private var showingError = false
-        private let matchLimit = 50  // Limit to most recent 50 matches
+        private let matchLimit = 500  // Fetch up to 500 matches
 
         var sortedMatches: [Match] {
             matches.sorted { $0.date > $1.date }
@@ -24,19 +24,14 @@
                             .foregroundStyle(.secondary)
                     } else {
                         ForEach(sortedMatches) { match in
-                            ZStack {
-                                NavigationLink(destination: MatchDetailView(match: match)) {
-                                    EmptyView()
-                                }
-                                .opacity(0)
-
+                            NavigationLink(destination: MatchDetailView(match: match)) {
                                 ActivityRow(match: match)
                             }
                         }
                     }
                 }
+                .listStyle(.plain)
             }
-            .listStyle(.plain)
             .navigationTitle("Activity")
             .refreshable {
                 await loadMatches(forceRefresh: true)
@@ -64,12 +59,13 @@
 
             do {
                 // First, ensure we have all games loaded
-                _ = try await cloudKitManager.fetchGames(forceRefresh: forceRefresh)
+                let allGames = try await cloudKitManager.fetchGames(forceRefresh: forceRefresh)
+                let gamesById = Dictionary(uniqueKeysWithValues: allGames.map { ($0.id, $0) })
 
-                // Get recent matches
+                // Get all matches without time limit
                 let recentMatches = try await cloudKitManager.fetchRecentActivityMatches(
                     limit: matchLimit,
-                    daysBack: 3
+                    daysBack: 365 * 10  // Look back 10 years
                 )
 
                 // Update UI

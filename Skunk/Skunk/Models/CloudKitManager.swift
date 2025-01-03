@@ -1841,7 +1841,8 @@ import SwiftUI
                 // Ensure the match has required fields
                 guard let gameId = record["gameID"] as? String,
                     let playerIDsData = record["playerIDs"] as? Data,
-                    let playerIDs = try? JSONDecoder().decode([String].self, from: playerIDsData),
+                    let playerIDs = try? JSONDecoder().decode(
+                        [String].self, from: playerIDsData),
                     !playerIDs.isEmpty,
                     let game = allGames.first(where: { $0.id == gameId })
                 else {
