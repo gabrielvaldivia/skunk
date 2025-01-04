@@ -438,6 +438,8 @@ import SwiftUI
         let matches: [Match]
         private let columns = 20
         private let weeks = 6
+        private let tileSize: CGFloat = 14
+        private let spacing: CGFloat = 3
 
         private struct DayActivity: Identifiable {
             let id = UUID()
@@ -487,13 +489,14 @@ import SwiftUI
         var body: some View {
             VStack(alignment: .leading, spacing: 4) {
                 LazyVGrid(
-                    columns: Array(repeating: GridItem(.fixed(16), spacing: 2), count: columns),
-                    spacing: 2
+                    columns: Array(
+                        repeating: GridItem(.fixed(tileSize), spacing: spacing), count: columns),
+                    spacing: spacing
                 ) {
                     ForEach(activities) { activity in
                         RoundedRectangle(cornerRadius: 2)
                             .fill(activityColor(activity.count))
-                            .frame(height: 16)
+                            .frame(height: tileSize)
                     }
                 }
 
@@ -503,24 +506,24 @@ import SwiftUI
                         .foregroundStyle(.secondary)
                     RoundedRectangle(cornerRadius: 2)
                         .fill(activityColor(0))
-                        .frame(width: 16, height: 16)
+                        .frame(width: tileSize, height: tileSize)
                     RoundedRectangle(cornerRadius: 2)
                         .fill(activityColor(2))
-                        .frame(width: 16, height: 16)
+                        .frame(width: tileSize, height: tileSize)
                     RoundedRectangle(cornerRadius: 2)
                         .fill(activityColor(4))
-                        .frame(width: 16, height: 16)
+                        .frame(width: tileSize, height: tileSize)
                     RoundedRectangle(cornerRadius: 2)
                         .fill(activityColor(6))
-                        .frame(width: 16, height: 16)
+                        .frame(width: tileSize, height: tileSize)
                     Text("More")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
                 .padding(.top, 4)
-                .padding(.horizontal, 4)
             }
-            .padding(10)
+            .padding(.horizontal, 16)
+            // .padding(.vertical, 8)
         }
     }
 

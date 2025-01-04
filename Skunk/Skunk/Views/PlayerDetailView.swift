@@ -145,7 +145,6 @@ import SwiftUI
                             }
                         }
                     }
-                    .frame(height: 200)
                     .padding(.vertical)
                 }
             }
@@ -430,7 +429,7 @@ import SwiftUI
                     FrequentGamesView(matches: playerMatches, playerId: playerId)
                     Section("Activity") {
                         ActivityGridView(matches: playerMatches)
-                            .listRowInsets(EdgeInsets())
+                            .padding(.horizontal)
                     }
                     matchHistorySection(playerMatches)
                 }
