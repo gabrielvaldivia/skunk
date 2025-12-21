@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { X, Plus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { updatePlayer, getPlayers } from "../services/databaseService";
@@ -11,6 +11,7 @@ import "./OnboardingPage.css";
 
 export function OnboardingPage() {
   const navigate = useNavigate();
+  const routerLocation = useLocation();
   const { user, player, refreshPlayer } = useAuth();
   const [name, setName] = useState("");
   const [handle, setHandle] = useState("");
@@ -150,7 +151,12 @@ export function OnboardingPage() {
 
       await updatePlayer(player.id, updates);
       await refreshPlayer();
-      navigate("/");
+
+      // Redirect to intended destination or home
+      const from =
+        (routerLocation.state as { from?: { pathname: string } })?.from
+          ?.pathname || "/";
+      navigate(from, { replace: true });
     } catch (err) {
       console.error("Error saving profile:", err);
       setError("Error saving profile. Please try again.");

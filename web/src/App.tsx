@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SessionProvider } from "./context/SessionContext";
 import { ThemeProvider } from "./components/theme-provider";
@@ -18,17 +18,20 @@ import "./App.css";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, needsOnboarding, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return <div className="loading">Loading...</div>;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/signin" replace />;
+    // Preserve the intended destination so we can redirect back after sign-in
+    return <Navigate to="/signin" state={{ from: location }} replace />;
   }
 
   if (needsOnboarding) {
-    return <Navigate to="/onboarding" replace />;
+    // Preserve the intended destination through onboarding
+    return <Navigate to="/onboarding" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;
