@@ -12,6 +12,19 @@
   margin-bottom: 1rem;
 }
 
+.page-header-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 1rem;
+}
+
+.page-header-title-row h1 {
+  margin: 0;
+  flex: 1;
+}
+
 .game-info {
   margin: 2rem 0;
   padding: 1rem;

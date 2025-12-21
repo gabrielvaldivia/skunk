@@ -44,9 +44,11 @@ export function GameDetailPage() {
           <Button variant="ghost" onClick={() => navigate(-1)}>
             ← Back
           </Button>
+        </div>
+        <div className="page-header-title-row">
+          <h1>{game.title}</h1>
           <Button onClick={() => setShowAddForm(true)}>+ New Match</Button>
         </div>
-        <h1>{game.title}</h1>
       </div>
 
       <AddMatchForm
