@@ -60,7 +60,7 @@
             do {
                 // First, ensure we have all games loaded
                 let allGames = try await cloudKitManager.fetchGames(forceRefresh: forceRefresh)
-                let gamesById = Dictionary(uniqueKeysWithValues: allGames.map { ($0.id, $0) })
+                _ = Dictionary(uniqueKeysWithValues: allGames.map { ($0.id, $0) })
 
                 // Get all matches without time limit
                 let recentMatches = try await cloudKitManager.fetchRecentActivityMatches(

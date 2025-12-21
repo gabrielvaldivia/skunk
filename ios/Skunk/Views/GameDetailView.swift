@@ -317,9 +317,9 @@ import SwiftUI
                 print("🔵 GameDetailView: Manual refresh triggered")
                 await loadData()
             }
-            .onChange(of: cloudKitManager.games) { _ in
+            .onChange(of: cloudKitManager.games) { oldValue, newValue in
                 print("🔵 GameDetailView: CloudKitManager games array changed")
-                if let updatedGame = cloudKitManager.games.first(where: { $0.id == game.id }) {
+                if let updatedGame = newValue.first(where: { $0.id == game.id }) {
                     print("🔵 GameDetailView: Found updated game: \(updatedGame.id)")
                     if let updatedMatches = updatedGame.matches {
                         print(
