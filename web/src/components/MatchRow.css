@@ -9,13 +9,27 @@
   gap: 1rem;
 }
 
+.match-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .match-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .match-text {
   font-size: 1rem;
-  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
 }
 
 .match-link {
@@ -35,5 +49,28 @@
 
 .match-delete-button {
   flex-shrink: 0;
+}
+
+.match-winner-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.match-winner-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.match-winner-initials {
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
 }
 

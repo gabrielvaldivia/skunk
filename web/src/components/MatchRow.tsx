@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { Match } from '../models/Match';
+import type { Player } from '../models/Player';
 import { usePlayers } from '../hooks/usePlayers';
 import { useGames } from '../hooks/useGames';
 import { useAuth } from '../context/AuthContext';
@@ -39,6 +40,24 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     return players.find(p => p.id === playerID);
   };
 
+  const getPlayerColor = (player: Player) => {
+    if (player.colorData) {
+      return player.colorData;
+    }
+    const hash = player.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hue = hash % 360;
+    return `hsl(${hue}, 70%, 60%)`;
+  };
+
+  const getInitials = (name: string): string => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   const canDelete = () => {
     if (!user || !currentPlayer) return false;
     // Can delete if user created the match or if current player is part of the match
@@ -58,6 +77,25 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
       console.error('Error deleting match:', err);
       alert('Failed to delete match');
     }
+  };
+
+  const renderWinnerAvatar = (winner: Player | undefined) => {
+    if (!winner) return null;
+    
+    const backgroundColor = getPlayerColor(winner);
+    
+    return (
+      <div 
+        className="match-winner-avatar" 
+        style={{ backgroundColor }}
+      >
+        {winner.photoData ? (
+          <img src={`data:image/jpeg;base64,${winner.photoData}`} alt={winner.name} />
+        ) : (
+          <span className="match-winner-initials">{getInitials(winner.name)}</span>
+        )}
+      </div>
+    );
   };
 
   const renderMatchText = () => {
@@ -127,11 +165,16 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     );
   };
 
+  const winner = match.winnerID ? getPlayer(match.winnerID) : undefined;
+
   return (
     <div className="match-row">
-      <div className="match-content">
-        <div className="match-text">{renderMatchText()}</div>
-        <div className="match-date">{formatDate(match.date)}</div>
+      <div className="match-main-content">
+        {renderWinnerAvatar(winner)}
+        <div className="match-content">
+          <div className="match-text">{renderMatchText()}</div>
+          <div className="match-date">{formatDate(match.date)}</div>
+        </div>
       </div>
       {canDelete() && (
         <Button
