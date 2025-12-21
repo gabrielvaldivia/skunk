@@ -38,12 +38,11 @@ export function ActivityPage() {
         )}
       </div>
 
-      {showAddForm && (
-        <AddMatchForm
-          onClose={() => setShowAddForm(false)}
-          onSubmit={handleSubmitMatch}
-        />
-      )}
+      <AddMatchForm
+        open={showAddForm}
+        onOpenChange={setShowAddForm}
+        onSubmit={handleSubmitMatch}
+      />
 
       {matches.length === 0 ? (
         <div className="empty-state">

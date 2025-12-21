@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGames } from '../hooks/useGames';
 import { useActivity } from '../hooks/useActivity';
+import { useMatches } from '../hooks/useMatches';
 import { MatchRow } from '../components/MatchRow';
+import { AddMatchForm } from '../components/AddMatchForm';
 import { Button } from '@/components/ui/button';
 import type { Match } from '../models/Match';
 import './GameDetailPage.css';
@@ -11,6 +14,8 @@ export function GameDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { games } = useGames();
   const { matches: allMatches } = useActivity(500, 365 * 10);
+  const { addMatch } = useMatches();
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const game = games.find(g => g.id === id);
   const gameMatches: Match[] = allMatches
@@ -19,6 +24,10 @@ export function GameDetailPage() {
       ...match,
       game: game || undefined
     }));
+
+  const handleSubmitMatch = async (match: Omit<Match, 'id'>) => {
+    await addMatch(match);
+  };
 
   if (!game) {
     return (
@@ -35,9 +44,17 @@ export function GameDetailPage() {
           <Button variant="ghost" onClick={() => navigate(-1)}>
             ← Back
           </Button>
+          <Button onClick={() => setShowAddForm(true)}>+ New Match</Button>
         </div>
         <h1>{game.title}</h1>
       </div>
+
+      <AddMatchForm
+        open={showAddForm}
+        onOpenChange={setShowAddForm}
+        onSubmit={handleSubmitMatch}
+        defaultGameId={game.id}
+      />
       
       <div className="game-info">
         <div className="info-item">
