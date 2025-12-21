@@ -65,7 +65,7 @@ This is the value you'll use for `VITE_FIREBASE_DATABASE_URL` in your `.env` fil
       ".read": true,
       ".write": "auth != null",
       "$playerId": {
-        ".write": "!data.exists() || data.child('ownerID').val() == auth.uid"
+        ".write": "!data.exists() || data.child('googleUserID').val() == auth.uid"
       }
     },
     "matches": {

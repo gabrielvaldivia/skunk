@@ -42,12 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let currentPlayer = await getPlayerByGoogleUserID(googleUserID);
 
       if (!currentPlayer) {
-        // Create a new player for this user (similar to iOS app behavior)
+        // Create a new profile for this user
         const displayName = firebaseUser.displayName || "Player";
         currentPlayer = await createPlayer({
           name: displayName,
           googleUserID: googleUserID,
-          ownerID: googleUserID,
         });
       }
 

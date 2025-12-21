@@ -14,9 +14,12 @@ export function Layout({ children }: LayoutProps) {
   const { isAuthenticated, signOut } = useAuth();
 
   const navItems = [
-    { path: "/matches", label: "Activity", icon: "📋" },
+    { path: "/matches", label: "Matches", icon: "📋" },
     { path: "/games", label: "Games", icon: "🎮" },
     { path: "/profile", label: "Profile", icon: "👤" },
+    ...(import.meta.env.DEV
+      ? [{ path: "/dev", label: "Dev", icon: "🛠️" }]
+      : []),
   ];
 
   const handleAuthClick = async () => {

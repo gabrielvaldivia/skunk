@@ -4,5 +4,4 @@ export type Player = {
   photoData?: string;
   colorData?: string;
   googleUserID?: string;
-  ownerID?: string;
 };

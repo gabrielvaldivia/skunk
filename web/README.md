@@ -60,7 +60,7 @@ Set up your Firebase Realtime Database security rules:
       ".read": true,
       ".write": "auth != null",
       "$playerId": {
-        ".write": "!data.exists() || data.child('ownerID').val() == auth.uid"
+        ".write": "!data.exists() || data.child('googleUserID').val() == auth.uid"
       }
     },
     "matches": {

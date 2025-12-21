@@ -6,6 +6,7 @@ import { SignInView } from "./components/SignInView";
 import { GamesPage } from "./pages/GamesPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ActivityPage } from "./pages/ActivityPage";
+import { DevPage } from "./pages/DevPage";
 import "./App.css";
 
 function AppRoutes() {
@@ -43,6 +44,16 @@ function AppRoutes() {
         }
       />
       <Route path="/activity" element={<Navigate to="/matches" replace />} />
+      {import.meta.env.DEV && (
+        <Route
+          path="/dev"
+          element={
+            <Layout>
+              <DevPage />
+            </Layout>
+          }
+        />
+      )}
       <Route path="/" element={<Navigate to="/matches" replace />} />
     </Routes>
   );
