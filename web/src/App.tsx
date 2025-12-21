@@ -1,8 +1,10 @@
+import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./components/theme-provider";
 import { Layout } from "./components/Layout";
 import { SignInView } from "./components/SignInView";
+import { OnboardingPage } from "./pages/OnboardingPage";
 import { GamesPage } from "./pages/GamesPage";
 import { GameDetailPage } from "./pages/GameDetailPage";
 import { PlayersPage } from "./pages/PlayersPage";
@@ -11,8 +13,26 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { ActivityPage } from "./pages/ActivityPage";
 import "./App.css";
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, needsOnboarding, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div className="loading">Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  if (needsOnboarding) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function AppRoutes() {
-  const { isLoading } = useAuth();
+  const { isLoading, isAuthenticated, needsOnboarding } = useAuth();
 
   if (isLoading) {
     return <div className="loading">Loading...</div>;
@@ -22,51 +42,73 @@ function AppRoutes() {
     <Routes>
       <Route path="/signin" element={<SignInView />} />
       <Route
+        path="/onboarding"
+        element={
+          isAuthenticated && needsOnboarding ? (
+            <OnboardingPage />
+          ) : (
+            <Navigate to="/" replace />
+          )
+        }
+      />
+      <Route
         path="/games"
         element={
-          <Layout>
-            <GamesPage />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <GamesPage />
+            </Layout>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/games/:id"
         element={
-          <Layout>
-            <GameDetailPage />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <GameDetailPage />
+            </Layout>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/players"
         element={
-          <Layout>
-            <PlayersPage />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <PlayersPage />
+            </Layout>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/players/:id"
         element={
-          <Layout>
-            <PlayerDetailPage />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <PlayerDetailPage />
+            </Layout>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/profile"
         element={
-          <Layout>
-            <ProfilePage />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <ProfilePage />
+            </Layout>
+          </ProtectedRoute>
         }
       />
       <Route
         path="/matches"
         element={
-          <Layout>
-            <ActivityPage />
-          </Layout>
+          <ProtectedRoute>
+            <Layout>
+              <ActivityPage />
+            </Layout>
+          </ProtectedRoute>
         }
       />
       <Route path="/activity" element={<Navigate to="/matches" replace />} />

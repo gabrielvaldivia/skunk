@@ -26,6 +26,7 @@ interface AuthContextType {
   player: Player | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  needsOnboarding: boolean;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshPlayer: () => Promise<void>;
@@ -130,11 +131,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const needsOnboarding = !!(
+    player &&
+    (!player.handle || !player.name)
+  );
+
   const value: AuthContextType = {
     user,
     player,
     isAuthenticated: !!user,
     isLoading,
+    needsOnboarding,
     signIn,
     signOut,
     refreshPlayer,

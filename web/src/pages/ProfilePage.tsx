@@ -1,8 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { updatePlayer, deletePlayer, getMatchesForPlayer, deleteMatch } from "../services/databaseService";
+import {
+  updatePlayer,
+  deletePlayer,
+  getMatchesForPlayer,
+  deleteMatch,
+  getPlayers,
+} from "../services/databaseService";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { ThemeToggle } from "../components/theme-toggle";
 import "./ProfilePage.css";
 
@@ -10,11 +19,18 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const { player, isAuthenticated, refreshPlayer, signOut } = useAuth();
   const [name, setName] = useState(player?.name || "");
+  const [handle, setHandle] = useState(player?.handle || "");
+  const [location, setLocation] = useState(player?.location || "");
+  const [bio, setBio] = useState(player?.bio || "");
   const [photoPreview, setPhotoPreview] = useState<string | null>(
     player?.photoData ? `data:image/jpeg;base64,${player.photoData}` : null
   );
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [handleError, setHandleError] = useState<string | null>(null);
+  const [originalPhotoData, setOriginalPhotoData] = useState<string | null>(
+    null
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Generate a color if colorData is not available
@@ -66,6 +82,8 @@ export function ProfilePage() {
       // Store base64 string (without prefix) in a temporary variable
       // We'll use it when saving
       (fileInputRef.current as any).base64Data = base64String;
+      // Clear save message when changes are made
+      setSaveMessage(null);
     };
     reader.readAsDataURL(file);
   };
@@ -77,10 +95,68 @@ export function ProfilePage() {
       // Set to empty string to indicate photo should be removed
       (fileInputRef.current as any).base64Data = "";
     }
+    // Clear save message when changes are made
+    setSaveMessage(null);
+  };
+
+  const validateHandle = async (handleValue: string): Promise<boolean> => {
+    if (!handleValue.trim()) {
+      setHandleError("Handle is required");
+      return false;
+    }
+
+    // Validate handle format (alphanumeric, underscore, hyphen, no spaces)
+    const handleRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!handleRegex.test(handleValue)) {
+      setHandleError(
+        "Handle can only contain letters, numbers, underscores, and hyphens"
+      );
+      return false;
+    }
+
+    // Check if handle is already taken by another player
+    if (player) {
+      const allPlayers = await getPlayers();
+      const handleTaken = allPlayers.some(
+        (p) =>
+          p.id !== player.id &&
+          p.handle?.toLowerCase() === handleValue.toLowerCase()
+      );
+      if (handleTaken) {
+        setHandleError("This handle is already taken");
+        return false;
+      }
+    }
+
+    setHandleError(null);
+    return true;
+  };
+
+  const handleHandleBlur = async () => {
+    if (handle.trim()) {
+      await validateHandle(handle);
+    }
   };
 
   const handleSave = async () => {
     if (!player || !isAuthenticated) return;
+
+    if (!name.trim()) {
+      setSaveMessage("Name is required");
+      return;
+    }
+
+    if (!handle.trim()) {
+      setHandleError("Handle is required");
+      setSaveMessage("Please fill in all required fields");
+      return;
+    }
+
+    const isValidHandle = await validateHandle(handle);
+    if (!isValidHandle) {
+      setSaveMessage("Please fix the handle error");
+      return;
+    }
 
     setIsSaving(true);
     setSaveMessage(null);
@@ -88,6 +164,9 @@ export function ProfilePage() {
     try {
       const updates: Partial<typeof player> = {
         name: name.trim(),
+        handle: handle.trim(),
+        location: location.trim() || undefined,
+        bio: bio.trim() || undefined,
       };
 
       // Include photo data if a new photo was selected or removed
@@ -106,6 +185,13 @@ export function ProfilePage() {
         (fileInputRef.current as any).base64Data = undefined;
       }
 
+      // Update original photo data to reflect the saved state
+      if (updates.photoData === undefined && !player.photoData) {
+        setOriginalPhotoData(null);
+      } else if (updates.photoData) {
+        setOriginalPhotoData(updates.photoData);
+      }
+
       // Refresh player data from AuthContext
       await refreshPlayer();
     } catch (error) {
@@ -116,15 +202,51 @@ export function ProfilePage() {
     }
   };
 
-  // Update name when player changes
-  useEffect(() => {
-    if (player?.name) {
-      setName(player.name);
+  // Check if there are any changes
+  const hasChanges = () => {
+    if (!player) return false;
+
+    // Check name
+    if (name.trim() !== (player.name || "")) return true;
+
+    // Check handle
+    if (handle.trim() !== (player.handle || "")) return true;
+
+    // Check location
+    const currentLocation = location.trim();
+    const originalLocation = player.location || "";
+    if (currentLocation !== originalLocation) return true;
+
+    // Check bio
+    const currentBio = bio.trim();
+    const originalBio = player.bio || "";
+    if (currentBio !== originalBio) return true;
+
+    // Check photo
+    const newPhotoData = (fileInputRef.current as any)?.base64Data;
+    if (newPhotoData !== undefined) {
+      if (newPhotoData === "" && originalPhotoData) return true; // Photo was removed
+      if (newPhotoData !== "" && newPhotoData !== originalPhotoData)
+        return true; // Photo was changed
     }
-    if (player?.photoData) {
-      setPhotoPreview(`data:image/jpeg;base64,${player.photoData}`);
-    } else {
-      setPhotoPreview(null);
+
+    return false;
+  };
+
+  // Update fields when player changes
+  useEffect(() => {
+    if (player) {
+      if (player.name) setName(player.name);
+      if (player.handle) setHandle(player.handle);
+      if (player.location) setLocation(player.location);
+      if (player.bio) setBio(player.bio);
+      if (player.photoData) {
+        setPhotoPreview(`data:image/jpeg;base64,${player.photoData}`);
+        setOriginalPhotoData(player.photoData);
+      } else {
+        setPhotoPreview(null);
+        setOriginalPhotoData(null);
+      }
     }
   }, [player]);
 
@@ -161,7 +283,8 @@ export function ProfilePage() {
   const handleDeleteAccount = async () => {
     if (!player) return;
 
-    const confirmMessage = "Are you sure you want to delete your account? This will permanently delete:\n\n" +
+    const confirmMessage =
+      "Are you sure you want to delete your account? This will permanently delete:\n\n" +
       "- Your player profile\n" +
       "- All matches you participated in\n\n" +
       "This action cannot be undone.";
@@ -171,14 +294,18 @@ export function ProfilePage() {
     }
 
     // Double confirmation
-    if (!window.confirm("This is your last chance to cancel. Are you absolutely sure you want to delete your account?")) {
+    if (
+      !window.confirm(
+        "This is your last chance to cancel. Are you absolutely sure you want to delete your account?"
+      )
+    ) {
       return;
     }
 
     try {
       // Get all matches where this player participated
       const playerMatches = await getMatchesForPlayer(player.id);
-      
+
       // Delete all matches
       for (const match of playerMatches) {
         try {
@@ -207,102 +334,175 @@ export function ProfilePage() {
       </div>
 
       <div className="profile-content">
-        <div className="profile-avatar-section">
-          <div className="profile-avatar-container">
-            <div className="profile-avatar" style={{ backgroundColor }}>
-              {photoPreview ? (
-                <img src={photoPreview} alt={displayName} />
-              ) : (
-                <span className="profile-initials">
-                  {getInitials(displayName)}
-                </span>
-              )}
+        {/* Profile Info Container */}
+        <div className="profile-section">
+          <div className="profile-form">
+            <div className="form-group">
+              <div className="profile-avatar-container">
+                <div className="profile-avatar" style={{ backgroundColor }}>
+                  {photoPreview ? (
+                    <img src={photoPreview} alt={displayName} />
+                  ) : (
+                    <span className="profile-initials">
+                      {getInitials(displayName)}
+                    </span>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  style={{ display: "none" }}
+                  id="photo-upload"
+                />
+                <div className="avatar-actions">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Change Photo
+                  </Button>
+                  {photoPreview && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemovePhoto}
+                    >
+                      Remove Photo
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoChange}
-              style={{ display: "none" }}
-              id="photo-upload"
-            />
-            <div className="avatar-actions">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
+
+            <div className="form-group">
+              <Label htmlFor="name">
+                Name <span className="required">*</span>
+              </Label>
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setSaveMessage(null);
+                }}
+                placeholder="Enter your name"
+              />
+            </div>
+
+            <div className="form-group">
+              <Label htmlFor="handle">
+                @Handle <span className="required">*</span>
+              </Label>
+              <Input
+                id="handle"
+                type="text"
+                value={handle}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, "");
+                  setHandle(value);
+                  setSaveMessage(null);
+                  if (handleError) {
+                    setHandleError(null);
+                  }
+                }}
+                onBlur={handleHandleBlur}
+                placeholder="yourhandle"
+              />
+              {handleError && <span className="error-text">{handleError}</span>}
+              <span className="form-hint">
+                Your unique handle for your profile link
+              </span>
+            </div>
+
+            <div className="form-group">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                type="text"
+                value={location}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  setSaveMessage(null);
+                }}
+                placeholder="City, Country"
+              />
+            </div>
+
+            <div className="form-group">
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea
+                id="bio"
+                value={bio}
+                onChange={(e) => {
+                  setBio(e.target.value);
+                  setSaveMessage(null);
+                }}
+                placeholder="Tell us about yourself..."
+                rows={4}
+              />
+            </div>
+
+            {saveMessage && (
+              <div
+                className={`save-message ${
+                  saveMessage.includes("Error") ? "error" : "success"
+                }`}
               >
-                Change Photo
-              </Button>
-              {photoPreview && (
-                <Button variant="outline" size="sm" onClick={handleRemovePhoto}>
-                  Remove Photo
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="profile-form">
-          <div className="form-group">
-            <label htmlFor="name">Name</label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your name"
-              className="form-input"
-            />
+                {saveMessage}
+              </div>
+            )}
           </div>
 
-          {saveMessage && (
-            <div
-              className={`save-message ${
-                saveMessage.includes("Error") ? "error" : "success"
-              }`}
+          <div className="profile-section-footer">
+            <Button
+              onClick={handleSave}
+              disabled={
+                isSaving || !name.trim() || !handle.trim() || !hasChanges()
+              }
             >
-              {saveMessage}
-            </div>
-          )}
-
-          <div className="form-actions">
-            <Button onClick={handleSave} disabled={isSaving || !name.trim()}>
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? "Saving..." : "Save"}
             </Button>
           </div>
         </div>
 
-        <div className="account-settings">
+        {/* Theme Container */}
+        <div className="profile-section">
           <div className="form-group">
             <label>Theme</label>
             <div className="theme-toggle-container">
               <ThemeToggle />
             </div>
           </div>
+        </div>
 
-          <div className="form-actions">
-            <Button
-              onClick={handleSignOut}
-              variant="outline"
-              className="sign-out-button"
-            >
-              Sign Out
-            </Button>
-          </div>
-
+        {/* Danger Zone Container */}
+        <div className="profile-section danger-zone-section">
           <div className="danger-zone">
             <h3>Danger Zone</h3>
             <p className="danger-zone-description">
-              Deleting your account will permanently remove your profile and all matches you participated in.
+              Deleting your account will permanently remove your profile and all
+              matches you participated in.
             </p>
-            <Button
-              onClick={handleDeleteAccount}
-              variant="destructive"
-              className="delete-account-button"
-            >
-              Delete Account
-            </Button>
+            <div className="danger-zone-actions">
+              <Button
+                onClick={handleSignOut}
+                variant="outline"
+                className="sign-out-button"
+              >
+                Sign Out
+              </Button>
+              <Button
+                onClick={handleDeleteAccount}
+                variant="destructive"
+                className="delete-account-button"
+              >
+                Delete Account
+              </Button>
+            </div>
           </div>
         </div>
       </div>

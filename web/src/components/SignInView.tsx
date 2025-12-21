@@ -12,7 +12,8 @@ export function SignInView() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/activity");
+      // Will be redirected to onboarding if needed by ProtectedRoute
+      navigate("/");
     }
   }, [isAuthenticated, navigate]);
 
