@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useActivity } from '../hooks/useActivity';
-import { useGames } from '../hooks/useGames';
 import { useAuth } from '../context/AuthContext';
 import { useSession } from '../context/SessionContext';
 import { MatchRow } from '../components/MatchRow';
@@ -12,7 +11,6 @@ import './ActivityPage.css';
 export function ActivityPage() {
   const navigate = useNavigate();
   const { matches, isLoading, error } = useActivity();
-  const { games } = useGames();
   const { isAuthenticated } = useAuth();
   const { createSession } = useSession();
   const [isCreatingSession, setIsCreatingSession] = useState(false);
