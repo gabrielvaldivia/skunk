@@ -369,6 +369,12 @@ export function ProfilePage() {
                 >
                   Replay Onboarding
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/signin?admin=true")}
+                >
+                  View Sign In Screen
+                </Button>
               </div>
             </div>
           </div>

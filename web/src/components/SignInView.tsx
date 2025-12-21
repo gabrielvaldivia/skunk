@@ -2,24 +2,34 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 import "./SignInView.css";
 
+const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
+
 export function SignInView() {
-  const { signIn, isAuthenticated } = useAuth();
+  const { signIn, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Get the intended destination from location state, or default to home
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/";
+  const from =
+    (location.state as { from?: { pathname: string } })?.from?.pathname || "/";
+
+  // Check if this is an admin viewing the sign-in screen intentionally
+  const searchParams = new URLSearchParams(location.search);
+  const isAdminView = searchParams.get("admin") === "true";
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   useEffect(() => {
-    if (isAuthenticated) {
+    // Don't redirect if admin is viewing the sign-in screen intentionally
+    if (isAuthenticated && !(isAdminView && isAdmin)) {
       // Redirect to the intended destination (or home)
       navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate, from]);
+  }, [isAuthenticated, navigate, from, isAdminView, isAdmin]);
 
   const handleSignIn = async () => {
     try {
@@ -35,8 +45,19 @@ export function SignInView() {
     }
   };
 
+  const handleClose = () => {
+    if (isAdminView && isAdmin) {
+      navigate("/profile");
+    } else {
+      navigate(from || "/");
+    }
+  };
+
   return (
     <div className="sign-in-container">
+      <button className="sign-in-close-button" onClick={handleClose}>
+        <X size={20} />
+      </button>
       <div className="sign-in-card">
         <h1>Skunk</h1>
         <p>Sign in to create and edit games, players, and matches</p>
@@ -44,7 +65,6 @@ export function SignInView() {
           {isLoading ? "Signing in..." : "Sign in with Google"}
         </Button>
         {error && <p className="error-message">{error}</p>}
-        <p className="sign-in-hint">You can browse without signing in</p>
       </div>
     </div>
   );
