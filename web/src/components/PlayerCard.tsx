@@ -43,6 +43,7 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
       </div>
       <div className="player-info">
         <h3 className="player-name">{player.name}</h3>
+        {player.email && <p className="player-email">{player.email}</p>}
       </div>
     </div>
   );

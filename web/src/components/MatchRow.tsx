@@ -8,6 +8,8 @@ import { useMatches } from '../hooks/useMatches';
 import { Button } from '@/components/ui/button';
 import './MatchRow.css';
 
+const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
+
 interface MatchRowProps {
   match: Match;
   hideGameTitle?: boolean;
@@ -59,8 +61,14 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
   };
 
   const canDelete = () => {
-    if (!user || !currentPlayer) return false;
+    if (!user) return false;
+    
+    // Admins can delete any match
+    const isAdmin = user.email === ADMIN_EMAIL;
+    if (isAdmin) return true;
+    
     // Can delete if user created the match or if current player is part of the match
+    if (!currentPlayer) return false;
     return match.createdByID === user.uid || match.playerIDs.includes(currentPlayer.id);
   };
 

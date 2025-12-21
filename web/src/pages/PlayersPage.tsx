@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import type { Player } from "../models/Player";
 import "./PlayersPage.css";
 
+const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
+
 export function PlayersPage() {
   const { players, isLoading, error, addPlayer, removePlayer } = usePlayers();
   const { user, player: currentUserPlayer, isAuthenticated } = useAuth();
@@ -13,25 +15,48 @@ export function PlayersPage() {
   const [newPlayerName, setNewPlayerName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Organize players similar to Swift implementation
+  const isAdmin = user?.email === ADMIN_EMAIL;
+
+  // Organize players similar to Swift implementation, but ensure all players are shown
   const currentUser = currentUserPlayer;
+  
+  // Get all player IDs we've already included
+  const includedPlayerIds = new Set<string>();
+  if (currentUser) {
+    includedPlayerIds.add(currentUser.id);
+  }
+  
+  // Managed players: owned by current user but no googleUserID (not the current user's profile)
   const managedPlayers = players.filter(
-    (p) => p.ownerID === user?.uid && p.googleUserID !== user?.uid
+    (p) => p.ownerID === user?.uid && !p.googleUserID && !includedPlayerIds.has(p.id)
   );
+  managedPlayers.forEach(p => includedPlayerIds.add(p.id));
+  
+  // Other users: have googleUserID but not the current user's, and not owned by current user
   const otherUsers = players.filter(
     (p) =>
-      p.googleUserID && p.googleUserID !== user?.uid && p.ownerID !== user?.uid
+      p.googleUserID && 
+      p.googleUserID !== user?.uid && 
+      p.ownerID !== user?.uid &&
+      !includedPlayerIds.has(p.id)
+  );
+  otherUsers.forEach(p => includedPlayerIds.add(p.id));
+  
+  // All remaining players that weren't included in the above categories
+  const remainingPlayers = players.filter(
+    (p) => !includedPlayerIds.has(p.id)
   );
 
   const allPlayers = [
     ...(currentUser ? [currentUser] : []),
     ...managedPlayers.sort((a, b) => a.name.localeCompare(b.name)),
     ...otherUsers.sort((a, b) => a.name.localeCompare(b.name)),
+    ...remainingPlayers.sort((a, b) => a.name.localeCompare(b.name)),
   ];
 
   const handleAddPlayer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPlayerName.trim() || !user) return;
+    if (!newPlayerName.trim() || !user || !isAdmin) return;
 
     setIsSubmitting(true);
     try {
@@ -51,16 +76,20 @@ export function PlayersPage() {
 
   const handleDeletePlayer = async (playerId: string, ownerID?: string) => {
     if (!user) return;
-    // Permission check: only allow deletion if user owns the player and it's not their own profile
-    if (ownerID !== user.uid) {
-      alert("You can only delete players that you created.");
-      return;
-    }
+    
+    // Admins can delete any player
+    if (!isAdmin) {
+      // Permission check: only allow deletion if user owns the player and it's not their own profile
+      if (ownerID !== user.uid) {
+        alert("You can only delete players that you created.");
+        return;
+      }
 
-    const playerToDelete = players.find((p) => p.id === playerId);
-    if (playerToDelete?.googleUserID === user.uid) {
-      alert("To remove your profile, you need to delete your account.");
-      return;
+      const playerToDelete = players.find((p) => p.id === playerId);
+      if (playerToDelete?.googleUserID === user.uid) {
+        alert("To remove your profile, you need to delete your account.");
+        return;
+      }
     }
 
     if (window.confirm("Are you sure you want to delete this player?")) {
@@ -85,7 +114,7 @@ export function PlayersPage() {
     <div className="players-page">
       <div className="page-header">
         <h1>Players</h1>
-        {isAuthenticated && (
+        {isAdmin && (
           <Button onClick={() => setShowAddForm(true)}>+ Add Player</Button>
         )}
       </div>
@@ -123,20 +152,24 @@ export function PlayersPage() {
       {allPlayers.length === 0 ? (
         <div className="empty-state">
           <p>No players yet</p>
-          {isAuthenticated ? (
+          {isAdmin ? (
             <p className="empty-hint">Click "Add Player" to create a player</p>
           ) : (
-            <p className="empty-hint">Sign in to create players</p>
+            <p className="empty-hint">Only administrators can add players</p>
           )}
         </div>
       ) : (
         <div className="players-list">
-          {allPlayers.map((player) => (
-            <div key={player.id} className="player-item">
-              <PlayerCard player={player} />
-              {isAuthenticated &&
-                player.ownerID === user?.uid &&
-                player.googleUserID !== user?.uid && (
+          {allPlayers.map((player) => {
+            const canDelete =
+              isAuthenticated &&
+              (isAdmin ||
+                (player.ownerID === user?.uid && player.googleUserID !== user?.uid));
+            
+            return (
+              <div key={player.id} className="player-item">
+                <PlayerCard player={player} />
+                {canDelete && (
                   <Button
                     variant="destructive"
                     size="sm"
@@ -147,8 +180,9 @@ export function PlayersPage() {
                     Delete
                   </Button>
                 )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

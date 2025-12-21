@@ -16,6 +16,7 @@ import {
 import {
   getPlayerByGoogleUserID,
   createPlayer,
+  updatePlayer,
 } from "../services/databaseService";
 import type { Player } from "../models/Player";
 
@@ -48,7 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: displayName,
           googleUserID: googleUserID,
           ownerID: googleUserID,
+          email: firebaseUser.email || undefined,
         });
+      } else if (currentPlayer.googleUserID && !currentPlayer.email && firebaseUser.email) {
+        // Update existing player with email if missing
+        await updatePlayer(currentPlayer.id, { email: firebaseUser.email });
+        currentPlayer = { ...currentPlayer, email: firebaseUser.email };
       }
 
       setPlayer(currentPlayer);

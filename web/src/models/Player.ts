@@ -5,4 +5,5 @@ export type Player = {
   colorData?: string;
   googleUserID?: string;
   ownerID?: string;
+  email?: string;
 };

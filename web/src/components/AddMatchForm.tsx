@@ -409,24 +409,27 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId }: Ad
                                   return newStates;
                                 });
                               }}
-                              onBlur={() => {
+                              onBlur={(e) => {
                                 // Delay closing to allow click events on suggestions to fire
+                                const blurValue = e.target.value;
                                 setTimeout(() => {
                                   setAutocompleteStates((prev) => {
                                     const newStates = [...prev];
-                                    newStates[index] = { value: inputValue, showSuggestions: false };
+                                    newStates[index] = { value: blurValue, showSuggestions: false };
                                     return newStates;
                                   });
                                   
                                   // Clear invalid input - only allow valid player names
-                                  const currentValue = playerInputs[index];
-                                  if (currentValue && !findPlayerByName(currentValue)) {
-                                    setPlayerInputs((prev) => {
+                                  // Use the value from state at the time of checking, not the blur event
+                                  setPlayerInputs((prev) => {
+                                    const currentValue = prev[index];
+                                    if (currentValue && !findPlayerByName(currentValue)) {
                                       const newInputs = [...prev];
                                       newInputs[index] = "";
                                       return newInputs;
-                                    });
-                                  }
+                                    }
+                                    return prev;
+                                  });
                                 }, 200);
                               }}
                               placeholder={`Player ${index + 1}`}
@@ -439,7 +442,11 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId }: Ad
                                     key={player.id}
                                     type="button"
                                     className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground"
-                                    onClick={() => handlePlayerSelect(index, player.name)}
+                                    onMouseDown={(e) => {
+                                      // Prevent input blur when clicking suggestion
+                                      e.preventDefault();
+                                      handlePlayerSelect(index, player.name);
+                                    }}
                                   >
                                     {player.name}
                                   </button>
