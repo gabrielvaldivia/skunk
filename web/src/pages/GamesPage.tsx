@@ -3,6 +3,7 @@ import { useGames } from "../hooks/useGames";
 import { useAuth } from "../context/AuthContext";
 import { GameCard } from "../components/GameCard";
 import { AddGameForm } from "../components/AddGameForm";
+import { Button } from "@/components/ui/button";
 import type { Game } from "../models/Game";
 import "./GamesPage.css";
 
@@ -46,9 +47,7 @@ export function GamesPage() {
       <div className="page-header">
         <h1>Games</h1>
         {isAuthenticated && (
-          <button onClick={() => setShowAddForm(true)} className="add-button">
-            + Add Game
-          </button>
+          <Button onClick={() => setShowAddForm(true)}>+ Add Game</Button>
         )}
       </div>
 
@@ -76,12 +75,13 @@ export function GamesPage() {
             <div key={game.id} className="game-item">
               <GameCard game={game} />
               {isAuthenticated && game.createdByID === user?.uid && (
-                <button
-                  className="delete-button"
+                <Button
+                  variant="destructive"
+                  size="sm"
                   onClick={() => handleDeleteGame(game.id, game.createdByID)}
                 >
                   Delete
-                </button>
+                </Button>
               )}
             </div>
           ))}

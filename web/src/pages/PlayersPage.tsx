@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { usePlayers } from '../hooks/usePlayers';
 import { useAuth } from '../context/AuthContext';
 import { PlayerCard } from '../components/PlayerCard';
+import { Button } from '@/components/ui/button';
 import type { Player } from '../models/Player';
 import './PlayersPage.css';
 
@@ -84,9 +85,9 @@ export function PlayersPage() {
       <div className="page-header">
         <h1>Players</h1>
         {isAuthenticated && (
-          <button onClick={() => setShowAddForm(true)} className="add-button">
+          <Button onClick={() => setShowAddForm(true)}>
             + Add Player
-          </button>
+          </Button>
         )}
       </div>
 
@@ -104,12 +105,12 @@ export function PlayersPage() {
                 required
               />
               <div className="form-actions">
-                <button type="button" onClick={() => setShowAddForm(false)}>
+                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
                   Cancel
-                </button>
-                <button type="submit" disabled={isSubmitting}>
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? 'Adding...' : 'Add'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -131,12 +132,13 @@ export function PlayersPage() {
             <div key={player.id} className="player-item">
               <PlayerCard player={player} />
               {isAuthenticated && player.ownerID === user?.uid && player.googleUserID !== user?.uid && (
-                <button
-                  className="delete-button"
+                <Button
+                  variant="destructive"
+                  size="sm"
                   onClick={() => handleDeletePlayer(player.id, player.ownerID)}
                 >
                   Delete
-                </button>
+                </Button>
               )}
             </div>
           ))}

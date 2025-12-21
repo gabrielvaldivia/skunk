@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import type { Game } from '../models/Game';
 import { useAuth } from '../context/AuthContext';
+import { Button } from '@/components/ui/button';
 import './AddGameForm.css';
 
 interface AddGameFormProps {
@@ -178,12 +179,12 @@ export function AddGameForm({ onClose, onSubmit }: AddGameFormProps) {
           </div>
 
           <div className="form-actions">
-            <button type="button" onClick={onClose} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
-            </button>
-            <button type="submit" disabled={isSubmitting || !title.trim()}>
+            </Button>
+            <Button type="submit" disabled={isSubmitting || !title.trim()}>
               {isSubmitting ? 'Creating...' : 'Create Game'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
