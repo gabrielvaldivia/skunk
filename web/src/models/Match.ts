@@ -14,6 +14,7 @@ export type Match = {
   invitedPlayerIDs?: string[];
   acceptedPlayerIDs?: string[];
   createdByID?: string;
+  sessionCode?: string; // Optional session code if match was created in a session
   scores: number[]; // Final scores for each player (by playerOrder)
   rounds: number[][]; // 2D array: [round][playerIndex] = score
   lastModified: number; // Timestamp

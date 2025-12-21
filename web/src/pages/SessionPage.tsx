@@ -5,7 +5,9 @@ import { useAuth } from "../context/AuthContext";
 import { usePlayers } from "../hooks/usePlayers";
 import { useMatches } from "../hooks/useMatches";
 import { useGames } from "../hooks/useGames";
+import { getMatchesForSession } from "../services/databaseService";
 import { PlayerCard } from "../components/PlayerCard";
+import { MatchRow } from "../components/MatchRow";
 import { AddMatchForm } from "../components/AddMatchForm";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -16,7 +18,13 @@ import "./SessionPage.css";
 export function SessionPage() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-  const { currentSession, joinSession, leaveSession, refreshSession, isLoading: sessionContextLoading } = useSession();
+  const {
+    currentSession,
+    joinSession,
+    leaveSession,
+    refreshSession,
+    isLoading: sessionContextLoading,
+  } = useSession();
   const { player, isAuthenticated } = useAuth();
   const { players, isLoading: playersLoading } = usePlayers();
   const { addMatch } = useMatches();
@@ -26,6 +34,8 @@ export function SessionPage() {
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [sessionParticipants, setSessionParticipants] = useState<Player[]>([]);
+  const [sessionMatches, setSessionMatches] = useState<Match[]>([]);
+  const [isLoadingMatches, setIsLoadingMatches] = useState(false);
 
   // Auto-join session when code is in URL and user is authenticated
   useEffect(() => {
@@ -41,14 +51,15 @@ export function SessionPage() {
 
       // If we're in a different session, leave it first (optional - could also allow multiple sessions)
       // For now, we'll just join the new session
-      
+
       setIsJoining(true);
       setError(null);
       try {
         await joinSession(code);
         await refreshSession();
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to join session";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to join session";
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -57,19 +68,50 @@ export function SessionPage() {
     };
 
     handleAutoJoin();
-  }, [code, isAuthenticated, player, sessionContextLoading, currentSession?.code, joinSession, refreshSession]);
+  }, [
+    code,
+    isAuthenticated,
+    player,
+    sessionContextLoading,
+    currentSession?.code,
+    joinSession,
+    refreshSession,
+  ]);
 
   // Update session participants when session or players change
   useEffect(() => {
     if (currentSession && players.length > 0) {
       const participants = currentSession.participantIDs
-        .map(id => players.find(p => p.id === id))
+        .map((id) => players.find((p) => p.id === id))
         .filter((p): p is Player => p !== undefined);
       setSessionParticipants(participants);
     } else {
       setSessionParticipants([]);
     }
   }, [currentSession, players]);
+
+  // Fetch matches for this session
+  useEffect(() => {
+    if (!code) return;
+
+    const fetchMatches = async () => {
+      setIsLoadingMatches(true);
+      try {
+        const matches = await getMatchesForSession(code);
+        setSessionMatches(matches);
+      } catch (error) {
+        console.error("Error fetching session matches:", error);
+      } finally {
+        setIsLoadingMatches(false);
+      }
+    };
+
+    fetchMatches();
+
+    // Refresh matches periodically
+    const interval = setInterval(fetchMatches, 5000);
+    return () => clearInterval(interval);
+  }, [code]);
 
   // Periodic refresh to get updated participants
   useEffect(() => {
@@ -86,12 +128,12 @@ export function SessionPage() {
 
   const handleCopyUrl = async () => {
     if (!code) return;
-    
+
     const url = `${window.location.origin}/session/${code}`;
     try {
       await navigator.clipboard.writeText(url);
       toast.success("Session URL copied to clipboard!");
-    } catch (err) {
+    } catch {
       toast.error("Failed to copy URL");
     }
   };
@@ -105,7 +147,8 @@ export function SessionPage() {
       toast.success("Left session");
       navigate("/matches");
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to leave session";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to leave session";
       toast.error(errorMessage);
     } finally {
       setIsLeaving(false);
@@ -115,6 +158,11 @@ export function SessionPage() {
   const handleSubmitMatch = async (match: Omit<Match, "id">) => {
     await addMatch(match);
     setShowAddForm(false);
+    // Refresh matches after creating a new one
+    if (code) {
+      const matches = await getMatchesForSession(code);
+      setSessionMatches(matches);
+    }
   };
 
   if (!code) {
@@ -163,7 +211,9 @@ export function SessionPage() {
   return (
     <div className="session-page">
       <div className="page-header">
-        <h1>Session {code}</h1>
+        <Button variant="ghost" onClick={() => navigate(-1)}>
+          ← Back
+        </Button>
         <div className="header-actions">
           <Button variant="outline" onClick={handleCopyUrl}>
             Copy URL
@@ -173,10 +223,11 @@ export function SessionPage() {
           </Button>
         </div>
       </div>
+      <h1>Session {code}</h1>
 
       <div className="session-content">
         <section className="participants-section">
-          <h2>Participants ({sessionParticipants.length})</h2>
+          <h2>Players ({sessionParticipants.length})</h2>
           {playersLoading ? (
             <div className="loading">Loading participants...</div>
           ) : sessionParticipants.length === 0 ? (
@@ -190,17 +241,25 @@ export function SessionPage() {
           )}
         </section>
 
-        {games.length > 0 && sessionParticipants.length > 0 && (
-          <section className="actions-section">
-            <Button
-              size="lg"
-              onClick={() => setShowAddForm(true)}
-              className="new-match-button"
-            >
-              + New Match
-            </Button>
-          </section>
-        )}
+        <section className="matches-section">
+          <div className="matches-section-header">
+            <h2>Matches ({sessionMatches.length})</h2>
+            {games.length > 0 && sessionParticipants.length > 0 && (
+              <Button onClick={() => setShowAddForm(true)}>+ New Match</Button>
+            )}
+          </div>
+          {isLoadingMatches ? (
+            <div className="loading">Loading matches...</div>
+          ) : sessionMatches.length === 0 ? (
+            <div className="empty-state">No matches yet</div>
+          ) : (
+            <div className="matches-list">
+              {sessionMatches.map((match) => (
+                <MatchRow key={match.id} match={match} hideGameTitle={false} />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
       <AddMatchForm
@@ -208,8 +267,8 @@ export function SessionPage() {
         onOpenChange={setShowAddForm}
         onSubmit={handleSubmitMatch}
         sessionParticipants={sessionParticipants}
+        sessionCode={code}
       />
     </div>
   );
 }
-

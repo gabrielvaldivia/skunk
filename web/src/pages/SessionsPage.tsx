@@ -132,7 +132,7 @@ export function SessionsPage() {
                 <div className="session-info">
                   <div className="participants-info">
                     <span className="participant-count">
-                      {participantNames.length} participant{participantNames.length !== 1 ? "s" : ""}
+                      {participantNames.length} Player{participantNames.length !== 1 ? "s" : ""}
                     </span>
                     {participantNames.length > 0 && (
                       <span className="participant-names">

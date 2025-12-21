@@ -38,9 +38,10 @@ interface AddMatchFormProps {
   onSubmit: (match: Omit<Match, "id">) => Promise<void>;
   defaultGameId?: string;
   sessionParticipants?: Player[]; // Optional session participants to prefill
+  sessionCode?: string; // Optional session code to associate match with session
 }
 
-export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sessionParticipants }: AddMatchFormProps) {
+export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sessionParticipants, sessionCode }: AddMatchFormProps) {
   const { user } = useAuth();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { games, isLoading: gamesLoading } = useGames();
@@ -251,6 +252,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
         isMultiplayer: selectedPlayerIds.length > 2,
         status: "active",
         createdByID: user.uid,
+        sessionCode: sessionCode,
         lastModified: now,
       };
 

@@ -309,6 +309,30 @@ export async function getMatchesForPlayer(playerId: string): Promise<Match[]> {
   return matches.sort((a, b) => b.date - a.date);
 }
 
+export async function getMatchesForSession(sessionCode: string): Promise<Match[]> {
+  const matchesRef = ref(database, MATCHES_PATH);
+  const snapshot = await get(matchesRef);
+  
+  if (!snapshot.exists()) {
+    return [];
+  }
+  
+  const matchesData = snapshot.val();
+  const matches: Match[] = [];
+  
+  for (const matchId in matchesData) {
+    const match = matchesData[matchId];
+    if (match.sessionCode === sessionCode) {
+      matches.push({
+        id: matchId,
+        ...match
+      });
+    }
+  }
+  
+  return matches.sort((a, b) => b.date - a.date);
+}
+
 // ==================== Sessions ====================
 
 const SESSION_EXPIRY_HOURS = 24;
