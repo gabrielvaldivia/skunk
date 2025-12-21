@@ -6,7 +6,6 @@ export type Player = {
   googleUserID?: string;
   ownerID?: string;
   email?: string;
-  handle?: string;
   location?: string;
   bio?: string;
 };

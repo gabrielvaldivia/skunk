@@ -6,7 +6,6 @@ import {
   deletePlayer,
   getMatchesForPlayer,
   deleteMatch,
-  getPlayers,
 } from "../services/databaseService";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,14 +23,12 @@ export function ProfilePage() {
   const { user, player, isAuthenticated, refreshPlayer, signOut } = useAuth();
   const isAdmin = user?.email === ADMIN_EMAIL;
   const [name, setName] = useState(player?.name || "");
-  const [handle, setHandle] = useState(player?.handle || "");
   const [location, setLocation] = useState(player?.location || "");
   const [bio, setBio] = useState(player?.bio || "");
   const [photoPreview, setPhotoPreview] = useState<string | null>(
     player?.photoData ? `data:image/jpeg;base64,${player.photoData}` : null
   );
   const [isSaving, setIsSaving] = useState(false);
-  const [handleError, setHandleError] = useState<string | null>(null);
   const [originalPhotoData, setOriginalPhotoData] = useState<string | null>(
     null
   );
@@ -76,45 +73,6 @@ export function ProfilePage() {
     }
   };
 
-  const validateHandle = async (handleValue: string): Promise<boolean> => {
-    if (!handleValue.trim()) {
-      setHandleError("Handle is required");
-      return false;
-    }
-
-    // Validate handle format (alphanumeric, underscore, hyphen, no spaces)
-    const handleRegex = /^[a-zA-Z0-9_-]+$/;
-    if (!handleRegex.test(handleValue)) {
-      setHandleError(
-        "Handle can only contain letters, numbers, underscores, and hyphens"
-      );
-      return false;
-    }
-
-    // Check if handle is already taken by another player
-    if (player) {
-      const allPlayers = await getPlayers();
-      const handleTaken = allPlayers.some(
-        (p) =>
-          p.id !== player.id &&
-          p.handle?.toLowerCase() === handleValue.toLowerCase()
-      );
-      if (handleTaken) {
-        setHandleError("This handle is already taken");
-        return false;
-      }
-    }
-
-    setHandleError(null);
-    return true;
-  };
-
-  const handleHandleBlur = async () => {
-    if (handle.trim()) {
-      await validateHandle(handle);
-    }
-  };
-
   const handleSave = async () => {
     if (!player || !isAuthenticated) return;
 
@@ -123,24 +81,11 @@ export function ProfilePage() {
       return;
     }
 
-    if (!handle.trim()) {
-      setHandleError("Handle is required");
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    const isValidHandle = await validateHandle(handle);
-    if (!isValidHandle) {
-      toast.error("Please fix the handle error");
-      return;
-    }
-
     setIsSaving(true);
 
     try {
       const updates: Partial<typeof player> = {
         name: name.trim(),
-        handle: handle.trim(),
       };
 
       // Only include location if it has a value
@@ -195,9 +140,6 @@ export function ProfilePage() {
     // Check name
     if (name.trim() !== (player.name || "")) return true;
 
-    // Check handle
-    if (handle.trim() !== (player.handle || "")) return true;
-
     // Check location
     const currentLocation = location.trim();
     const originalLocation = player.location || "";
@@ -223,7 +165,6 @@ export function ProfilePage() {
   useEffect(() => {
     if (player) {
       if (player.name) setName(player.name);
-      if (player.handle) setHandle(player.handle);
       if (player.location) setLocation(player.location);
       if (player.bio) setBio(player.bio);
       if (player.photoData) {
@@ -373,27 +314,6 @@ export function ProfilePage() {
             </div>
 
             <div className="form-group">
-              <Label htmlFor="handle">
-                Username <span className="required">*</span>
-              </Label>
-              <Input
-                id="handle"
-                type="text"
-                value={handle}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, "");
-                  setHandle(value);
-                  if (handleError) {
-                    setHandleError(null);
-                  }
-                }}
-                onBlur={handleHandleBlur}
-                placeholder="yourhandle"
-              />
-              {handleError && <span className="error-text">{handleError}</span>}
-            </div>
-
-            <div className="form-group">
               <Label htmlFor="location">Location</Label>
               <Input
                 id="location"
@@ -419,9 +339,7 @@ export function ProfilePage() {
           <div className="profile-section-footer">
             <Button
               onClick={handleSave}
-              disabled={
-                isSaving || !name.trim() || !handle.trim() || !hasChanges()
-              }
+              disabled={isSaving || !name.trim() || !hasChanges()}
             >
               {isSaving ? "Saving..." : "Save"}
             </Button>

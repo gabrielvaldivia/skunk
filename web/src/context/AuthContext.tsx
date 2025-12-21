@@ -133,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const needsOnboarding = !!(
     player &&
-    (!player.handle || !player.name)
+    !player.name
   );
 
   const value: AuthContextType = {

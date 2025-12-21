@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { X, Plus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { updatePlayer, getPlayers } from "../services/databaseService";
+import { updatePlayer } from "../services/databaseService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,13 +14,11 @@ export function OnboardingPage() {
   const routerLocation = useLocation();
   const { user, player, refreshPlayer } = useAuth();
   const [name, setName] = useState("");
-  const [handle, setHandle] = useState("");
   const [location, setLocation] = useState("");
   const [bio, setBio] = useState("");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [handleError, setHandleError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Prefill name from Google account
@@ -63,45 +61,6 @@ export function OnboardingPage() {
     }
   };
 
-  const validateHandle = async (handleValue: string): Promise<boolean> => {
-    if (!handleValue.trim()) {
-      setHandleError("Handle is required");
-      return false;
-    }
-
-    // Validate handle format (alphanumeric, underscore, hyphen, no spaces)
-    const handleRegex = /^[a-zA-Z0-9_-]+$/;
-    if (!handleRegex.test(handleValue)) {
-      setHandleError(
-        "Handle can only contain letters, numbers, underscores, and hyphens"
-      );
-      return false;
-    }
-
-    // Check if handle is already taken
-    if (player) {
-      const allPlayers = await getPlayers();
-      const handleTaken = allPlayers.some(
-        (p) =>
-          p.id !== player.id &&
-          p.handle?.toLowerCase() === handleValue.toLowerCase()
-      );
-      if (handleTaken) {
-        setHandleError("This handle is already taken");
-        return false;
-      }
-    }
-
-    setHandleError(null);
-    return true;
-  };
-
-  const handleHandleBlur = async () => {
-    if (handle.trim()) {
-      await validateHandle(handle);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -111,22 +70,11 @@ export function OnboardingPage() {
       return;
     }
 
-    if (!handle.trim()) {
-      setHandleError("Handle is required");
-      return;
-    }
-
-    const isValidHandle = await validateHandle(handle);
-    if (!isValidHandle) {
-      return;
-    }
-
     setIsSaving(true);
 
     try {
       const updates: Partial<typeof player> = {
         name: name.trim(),
-        handle: handle.trim(),
       };
 
       // Only include location if it has a value
@@ -246,28 +194,6 @@ export function OnboardingPage() {
           </div>
 
           <div className="form-group">
-            <Label htmlFor="handle">
-              Username <span className="required">*</span>
-            </Label>
-            <Input
-              id="handle"
-              type="text"
-              value={handle}
-              onChange={(e) => {
-                const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, "");
-                setHandle(value);
-                if (handleError) {
-                  setHandleError(null);
-                }
-              }}
-              onBlur={handleHandleBlur}
-              placeholder="username"
-              required
-            />
-            {handleError && <span className="error-text">{handleError}</span>}
-          </div>
-
-          <div className="form-group">
             <Label htmlFor="location">Location</Label>
             <Input
               id="location"
@@ -294,7 +220,7 @@ export function OnboardingPage() {
           <div className="form-actions">
             <Button
               type="submit"
-              disabled={isSaving || !name.trim() || !handle.trim()}
+              disabled={isSaving || !name.trim()}
               size="lg"
               className="submit-button"
             >
