@@ -128,3 +128,21 @@
   text-align: center;
   padding: 2rem;
 }
+
+.account-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border, #e0e0e0);
+}
+
+.theme-toggle-container {
+  display: flex;
+  align-items: center;
+}
+
+.sign-out-button {
+  width: 100%;
+}

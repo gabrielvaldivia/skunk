@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useGames } from "../hooks/useGames";
 import { useAuth } from "../context/AuthContext";
 import { GameCard } from "../components/GameCard";
@@ -8,6 +9,7 @@ import type { Game } from "../models/Game";
 import "./GamesPage.css";
 
 export function GamesPage() {
+  const navigate = useNavigate();
   const { games, isLoading, error, addGame, removeGame } = useGames();
   const { user, isAuthenticated } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -73,12 +75,18 @@ export function GamesPage() {
         <div className="games-grid">
           {games.map((game) => (
             <div key={game.id} className="game-item">
-              <GameCard game={game} />
+              <GameCard
+                game={game}
+                onClick={() => navigate(`/games/${game.id}`)}
+              />
               {isAuthenticated && game.createdByID === user?.uid && (
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => handleDeleteGame(game.id, game.createdByID)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteGame(game.id, game.createdByID);
+                  }}
                 >
                   Delete
                 </Button>

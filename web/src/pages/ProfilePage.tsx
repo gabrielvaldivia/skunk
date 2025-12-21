@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { updatePlayer } from "../services/databaseService";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "../components/theme-toggle";
 import "./ProfilePage.css";
 
 export function ProfilePage() {
-  const { player, user, isAuthenticated, refreshPlayer } = useAuth();
+  const navigate = useNavigate();
+  const { player, user, isAuthenticated, refreshPlayer, signOut } = useAuth();
   const [name, setName] = useState(player?.name || "");
   const [photoPreview, setPhotoPreview] = useState<string | null>(
     player?.photoData ? `data:image/jpeg;base64,${player.photoData}` : null
@@ -146,10 +149,19 @@ export function ProfilePage() {
   const backgroundColor = getPlayerColor();
   const displayName = name.trim() || player.name || "Player";
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate("/signin");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   return (
     <div className="profile-page">
       <div className="page-header">
-        <h1>Profile</h1>
+        <h1>Account</h1>
       </div>
 
       <div className="profile-content">
@@ -215,6 +227,25 @@ export function ProfilePage() {
           <div className="form-actions">
             <Button onClick={handleSave} disabled={isSaving || !name.trim()}>
               {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </div>
+
+        <div className="account-settings">
+          <div className="form-group">
+            <label>Theme</label>
+            <div className="theme-toggle-container">
+              <ThemeToggle />
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <Button
+              onClick={handleSignOut}
+              variant="destructive"
+              className="sign-out-button"
+            >
+              Sign Out
             </Button>
           </div>
         </div>

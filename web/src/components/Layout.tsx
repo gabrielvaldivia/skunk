@@ -1,7 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "./theme-toggle";
 import { cn } from "@/lib/utils";
 
 interface LayoutProps {
@@ -11,20 +10,16 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, signOut } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   const navItems = [
-    { path: "/matches", label: "Activity", icon: "📋" },
+    { path: "/matches", label: "Matches", icon: "📋" },
     { path: "/games", label: "Games", icon: "🎮" },
-    { path: "/profile", label: "Profile", icon: "👤" },
+    { path: "/profile", label: "Account", icon: "👤" },
   ];
 
-  const handleAuthClick = async () => {
-    if (isAuthenticated) {
-      await signOut();
-    } else {
-      navigate("/signin");
-    }
+  const handleSignInClick = () => {
+    navigate("/signin");
   };
 
   return (
@@ -54,13 +49,11 @@ export function Layout({ children }: LayoutProps) {
             </nav>
           </div>
           <div className="flex flex-1 items-center justify-end space-x-2">
-            <ThemeToggle />
-            <Button
-              onClick={handleAuthClick}
-              variant={isAuthenticated ? "outline" : "default"}
-            >
-              {isAuthenticated ? "Sign Out" : "Sign In"}
-            </Button>
+            {!isAuthenticated && (
+              <Button onClick={handleSignInClick} variant="default">
+                Sign In
+              </Button>
+            )}
           </div>
         </div>
       </header>

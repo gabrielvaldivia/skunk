@@ -4,6 +4,8 @@ import { ThemeProvider } from "./components/theme-provider";
 import { Layout } from "./components/Layout";
 import { SignInView } from "./components/SignInView";
 import { GamesPage } from "./pages/GamesPage";
+import { GameDetailPage } from "./pages/GameDetailPage";
+import { PlayerDetailPage } from "./pages/PlayerDetailPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ActivityPage } from "./pages/ActivityPage";
 import "./App.css";
@@ -23,6 +25,22 @@ function AppRoutes() {
         element={
           <Layout>
             <GamesPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/games/:id"
+        element={
+          <Layout>
+            <GameDetailPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/players/:id"
+        element={
+          <Layout>
+            <PlayerDetailPage />
           </Layout>
         }
       />
