@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./components/theme-provider";
+import { Toaster } from "./components/ui/sonner";
 import { Layout } from "./components/Layout";
 import { SignInView } from "./components/SignInView";
 import { OnboardingPage } from "./pages/OnboardingPage";
@@ -125,6 +126,7 @@ function App() {
           <AppRoutes />
         </BrowserRouter>
       </AuthProvider>
+      <Toaster />
     </ThemeProvider>
   );
 }

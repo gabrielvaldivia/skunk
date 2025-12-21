@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ThemeToggle } from "../components/theme-toggle";
+import { toast } from "sonner";
 import "./ProfilePage.css";
 
 export function ProfilePage() {
@@ -26,7 +27,6 @@ export function ProfilePage() {
     player?.photoData ? `data:image/jpeg;base64,${player.photoData}` : null
   );
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [handleError, setHandleError] = useState<string | null>(null);
   const [originalPhotoData, setOriginalPhotoData] = useState<string | null>(
     null
@@ -82,8 +82,6 @@ export function ProfilePage() {
       // Store base64 string (without prefix) in a temporary variable
       // We'll use it when saving
       (fileInputRef.current as any).base64Data = base64String;
-      // Clear save message when changes are made
-      setSaveMessage(null);
     };
     reader.readAsDataURL(file);
   };
@@ -95,8 +93,6 @@ export function ProfilePage() {
       // Set to empty string to indicate photo should be removed
       (fileInputRef.current as any).base64Data = "";
     }
-    // Clear save message when changes are made
-    setSaveMessage(null);
   };
 
   const validateHandle = async (handleValue: string): Promise<boolean> => {
@@ -142,24 +138,23 @@ export function ProfilePage() {
     if (!player || !isAuthenticated) return;
 
     if (!name.trim()) {
-      setSaveMessage("Name is required");
+      toast.error("Name is required");
       return;
     }
 
     if (!handle.trim()) {
       setHandleError("Handle is required");
-      setSaveMessage("Please fill in all required fields");
+      toast.error("Please fill in all required fields");
       return;
     }
 
     const isValidHandle = await validateHandle(handle);
     if (!isValidHandle) {
-      setSaveMessage("Please fix the handle error");
+      toast.error("Please fix the handle error");
       return;
     }
 
     setIsSaving(true);
-    setSaveMessage(null);
 
     try {
       const updates: Partial<typeof player> = {
@@ -177,7 +172,7 @@ export function ProfilePage() {
       }
 
       await updatePlayer(player.id, updates);
-      setSaveMessage("Profile saved successfully!");
+      toast.success("Profile saved successfully!");
 
       // Clear the file input
       if (fileInputRef.current) {
@@ -196,7 +191,7 @@ export function ProfilePage() {
       await refreshPlayer();
     } catch (error) {
       console.error("Error saving profile:", error);
-      setSaveMessage("Error saving profile. Please try again.");
+      toast.error("Error saving profile. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -385,10 +380,7 @@ export function ProfilePage() {
                 id="name"
                 type="text"
                 value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  setSaveMessage(null);
-                }}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="Enter your name"
               />
             </div>
@@ -404,7 +396,6 @@ export function ProfilePage() {
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, "");
                   setHandle(value);
-                  setSaveMessage(null);
                   if (handleError) {
                     setHandleError(null);
                   }
@@ -424,10 +415,7 @@ export function ProfilePage() {
                 id="location"
                 type="text"
                 value={location}
-                onChange={(e) => {
-                  setLocation(e.target.value);
-                  setSaveMessage(null);
-                }}
+                onChange={(e) => setLocation(e.target.value)}
                 placeholder="City, Country"
               />
             </div>
@@ -437,24 +425,11 @@ export function ProfilePage() {
               <Textarea
                 id="bio"
                 value={bio}
-                onChange={(e) => {
-                  setBio(e.target.value);
-                  setSaveMessage(null);
-                }}
+                onChange={(e) => setBio(e.target.value)}
                 placeholder="Tell us about yourself..."
                 rows={4}
               />
             </div>
-
-            {saveMessage && (
-              <div
-                className={`save-message ${
-                  saveMessage.includes("Error") ? "error" : "success"
-                }`}
-              >
-                {saveMessage}
-              </div>
-            )}
           </div>
 
           <div className="profile-section-footer">
