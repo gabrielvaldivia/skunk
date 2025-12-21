@@ -1,0 +1,142 @@
+.sessions-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.sessions-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.sessions-page .page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.sessions-page .error-message {
+  padding: 1rem;
+  background-color: hsl(var(--destructive) / 0.1);
+  color: hsl(var(--destructive));
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--destructive) / 0.2);
+}
+
+.sessions-page .loading,
+.sessions-page .error {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.1rem;
+}
+
+.sessions-page .error {
+  color: hsl(var(--destructive));
+}
+
+.sessions-page .empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.sessions-page .empty-state p {
+  margin: 0.5rem 0;
+}
+
+.sessions-page .empty-hint {
+  font-size: 0.9rem;
+}
+
+.sessions-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.session-card {
+  padding: 1.5rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  background-color: hsl(var(--card));
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.session-card:hover {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 2px 8px hsl(var(--primary) / 0.1);
+}
+
+.session-card.current-session {
+  border-color: hsl(var(--primary));
+  background-color: hsl(var(--primary) / 0.05);
+}
+
+.session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.session-code {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.code-label {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.code-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  font-family: monospace;
+  letter-spacing: 0.1em;
+}
+
+.current-badge {
+  padding: 0.25rem 0.75rem;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.session-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.participants-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.participant-count {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.participant-names {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.session-time {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  margin-top: 0.5rem;
+}
+

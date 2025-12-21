@@ -496,3 +496,33 @@ export async function deleteSession(sessionId: string): Promise<void> {
   ]);
 }
 
+/**
+ * Get all active sessions (non-expired)
+ */
+export async function getActiveSessions(): Promise<Session[]> {
+  const sessionsRef = ref(database, SESSIONS_PATH);
+  const snapshot = await get(sessionsRef);
+
+  if (!snapshot.exists()) {
+    return [];
+  }
+
+  const sessionsData = snapshot.val();
+  const sessions: Session[] = [];
+
+  for (const sessionId in sessionsData) {
+    const session: Session = {
+      id: sessionId,
+      ...sessionsData[sessionId],
+    };
+
+    // Filter out expired sessions
+    if (!isSessionExpired(session)) {
+      sessions.push(session);
+    }
+  }
+
+  // Sort by lastActivityAt descending (most recent first)
+  return sessions.sort((a, b) => b.lastActivityAt - a.lastActivityAt);
+}
+
