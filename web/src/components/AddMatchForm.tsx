@@ -37,9 +37,10 @@ interface AddMatchFormProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (match: Omit<Match, "id">) => Promise<void>;
   defaultGameId?: string;
+  sessionParticipants?: Player[]; // Optional session participants to prefill
 }
 
-export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId }: AddMatchFormProps) {
+export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sessionParticipants }: AddMatchFormProps) {
   const { user } = useAuth();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { games, isLoading: gamesLoading } = useGames();
@@ -86,15 +87,31 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId }: Ad
     }
   }, [open, defaultGameId, games]);
 
-  // Initialize player inputs when game changes
+  // Initialize player inputs when game changes or when session participants are provided
   useEffect(() => {
     if (selectedGame && open) {
       const gameMinPlayers = Math.min(...selectedGame.supportedPlayerCounts);
-      setPlayerInputs(new Array(gameMinPlayers).fill(""));
-      setAutocompleteStates(new Array(gameMinPlayers).fill({ value: "", showSuggestions: false }));
-      setScores(new Array(gameMinPlayers).fill(0));
+      
+      // If session participants are provided, prefill with their names
+      if (sessionParticipants && sessionParticipants.length > 0) {
+        const participantNames = sessionParticipants.map(p => p.name);
+        // Use at least gameMinPlayers, but fill with session participants if available
+        const initialInputs = participantNames.slice(0, Math.max(gameMinPlayers, participantNames.length));
+        // Pad to minimum if needed
+        while (initialInputs.length < gameMinPlayers) {
+          initialInputs.push("");
+        }
+        setPlayerInputs(initialInputs);
+        setAutocompleteStates(initialInputs.map(value => ({ value, showSuggestions: false })));
+        setScores(new Array(initialInputs.length).fill(0));
+      } else {
+        // No session participants, use default initialization
+        setPlayerInputs(new Array(gameMinPlayers).fill(""));
+        setAutocompleteStates(new Array(gameMinPlayers).fill({ value: "", showSuggestions: false }));
+        setScores(new Array(gameMinPlayers).fill(0));
+      }
     }
-  }, [selectedGameId, open, selectedGame]);
+  }, [selectedGameId, open, selectedGame, sessionParticipants]);
 
   // Adjust scores array when player inputs change
   useEffect(() => {

@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { SessionProvider } from "./context/SessionContext";
 import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "./components/ui/sonner";
 import { Layout } from "./components/Layout";
@@ -12,6 +13,7 @@ import { PlayersPage } from "./pages/PlayersPage";
 import { PlayerDetailPage } from "./pages/PlayerDetailPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ActivityPage } from "./pages/ActivityPage";
+import { SessionPage } from "./pages/SessionPage";
 import "./App.css";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -116,6 +118,16 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/session/:code"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <SessionPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
       <Route path="/activity" element={<Navigate to="/matches" replace />} />
       <Route path="/" element={<Navigate to="/matches" replace />} />
     </Routes>
@@ -126,9 +138,11 @@ function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="skunk-ui-theme">
       <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <SessionProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </SessionProvider>
       </AuthProvider>
       <Toaster />
     </ThemeProvider>

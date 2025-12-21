@@ -2,6 +2,25 @@
   width: 100%;
 }
 
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .refresh-button {
   padding: 0.75rem 1.5rem;
   background-color: #6c757d;

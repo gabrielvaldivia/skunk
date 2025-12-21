@@ -1,0 +1,76 @@
+.session-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.session-page .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.session-page .page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.session-page .header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.session-page .session-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.session-page .participants-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.session-page .participants-section h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.session-page .participants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.session-page .actions-section {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.session-page .new-match-button {
+  min-width: 200px;
+}
+
+.session-page .loading,
+.session-page .error {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.1rem;
+}
+
+.session-page .error {
+  color: hsl(var(--destructive));
+}
+
+.session-page .empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: hsl(var(--muted-foreground));
+}
+

@@ -58,6 +58,14 @@ const firebaseConfig = {
     "matches": {
       ".read": true,
       ".write": "auth != null"
+    },
+    "sessions": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "sessionsByCode": {
+      ".read": true,
+      ".write": "auth != null"
     }
   }
 }

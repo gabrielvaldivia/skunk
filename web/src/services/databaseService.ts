@@ -3,10 +3,13 @@ import { database } from './firebase';
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
 import type { Match } from '../models/Match';
+import type { Session } from '../models/Session';
 
 const GAMES_PATH = 'games';
 const PLAYERS_PATH = 'players';
 const MATCHES_PATH = 'matches';
+const SESSIONS_PATH = 'sessions';
+const SESSIONS_BY_CODE_PATH = 'sessionsByCode';
 
 // ==================== Games ====================
 
@@ -304,5 +307,192 @@ export async function getMatchesForPlayer(playerId: string): Promise<Match[]> {
   }
   
   return matches.sort((a, b) => b.date - a.date);
+}
+
+// ==================== Sessions ====================
+
+const SESSION_EXPIRY_HOURS = 24;
+
+/**
+ * Check if a session is expired (24 hours since lastActivityAt)
+ */
+export function isSessionExpired(session: Session): boolean {
+  const expiryTime = SESSION_EXPIRY_HOURS * 60 * 60 * 1000; // 24 hours in milliseconds
+  return Date.now() - session.lastActivityAt > expiryTime;
+}
+
+/**
+ * Generate a unique 6-character alphanumeric code (uppercase)
+ */
+async function generateSessionCode(): Promise<string> {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code: string;
+  let attempts = 0;
+  const maxAttempts = 10;
+
+  do {
+    code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    attempts++;
+
+    // Check if code already exists
+    const codeRef = ref(database, `${SESSIONS_BY_CODE_PATH}/${code}`);
+    const snapshot = await get(codeRef);
+    
+    if (!snapshot.exists()) {
+      return code;
+    }
+  } while (attempts < maxAttempts);
+
+  throw new Error('Failed to generate unique session code after multiple attempts');
+}
+
+/**
+ * Create a new session with a generated code
+ */
+export async function createSession(createdByID: string): Promise<Session> {
+  const code = await generateSessionCode();
+  const now = Date.now();
+
+  const sessionsRef = ref(database, SESSIONS_PATH);
+  const newSessionRef = push(sessionsRef);
+  const sessionId = newSessionRef.key!;
+
+  const session: Session = {
+    id: sessionId,
+    code,
+    participantIDs: [],
+    createdAt: now,
+    createdByID,
+    lastActivityAt: now,
+  };
+
+  // Write to both sessions and sessionsByCode
+  await Promise.all([
+    set(newSessionRef, session),
+    set(ref(database, `${SESSIONS_BY_CODE_PATH}/${code}`), sessionId),
+  ]);
+
+  return session;
+}
+
+/**
+ * Get session by code, filtering out expired sessions
+ */
+export async function getSessionByCode(code: string): Promise<Session | null> {
+  const codeRef = ref(database, `${SESSIONS_BY_CODE_PATH}/${code}`);
+  const codeSnapshot = await get(codeRef);
+
+  if (!codeSnapshot.exists()) {
+    return null;
+  }
+
+  const sessionId = codeSnapshot.val();
+  const sessionRef = ref(database, `${SESSIONS_PATH}/${sessionId}`);
+  const sessionSnapshot = await get(sessionRef);
+
+  if (!sessionSnapshot.exists()) {
+    return null;
+  }
+
+  const session: Session = {
+    id: sessionId,
+    ...sessionSnapshot.val(),
+  };
+
+  // Filter out expired sessions
+  if (isSessionExpired(session)) {
+    // Clean up expired session
+    await deleteSession(sessionId);
+    return null;
+  }
+
+  return session;
+}
+
+/**
+ * Get session by ID
+ */
+export async function getSession(sessionId: string): Promise<Session | null> {
+  const sessionRef = ref(database, `${SESSIONS_PATH}/${sessionId}`);
+  const snapshot = await get(sessionRef);
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  return {
+    id: sessionId,
+    ...snapshot.val(),
+  };
+}
+
+/**
+ * Add a player to session participants if not already present, and update lastActivityAt
+ */
+export async function joinSession(sessionId: string, playerId: string): Promise<void> {
+  const session = await getSession(sessionId);
+  if (!session) {
+    throw new Error('Session not found');
+  }
+
+  if (isSessionExpired(session)) {
+    throw new Error('Session has expired');
+  }
+
+  const participantIDs = session.participantIDs || [];
+  
+  // Only add if not already present
+  if (!participantIDs.includes(playerId)) {
+    participantIDs.push(playerId);
+  }
+
+  const sessionRef = ref(database, `${SESSIONS_PATH}/${sessionId}`);
+  await update(sessionRef, {
+    participantIDs,
+    lastActivityAt: Date.now(),
+  });
+}
+
+/**
+ * Remove a player from session participants, update lastActivityAt, and delete session if empty
+ */
+export async function leaveSession(sessionId: string, playerId: string): Promise<void> {
+  const session = await getSession(sessionId);
+  if (!session) {
+    return; // Session doesn't exist, nothing to do
+  }
+
+  const participantIDs = (session.participantIDs || []).filter(id => id !== playerId);
+  const sessionRef = ref(database, `${SESSIONS_PATH}/${sessionId}`);
+
+  if (participantIDs.length === 0) {
+    // Auto-delete session when all participants leave
+    await deleteSession(sessionId);
+  } else {
+    // Update participants and lastActivityAt
+    await update(sessionRef, {
+      participantIDs,
+      lastActivityAt: Date.now(),
+    });
+  }
+}
+
+/**
+ * Delete a session and its code index entry
+ */
+export async function deleteSession(sessionId: string): Promise<void> {
+  const session = await getSession(sessionId);
+  if (!session) {
+    return;
+  }
+
+  // Delete from both sessions and sessionsByCode
+  await Promise.all([
+    remove(ref(database, `${SESSIONS_PATH}/${sessionId}`)),
+    remove(ref(database, `${SESSIONS_BY_CODE_PATH}/${session.code}`)),
+  ]);
 }
 
