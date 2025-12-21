@@ -1,5 +1,7 @@
 .activity-page {
   width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .page-header {
@@ -40,9 +42,11 @@
 .matches-list {
   display: flex;
   flex-direction: column;
+  gap: 20px;
 }
 
-.loading, .error {
+.loading,
+.error {
   text-align: center;
   padding: 2rem;
 }
@@ -50,4 +54,3 @@
 .error {
   color: #dc3545;
 }
-

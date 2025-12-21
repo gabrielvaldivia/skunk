@@ -178,6 +178,7 @@ export function PlayersPage() {
                   <Button
                     variant="destructive"
                     size="sm"
+                    className="delete-player-button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeletePlayer(player.id, player.ownerID);

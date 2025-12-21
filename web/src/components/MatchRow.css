@@ -1,16 +1,8 @@
 .match-row {
-  padding: 1rem;
-  border-radius: 0.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  background: hsl(var(--card));
-  transition: background-color 0.2s ease;
-}
-
-.match-row:hover {
-  background: #f5f5f5;
+  gap: 20px;
 }
 
 .match-main-content {

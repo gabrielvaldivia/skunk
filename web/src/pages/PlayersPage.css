@@ -1,28 +1,19 @@
 .players-page {
   width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .players-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 20px;
 }
 
 .player-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem;
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.5rem;
-  background: hsl(var(--card));
-  transition: box-shadow 0.2s, transform 0.1s;
-}
-
-.player-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
 }
 
 .player-item > :first-child {
@@ -45,7 +36,17 @@
   transform: none;
 }
 
-.loading, .error {
+.player-item .delete-player-button {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.player-item:hover .delete-player-button {
+  opacity: 1;
+}
+
+.loading,
+.error {
   text-align: center;
   padding: 2rem;
 }
@@ -53,4 +54,3 @@
 .error {
   color: #dc3545;
 }
-
