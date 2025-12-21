@@ -282,3 +282,27 @@ export async function deleteMatch(matchId: string): Promise<void> {
   await remove(matchRef);
 }
 
+export async function getMatchesForPlayer(playerId: string): Promise<Match[]> {
+  const matchesRef = ref(database, MATCHES_PATH);
+  const snapshot = await get(matchesRef);
+  
+  if (!snapshot.exists()) {
+    return [];
+  }
+  
+  const matchesData = snapshot.val();
+  const matches: Match[] = [];
+  
+  for (const matchId in matchesData) {
+    const match = matchesData[matchId];
+    if (match.playerIDs && match.playerIDs.includes(playerId)) {
+      matches.push({
+        id: matchId,
+        ...match
+      });
+    }
+  }
+  
+  return matches.sort((a, b) => b.date - a.date);
+}
+

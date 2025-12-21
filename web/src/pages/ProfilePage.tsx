@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { updatePlayer } from "../services/databaseService";
+import { updatePlayer, deletePlayer, getMatchesForPlayer, deleteMatch } from "../services/databaseService";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "../components/theme-toggle";
 import "./ProfilePage.css";
@@ -158,6 +158,48 @@ export function ProfilePage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!player) return;
+
+    const confirmMessage = "Are you sure you want to delete your account? This will permanently delete:\n\n" +
+      "- Your player profile\n" +
+      "- All matches you participated in\n\n" +
+      "This action cannot be undone.";
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    // Double confirmation
+    if (!window.confirm("This is your last chance to cancel. Are you absolutely sure you want to delete your account?")) {
+      return;
+    }
+
+    try {
+      // Get all matches where this player participated
+      const playerMatches = await getMatchesForPlayer(player.id);
+      
+      // Delete all matches
+      for (const match of playerMatches) {
+        try {
+          await deleteMatch(match.id);
+        } catch (error) {
+          console.error(`Error deleting match ${match.id}:`, error);
+        }
+      }
+
+      // Delete the player account
+      await deletePlayer(player.id);
+
+      // Sign out and redirect to sign in page
+      await signOut();
+      navigate("/signin");
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      alert("Failed to delete account. Please try again.");
+    }
+  };
+
   return (
     <div className="profile-page">
       <div className="page-header">
@@ -242,10 +284,24 @@ export function ProfilePage() {
           <div className="form-actions">
             <Button
               onClick={handleSignOut}
-              variant="destructive"
+              variant="outline"
               className="sign-out-button"
             >
               Sign Out
+            </Button>
+          </div>
+
+          <div className="danger-zone">
+            <h3>Danger Zone</h3>
+            <p className="danger-zone-description">
+              Deleting your account will permanently remove your profile and all matches you participated in.
+            </p>
+            <Button
+              onClick={handleDeleteAccount}
+              variant="destructive"
+              className="delete-account-button"
+            >
+              Delete Account
             </Button>
           </div>
         </div>

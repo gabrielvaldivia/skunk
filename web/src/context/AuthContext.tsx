@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import type { ReactNode } from "react";
 import { type User } from "firebase/auth";
@@ -36,10 +37,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [player, setPlayer] = useState<Player | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const loadingPlayerIdRef = useRef<string | null>(null);
 
   const loadPlayer = useCallback(async (firebaseUser: User) => {
+    const googleUserID = firebaseUser.uid;
+    
+    // Prevent concurrent calls for the same user
+    if (loadingPlayerIdRef.current === googleUserID) {
+      return;
+    }
+    
+    loadingPlayerIdRef.current = googleUserID;
+    
     try {
-      const googleUserID = firebaseUser.uid;
       let currentPlayer = await getPlayerByGoogleUserID(googleUserID);
 
       if (!currentPlayer) {
@@ -60,6 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPlayer(currentPlayer);
     } catch (error) {
       console.error("Error loading player:", error);
+    } finally {
+      if (loadingPlayerIdRef.current === googleUserID) {
+        loadingPlayerIdRef.current = null;
+      }
     }
   }, []);
 

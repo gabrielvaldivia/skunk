@@ -146,3 +146,29 @@
 .sign-out-button {
   width: 100%;
 }
+
+.danger-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #dc2626;
+}
+
+.danger-zone h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.danger-zone-description {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted-foreground, #666);
+}
+
+.delete-account-button {
+  width: 100%;
+}
