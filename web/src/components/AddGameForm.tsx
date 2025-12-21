@@ -2,16 +2,32 @@ import { useState, FormEvent } from "react";
 import type { Game } from "../models/Game";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
-import "./AddGameForm.css";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface AddGameFormProps {
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSubmit: (game: Omit<Game, "id">) => Promise<void>;
 }
 
 type ScoreCalculation = "all" | "winnerOnly" | "losersSum";
 
-export function AddGameForm({ onClose, onSubmit }: AddGameFormProps) {
+export function AddGameForm({
+  open,
+  onOpenChange,
+  onSubmit,
+}: AddGameFormProps) {
   const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [minPlayers, setMinPlayers] = useState(2);
@@ -79,7 +95,15 @@ export function AddGameForm({ onClose, onSubmit }: AddGameFormProps) {
       };
 
       await onSubmit(newGame);
-      onClose();
+      onOpenChange(false);
+      // Reset form
+      setTitle("");
+      setMinPlayers(2);
+      setMaxPlayers(4);
+      setTrackScore(true);
+      setMatchWinningCondition("highest");
+      setRoundWinningCondition("highest");
+      setScoreCalculation("all");
     } catch (err) {
       console.error("Error creating game:", err);
       alert("Failed to create game");
@@ -89,132 +113,144 @@ export function AddGameForm({ onClose, onSubmit }: AddGameFormProps) {
   };
 
   return (
-    <div className="add-game-form-overlay" onClick={onClose}>
-      <div
-        className="add-game-form-content"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2>Add New Game</h2>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[525px]">
         <form onSubmit={handleSubmit}>
-          <div className="form-section">
-            <label>
-              Game Title *
-              <input
-                type="text"
+          <DialogHeader>
+            <DialogTitle>Add New Game</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="title">
+                Game Title <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter game title"
                 autoFocus
                 required
               />
-            </label>
-          </div>
+            </div>
 
-          <div className="form-section">
-            <div className="player-count-inputs">
-              <label>
-                Minimum Players
-                <input
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="minPlayers">Minimum Players</Label>
+                <Input
+                  id="minPlayers"
                   type="number"
                   min="2"
                   max="10"
                   value={minPlayers}
                   onChange={(e) => setMinPlayers(parseInt(e.target.value) || 2)}
                 />
-              </label>
-              <label>
-                Maximum Players
-                <input
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="maxPlayers">Maximum Players</Label>
+                <Input
+                  id="maxPlayers"
                   type="number"
                   min={minPlayers}
                   max="10"
                   value={maxPlayers}
                   onChange={(e) => setMaxPlayers(parseInt(e.target.value) || 4)}
                 />
-              </label>
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="trackScore"
+                  checked={trackScore}
+                  onCheckedChange={(checked) => setTrackScore(checked === true)}
+                />
+                <Label
+                  htmlFor="trackScore"
+                  className="font-normal cursor-pointer"
+                >
+                  Track Score
+                </Label>
+              </div>
+
+              {trackScore && (
+                <>
+                  <div className="grid gap-2">
+                    <Label htmlFor="matchWinning">
+                      Match Winning Condition
+                    </Label>
+                    <select
+                      id="matchWinning"
+                      value={matchWinningCondition}
+                      onChange={(e) =>
+                        setMatchWinningCondition(
+                          e.target.value as "highest" | "lowest"
+                        )
+                      }
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="highest">Highest Total Score Wins</option>
+                      <option value="lowest">Lowest Total Score Wins</option>
+                    </select>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="roundWinning">
+                      Round Winning Condition
+                    </Label>
+                    <select
+                      id="roundWinning"
+                      value={roundWinningCondition}
+                      onChange={(e) =>
+                        setRoundWinningCondition(
+                          e.target.value as "highest" | "lowest"
+                        )
+                      }
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="highest">Highest Score Wins</option>
+                      <option value="lowest">Lowest Score Wins</option>
+                    </select>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="scoreCalculation">
+                      Total Score Calculation
+                    </Label>
+                    <select
+                      id="scoreCalculation"
+                      value={scoreCalculation}
+                      onChange={(e) =>
+                        setScoreCalculation(e.target.value as ScoreCalculation)
+                      }
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="all">All Players' Scores Count</option>
+                      <option value="winnerOnly">
+                        Only Winner's Score Counts
+                      </option>
+                      <option value="losersSum">
+                        Winner Gets Sum of Losers' Scores
+                      </option>
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-
-          <div className="form-section">
-            <h3>Game Rules</h3>
-
-            <label className="toggle-label">
-              <input
-                type="checkbox"
-                checked={trackScore}
-                onChange={(e) => setTrackScore(e.target.checked)}
-              />
-              <span>Track Score</span>
-            </label>
-
-            {trackScore && (
-              <>
-                <label>
-                  Match Winning Condition
-                  <select
-                    value={matchWinningCondition}
-                    onChange={(e) =>
-                      setMatchWinningCondition(
-                        e.target.value as "highest" | "lowest"
-                      )
-                    }
-                  >
-                    <option value="highest">Highest Total Score Wins</option>
-                    <option value="lowest">Lowest Total Score Wins</option>
-                  </select>
-                </label>
-
-                <label>
-                  Round Winning Condition
-                  <select
-                    value={roundWinningCondition}
-                    onChange={(e) =>
-                      setRoundWinningCondition(
-                        e.target.value as "highest" | "lowest"
-                      )
-                    }
-                  >
-                    <option value="highest">Highest Score Wins</option>
-                    <option value="lowest">Lowest Score Wins</option>
-                  </select>
-                </label>
-
-                <label>
-                  Total Score Calculation
-                  <select
-                    value={scoreCalculation}
-                    onChange={(e) =>
-                      setScoreCalculation(e.target.value as ScoreCalculation)
-                    }
-                  >
-                    <option value="all">All Players' Scores Count</option>
-                    <option value="winnerOnly">
-                      Only Winner's Score Counts
-                    </option>
-                    <option value="losersSum">
-                      Winner Gets Sum of Losers' Scores
-                    </option>
-                  </select>
-                </label>
-              </>
-            )}
-          </div>
-
-          <div className="form-actions">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" disabled={isSubmitting}>
+                Cancel
+              </Button>
+            </DialogClose>
             <Button type="submit" disabled={isSubmitting || !title.trim()}>
               {isSubmitting ? "Creating..." : "Create Game"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
