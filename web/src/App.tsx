@@ -32,12 +32,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
+
 function AppRoutes() {
-  const { isLoading, isAuthenticated, needsOnboarding } = useAuth();
+  const { isLoading, isAuthenticated, needsOnboarding, user } = useAuth();
 
   if (isLoading) {
     return <div className="loading">Loading...</div>;
   }
+
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   return (
     <Routes>
@@ -45,7 +49,7 @@ function AppRoutes() {
       <Route
         path="/onboarding"
         element={
-          isAuthenticated && needsOnboarding ? (
+          isAuthenticated && (needsOnboarding || isAdmin) ? (
             <OnboardingPage />
           ) : (
             <Navigate to="/" replace />

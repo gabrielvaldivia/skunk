@@ -8,6 +8,7 @@ import {
   deleteMatch,
   getPlayers,
 } from "../services/databaseService";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,9 +17,12 @@ import { ThemeToggle } from "../components/theme-toggle";
 import { toast } from "sonner";
 import "./ProfilePage.css";
 
+const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
+
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { player, isAuthenticated, refreshPlayer, signOut } = useAuth();
+  const { user, player, isAuthenticated, refreshPlayer, signOut } = useAuth();
+  const isAdmin = user?.email === ADMIN_EMAIL;
   const [name, setName] = useState(player?.name || "");
   const [handle, setHandle] = useState(player?.handle || "");
   const [location, setLocation] = useState(player?.location || "");
@@ -32,29 +36,6 @@ export function ProfilePage() {
     null
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Generate a color if colorData is not available
-  const getPlayerColor = (): string => {
-    if (player?.colorData) {
-      return player.colorData;
-    }
-    // Generate a consistent color based on the name hash
-    const nameToHash = name || player?.name || "Player";
-    const hash = nameToHash
-      .split("")
-      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const hue = hash % 360;
-    return `hsl(${hue}, 70%, 60%)`;
-  };
-
-  const getInitials = (nameToUse: string): string => {
-    return nameToUse
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -263,7 +244,6 @@ export function ProfilePage() {
     );
   }
 
-  const backgroundColor = getPlayerColor();
   const displayName = name.trim() || player.name || "Player";
 
   const handleSignOut = async () => {
@@ -334,15 +314,6 @@ export function ProfilePage() {
           <div className="profile-form">
             <div className="form-group">
               <div className="profile-avatar-container">
-                <div className="profile-avatar" style={{ backgroundColor }}>
-                  {photoPreview ? (
-                    <img src={photoPreview} alt={displayName} />
-                  ) : (
-                    <span className="profile-initials">
-                      {getInitials(displayName)}
-                    </span>
-                  )}
-                </div>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -351,15 +322,21 @@ export function ProfilePage() {
                   style={{ display: "none" }}
                   id="photo-upload"
                 />
-                <div className="avatar-actions">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    Change Photo
-                  </Button>
-                  {photoPreview && (
+                <button
+                  type="button"
+                  className="profile-avatar-button"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {photoPreview ? (
+                    <img src={photoPreview} alt={displayName} />
+                  ) : (
+                    <div className="profile-avatar-placeholder">
+                      <Plus className="profile-plus-icon" />
+                    </div>
+                  )}
+                </button>
+                {photoPreview && (
+                  <div className="avatar-actions">
                     <Button
                       variant="outline"
                       size="sm"
@@ -367,8 +344,8 @@ export function ProfilePage() {
                     >
                       Remove Photo
                     </Button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -387,7 +364,7 @@ export function ProfilePage() {
 
             <div className="form-group">
               <Label htmlFor="handle">
-                @Handle <span className="required">*</span>
+                Username <span className="required">*</span>
               </Label>
               <Input
                 id="handle"
@@ -404,9 +381,6 @@ export function ProfilePage() {
                 placeholder="yourhandle"
               />
               {handleError && <span className="error-text">{handleError}</span>}
-              <span className="form-hint">
-                Your unique handle for your profile link
-              </span>
             </div>
 
             <div className="form-group">
@@ -453,6 +427,24 @@ export function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Admin Section */}
+        {isAdmin && (
+          <div className="profile-section">
+            <div className="form-group">
+              <h3>Admin Tools</h3>
+              <p className="form-hint">Tools for testing and development</p>
+              <div className="form-actions">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/onboarding")}
+                >
+                  Replay Onboarding
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Danger Zone Container */}
         <div className="profile-section danger-zone-section">

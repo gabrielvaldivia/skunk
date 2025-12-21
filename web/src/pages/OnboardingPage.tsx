@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { X, Plus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { updatePlayer, getPlayers } from "../services/databaseService";
 import { Button } from "@/components/ui/button";
@@ -29,28 +30,6 @@ export function OnboardingPage() {
       setName(player.name);
     }
   }, [user, player]);
-
-  // Generate a color if colorData is not available
-  const getPlayerColor = (): string => {
-    if (player?.colorData) {
-      return player.colorData;
-    }
-    const nameToHash = name || player?.name || "Player";
-    const hash = nameToHash
-      .split("")
-      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const hue = hash % 360;
-    return `hsl(${hue}, 70%, 60%)`;
-  };
-
-  const getInitials = (nameToUse: string): string => {
-    return nameToUse
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -92,7 +71,9 @@ export function OnboardingPage() {
     // Validate handle format (alphanumeric, underscore, hyphen, no spaces)
     const handleRegex = /^[a-zA-Z0-9_-]+$/;
     if (!handleRegex.test(handleValue)) {
-      setHandleError("Handle can only contain letters, numbers, underscores, and hyphens");
+      setHandleError(
+        "Handle can only contain letters, numbers, underscores, and hyphens"
+      );
       return false;
     }
 
@@ -100,7 +81,9 @@ export function OnboardingPage() {
     if (player) {
       const allPlayers = await getPlayers();
       const handleTaken = allPlayers.some(
-        (p) => p.id !== player.id && p.handle?.toLowerCase() === handleValue.toLowerCase()
+        (p) =>
+          p.id !== player.id &&
+          p.handle?.toLowerCase() === handleValue.toLowerCase()
       );
       if (handleTaken) {
         setHandleError("This handle is already taken");
@@ -171,12 +154,20 @@ export function OnboardingPage() {
     );
   }
 
-  const backgroundColor = getPlayerColor();
   const displayName = name.trim() || player.name || "Player";
 
   return (
     <div className="onboarding-page">
       <div className="onboarding-container">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="onboarding-close-button"
+          onClick={() => navigate("/")}
+          aria-label="Close"
+        >
+          <X className="h-5 w-5" />
+        </Button>
         <div className="onboarding-header">
           <h1>Welcome to Skunk!</h1>
           <p>Let's set up your profile</p>
@@ -185,15 +176,6 @@ export function OnboardingPage() {
         <form onSubmit={handleSubmit} className="onboarding-form">
           <div className="onboarding-avatar-section">
             <div className="onboarding-avatar-container">
-              <div className="onboarding-avatar" style={{ backgroundColor }}>
-                {photoPreview ? (
-                  <img src={photoPreview} alt={displayName} />
-                ) : (
-                  <span className="onboarding-initials">
-                    {getInitials(displayName)}
-                  </span>
-                )}
-              </div>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -202,26 +184,31 @@ export function OnboardingPage() {
                 style={{ display: "none" }}
                 id="photo-upload"
               />
-              <div className="avatar-actions">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {photoPreview ? "Change Photo" : "Add Photo"}
-                </Button>
-                {photoPreview && (
+              <button
+                type="button"
+                className="onboarding-avatar-button"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {photoPreview ? (
+                  <img src={photoPreview} alt={displayName} />
+                ) : (
+                  <div className="onboarding-avatar-placeholder">
+                    <Plus className="onboarding-plus-icon" />
+                  </div>
+                )}
+              </button>
+              {photoPreview && (
+                <div className="avatar-actions">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={handleRemovePhoto}
                   >
-                    Remove
+                    Remove Photo
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -241,7 +228,7 @@ export function OnboardingPage() {
 
           <div className="form-group">
             <Label htmlFor="handle">
-              @Handle <span className="required">*</span>
+              Username <span className="required">*</span>
             </Label>
             <Input
               id="handle"
@@ -255,15 +242,10 @@ export function OnboardingPage() {
                 }
               }}
               onBlur={handleHandleBlur}
-              placeholder="yourhandle"
+              placeholder="username"
               required
             />
-            {handleError && (
-              <span className="error-text">{handleError}</span>
-            )}
-            <span className="form-hint">
-              This will be your unique handle for your profile link
-            </span>
+            {handleError && <span className="error-text">{handleError}</span>}
           </div>
 
           <div className="form-group">
@@ -288,9 +270,7 @@ export function OnboardingPage() {
             />
           </div>
 
-          {error && (
-            <div className="error-message">{error}</div>
-          )}
+          {error && <div className="error-message">{error}</div>}
 
           <div className="form-actions">
             <Button
@@ -307,4 +287,3 @@ export function OnboardingPage() {
     </div>
   );
 }
-
