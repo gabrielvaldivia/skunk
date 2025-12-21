@@ -43,14 +43,16 @@
   font-size: 0.9rem;
 }
 
-.match-delete-button {
-  flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+.match-row-deletable {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
-.match-row:hover .match-delete-button {
-  opacity: 1;
+.match-row-deletable:active {
+  opacity: 0.8;
 }
 
 .match-winner-avatar {

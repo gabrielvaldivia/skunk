@@ -36,13 +36,16 @@
   transform: none;
 }
 
-.player-item .delete-player-button {
-  opacity: 0;
-  transition: opacity 0.2s;
+.player-item-deletable {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
-.player-item:hover .delete-player-button {
-  opacity: 1;
+.player-item-deletable:active {
+  opacity: 0.8;
 }
 
 .loading,

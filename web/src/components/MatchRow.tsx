@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import type { Match } from '../models/Match';
 import type { Player } from '../models/Player';
@@ -5,7 +6,25 @@ import { usePlayers } from '../hooks/usePlayers';
 import { useGames } from '../hooks/useGames';
 import { useAuth } from '../context/AuthContext';
 import { useMatches } from '../hooks/useMatches';
+import { useMediaQuery } from '../hooks/use-media-query';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import './MatchRow.css';
 
 const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
@@ -21,6 +40,10 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
   const { games } = useGames();
   const { user, player: currentPlayer } = useAuth();
   const { removeMatch } = useMatches();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isLongPressRef = useRef(false);
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   const getGame = () => {
     if (match.game) return match.game;
@@ -73,9 +96,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this match?')) {
-      return;
-    }
+    setShowDeleteDialog(false);
     try {
       await removeMatch(match.id);
       if (onDelete) {
@@ -84,6 +105,40 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     } catch (err) {
       console.error('Error deleting match:', err);
       alert('Failed to delete match');
+    }
+  };
+
+  const handleLongPressStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!canDelete()) return;
+    
+    isLongPressRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      setShowDeleteDialog(true);
+      // Prevent default touch behaviors when long press triggers
+      if ('touches' in e) {
+        e.preventDefault();
+      }
+    }, 500);
+  };
+
+  const handleLongPressEnd = (e: React.MouseEvent | React.TouchEvent) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    // Prevent click action if long press was triggered
+    if (isLongPressRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      isLongPressRef.current = false;
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isLongPressRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
     }
   };
 
@@ -176,25 +231,79 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
   const winner = match.winnerID ? getPlayer(match.winnerID) : undefined;
 
   return (
-    <div className="match-row">
-      <div className="match-main-content">
-        {renderWinnerAvatar(winner)}
-        <div className="match-content">
-          <div className="match-text">{renderMatchText()}</div>
-          <div className="match-date">{formatDate(match.date)}</div>
+    <>
+      <div 
+        className={`match-row ${canDelete() ? 'match-row-deletable' : ''}`}
+        onMouseDown={canDelete() ? handleLongPressStart : undefined}
+        onMouseUp={canDelete() ? handleLongPressEnd : undefined}
+        onMouseLeave={canDelete() ? handleLongPressEnd : undefined}
+        onTouchStart={canDelete() ? handleLongPressStart : undefined}
+        onTouchEnd={canDelete() ? handleLongPressEnd : undefined}
+        onClick={canDelete() ? handleClick : undefined}
+      >
+        <div className="match-main-content">
+          {renderWinnerAvatar(winner)}
+          <div className="match-content">
+            <div className="match-text">{renderMatchText()}</div>
+            <div className="match-date">{formatDate(match.date)}</div>
+          </div>
         </div>
       </div>
-      {canDelete() && (
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={handleDelete}
-          className="match-delete-button"
-        >
-          Delete
-        </Button>
+
+      {isDesktop ? (
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Delete Match</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this match? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+              >
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <Drawer open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DrawerContent>
+            <DrawerHeader className="text-left">
+              <DrawerTitle>Delete Match</DrawerTitle>
+              <DrawerDescription>
+                Are you sure you want to delete this match? This action cannot be undone.
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-4">
+              <DrawerFooter className="px-0">
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  className="w-full"
+                >
+                  Delete
+                </Button>
+                <DrawerClose asChild>
+                  <Button variant="outline" className="w-full">
+                    Cancel
+                  </Button>
+                </DrawerClose>
+              </DrawerFooter>
+            </div>
+          </DrawerContent>
+        </Drawer>
       )}
-    </div>
+    </>
   );
 }
 
