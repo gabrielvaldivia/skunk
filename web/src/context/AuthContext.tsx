@@ -1,8 +1,23 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
-import { type User } from 'firebase/auth';
-import { signInWithGoogle, signOut as authSignOut, onAuthStateChange, getCurrentUser } from '../services/authService';
-import { getPlayerByGoogleUserID, createPlayer } from '../services/databaseService';
-import type { Player } from '../models/Player';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  ReactNode,
+} from "react";
+import { type User } from "firebase/auth";
+import {
+  signInWithGoogle,
+  signOut as authSignOut,
+  onAuthStateChange,
+  getCurrentUser,
+} from "../services/authService";
+import {
+  getPlayerByGoogleUserID,
+  createPlayer,
+} from "../services/databaseService";
+import type { Player } from "../models/Player";
 
 interface AuthContextType {
   user: User | null;
@@ -25,20 +40,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const googleUserID = firebaseUser.uid;
       let currentPlayer = await getPlayerByGoogleUserID(googleUserID);
-      
+
       if (!currentPlayer) {
         // Create a new player for this user (similar to iOS app behavior)
-        const displayName = firebaseUser.displayName || 'Player';
+        const displayName = firebaseUser.displayName || "Player";
         currentPlayer = await createPlayer({
           name: displayName,
           googleUserID: googleUserID,
-          ownerID: googleUserID
+          ownerID: googleUserID,
         });
       }
-      
+
       setPlayer(currentPlayer);
     } catch (error) {
-      console.error('Error loading player:', error);
+      console.error("Error loading player:", error);
     }
   }, []);
 
@@ -73,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(firebaseUser);
       await loadPlayer(firebaseUser);
     } catch (error) {
-      console.error('Error signing in:', error);
+      console.error("Error signing in:", error);
       throw error;
     }
   };
@@ -84,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setPlayer(null);
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error("Error signing out:", error);
       throw error;
     }
   };
@@ -102,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     signIn,
     signOut,
-    refreshPlayer
+    refreshPlayer,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -111,8 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
-

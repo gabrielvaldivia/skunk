@@ -21,7 +21,9 @@ export function ProfilePage() {
     }
     // Generate a consistent color based on the name hash
     const nameToHash = name || player?.name || "Player";
-    const hash = nameToHash.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hash = nameToHash
+      .split("")
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const hue = hash % 360;
     return `hsl(${hue}, 70%, 60%)`;
   };
@@ -94,7 +96,7 @@ export function ProfilePage() {
 
       await updatePlayer(player.id, updates);
       setSaveMessage("Profile saved successfully!");
-      
+
       // Clear the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -153,10 +155,7 @@ export function ProfilePage() {
       <div className="profile-content">
         <div className="profile-avatar-section">
           <div className="profile-avatar-container">
-            <div
-              className="profile-avatar"
-              style={{ backgroundColor }}
-            >
+            <div className="profile-avatar" style={{ backgroundColor }}>
               {photoPreview ? (
                 <img src={photoPreview} alt={displayName} />
               ) : (
@@ -182,11 +181,7 @@ export function ProfilePage() {
                 Change Photo
               </Button>
               {photoPreview && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRemovePhoto}
-                >
+                <Button variant="outline" size="sm" onClick={handleRemovePhoto}>
                   Remove Photo
                 </Button>
               )}
@@ -208,16 +203,17 @@ export function ProfilePage() {
           </div>
 
           {saveMessage && (
-            <div className={`save-message ${saveMessage.includes("Error") ? "error" : "success"}`}>
+            <div
+              className={`save-message ${
+                saveMessage.includes("Error") ? "error" : "success"
+              }`}
+            >
               {saveMessage}
             </div>
           )}
 
           <div className="form-actions">
-            <Button
-              onClick={handleSave}
-              disabled={isSaving || !name.trim()}
-            >
+            <Button onClick={handleSave} disabled={isSaving || !name.trim()}>
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
@@ -226,4 +222,3 @@ export function ProfilePage() {
     </div>
   );
 }
-
