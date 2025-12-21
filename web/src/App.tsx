@@ -4,7 +4,7 @@ import { ThemeProvider } from "./components/theme-provider";
 import { Layout } from "./components/Layout";
 import { SignInView } from "./components/SignInView";
 import { GamesPage } from "./pages/GamesPage";
-import { PlayersPage } from "./pages/PlayersPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { ActivityPage } from "./pages/ActivityPage";
 import "./App.css";
 
@@ -27,22 +27,23 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/players"
+        path="/profile"
         element={
           <Layout>
-            <PlayersPage />
+            <ProfilePage />
           </Layout>
         }
       />
       <Route
-        path="/activity"
+        path="/matches"
         element={
           <Layout>
             <ActivityPage />
           </Layout>
         }
       />
-      <Route path="/" element={<Navigate to="/activity" replace />} />
+      <Route path="/activity" element={<Navigate to="/matches" replace />} />
+      <Route path="/" element={<Navigate to="/matches" replace />} />
     </Routes>
   );
 }

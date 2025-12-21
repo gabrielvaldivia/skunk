@@ -47,16 +47,16 @@ export function GamesPage() {
       <div className="page-header">
         <h1>Games</h1>
         {isAuthenticated && (
-          <Button onClick={() => setShowAddForm(true)}>+ Add Game</Button>
+          <>
+            <Button onClick={() => setShowAddForm(true)}>+ Add Game</Button>
+            <AddGameForm
+              open={showAddForm}
+              onOpenChange={setShowAddForm}
+              onSubmit={handleSubmitGame}
+            />
+          </>
         )}
       </div>
-
-      {showAddForm && (
-        <AddGameForm
-          onClose={() => setShowAddForm(false)}
-          onSubmit={handleSubmitGame}
-        />
-      )}
 
       {games.length === 0 ? (
         <div className="empty-state">

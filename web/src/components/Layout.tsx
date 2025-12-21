@@ -14,9 +14,9 @@ export function Layout({ children }: LayoutProps) {
   const { isAuthenticated, signOut } = useAuth();
 
   const navItems = [
-    { path: "/activity", label: "Activity", icon: "📋" },
+    { path: "/matches", label: "Activity", icon: "📋" },
     { path: "/games", label: "Games", icon: "🎮" },
-    { path: "/players", label: "Players", icon: "👥" },
+    { path: "/profile", label: "Profile", icon: "👤" },
   ];
 
   const handleAuthClick = async () => {
