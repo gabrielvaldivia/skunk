@@ -126,13 +126,26 @@ export function OnboardingPage() {
       const updates: Partial<typeof player> = {
         name: name.trim(),
         handle: handle.trim(),
-        location: location.trim() || undefined,
-        bio: bio.trim() || undefined,
       };
+
+      // Only include location if it has a value
+      const trimmedLocation = location.trim();
+      if (trimmedLocation) {
+        updates.location = trimmedLocation;
+      }
+
+      // Only include bio if it has a value
+      const trimmedBio = bio.trim();
+      if (trimmedBio) {
+        updates.bio = trimmedBio;
+      }
 
       const newPhotoData = (fileInputRef.current as any)?.base64Data;
       if (newPhotoData !== undefined) {
-        updates.photoData = newPhotoData === "" ? undefined : newPhotoData;
+        // Only include photoData if it has a value (empty string means no change or remove)
+        if (newPhotoData !== "") {
+          updates.photoData = newPhotoData;
+        }
       }
 
       await updatePlayer(player.id, updates);

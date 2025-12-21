@@ -141,15 +141,25 @@ export function ProfilePage() {
       const updates: Partial<typeof player> = {
         name: name.trim(),
         handle: handle.trim(),
-        location: location.trim() || undefined,
-        bio: bio.trim() || undefined,
       };
 
-      // Include photo data if a new photo was selected or removed
+      // Only include location if it has a value
+      const trimmedLocation = location.trim();
+      if (trimmedLocation) {
+        updates.location = trimmedLocation;
+      }
+
+      // Only include bio if it has a value
+      const trimmedBio = bio.trim();
+      if (trimmedBio) {
+        updates.bio = trimmedBio;
+      }
+
+      // Include photo data if a new photo was selected
       const newPhotoData = (fileInputRef.current as any)?.base64Data;
-      if (newPhotoData !== undefined) {
-        // Empty string means remove photo, otherwise set the new photo data
-        updates.photoData = newPhotoData === "" ? undefined : newPhotoData;
+      if (newPhotoData !== undefined && newPhotoData !== "") {
+        // Only include photoData if it has a value
+        updates.photoData = newPhotoData;
       }
 
       await updatePlayer(player.id, updates);
