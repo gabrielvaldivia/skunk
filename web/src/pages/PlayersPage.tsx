@@ -35,7 +35,7 @@ interface PlayerItemProps {
 }
 
 function PlayerItem({ player, canDelete, onNavigate, onLongPress }: PlayerItemProps) {
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
   const isLongPressRef = useRef(false);
 
   const handlePressStart = (e: React.MouseEvent | React.TouchEvent) => {

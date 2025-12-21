@@ -41,7 +41,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
   const { user, player: currentPlayer } = useAuth();
   const { removeMatch } = useMatches();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
   const isLongPressRef = useRef(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
 
