@@ -88,10 +88,10 @@ import SwiftUI
             Text(subtitle)
                 .font(.caption)
                 .foregroundColor(Color(.secondaryLabel))
-                .onChange(of: matches) { _ in
+                .onChange(of: matches) { oldValue, newValue in
                     viewModel.invalidateCache()
                 }
-                .onChange(of: cachedMatches) { _ in
+                .onChange(of: cachedMatches) { oldValue, newValue in
                     viewModel.invalidateCache()
                 }
         }

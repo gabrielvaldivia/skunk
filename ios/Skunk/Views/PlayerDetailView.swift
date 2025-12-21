@@ -351,6 +351,7 @@ import SwiftUI
         @State private var editingName = ""
         @State private var editingColor = Color.blue
 
+        @MainActor
         init(player: Player, cloudKitManager: CloudKitManager = .shared) {
             print("🔵 PlayerDetailView: Initializing with player: \(player.name)")
             self.playerId = player.id
@@ -365,6 +366,7 @@ import SwiftUI
             print("🔵 PlayerDetailView: Starting refreshPlayer for ID: \(playerId)")
             if let updatedPlayer = try? await cloudKitManager.fetchPlayer(id: playerId) {
                 print("🔵 PlayerDetailView: Got updated player: \(updatedPlayer.name)")
+                // The player will be automatically updated through the cloudKitManager's players array
             }
         }
 
@@ -379,8 +381,11 @@ import SwiftUI
                     }
                 }
 
-                return try await group.reduce(into: []) { $0.append(contentsOf: $1) }
-
+                var matches: [Match] = []
+                for try await gameMatches in group {
+                    matches.append(contentsOf: gameMatches)
+                }
+                return matches
             }
         }
 
@@ -412,8 +417,8 @@ import SwiftUI
 
         private var playerHeaderSection: some View {
             Section {
-                if let currentPlayer = player {
-                    PlayerHeaderContent(player: currentPlayer)
+                if let player = player {
+                    PlayerHeaderContent(player: player)
                 }
             }
         }
@@ -448,14 +453,14 @@ import SwiftUI
 
         private var editSheet: some View {
             Group {
-                if let currentPlayer = player {
+                if let player = player {
                     NavigationStack {
                         PlayerFormView(
                             name: $editingName,
                             color: $editingColor,
-                            existingPhotoData: currentPlayer.photoData,
+                            existingPhotoData: player.photoData,
                             title: "Edit Player",
-                            player: currentPlayer
+                            player: player
                         )
                     }
                 }
