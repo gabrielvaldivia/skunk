@@ -1,0 +1,36 @@
+.match-row {
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.match-game {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.match-date {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.match-info {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.match-winner {
+  font-weight: 500;
+  color: #1976d2;
+}
+
