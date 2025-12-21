@@ -1,31 +1,32 @@
-import { useState } from 'react';
-import { usePlayers } from '../hooks/usePlayers';
-import { useAuth } from '../context/AuthContext';
-import { PlayerCard } from '../components/PlayerCard';
-import { Button } from '@/components/ui/button';
-import type { Player } from '../models/Player';
-import './PlayersPage.css';
+import { useState } from "react";
+import { usePlayers } from "../hooks/usePlayers";
+import { useAuth } from "../context/AuthContext";
+import { PlayerCard } from "../components/PlayerCard";
+import { Button } from "@/components/ui/button";
+import type { Player } from "../models/Player";
+import "./PlayersPage.css";
 
 export function PlayersPage() {
   const { players, isLoading, error, addPlayer, removePlayer } = usePlayers();
   const { user, player: currentUserPlayer, isAuthenticated } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newPlayerName, setNewPlayerName] = useState('');
+  const [newPlayerName, setNewPlayerName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Organize players similar to Swift implementation
   const currentUser = currentUserPlayer;
   const managedPlayers = players.filter(
-    p => p.ownerID === user?.uid && p.googleUserID !== user?.uid
+    (p) => p.ownerID === user?.uid && p.googleUserID !== user?.uid
   );
   const otherUsers = players.filter(
-    p => p.googleUserID && p.googleUserID !== user?.uid && p.ownerID !== user?.uid
+    (p) =>
+      p.googleUserID && p.googleUserID !== user?.uid && p.ownerID !== user?.uid
   );
 
   const allPlayers = [
     ...(currentUser ? [currentUser] : []),
     ...managedPlayers.sort((a, b) => a.name.localeCompare(b.name)),
-    ...otherUsers.sort((a, b) => a.name.localeCompare(b.name))
+    ...otherUsers.sort((a, b) => a.name.localeCompare(b.name)),
   ];
 
   const handleAddPlayer = async (e: React.FormEvent) => {
@@ -34,15 +35,15 @@ export function PlayersPage() {
 
     setIsSubmitting(true);
     try {
-      const newPlayer: Omit<Player, 'id'> = {
+      const newPlayer: Omit<Player, "id"> = {
         name: newPlayerName.trim(),
-        ownerID: user.uid
+        ownerID: user.uid,
       };
       await addPlayer(newPlayer);
-      setNewPlayerName('');
+      setNewPlayerName("");
       setShowAddForm(false);
     } catch (err) {
-      console.error('Error adding player:', err);
+      console.error("Error adding player:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -52,22 +53,22 @@ export function PlayersPage() {
     if (!user) return;
     // Permission check: only allow deletion if user owns the player and it's not their own profile
     if (ownerID !== user.uid) {
-      alert('You can only delete players that you created.');
+      alert("You can only delete players that you created.");
       return;
     }
 
-    const playerToDelete = players.find(p => p.id === playerId);
+    const playerToDelete = players.find((p) => p.id === playerId);
     if (playerToDelete?.googleUserID === user.uid) {
-      alert('To remove your profile, you need to delete your account.');
+      alert("To remove your profile, you need to delete your account.");
       return;
     }
 
-    if (window.confirm('Are you sure you want to delete this player?')) {
+    if (window.confirm("Are you sure you want to delete this player?")) {
       try {
         await removePlayer(playerId);
       } catch (err) {
-        console.error('Error deleting player:', err);
-        alert('Failed to delete player');
+        console.error("Error deleting player:", err);
+        alert("Failed to delete player");
       }
     }
   };
@@ -85,9 +86,7 @@ export function PlayersPage() {
       <div className="page-header">
         <h1>Players</h1>
         {isAuthenticated && (
-          <Button onClick={() => setShowAddForm(true)}>
-            + Add Player
-          </Button>
+          <Button onClick={() => setShowAddForm(true)}>+ Add Player</Button>
         )}
       </div>
 
@@ -105,11 +104,15 @@ export function PlayersPage() {
                 required
               />
               <div className="form-actions">
-                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowAddForm(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Adding...' : 'Add'}
+                  {isSubmitting ? "Adding..." : "Add"}
                 </Button>
               </div>
             </form>
@@ -128,18 +131,22 @@ export function PlayersPage() {
         </div>
       ) : (
         <div className="players-list">
-          {allPlayers.map(player => (
+          {allPlayers.map((player) => (
             <div key={player.id} className="player-item">
               <PlayerCard player={player} />
-              {isAuthenticated && player.ownerID === user?.uid && player.googleUserID !== user?.uid && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleDeletePlayer(player.id, player.ownerID)}
-                >
-                  Delete
-                </Button>
-              )}
+              {isAuthenticated &&
+                player.ownerID === user?.uid &&
+                player.googleUserID !== user?.uid && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() =>
+                      handleDeletePlayer(player.id, player.ownerID)
+                    }
+                  >
+                    Delete
+                  </Button>
+                )}
             </div>
           ))}
         </div>
@@ -147,4 +154,3 @@ export function PlayersPage() {
     </div>
   );
 }
-

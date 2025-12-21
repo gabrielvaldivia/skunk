@@ -1,8 +1,8 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Button } from '@/components/ui/button';
-import { ThemeToggle } from './theme-toggle';
-import { cn } from '@/lib/utils';
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "./theme-toggle";
+import { cn } from "@/lib/utils";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,16 +14,16 @@ export function Layout({ children }: LayoutProps) {
   const { isAuthenticated, signOut } = useAuth();
 
   const navItems = [
-    { path: '/activity', label: 'Activity', icon: '📋' },
-    { path: '/games', label: 'Games', icon: '🎮' },
-    { path: '/players', label: 'Players', icon: '👥' },
+    { path: "/activity", label: "Activity", icon: "📋" },
+    { path: "/games", label: "Games", icon: "🎮" },
+    { path: "/players", label: "Players", icon: "👥" },
   ];
 
   const handleAuthClick = async () => {
     if (isAuthenticated) {
       await signOut();
     } else {
-      navigate('/signin');
+      navigate("/signin");
     }
   };
 
@@ -36,7 +36,7 @@ export function Layout({ children }: LayoutProps) {
               <h1 className="text-xl font-bold">Skunk</h1>
             </Link>
             <nav className="flex items-center space-x-6 text-sm font-medium">
-              {navItems.map(item => (
+              {navItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
@@ -59,15 +59,12 @@ export function Layout({ children }: LayoutProps) {
               onClick={handleAuthClick}
               variant={isAuthenticated ? "outline" : "default"}
             >
-              {isAuthenticated ? 'Sign Out' : 'Sign In'}
+              {isAuthenticated ? "Sign Out" : "Sign In"}
             </Button>
           </div>
         </div>
       </header>
-      <main className="container mx-auto max-w-7xl px-4 py-6">
-        {children}
-      </main>
+      <main className="container mx-auto max-w-7xl px-4 py-6">{children}</main>
     </div>
   );
 }
-
