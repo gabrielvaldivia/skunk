@@ -3,10 +3,11 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  border: 1px solid #e0e0e0;
+  border: 1px solid hsl(var(--border));
   border-radius: 0.5rem;
   cursor: pointer;
   transition: box-shadow 0.2s, transform 0.1s;
+  background: hsl(var(--card));
 }
 
 .player-card:hover {
@@ -50,6 +51,6 @@
 .player-email {
   margin: 0.25rem 0 0 0;
   font-size: 0.875rem;
-  color: #666;
+  color: hsl(var(--muted-foreground));
 }
 

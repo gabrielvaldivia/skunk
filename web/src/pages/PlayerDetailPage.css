@@ -43,7 +43,7 @@
   gap: 2rem;
   margin: 2rem 0;
   padding: 1rem;
-  background: #f5f5f5;
+  background: hsl(var(--muted));
   border-radius: 0.5rem;
 }
 
@@ -56,11 +56,12 @@
 .stat-value {
   font-size: 2rem;
   font-weight: bold;
+  color: hsl(var(--foreground));
 }
 
 .stat-label {
   font-size: 0.9rem;
-  color: #666;
+  color: hsl(var(--muted-foreground));
 }
 
 .matches-section {

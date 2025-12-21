@@ -9,30 +9,40 @@
 }
 
 .player-item {
-  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  background: hsl(var(--card));
+  transition: box-shadow 0.2s, transform 0.1s;
 }
 
-.player-item .delete-button {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  padding: 0.5rem;
-  background-color: #dc3545;
-  color: white;
+.player-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.player-item > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.player-item .player-card {
   border: none;
-  border-radius: 0.25rem;
+  padding: 0;
+  margin: 0;
   cursor: pointer;
-  font-size: 0.85rem;
-  opacity: 0;
-  transition: opacity 0.2s;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
 }
 
-.player-item:hover .delete-button {
-  opacity: 1;
-}
-
-.player-item .delete-button:hover {
-  background-color: #c82333;
+.player-item .player-card:hover {
+  box-shadow: none;
+  transform: none;
 }
 
 .loading, .error {

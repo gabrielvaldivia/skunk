@@ -1,9 +1,11 @@
 .game-card {
   padding: 1rem;
-  border: 1px solid #e0e0e0;
+  border: 1px solid hsl(var(--border));
   border-radius: 0.5rem;
   cursor: pointer;
   transition: box-shadow 0.2s, transform 0.1s;
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
 }
 
 .game-card:hover {
@@ -15,20 +17,32 @@
   margin: 0 0 0.5rem 0;
   font-size: 1.25rem;
   font-weight: 600;
+  color: hsl(var(--foreground));
 }
 
 .game-info {
   display: flex;
   gap: 1rem;
   font-size: 0.9rem;
-  color: #666;
+  color: hsl(var(--muted-foreground));
+  padding: 0.5rem;
+  background-color: hsl(var(--muted));
+  border-radius: 0.25rem;
+}
+
+.dark .game-info {
+  background-color: hsl(0 0% 12%);
 }
 
 .game-badge {
-  background-color: #e3f2fd;
-  color: #1976d2;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   font-size: 0.85rem;
 }
 
+.dark .game-badge {
+  background-color: hsl(0 0% 25%);
+  color: hsl(0 0% 90%);
+}

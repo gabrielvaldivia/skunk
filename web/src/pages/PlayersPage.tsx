@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { usePlayers } from "../hooks/usePlayers";
 import { useAuth } from "../context/AuthContext";
 import { PlayerCard } from "../components/PlayerCard";
@@ -9,6 +10,7 @@ import "./PlayersPage.css";
 const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
 
 export function PlayersPage() {
+  const navigate = useNavigate();
   const { players, isLoading, error, addPlayer, removePlayer } = usePlayers();
   const { user, player: currentUserPlayer, isAuthenticated } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -168,14 +170,18 @@ export function PlayersPage() {
             
             return (
               <div key={player.id} className="player-item">
-                <PlayerCard player={player} />
+                <PlayerCard 
+                  player={player} 
+                  onClick={() => navigate(`/players/${player.id}`)}
+                />
                 {canDelete && (
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() =>
-                      handleDeletePlayer(player.id, player.ownerID)
-                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeletePlayer(player.id, player.ownerID);
+                    }}
                   >
                     Delete
                   </Button>
