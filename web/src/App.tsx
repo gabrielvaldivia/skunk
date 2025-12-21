@@ -5,6 +5,7 @@ import { Layout } from "./components/Layout";
 import { SignInView } from "./components/SignInView";
 import { GamesPage } from "./pages/GamesPage";
 import { GameDetailPage } from "./pages/GameDetailPage";
+import { PlayersPage } from "./pages/PlayersPage";
 import { PlayerDetailPage } from "./pages/PlayerDetailPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ActivityPage } from "./pages/ActivityPage";
@@ -33,6 +34,14 @@ function AppRoutes() {
         element={
           <Layout>
             <GameDetailPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/players"
+        element={
+          <Layout>
+            <PlayersPage />
           </Layout>
         }
       />

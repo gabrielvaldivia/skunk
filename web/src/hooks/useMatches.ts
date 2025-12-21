@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Match } from '../models/Match';
 import { createMatch, updateMatch, deleteMatch } from '../services/databaseService';
 

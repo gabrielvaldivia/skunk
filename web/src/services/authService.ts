@@ -2,7 +2,6 @@ import {
   signInWithPopup,
   signOut as firebaseSignOut,
   onAuthStateChanged,
-  GoogleAuthProvider,
   type User
 } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';

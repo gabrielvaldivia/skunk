@@ -1,6 +1,6 @@
-import { useState, FormEvent, useEffect } from "react";
+import { useState, useEffect } from "react";
+import type { FormEvent } from "react";
 import type { Match } from "../models/Match";
-import type { Game } from "../models/Game";
 import type { Player } from "../models/Player";
 import { useAuth } from "../context/AuthContext";
 import { useGames } from "../hooks/useGames";
@@ -409,7 +409,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId }: Ad
                                   return newStates;
                                 });
                               }}
-                              onBlur={(e) => {
+                              onBlur={() => {
                                 // Delay closing to allow click events on suggestions to fire
                                 setTimeout(() => {
                                   setAutocompleteStates((prev) => {
@@ -456,7 +456,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId }: Ad
                                   onCheckedChange={(checked) => {
                                     if (checked) {
                                       // Set this player as winner and all others as losers
-                                      setScores((prev) => {
+                                      setScores(() => {
                                         // Create array of correct length, all 0s except this index
                                         const newScores = new Array(playerInputs.length).fill(0);
                                         newScores[index] = 1;

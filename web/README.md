@@ -83,6 +83,76 @@ npm run dev
 npm run build
 ```
 
+## Deployment to Vercel
+
+### Option 1: Deploy via Vercel CLI
+
+1. Install Vercel CLI globally:
+```bash
+npm i -g vercel
+```
+
+2. Navigate to the `web` directory:
+```bash
+cd web
+```
+
+3. Run the deployment command:
+```bash
+vercel
+```
+
+4. Follow the prompts to:
+   - Link to an existing project or create a new one
+   - Set the root directory (should be `web` or `.` if already in web directory)
+   - Confirm build settings (should auto-detect from `vercel.json`)
+
+5. Add environment variables in Vercel dashboard:
+   - Go to your project settings → Environment Variables
+   - Add all Firebase environment variables:
+     - `VITE_FIREBASE_API_KEY`
+     - `VITE_FIREBASE_AUTH_DOMAIN`
+     - `VITE_FIREBASE_DATABASE_URL`
+     - `VITE_FIREBASE_PROJECT_ID`
+     - `VITE_FIREBASE_STORAGE_BUCKET`
+     - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+     - `VITE_FIREBASE_APP_ID`
+
+6. Redeploy after adding environment variables:
+```bash
+vercel --prod
+```
+
+### Option 2: Deploy via GitHub Integration
+
+1. Push your code to GitHub (if not already done)
+
+2. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+
+3. Click "Add New Project"
+
+4. Import your GitHub repository
+
+5. Configure the project:
+   - **Root Directory**: Set to `web`
+   - **Framework Preset**: Vite (should auto-detect)
+   - **Build Command**: `npm run build` (should auto-detect)
+   - **Output Directory**: `dist` (should auto-detect)
+   - **Install Command**: `npm install` (should auto-detect)
+
+6. Add environment variables:
+   - Add all Firebase environment variables listed above
+   - Make sure to add them for Production, Preview, and Development environments
+
+7. Click "Deploy"
+
+### Important Notes
+
+- The `vercel.json` file is already configured for SPA routing (all routes redirect to `index.html`)
+- Environment variables must be set in Vercel dashboard for the app to work
+- After deployment, update your Firebase Authentication authorized domains to include your Vercel domain
+- The app will automatically redeploy on every push to your main branch (if using GitHub integration)
+
 ## Project Structure
 
 ```

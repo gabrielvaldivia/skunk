@@ -1,11 +1,11 @@
-import React, {
+import {
   createContext,
   useContext,
   useEffect,
   useState,
   useCallback,
-  ReactNode,
 } from "react";
+import type { ReactNode } from "react";
 import { type User } from "firebase/auth";
 import {
   signInWithGoogle,

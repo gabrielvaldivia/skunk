@@ -8,7 +8,7 @@ import "./ProfilePage.css";
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { player, user, isAuthenticated, refreshPlayer, signOut } = useAuth();
+  const { player, isAuthenticated, refreshPlayer, signOut } = useAuth();
   const [name, setName] = useState(player?.name || "");
   const [photoPreview, setPhotoPreview] = useState<string | null>(
     player?.photoData ? `data:image/jpeg;base64,${player.photoData}` : null
