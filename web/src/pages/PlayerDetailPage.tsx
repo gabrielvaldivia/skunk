@@ -69,7 +69,23 @@ export function PlayerDetailPage() {
               <span className="player-initials">{getInitials(player.name)}</span>
             )}
           </div>
-          <h1>{player.name}</h1>
+          <div className="player-header-info">
+            <h1>{player.name}</h1>
+            {(player.location || player.bio) && (
+              <div className="player-details">
+                {player.location && (
+                  <div className="player-location">
+                    📍 {player.location}
+                  </div>
+                )}
+                {player.bio && (
+                  <div className="player-bio">
+                    {player.bio}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

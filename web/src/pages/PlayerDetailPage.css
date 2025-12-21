@@ -14,8 +14,33 @@
 
 .player-header-content {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
+}
+
+.player-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.player-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.player-location {
+  font-size: 0.9rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.player-bio {
+  font-size: 0.95rem;
+  color: hsl(var(--foreground));
+  line-height: 1.5;
 }
 
 .player-avatar-large {
