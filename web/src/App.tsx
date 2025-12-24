@@ -113,7 +113,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/matches"
+        path="/activity"
         element={
           <ProtectedRoute>
             <Layout>
@@ -142,8 +142,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route path="/activity" element={<Navigate to="/matches" replace />} />
-      <Route path="/" element={<Navigate to="/matches" replace />} />
+      <Route path="/matches" element={<Navigate to="/activity" replace />} />
+      <Route path="/" element={<Navigate to="/activity" replace />} />
     </Routes>
   );
 }

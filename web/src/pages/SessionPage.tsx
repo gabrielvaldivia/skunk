@@ -145,7 +145,7 @@ export function SessionPage() {
     try {
       await leaveSession();
       toast.success("Left session");
-      navigate("/matches");
+      navigate("/activity");
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to leave session";
@@ -193,8 +193,8 @@ export function SessionPage() {
     return (
       <div className="session-page">
         <div className="error">{error}</div>
-        <Button onClick={() => navigate("/matches")} className="mt-4">
-          Go to Matches
+        <Button onClick={() => navigate("/activity")} className="mt-4">
+          Go to Activity
         </Button>
       </div>
     );

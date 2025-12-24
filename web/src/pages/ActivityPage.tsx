@@ -1,36 +1,12 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useActivity } from '../hooks/useActivity';
-import { useAuth } from '../context/AuthContext';
-import { useSession } from '../context/SessionContext';
 import { MatchRow } from '../components/MatchRow';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 import './ActivityPage.css';
 
 export function ActivityPage() {
-  const navigate = useNavigate();
   const { matches, isLoading, error } = useActivity();
-  const { isAuthenticated } = useAuth();
-  const { createSession } = useSession();
-  const [isCreatingSession, setIsCreatingSession] = useState(false);
-
-  const handleCreateSession = async () => {
-    setIsCreatingSession(true);
-    try {
-      const session = await createSession();
-      toast.success("Session created!");
-      navigate(`/session/${session.code}`);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to create session";
-      toast.error(errorMessage);
-    } finally {
-      setIsCreatingSession(false);
-    }
-  };
 
   if (isLoading) {
-    return <div className="loading">Loading matches...</div>;
+    return <div className="loading">Loading activity...</div>;
   }
 
   if (error) {
@@ -40,30 +16,12 @@ export function ActivityPage() {
   return (
     <div className="activity-page">
       <div className="page-header">
-        <h1>Matches</h1>
-        <div className="header-actions">
-          {isAuthenticated && (
-            <Button
-              variant="outline"
-              onClick={handleCreateSession}
-              disabled={isCreatingSession}
-            >
-              {isCreatingSession ? "Creating..." : "+ New Session"}
-            </Button>
-          )}
-        </div>
+        <h1>Activity</h1>
       </div>
 
       {matches.length === 0 ? (
         <div className="empty-state">
           <p>No matches yet</p>
-          {isAuthenticated ? (
-            <p className="empty-hint">
-              Create a session to start recording matches
-            </p>
-          ) : (
-            <p className="empty-hint">Sign in to create sessions and matches</p>
-          )}
         </div>
       ) : (
         <div className="matches-list">

@@ -9,7 +9,7 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
 
   const navItems = [
-    { path: "/matches", label: "Matches", icon: "📋" },
+    { path: "/activity", label: "Activity", icon: "📋" },
     { path: "/sessions", label: "Sessions", icon: "🎯" },
     { path: "/games", label: "Games", icon: "🎮" },
     { path: "/players", label: "Players", icon: "👥" },
