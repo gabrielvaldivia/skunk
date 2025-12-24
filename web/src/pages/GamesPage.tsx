@@ -116,17 +116,30 @@ export function GamesPage() {
                       />
                     )}
                   </div>
-                  <div className="game-list-name">{game.title}</div>
-                </div>
-                {champion && champion.playerName && (
-                  <div className="game-list-champion">
-                    🏆 {champion.playerName}
-                    {champion.winCount > 1 && ` (${champion.winCount} wins)`}
+                  <div className="game-list-name-wrapper">
+                    <div className="game-list-name">{game.title}</div>
+                    {champion && champion.playerName && (
+                      <div className="game-list-champion">
+                        🏆 {champion.playerName}
+                        {champion.winCount > 1 && ` (${champion.winCount} wins)`}
+                      </div>
+                    )}
+                    {champion && !champion.playerName && champion.winCount === 0 && (
+                      <div className="game-list-champion no-champion">No matches yet</div>
+                    )}
                   </div>
-                )}
-                {champion && !champion.playerName && champion.winCount === 0 && (
-                  <div className="game-list-champion no-champion">No matches yet</div>
-                )}
+                </div>
+                <div className="game-list-champion-desktop">
+                  {champion && champion.playerName && (
+                    <div className="game-list-champion">
+                      🏆 {champion.playerName}
+                      {champion.winCount > 1 && ` (${champion.winCount} wins)`}
+                    </div>
+                  )}
+                  {champion && !champion.playerName && champion.winCount === 0 && (
+                    <div className="game-list-champion no-champion">No matches yet</div>
+                  )}
+                </div>
               </div>
             );
           })}
