@@ -70,11 +70,6 @@ export function GamesPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input"
           />
-          {searchQuery && (
-            <div className="search-results-count">
-              {filteredGames.length} {filteredGames.length === 1 ? "game" : "games"} found
-            </div>
-          )}
         </div>
       )}
 
