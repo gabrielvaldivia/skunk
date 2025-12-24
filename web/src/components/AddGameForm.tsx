@@ -148,10 +148,10 @@ export function GameFormContent({
             }}
             className="cursor-pointer"
           />
-          {coverArtPreview && (
+          {(coverArtPreview || coverArt) && (
             <div className="mt-2 flex items-center gap-2">
               <img
-                src={coverArtPreview}
+                src={coverArtPreview || coverArt || ''}
                 alt="Cover art preview"
                 className="w-20 h-20 object-cover rounded-md border"
               />

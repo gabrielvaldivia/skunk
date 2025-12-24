@@ -319,8 +319,6 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     );
   };
 
-  const game = getGame();
-
   return (
     <>
       <div 
