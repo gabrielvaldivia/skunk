@@ -5,9 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -108,14 +106,14 @@ function GameFormContent({
                   <Input
                     type="number"
                     min={2}
-                    max={10}
                     value={minPlayers}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value) || 2;
-                      const clampedValue = Math.max(2, Math.min(10, value));
-                      setMinPlayers(clampedValue);
-                      if (clampedValue > maxPlayers) {
-                        setMaxPlayers(clampedValue);
+                      const value = parseInt(e.target.value);
+                      if (!isNaN(value) && value >= 2) {
+                        setMinPlayers(value);
+                        if (value > maxPlayers) {
+                          setMaxPlayers(value);
+                        }
                       }
                     }}
                     className="w-16 h-8 text-center text-sm"
@@ -125,12 +123,12 @@ function GameFormContent({
                     <Input
                       type="number"
                       min={minPlayers}
-                      max={10}
                       value={maxPlayers}
                       onChange={(e) => {
-                        const value = parseInt(e.target.value) || minPlayers;
-                        const clampedValue = Math.max(minPlayers, Math.min(10, value));
-                        setMaxPlayers(clampedValue);
+                        const value = parseInt(e.target.value);
+                        if (!isNaN(value) && value >= minPlayers) {
+                          setMaxPlayers(value);
+                        }
                       }}
                       className="w-16 h-8 text-center text-sm pr-6"
                     />
@@ -140,7 +138,7 @@ function GameFormContent({
                         setMaxPlayers(minPlayers);
                         setHasMax(false);
                       }}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-1"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-1"
                       aria-label="Remove max"
                     >
                       <svg
@@ -165,20 +163,20 @@ function GameFormContent({
                   <Input
                     type="number"
                     min={2}
-                    max={10}
                     value={minPlayers}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value) || 2;
-                      const clampedValue = Math.max(2, Math.min(10, value));
-                      setMinPlayers(clampedValue);
-                      setMaxPlayers(clampedValue);
+                      const value = parseInt(e.target.value);
+                      if (!isNaN(value) && value >= 2) {
+                        setMinPlayers(value);
+                        setMaxPlayers(value);
+                      }
                     }}
                     className="w-16 h-8 text-center text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => {
-                      setMaxPlayers(Math.min(10, minPlayers + 2));
+                      setMaxPlayers(minPlayers + 2);
                       setHasMax(true);
                     }}
                     className="text-sm text-primary hover:underline"
@@ -192,7 +190,7 @@ function GameFormContent({
           {hasMax ? (
             <RangeSlider
               min={2}
-              max={10}
+              max={Math.max(10, minPlayers, maxPlayers)}
               minValue={minPlayers}
               maxValue={maxPlayers}
               onValueChange={({ min, max }) => {
@@ -203,7 +201,7 @@ function GameFormContent({
           ) : (
             <Slider
               min={2}
-              max={10}
+              max={Math.max(10, minPlayers)}
               value={minPlayers}
               onValueChange={(value) => {
                 setMinPlayers(value);
@@ -444,13 +442,6 @@ export function AddGameForm({
             isSubmitting={isSubmitting}
             onSubmit={handleSubmit}
           />
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={isSubmitting}>
-                Cancel
-              </Button>
-            </DialogClose>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     );

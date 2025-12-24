@@ -86,11 +86,10 @@
                                     TextField("", text: Binding(
                                         get: { String(minPlayers) },
                                         set: { newValue in
-                                            if let intValue = Int(newValue) {
-                                                let clampedValue = max(2, min(10, intValue))
-                                                minPlayers = clampedValue
-                                                if clampedValue > maxPlayers {
-                                                    maxPlayers = clampedValue
+                                            if let intValue = Int(newValue), intValue >= 2 {
+                                                minPlayers = intValue
+                                                if intValue > maxPlayers {
+                                                    maxPlayers = intValue
                                                 }
                                             }
                                         }
@@ -106,9 +105,8 @@
                                         TextField("", text: Binding(
                                             get: { String(maxPlayers) },
                                             set: { newValue in
-                                                if let intValue = Int(newValue) {
-                                                    let clampedValue = max(minPlayers, min(10, intValue))
-                                                    maxPlayers = clampedValue
+                                                if let intValue = Int(newValue), intValue >= minPlayers {
+                                                    maxPlayers = intValue
                                                 }
                                             }
                                         ))
@@ -134,10 +132,9 @@
                                     TextField("", text: Binding(
                                         get: { String(minPlayers) },
                                         set: { newValue in
-                                            if let intValue = Int(newValue) {
-                                                let clampedValue = max(2, min(10, intValue))
-                                                minPlayers = clampedValue
-                                                maxPlayers = clampedValue
+                                            if let intValue = Int(newValue), intValue >= 2 {
+                                                minPlayers = intValue
+                                                maxPlayers = intValue
                                             }
                                         }
                                     ))
@@ -146,7 +143,7 @@
                                     .keyboardType(.numberPad)
                                     
                                     Button(action: {
-                                        maxPlayers = min(10, minPlayers + 2)
+                                        maxPlayers = minPlayers + 2
                                         hasMax = true
                                     }) {
                                         Text("Add max")
@@ -157,13 +154,15 @@
                             }
                         }
                         if hasMax {
+                            let sliderMax = max(10, minPlayers, maxPlayers)
                             RangeSlider(
                                 minValue: $minPlayers,
                                 maxValue: $maxPlayers,
-                                in: 2...10,
+                                in: 2...sliderMax,
                                 step: 1
                             )
                         } else {
+                            let sliderMax = max(10, minPlayers)
                             Slider(
                                 value: Binding(
                                     get: { Double(minPlayers) },
@@ -173,8 +172,8 @@
                                         maxPlayers = intValue
                                     }
                                 ),
-                                in: 2...10,
-                                step: 1
+                                in: 2.0...Double(sliderMax),
+                                step: 1.0
                             )
                         }
                     }
