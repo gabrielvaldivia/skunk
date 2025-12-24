@@ -21,7 +21,7 @@ const STORAGE_KEY = "skunk_current_session";
 interface SessionContextType {
   currentSession: Session | null;
   isLoading: boolean;
-  createSession: () => Promise<Session>;
+  createSession: (gameID?: string) => Promise<Session>;
   joinSession: (code: string) => Promise<void>;
   leaveSession: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -59,12 +59,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     loadSessionFromStorage();
   }, []);
 
-  const handleCreateSession = useCallback(async (): Promise<Session> => {
+  const handleCreateSession = useCallback(async (gameID?: string): Promise<Session> => {
     if (!user || !player) {
       throw new Error("User must be authenticated to create a session");
     }
 
-    const session = await createSession(user.uid);
+    const session = await createSession(user.uid, gameID);
     // Add creator as participant
     await dbJoinSession(session.id, player.id);
     // Refresh to get updated session with participant

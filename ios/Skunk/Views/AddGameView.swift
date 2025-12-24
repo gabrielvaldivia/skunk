@@ -12,10 +12,12 @@
         @State private var errorMessage = ""
         @State private var minPlayers = 2
         @State private var maxPlayers = 4
+        @State private var hasMax = true
         @State private var countAllScores = true
         @State private var countLosersOnly = false
         @State private var highestScoreWins = true
         @State private var highestRoundScoreWins = true
+        @State private var trackRounds = false
 
         var body: some View {
             NavigationStack {
@@ -25,10 +27,12 @@
                         isBinaryScore: $isBinaryScore,
                         minPlayers: $minPlayers,
                         maxPlayers: $maxPlayers,
+                        hasMax: $hasMax,
                         countAllScores: $countAllScores,
                         countLosersOnly: $countLosersOnly,
                         highestScoreWins: $highestScoreWins,
                         highestRoundScoreWins: $highestRoundScoreWins,
+                        trackRounds: $trackRounds,
                         autofocusTitle: true
                     )
                 }
@@ -56,7 +60,8 @@
         }
 
         private func addGame() {
-            let supportedCounts = Set(minPlayers...maxPlayers)
+            let effectiveMax = hasMax ? maxPlayers : minPlayers
+            let supportedCounts = Set(minPlayers...effectiveMax)
             let game = Game(
                 title: title,
                 isBinaryScore: isBinaryScore,
@@ -65,7 +70,7 @@
                 countAllScores: !isBinaryScore ? countAllScores : false,
                 countLosersOnly: !isBinaryScore ? countLosersOnly : false,
                 highestScoreWins: !isBinaryScore ? highestScoreWins : true,
-                highestRoundScoreWins: !isBinaryScore ? highestRoundScoreWins : true
+                highestRoundScoreWins: !isBinaryScore && trackRounds ? highestRoundScoreWins : true
             )
 
             Task {

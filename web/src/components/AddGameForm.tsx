@@ -22,6 +22,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RangeSlider } from "@/components/ui/range-slider";
+import { Slider } from "@/components/ui/slider";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
@@ -40,8 +42,12 @@ interface GameFormContentProps {
   setMinPlayers: (min: number) => void;
   maxPlayers: number;
   setMaxPlayers: (max: number) => void;
+  hasMax: boolean;
+  setHasMax: (hasMax: boolean) => void;
   trackScore: boolean;
   setTrackScore: (track: boolean) => void;
+  trackRounds: boolean;
+  setTrackRounds: (track: boolean) => void;
   matchWinningCondition: "highest" | "lowest";
   setMatchWinningCondition: (condition: "highest" | "lowest") => void;
   roundWinningCondition: "highest" | "lowest";
@@ -60,8 +66,12 @@ function GameFormContent({
   setMinPlayers,
   maxPlayers,
   setMaxPlayers,
+  hasMax,
+  setHasMax,
   trackScore,
   setTrackScore,
+  trackRounds,
+  setTrackRounds,
   matchWinningCondition,
   setMatchWinningCondition,
   roundWinningCondition,
@@ -89,29 +99,118 @@ function GameFormContent({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="minPlayers">Minimum Players</Label>
-            <Input
-              id="minPlayers"
-              type="number"
-              min="2"
-              max="10"
+        <div className="grid gap-2">
+          <div className="flex justify-between items-center">
+            <Label>Player Count</Label>
+            <div className="flex items-center gap-2">
+              {hasMax ? (
+                <>
+                  <Input
+                    type="number"
+                    min={2}
+                    max={10}
+                    value={minPlayers}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 2;
+                      const clampedValue = Math.max(2, Math.min(10, value));
+                      setMinPlayers(clampedValue);
+                      if (clampedValue > maxPlayers) {
+                        setMaxPlayers(clampedValue);
+                      }
+                    }}
+                    className="w-16 h-8 text-center text-sm"
+                  />
+                  <span className="text-sm text-muted-foreground">-</span>
+                  <div className="relative group">
+                    <Input
+                      type="number"
+                      min={minPlayers}
+                      max={10}
+                      value={maxPlayers}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || minPlayers;
+                        const clampedValue = Math.max(minPlayers, Math.min(10, value));
+                        setMaxPlayers(clampedValue);
+                      }}
+                      className="w-16 h-8 text-center text-sm pr-6"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMaxPlayers(minPlayers);
+                        setHasMax(false);
+                      }}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-1"
+                      aria-label="Remove max"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Input
+                    type="number"
+                    min={2}
+                    max={10}
+                    value={minPlayers}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 2;
+                      const clampedValue = Math.max(2, Math.min(10, value));
+                      setMinPlayers(clampedValue);
+                      setMaxPlayers(clampedValue);
+                    }}
+                    className="w-16 h-8 text-center text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMaxPlayers(Math.min(10, minPlayers + 2));
+                      setHasMax(true);
+                    }}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Add max
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+          {hasMax ? (
+            <RangeSlider
+              min={2}
+              max={10}
+              minValue={minPlayers}
+              maxValue={maxPlayers}
+              onValueChange={({ min, max }) => {
+                setMinPlayers(min);
+                setMaxPlayers(max);
+              }}
+            />
+          ) : (
+            <Slider
+              min={2}
+              max={10}
               value={minPlayers}
-              onChange={(e) => setMinPlayers(parseInt(e.target.value) || 2)}
+              onValueChange={(value) => {
+                setMinPlayers(value);
+                setMaxPlayers(value);
+              }}
             />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="maxPlayers">Maximum Players</Label>
-            <Input
-              id="maxPlayers"
-              type="number"
-              min={minPlayers}
-              max="10"
-              value={maxPlayers}
-              onChange={(e) => setMaxPlayers(parseInt(e.target.value) || 4)}
-            />
-          </div>
+          )}
         </div>
 
         <div className="grid gap-4">
@@ -150,46 +249,64 @@ function GameFormContent({
                 </select>
               </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="roundWinning">
-                  Round Winning Condition
-                </Label>
-                <select
-                  id="roundWinning"
-                  value={roundWinningCondition}
-                  onChange={(e) =>
-                    setRoundWinningCondition(
-                      e.target.value as "highest" | "lowest"
-                    )
-                  }
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="trackRounds"
+                  checked={trackRounds}
+                  onCheckedChange={(checked) => setTrackRounds(checked === true)}
+                />
+                <Label
+                  htmlFor="trackRounds"
+                  className="font-normal cursor-pointer"
                 >
-                  <option value="highest">Highest Score Wins</option>
-                  <option value="lowest">Lowest Score Wins</option>
-                </select>
+                  Track Rounds
+                </Label>
               </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="scoreCalculation">
-                  Total Score Calculation
-                </Label>
-                <select
-                  id="scoreCalculation"
-                  value={scoreCalculation}
-                  onChange={(e) =>
-                    setScoreCalculation(e.target.value as ScoreCalculation)
-                  }
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="all">All Players' Scores Count</option>
-                  <option value="winnerOnly">
-                    Only Winner's Score Counts
-                  </option>
-                  <option value="losersSum">
-                    Winner Gets Sum of Losers' Scores
-                  </option>
-                </select>
-              </div>
+              {trackRounds && (
+                <>
+                  <div className="grid gap-2">
+                    <Label htmlFor="roundWinning">
+                      Round Winning Condition
+                    </Label>
+                    <select
+                      id="roundWinning"
+                      value={roundWinningCondition}
+                      onChange={(e) =>
+                        setRoundWinningCondition(
+                          e.target.value as "highest" | "lowest"
+                        )
+                      }
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="highest">Highest Score Wins</option>
+                      <option value="lowest">Lowest Score Wins</option>
+                    </select>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="scoreCalculation">
+                      Total Score Calculation
+                    </Label>
+                    <select
+                      id="scoreCalculation"
+                      value={scoreCalculation}
+                      onChange={(e) =>
+                        setScoreCalculation(e.target.value as ScoreCalculation)
+                      }
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="all">All Players' Scores Count</option>
+                      <option value="winnerOnly">
+                        Only Winner's Score Counts
+                      </option>
+                      <option value="losersSum">
+                        Winner Gets Sum of Losers' Scores
+                      </option>
+                    </select>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
@@ -211,7 +328,9 @@ export function AddGameForm({
   const [title, setTitle] = useState("");
   const [minPlayers, setMinPlayers] = useState(2);
   const [maxPlayers, setMaxPlayers] = useState(4);
-  const [trackScore, setTrackScore] = useState(true);
+  const [hasMax, setHasMax] = useState(true);
+  const [trackScore, setTrackScore] = useState(false);
+  const [trackRounds, setTrackRounds] = useState(false);
   const [matchWinningCondition, setMatchWinningCondition] = useState<
     "highest" | "lowest"
   >("highest");
@@ -230,7 +349,8 @@ export function AddGameForm({
     try {
       // Generate supported player counts from min to max
       const supportedPlayerCounts: number[] = [];
-      for (let i = minPlayers; i <= maxPlayers; i++) {
+      const effectiveMax = hasMax ? maxPlayers : minPlayers;
+      for (let i = minPlayers; i <= effectiveMax; i++) {
         supportedPlayerCounts.push(i);
       }
 
@@ -256,8 +376,10 @@ export function AddGameForm({
       }
 
       // Build winning conditions string
+      // Always include round condition (use current value if trackRounds is enabled, otherwise default to "highest")
       const gameCondition = `game:${matchWinningCondition}`;
-      const roundCondition = `round:${roundWinningCondition}`;
+      const roundConditionValue = trackRounds ? roundWinningCondition : "highest";
+      const roundCondition = `round:${roundConditionValue}`;
       const winningConditions = `${gameCondition}|${roundCondition}`;
 
       const newGame: Omit<Game, "id"> = {
@@ -268,7 +390,7 @@ export function AddGameForm({
         countAllScores,
         countLosersOnly,
         highestScoreWins: matchWinningCondition === "highest",
-        highestRoundScoreWins: roundWinningCondition === "highest",
+        highestRoundScoreWins: roundConditionValue === "highest",
         winningConditions,
         creationDate: Date.now(),
       };
@@ -279,7 +401,9 @@ export function AddGameForm({
       setTitle("");
       setMinPlayers(2);
       setMaxPlayers(4);
-      setTrackScore(true);
+      setHasMax(true);
+      setTrackScore(false);
+      setTrackRounds(false);
       setMatchWinningCondition("highest");
       setRoundWinningCondition("highest");
       setScoreCalculation("all");
@@ -305,8 +429,12 @@ export function AddGameForm({
             setMinPlayers={setMinPlayers}
             maxPlayers={maxPlayers}
             setMaxPlayers={setMaxPlayers}
+            hasMax={hasMax}
+            setHasMax={setHasMax}
             trackScore={trackScore}
             setTrackScore={setTrackScore}
+            trackRounds={trackRounds}
+            setTrackRounds={setTrackRounds}
             matchWinningCondition={matchWinningCondition}
             setMatchWinningCondition={setMatchWinningCondition}
             roundWinningCondition={roundWinningCondition}
@@ -341,8 +469,12 @@ export function AddGameForm({
           setMinPlayers={setMinPlayers}
           maxPlayers={maxPlayers}
           setMaxPlayers={setMaxPlayers}
+          hasMax={hasMax}
+          setHasMax={setHasMax}
           trackScore={trackScore}
           setTrackScore={setTrackScore}
+          trackRounds={trackRounds}
+          setTrackRounds={setTrackRounds}
           matchWinningCondition={matchWinningCondition}
           setMatchWinningCondition={setMatchWinningCondition}
           roundWinningCondition={roundWinningCondition}

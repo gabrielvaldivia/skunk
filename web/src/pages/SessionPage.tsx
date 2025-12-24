@@ -266,6 +266,7 @@ export function SessionPage() {
         open={showAddForm}
         onOpenChange={setShowAddForm}
         onSubmit={handleSubmitMatch}
+        defaultGameId={currentSession.gameID}
         sessionParticipants={sessionParticipants}
         sessionCode={code}
       />

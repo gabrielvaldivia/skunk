@@ -30,10 +30,12 @@
         @Binding var isBinaryScore: Bool
         @Binding var minPlayers: Int
         @Binding var maxPlayers: Int
+        @Binding var hasMax: Bool
         @Binding var countAllScores: Bool
         @Binding var countLosersOnly: Bool
         @Binding var highestScoreWins: Bool
         @Binding var highestRoundScoreWins: Bool
+        @Binding var trackRounds: Bool
         @FocusState private var isTitleFocused: Bool
         var showTitle: Bool = true
         var autofocusTitle: Bool = false
@@ -75,11 +77,107 @@
                 }
 
                 Section("Player Count") {
-                    Stepper(
-                        "Minimum \(minPlayers) Players", value: $minPlayers, in: 1...maxPlayers)
-                    Stepper(
-                        "Maximum \(maxPlayers) Players", value: $maxPlayers, in: minPlayers...99
-                    )
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Player Count")
+                            Spacer()
+                            if hasMax {
+                                HStack(spacing: 4) {
+                                    TextField("", text: Binding(
+                                        get: { String(minPlayers) },
+                                        set: { newValue in
+                                            if let intValue = Int(newValue) {
+                                                let clampedValue = max(2, min(10, intValue))
+                                                minPlayers = clampedValue
+                                                if clampedValue > maxPlayers {
+                                                    maxPlayers = clampedValue
+                                                }
+                                            }
+                                        }
+                                    ))
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 50)
+                                    .keyboardType(.numberPad)
+                                    
+                                    Text("-")
+                                        .foregroundColor(.secondary)
+                                    
+                                    ZStack(alignment: .trailing) {
+                                        TextField("", text: Binding(
+                                            get: { String(maxPlayers) },
+                                            set: { newValue in
+                                                if let intValue = Int(newValue) {
+                                                    let clampedValue = max(minPlayers, min(10, intValue))
+                                                    maxPlayers = clampedValue
+                                                }
+                                            }
+                                        ))
+                                        .textFieldStyle(.roundedBorder)
+                                        .frame(width: 50)
+                                        .keyboardType(.numberPad)
+                                        .padding(.trailing, 20)
+                                        
+                                        Button(action: {
+                                            maxPlayers = minPlayers
+                                            hasMax = false
+                                        }) {
+                                            Image(systemName: "xmark")
+                                                .font(.system(size: 10))
+                                                .foregroundColor(.secondary)
+                                                .padding(4)
+                                        }
+                                        .offset(x: -4)
+                                    }
+                                }
+                            } else {
+                                HStack(spacing: 4) {
+                                    TextField("", text: Binding(
+                                        get: { String(minPlayers) },
+                                        set: { newValue in
+                                            if let intValue = Int(newValue) {
+                                                let clampedValue = max(2, min(10, intValue))
+                                                minPlayers = clampedValue
+                                                maxPlayers = clampedValue
+                                            }
+                                        }
+                                    ))
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 50)
+                                    .keyboardType(.numberPad)
+                                    
+                                    Button(action: {
+                                        maxPlayers = min(10, minPlayers + 2)
+                                        hasMax = true
+                                    }) {
+                                        Text("Add max")
+                                            .font(.subheadline)
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                            }
+                        }
+                        if hasMax {
+                            RangeSlider(
+                                minValue: $minPlayers,
+                                maxValue: $maxPlayers,
+                                in: 2...10,
+                                step: 1
+                            )
+                        } else {
+                            Slider(
+                                value: Binding(
+                                    get: { Double(minPlayers) },
+                                    set: { newValue in
+                                        let intValue = Int(newValue.rounded())
+                                        minPlayers = intValue
+                                        maxPlayers = intValue
+                                    }
+                                ),
+                                in: 2...10,
+                                step: 1
+                            )
+                        }
+                    }
                 }
 
                 Section("Game Rules") {
@@ -110,42 +208,52 @@
                         }
                     }
 
-                    Section("Round Winning Condition") {
-                        RadioButton(
-                            title: "Highest Score",
-                            isSelected: highestRoundScoreWins
-                        ) {
-                            highestRoundScoreWins = true
-                        }
-
-                        RadioButton(
-                            title: "Lowest Score",
-                            isSelected: !highestRoundScoreWins
-                        ) {
-                            highestRoundScoreWins = false
-                        }
+                    Section("Game Rules") {
+                        Toggle(
+                            "Track Rounds",
+                            isOn: $trackRounds
+                        )
+                        .toggleStyle(.switch)
                     }
 
-                    Section("Total Score Calculation") {
-                        RadioButton(
-                            title: "All Players' Scores Count",
-                            isSelected: scoreCountingMode.wrappedValue == .all
-                        ) {
-                            scoreCountingMode.wrappedValue = .all
+                    if trackRounds {
+                        Section("Round Winning Condition") {
+                            RadioButton(
+                                title: "Highest Score",
+                                isSelected: highestRoundScoreWins
+                            ) {
+                                highestRoundScoreWins = true
+                            }
+
+                            RadioButton(
+                                title: "Lowest Score",
+                                isSelected: !highestRoundScoreWins
+                            ) {
+                                highestRoundScoreWins = false
+                            }
                         }
 
-                        RadioButton(
-                            title: "Only Winner's Score Counts",
-                            isSelected: scoreCountingMode.wrappedValue == .winnerOnly
-                        ) {
-                            scoreCountingMode.wrappedValue = .winnerOnly
-                        }
+                        Section("Total Score Calculation") {
+                            RadioButton(
+                                title: "All Players' Scores Count",
+                                isSelected: scoreCountingMode.wrappedValue == .all
+                            ) {
+                                scoreCountingMode.wrappedValue = .all
+                            }
 
-                        RadioButton(
-                            title: "Winner Gets Sum of Losers' Scores",
-                            isSelected: scoreCountingMode.wrappedValue == .losersOnly
-                        ) {
-                            scoreCountingMode.wrappedValue = .losersOnly
+                            RadioButton(
+                                title: "Only Winner's Score Counts",
+                                isSelected: scoreCountingMode.wrappedValue == .winnerOnly
+                            ) {
+                                scoreCountingMode.wrappedValue = .winnerOnly
+                            }
+
+                            RadioButton(
+                                title: "Winner Gets Sum of Losers' Scores",
+                                isSelected: scoreCountingMode.wrappedValue == .losersOnly
+                            ) {
+                                scoreCountingMode.wrappedValue = .losersOnly
+                            }
                         }
                     }
                 }

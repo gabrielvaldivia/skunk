@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGames } from '../hooks/useGames';
 import { useActivity } from '../hooks/useActivity';
+import { useSession } from '../context/SessionContext';
 import { MatchRow } from '../components/MatchRow';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import type { Match } from '../models/Match';
 import './GameDetailPage.css';
 
@@ -11,6 +14,8 @@ export function GameDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { games } = useGames();
   const { matches: allMatches } = useActivity(500, 365 * 10);
+  const { createSession } = useSession();
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
 
   const game = games.find(g => g.id === id);
   const gameMatches: Match[] = allMatches
@@ -19,6 +24,22 @@ export function GameDetailPage() {
       ...match,
       game: game || undefined
       }));
+
+  const handleCreateSession = async () => {
+    if (!id) return;
+    
+    setIsCreatingSession(true);
+    try {
+      const session = await createSession(id);
+      toast.success("Session created!");
+      navigate(`/session/${session.code}`);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to create session";
+      toast.error(errorMessage);
+    } finally {
+      setIsCreatingSession(false);
+    }
+  };
 
   if (!game) {
     return (
@@ -38,6 +59,12 @@ export function GameDetailPage() {
         </div>
         <div className="page-header-title-row">
           <h1>{game.title}</h1>
+          <Button 
+            onClick={handleCreateSession} 
+            disabled={isCreatingSession}
+          >
+            {isCreatingSession ? "Creating..." : "Add Session"}
+          </Button>
         </div>
       </div>
 

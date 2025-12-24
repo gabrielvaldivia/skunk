@@ -5,5 +5,6 @@ export type Session = {
   createdAt: number; // Timestamp
   createdByID: string; // User ID of creator
   lastActivityAt: number; // Timestamp, updated when participants join/leave
+  gameID?: string; // Optional game ID if session is for a specific game
 };
 

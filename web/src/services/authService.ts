@@ -1,5 +1,6 @@
 import {
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   type User
@@ -13,14 +14,26 @@ export interface AuthState {
 }
 
 /**
- * Sign in with Google
+ * Sign in with Google using redirect
  */
-export async function signInWithGoogle(): Promise<User> {
+export async function signInWithGoogle(): Promise<void> {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    await signInWithRedirect(auth, googleProvider);
   } catch (error) {
     console.error('Error signing in with Google:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get the redirect result after authentication
+ */
+export async function getAuthRedirectResult(): Promise<User | null> {
+  try {
+    const result = await getRedirectResult(auth);
+    return result?.user || null;
+  } catch (error) {
+    console.error('Error getting redirect result:', error);
     throw error;
   }
 }

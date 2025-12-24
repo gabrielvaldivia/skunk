@@ -376,7 +376,7 @@ async function generateSessionCode(): Promise<string> {
 /**
  * Create a new session with a generated code
  */
-export async function createSession(createdByID: string): Promise<Session> {
+export async function createSession(createdByID: string, gameID?: string): Promise<Session> {
   const code = await generateSessionCode();
   const now = Date.now();
 
@@ -391,6 +391,7 @@ export async function createSession(createdByID: string): Promise<Session> {
     createdAt: now,
     createdByID,
     lastActivityAt: now,
+    ...(gameID && { gameID }),
   };
 
   // Write to both sessions and sessionsByCode
