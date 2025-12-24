@@ -33,7 +33,7 @@ interface AddGameFormProps {
 
 type ScoreCalculation = "all" | "winnerOnly" | "losersSum";
 
-interface GameFormContentProps {
+export interface GameFormContentProps {
   title: string;
   setTitle: (title: string) => void;
   minPlayers: number;
@@ -44,6 +44,8 @@ interface GameFormContentProps {
   setHasMax: (hasMax: boolean) => void;
   trackScore: boolean;
   setTrackScore: (track: boolean) => void;
+  isTeamBased: boolean;
+  setIsTeamBased: (isTeam: boolean) => void;
   trackRounds: boolean;
   setTrackRounds: (track: boolean) => void;
   matchWinningCondition: "highest" | "lowest";
@@ -55,9 +57,12 @@ interface GameFormContentProps {
   isSubmitting: boolean;
   onSubmit: (e: FormEvent) => void;
   className?: string;
+  submitButtonText?: string;
+  showSubmitButton?: boolean;
+  formId?: string;
 }
 
-function GameFormContent({
+export function GameFormContent({
   title,
   setTitle,
   minPlayers,
@@ -68,6 +73,8 @@ function GameFormContent({
   setHasMax,
   trackScore,
   setTrackScore,
+  isTeamBased,
+  setIsTeamBased,
   trackRounds,
   setTrackRounds,
   matchWinningCondition,
@@ -79,9 +86,12 @@ function GameFormContent({
   isSubmitting,
   onSubmit,
   className,
+  submitButtonText = "Create Game",
+  showSubmitButton = true,
+  formId,
 }: GameFormContentProps) {
   return (
-    <form onSubmit={onSubmit} className={cn("grid items-start gap-6", className)}>
+    <form id={formId} onSubmit={onSubmit} className={cn("grid items-start gap-6", className)}>
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="title">
@@ -226,6 +236,20 @@ function GameFormContent({
             </Label>
           </div>
 
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="isTeamBased"
+              checked={isTeamBased}
+              onCheckedChange={(checked) => setIsTeamBased(checked === true)}
+            />
+            <Label
+              htmlFor="isTeamBased"
+              className="font-normal cursor-pointer"
+            >
+              Team-Based Game
+            </Label>
+          </div>
+
           {trackScore && (
             <>
               <div className="grid gap-2">
@@ -309,9 +333,11 @@ function GameFormContent({
           )}
         </div>
       </div>
-      <Button type="submit" disabled={isSubmitting || !title.trim()}>
-        {isSubmitting ? "Creating..." : "Create Game"}
-      </Button>
+      {showSubmitButton && (
+        <Button type="submit" disabled={isSubmitting || !title.trim()}>
+          {isSubmitting ? (submitButtonText === "Update Game" ? "Updating..." : "Creating...") : submitButtonText}
+        </Button>
+      )}
     </form>
   );
 }
@@ -328,6 +354,7 @@ export function AddGameForm({
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [hasMax, setHasMax] = useState(true);
   const [trackScore, setTrackScore] = useState(false);
+  const [isTeamBased, setIsTeamBased] = useState(false);
   const [trackRounds, setTrackRounds] = useState(false);
   const [matchWinningCondition, setMatchWinningCondition] = useState<
     "highest" | "lowest"
@@ -383,6 +410,7 @@ export function AddGameForm({
       const newGame: Omit<Game, "id"> = {
         title: title.trim(),
         isBinaryScore: !trackScore, // If not tracking score, it's binary (win/loss)
+        isTeamBased,
         supportedPlayerCounts,
         createdByID: user.uid,
         countAllScores,
@@ -401,6 +429,7 @@ export function AddGameForm({
       setMaxPlayers(4);
       setHasMax(true);
       setTrackScore(false);
+      setIsTeamBased(false);
       setTrackRounds(false);
       setMatchWinningCondition("highest");
       setRoundWinningCondition("highest");
@@ -431,6 +460,8 @@ export function AddGameForm({
             setHasMax={setHasMax}
             trackScore={trackScore}
             setTrackScore={setTrackScore}
+            isTeamBased={isTeamBased}
+            setIsTeamBased={setIsTeamBased}
             trackRounds={trackRounds}
             setTrackRounds={setTrackRounds}
             matchWinningCondition={matchWinningCondition}

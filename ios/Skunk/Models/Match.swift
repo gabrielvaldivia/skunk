@@ -2,6 +2,12 @@ import CloudKit
 import Foundation
 
 #if canImport(UIKit)
+    struct Team: Codable, Hashable {
+        var teamId: String
+        var playerIDs: [String]
+        var score: Int?
+    }
+
     struct Match: Identifiable, Hashable {
         let id: String
         var recordID: CKRecord.ID?
@@ -13,6 +19,8 @@ import Foundation
         var playerIDsString: String
         var playerOrder: [String]
         var winnerID: String?
+        var winnerTeamId: String?
+        var teams: [Team]?
         var winner: Player?
         var isMultiplayer: Bool
         var status: String
@@ -24,8 +32,59 @@ import Foundation
         var rounds: [[Int]]
 
         var computedWinnerID: String? {
-            guard let game = game, !scores.isEmpty else { return winnerID }
+            guard let game = game, !scores.isEmpty else { return winnerID ?? winnerTeamId }
 
+            // Handle team-based games
+            if game.isTeamBased, let teams = teams, !teams.isEmpty {
+                // Calculate team scores
+                var teamScores: [(teamId: String, score: Int)] = []
+                for team in teams {
+                    let teamScore = team.playerIDs.reduce(0) { total, playerId in
+                        if let playerIndex = playerOrder.firstIndex(of: playerId),
+                           playerIndex < scores.count
+                        {
+                            return total + scores[playerIndex]
+                        }
+                        return total
+                    }
+                    teamScores.append((teamId: team.teamId, score: teamScore))
+                }
+
+                // Find winning team
+                if game.isBinaryScore {
+                    // For binary scores, find team with at least one player having score of 1
+                    if let winningTeam = teams.first(where: { team in
+                        team.playerIDs.contains { playerId in
+                            if let playerIndex = playerOrder.firstIndex(of: playerId),
+                               playerIndex < scores.count
+                            {
+                                return scores[playerIndex] == 1
+                            }
+                            return false
+                        }
+                    }) {
+                        return winningTeam.teamId
+                    }
+                } else {
+                    // Non-binary: find team with highest/lowest score
+                    if game.highestScoreWins {
+                        if let maxScore = teamScores.map({ $0.score }).max(),
+                           let winningTeam = teamScores.first(where: { $0.score == maxScore })
+                        {
+                            return winningTeam.teamId
+                        }
+                    } else {
+                        if let minScore = teamScores.map({ $0.score }).min(),
+                           let winningTeam = teamScores.first(where: { $0.score == minScore })
+                        {
+                            return winningTeam.teamId
+                        }
+                    }
+                }
+                return winnerTeamId
+            }
+
+            // Individual player games (existing logic)
             if game.isBinaryScore {
                 if let index = scores.firstIndex(of: 1),
                     index < playerOrder.count
@@ -52,6 +111,8 @@ import Foundation
             self.playerIDsString = ""
             self.playerOrder = []
             self.winnerID = nil
+            self.winnerTeamId = nil
+            self.teams = nil
             self.winner = nil
             self.isMultiplayer = false
             self.status = "active"
@@ -103,6 +164,12 @@ import Foundation
             self.isMultiplayer = record["isMultiplayer"] as? Bool ?? (playerIDs.count > 1)
             self.status = record["status"] as? String ?? "active"
             self.winnerID = record["winnerID"] as? String
+            self.winnerTeamId = record["winnerTeamId"] as? String
+            if let teamsData = record["teams"] as? Data {
+                self.teams = try? JSONDecoder().decode([Team].self, from: teamsData)
+            } else {
+                self.teams = nil
+            }
             self.winner = nil
             self.lastModified = record["lastModified"] as? Date ?? date
 
@@ -142,6 +209,10 @@ import Foundation
                 record.setValue(orderData, forKey: "playerOrder")
             }
             record.setValue(winnerID, forKey: "winnerID")
+            record.setValue(winnerTeamId, forKey: "winnerTeamId")
+            if let teams = teams, let teamsData = try? JSONEncoder().encode(teams) {
+                record.setValue(teamsData, forKey: "teams")
+            }
             record.setValue(isMultiplayer, forKey: "isMultiplayer")
             record.setValue(status, forKey: "status")
             if let invitedData = try? JSONEncoder().encode(invitedPlayerIDs) {

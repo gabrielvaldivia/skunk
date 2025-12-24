@@ -6,6 +6,7 @@ import Foundation
         let id: String
         var title: String
         var isBinaryScore: Bool
+        var isTeamBased: Bool
         var supportedPlayerCounts: Set<Int>
         var createdByID: String?
         var countAllScores: Bool
@@ -88,7 +89,7 @@ import Foundation
         }
 
         init(
-            title: String, isBinaryScore: Bool,
+            title: String, isBinaryScore: Bool, isTeamBased: Bool = false,
             supportedPlayerCounts: Set<Int>, createdByID: String? = nil,
             countAllScores: Bool = true, countLosersOnly: Bool = false,
             highestScoreWins: Bool = true, highestRoundScoreWins: Bool = true
@@ -96,6 +97,7 @@ import Foundation
             self.id = UUID().uuidString
             self.title = title
             self.isBinaryScore = isBinaryScore
+            self.isTeamBased = isTeamBased
             self.supportedPlayerCounts = supportedPlayerCounts
             self.createdByID = createdByID
             self.countAllScores = countAllScores
@@ -124,6 +126,7 @@ import Foundation
             self.id = id
             self.title = title
             self.isBinaryScore = isBinaryScore == 1
+            self.isTeamBased = (record["isTeamBased"] as? Int ?? 0) == 1
             self.supportedPlayerCounts = supportedPlayerCounts
             self.createdByID = record["createdByID"] as? String
             self.countAllScores = (record["countAllScores"] as? Int ?? 0) == 1
@@ -166,6 +169,7 @@ import Foundation
             record.setValue(id, forKey: "id")
             record.setValue(title, forKey: "title")
             record.setValue(isBinaryScore ? 1 : 0, forKey: "isBinaryScore")
+            record.setValue(isTeamBased ? 1 : 0, forKey: "isTeamBased")
             record.setValue(countAllScores ? 1 : 0, forKey: "countAllScores")
             record.setValue(countLosersOnly ? 1 : 0, forKey: "countLosersOnly")
             record.setValue(highestScoreWins ? 1 : 0, forKey: "highestScoreWins")

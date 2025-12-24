@@ -10,30 +10,12 @@ import "./GamesPage.css";
 
 export function GamesPage() {
   const navigate = useNavigate();
-  const { games, isLoading, error, addGame, removeGame } = useGames();
-  const { user, isAuthenticated } = useAuth();
+  const { games, isLoading, error, addGame } = useGames();
+  const { isAuthenticated } = useAuth();
   const [showAddForm, setShowAddForm] = useState(false);
 
   const handleSubmitGame = async (game: Omit<Game, "id">) => {
     await addGame(game);
-  };
-
-  const handleDeleteGame = async (gameId: string, createdByID?: string) => {
-    if (!user) return;
-    // Permission check: only allow deletion if user created the game
-    if (createdByID !== user.uid) {
-      alert("You can only delete games that you created.");
-      return;
-    }
-
-    if (window.confirm("Are you sure you want to delete this game?")) {
-      try {
-        await removeGame(gameId);
-      } catch (err) {
-        console.error("Error deleting game:", err);
-        alert("Failed to delete game");
-      }
-    }
   };
 
   if (isLoading) {
@@ -74,24 +56,11 @@ export function GamesPage() {
       ) : (
         <div className="games-grid">
           {games.map((game) => (
-            <div key={game.id} className="game-item">
-              <GameCard
-                game={game}
-                onClick={() => navigate(`/games/${game.id}`)}
-              />
-              {isAuthenticated && game.createdByID === user?.uid && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteGame(game.id, game.createdByID);
-                  }}
-                >
-                  Delete
-                </Button>
-              )}
-            </div>
+            <GameCard
+              key={game.id}
+              game={game}
+              onClick={() => navigate(`/games/${game.id}`)}
+            />
           ))}
         </div>
       )}

@@ -2,6 +2,7 @@ export type Game = {
   id: string;
   title: string;
   isBinaryScore: boolean;
+  isTeamBased: boolean;
   supportedPlayerCounts: number[];
   createdByID?: string;
   countAllScores: boolean;

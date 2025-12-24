@@ -1,6 +1,12 @@
 import type { Game } from './Game';
 import type { Player } from './Player';
 
+export type Team = {
+  teamId: string;
+  playerIDs: string[];
+  score?: number; // Aggregated team score (calculated)
+};
+
 export type Match = {
   id: string;
   gameID: string;
@@ -9,6 +15,8 @@ export type Match = {
   playerIDsString?: string; // Sorted, comma-joined for querying
   playerOrder: string[];
   winnerID?: string;
+  winnerTeamId?: string; // For team-based games
+  teams?: Team[]; // Team assignments for team-based games
   isMultiplayer: boolean;
   status: string; // e.g., "active"
   invitedPlayerIDs?: string[];
@@ -26,13 +34,54 @@ export type Match = {
 
 /**
  * Calculate the winner ID for a match based on game rules
+ * For team-based games, returns winnerTeamId instead of winnerID
  * This matches the logic from Match.computedWinnerID in Swift
  */
 export function computeWinnerID(match: Match, game: Game): string | undefined {
   if (!game || match.scores.length === 0) {
-    return match.winnerID;
+    return match.winnerID || match.winnerTeamId;
   }
 
+  // Handle team-based games
+  if (game.isTeamBased && match.teams && match.teams.length > 0) {
+    // Calculate team scores by aggregating player scores
+    const teamScores = match.teams.map(team => {
+      const teamScore = team.playerIDs.reduce((total, playerId) => {
+        const playerIndex = match.playerOrder.indexOf(playerId);
+        if (playerIndex !== -1 && match.scores[playerIndex] !== undefined) {
+          return total + match.scores[playerIndex];
+        }
+        return total;
+      }, 0);
+      return { teamId: team.teamId, score: teamScore };
+    });
+
+    // Find winning team
+    let winningTeamId: string | undefined;
+    if (game.isBinaryScore) {
+      // For binary scores, find team with at least one player having score of 1
+      const winningTeam = match.teams.find(team => {
+        return team.playerIDs.some(playerId => {
+          const playerIndex = match.playerOrder.indexOf(playerId);
+          return playerIndex !== -1 && match.scores[playerIndex] === 1;
+        });
+      });
+      winningTeamId = winningTeam?.teamId;
+    } else {
+      // Non-binary: find team with highest/lowest score
+      if (game.highestScoreWins) {
+        const maxScore = Math.max(...teamScores.map(t => t.score));
+        winningTeamId = teamScores.find(t => t.score === maxScore)?.teamId;
+      } else {
+        const minScore = Math.min(...teamScores.map(t => t.score));
+        winningTeamId = teamScores.find(t => t.score === minScore)?.teamId;
+      }
+    }
+
+    return winningTeamId;
+  }
+
+  // Individual player games (existing logic)
   if (game.isBinaryScore) {
     // Binary scores: Winner is player with score of 1
     const winnerIndex = match.scores.findIndex(score => score === 1);

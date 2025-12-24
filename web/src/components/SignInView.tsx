@@ -35,11 +35,12 @@ export function SignInView() {
     try {
       setIsLoading(true);
       setError(null);
-      // signIn will trigger a redirect to Google auth, so navigation will happen automatically
       await signIn();
-      // Note: The code below won't execute because signIn redirects the page
+      // Navigate to intended destination or default to home
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to sign in");
+    } finally {
       setIsLoading(false);
     }
   };

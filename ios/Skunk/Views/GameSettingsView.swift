@@ -28,6 +28,7 @@
     struct GameSettingsView: View {
         @Binding var title: String
         @Binding var isBinaryScore: Bool
+        @Binding var isTeamBased: Bool
         @Binding var minPlayers: Int
         @Binding var maxPlayers: Int
         @Binding var hasMax: Bool
@@ -186,6 +187,12 @@
                             get: { !isBinaryScore },
                             set: { isBinaryScore = !$0 }
                         )
+                    )
+                    .toggleStyle(.switch)
+                    
+                    Toggle(
+                        "Team-Based Game",
+                        isOn: $isTeamBased
                     )
                     .toggleStyle(.switch)
                 }

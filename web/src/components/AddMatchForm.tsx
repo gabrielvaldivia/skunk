@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
-import type { Match } from "../models/Match";
+import type { Match, Team } from "../models/Match";
 import type { Player } from "../models/Player";
 import { useAuth } from "../context/AuthContext";
 import { useGames } from "../hooks/useGames";
@@ -52,6 +52,8 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
   const [scores, setScores] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autocompleteStates, setAutocompleteStates] = useState<Array<{ value: string; showSuggestions: boolean }>>([]);
+  const [teamAssignments, setTeamAssignments] = useState<Map<string, string>>(new Map()); // playerId -> teamId
+  const [teams, setTeams] = useState<string[]>(["team1", "team2"]); // Array of team IDs
 
   const selectedGame = games.find((g) => g.id === selectedGameId);
 
@@ -127,6 +129,21 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
       return prev;
     });
   }, [playerInputs.length]);
+
+  // Initialize team assignments when game changes or when switching to team-based
+  useEffect(() => {
+    if (selectedGame?.isTeamBased && open) {
+      // Reset team assignments when game changes
+      setTeamAssignments(new Map());
+      // Ensure at least 2 teams
+      if (teams.length < 2) {
+        setTeams(["team1", "team2"]);
+      }
+    } else if (!selectedGame?.isTeamBased) {
+      // Clear team assignments when switching to non-team game
+      setTeamAssignments(new Map());
+    }
+  }, [selectedGameId, selectedGame?.isTeamBased, open]);
 
   const getPlayerSuggestions = (query: string): Player[] => {
     if (!query.trim()) {
@@ -256,19 +273,46 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
         lastModified: now,
       };
 
-      // Calculate winner
-      if (selectedGame.isBinaryScore) {
-        const winnerIndex = scores.findIndex((s) => s === 1);
-        if (winnerIndex !== -1) {
-          match.winnerID = selectedPlayerIds[winnerIndex];
+      // Handle team-based games
+      if (selectedGame.isTeamBased) {
+        // Group players by team
+        const teamMap = new Map<string, string[]>(); // teamId -> playerIds[]
+        selectedPlayerIds.forEach(playerId => {
+          const teamId = teamAssignments.get(playerId) || teams[0];
+          if (!teamMap.has(teamId)) {
+            teamMap.set(teamId, []);
+          }
+          teamMap.get(teamId)!.push(playerId);
+        });
+
+        // Create teams array
+        const matchTeams: Team[] = Array.from(teamMap.entries()).map(([teamId, playerIds]) => ({
+          teamId,
+          playerIDs: playerIds,
+        }));
+
+        match.teams = matchTeams;
+
+        // Calculate winning team
+        const winnerTeamId = computeWinnerID({ ...match, id: "" }, selectedGame);
+        if (winnerTeamId) {
+          match.winnerTeamId = winnerTeamId;
         }
       } else {
-        const winnerID = computeWinnerID(
-          { ...match, id: "" },
-          selectedGame
-        );
-        if (winnerID) {
-          match.winnerID = winnerID;
+        // Individual player games - calculate winner as before
+        if (selectedGame.isBinaryScore) {
+          const winnerIndex = scores.findIndex((s) => s === 1);
+          if (winnerIndex !== -1) {
+            match.winnerID = selectedPlayerIds[winnerIndex];
+          }
+        } else {
+          const winnerID = computeWinnerID(
+            { ...match, id: "" },
+            selectedGame
+          );
+          if (winnerID) {
+            match.winnerID = winnerID;
+          }
         }
       }
 
@@ -402,8 +446,206 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
 
           {selectedGame && (
             <>
-              <div className="grid gap-2">
+              {selectedGame.isTeamBased ? (
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    {playerInputs.map((inputValue, index) => {
+                      const suggestions = getPlayerSuggestions(inputValue);
+                      const state = autocompleteStates[index] || { value: "", showSuggestions: false };
+                      const gameMinPlayers = Math.min(...selectedGame.supportedPlayerCounts);
+                      const canRemove = playerInputs.length > gameMinPlayers;
+                      
+                      const player = findPlayerByName(inputValue);
+                      const isValidPlayer = player !== undefined;
+                      const playerTeamId = player ? teamAssignments.get(player.id) || teams[0] : teams[0];
+                      
+                      return (
+                        <div key={index} className="relative grid gap-1">
+                          <div className="flex gap-2 items-center">
+                            <div className="flex-1 relative">
+                              <Input
+                                type="text"
+                                value={inputValue}
+                                onChange={(e) => handlePlayerInputChange(index, e.target.value)}
+                                onFocus={() => {
+                                  setAutocompleteStates((prev) => {
+                                    const newStates = [...prev];
+                                    newStates[index] = { value: inputValue, showSuggestions: true };
+                                    return newStates;
+                                  });
+                                }}
+                                onBlur={(e) => {
+                                  const blurValue = e.target.value;
+                                  setTimeout(() => {
+                                    setAutocompleteStates((prev) => {
+                                      const newStates = [...prev];
+                                      newStates[index] = { value: blurValue, showSuggestions: false };
+                                      return newStates;
+                                    });
+                                    setPlayerInputs((prev) => {
+                                      const currentValue = prev[index];
+                                      if (currentValue && !findPlayerByName(currentValue)) {
+                                        const newInputs = [...prev];
+                                        newInputs[index] = "";
+                                        return newInputs;
+                                      }
+                                      return prev;
+                                    });
+                                  }, 200);
+                                }}
+                                placeholder={`Player ${index + 1}`}
+                                className="w-full"
+                              />
+                              {state.showSuggestions && suggestions.length > 0 && (
+                                <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
+                                  {suggestions.map((player) => (
+                                    <button
+                                      key={player.id}
+                                      type="button"
+                                      className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground"
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        handlePlayerSelect(index, player.name);
+                                      }}
+                                    >
+                                      {player.name}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {isValidPlayer && (
+                              <select
+                                value={playerTeamId}
+                                onChange={(e) => {
+                                  if (player) {
+                                    setTeamAssignments(prev => {
+                                      const newMap = new Map(prev);
+                                      newMap.set(player.id, e.target.value);
+                                      return newMap;
+                                    });
+                                  }
+                                }}
+                                className="flex h-10 w-32 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                              >
+                                {teams.map((teamId, teamIndex) => (
+                                  <option key={teamId} value={teamId}>
+                                    Team {teamIndex + 1}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                            
+                            {canRemove && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  if (player) {
+                                    setTeamAssignments(prev => {
+                                      const newMap = new Map(prev);
+                                      newMap.delete(player.id);
+                                      return newMap;
+                                    });
+                                  }
+                                  handleRemovePlayer(index);
+                                }}
+                              >
+                                Remove
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="flex gap-2 items-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setTeams([...teams, `team${teams.length + 1}`]);
+                      }}
+                    >
+                      Add Team
+                    </Button>
+                    {teams.length > 2 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Remove last team and reassign players to first team
+                          const teamToRemove = teams[teams.length - 1];
+                          setTeams(teams.slice(0, -1));
+                          setTeamAssignments(prev => {
+                            const newMap = new Map(prev);
+                            const firstTeam = teams[0];
+                            prev.forEach((teamId, playerId) => {
+                              if (teamId === teamToRemove) {
+                                newMap.set(playerId, firstTeam);
+                              }
+                            });
+                            return newMap;
+                          });
+                        }}
+                      >
+                        Remove Team
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Score inputs for team-based games - still individual scores */}
+                  <div className="grid gap-2">
+                    <Label>Player Scores</Label>
+                    {playerInputs.map((inputValue, index) => {
+                      const player = findPlayerByName(inputValue);
+                      if (!player) return null;
+                      
+                      return (
+                        <div key={index} className="flex items-center gap-2">
+                          <span className="text-sm w-32">{player.name}:</span>
+                          {selectedGame.isBinaryScore ? (
+                            <Switch
+                              checked={scores[index] === 1}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setScores(() => {
+                                    const newScores = new Array(playerInputs.length).fill(0);
+                                    newScores[index] = 1;
+                                    return newScores;
+                                  });
+                                } else {
+                                  handleScoreChange(index, 0);
+                                }
+                              }}
+                            />
+                          ) : (
+                            <Input
+                              type="number"
+                              min="0"
+                              value={scores[index] || 0}
+                              onChange={(e) =>
+                                handleScoreChange(
+                                  index,
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                              className="w-24"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
                 <div className="grid gap-2">
+                  <div className="grid gap-2">
                   {playerInputs.map((inputValue, index) => {
                     const suggestions = getPlayerSuggestions(inputValue);
                     const state = autocompleteStates[index] || { value: "", showSuggestions: false };
@@ -537,8 +779,9 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                       Add Player
                     </Button>
                   )}
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </div>

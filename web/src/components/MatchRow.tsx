@@ -142,7 +142,35 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     }
   };
 
-  const renderWinnerAvatar = (winner: Player | undefined) => {
+  const renderWinnerAvatar = () => {
+    const game = getGame();
+    
+    // For team-based games, show first player of winning team
+    if (game?.isTeamBased && match.teams && match.winnerTeamId) {
+      const winningTeam = match.teams.find(t => t.teamId === match.winnerTeamId);
+      if (winningTeam && winningTeam.playerIDs.length > 0) {
+        const firstPlayer = getPlayer(winningTeam.playerIDs[0]);
+        if (firstPlayer) {
+          const backgroundColor = getPlayerColor(firstPlayer);
+          return (
+            <div 
+              className="match-winner-avatar" 
+              style={{ backgroundColor }}
+            >
+              {firstPlayer.photoData ? (
+                <img src={`data:image/jpeg;base64,${firstPlayer.photoData}`} alt={firstPlayer.name} />
+              ) : (
+                <span className="match-winner-initials">{getInitials(firstPlayer.name)}</span>
+              )}
+            </div>
+          );
+        }
+      }
+      return null;
+    }
+    
+    // Individual player games (existing logic)
+    const winner = match.winnerID ? getPlayer(match.winnerID) : undefined;
     if (!winner) return null;
     
     const backgroundColor = getPlayerColor(winner);
@@ -162,6 +190,72 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
   };
 
   const renderMatchText = () => {
+    const game = getGame();
+    
+    // Handle team-based games
+    if (game?.isTeamBased && match.teams && match.winnerTeamId) {
+      const winningTeam = match.teams.find(t => t.teamId === match.winnerTeamId);
+      const otherTeams = match.teams.filter(t => t.teamId !== match.winnerTeamId);
+      
+      if (!winningTeam) {
+        return <span>Match result unavailable</span>;
+      }
+      
+      const winningTeamPlayers = winningTeam.playerIDs.map(id => getPlayer(id));
+      const otherTeamPlayers = otherTeams.flatMap(team => 
+        team.playerIDs.map(id => getPlayer(id))
+      );
+      
+      return (
+        <>
+          <span>Team </span>
+          {winningTeamPlayers.map((player, index) => (
+            <span key={player?.id || winningTeam.playerIDs[index]}>
+              {player ? (
+                <Link to={`/players/${player.id}`} className="match-link">
+                  {player.name}
+                </Link>
+              ) : (
+                <span>{winningTeam.playerIDs[index]}</span>
+              )}
+              {index < winningTeamPlayers.length - 1 && <span>, </span>}
+            </span>
+          ))}
+          <span> won against </span>
+          {otherTeams.map((team, teamIndex) => (
+            <span key={team.teamId}>
+              {teamIndex > 0 && <span>, </span>}
+              <span>Team </span>
+              {team.playerIDs.map((playerId, playerIndex) => {
+                const player = getPlayer(playerId);
+                return (
+                  <span key={playerId}>
+                    {player ? (
+                      <Link to={`/players/${player.id}`} className="match-link">
+                        {player.name}
+                      </Link>
+                    ) : (
+                      <span>{playerId}</span>
+                    )}
+                    {playerIndex < team.playerIDs.length - 1 && <span>, </span>}
+                  </span>
+                );
+              })}
+            </span>
+          ))}
+          {!hideGameTitle && game && (
+            <>
+              <span> at </span>
+              <Link to={`/games/${match.gameID}`} className="match-link">
+                {game.title}
+              </Link>
+            </>
+          )}
+        </>
+      );
+    }
+    
+    // Individual player games (existing logic)
     if (!match.winnerID || match.playerIDs.length === 0) {
       return <span>Match result unavailable</span>;
     }
@@ -228,7 +322,11 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     );
   };
 
+  const game = getGame();
   const winner = match.winnerID ? getPlayer(match.winnerID) : undefined;
+  const winningTeam = game?.isTeamBased && match.teams && match.winnerTeamId 
+    ? match.teams.find(t => t.teamId === match.winnerTeamId) 
+    : undefined;
 
   return (
     <>
@@ -242,7 +340,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
         onClick={canDelete() ? handleClick : undefined}
       >
         <div className="match-main-content">
-          {renderWinnerAvatar(winner)}
+          {renderWinnerAvatar()}
           <div className="match-content">
             <div className="match-text">{renderMatchText()}</div>
             <div className="match-date">{formatDate(match.date)}</div>

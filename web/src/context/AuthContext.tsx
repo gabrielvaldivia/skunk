@@ -10,7 +10,6 @@ import type { ReactNode } from "react";
 import { type User } from "firebase/auth";
 import {
   signInWithGoogle,
-  getAuthRedirectResult,
   signOut as authSignOut,
   onAuthStateChange,
   getCurrentUser,
@@ -80,40 +79,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-
-    async function initializeAuth() {
-      try {
-        // First, check if we're returning from a redirect
-        const redirectUser = await getAuthRedirectResult();
-        if (redirectUser && mounted) {
-          setUser(redirectUser);
-          await loadPlayer(redirectUser);
-          setIsLoading(false);
-          return;
-        }
-
-        // Check for existing auth state
-        const currentUser = getCurrentUser();
-        if (currentUser && mounted) {
-          setUser(currentUser);
-          await loadPlayer(currentUser);
-        }
-      } catch (error) {
-        console.error("Error initializing auth:", error);
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
+    // Check for existing auth state
+    const currentUser = getCurrentUser();
+    if (currentUser) {
+      setUser(currentUser);
+      loadPlayer(currentUser);
+    } else {
+      setIsLoading(false);
     }
-
-    initializeAuth();
 
     // Subscribe to auth state changes
     const unsubscribe = onAuthStateChange(async (firebaseUser) => {
-      if (!mounted) return;
-      
       if (firebaseUser) {
         setUser(firebaseUser);
         await loadPlayer(firebaseUser);
@@ -124,17 +100,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     });
 
-    return () => {
-      mounted = false;
-      unsubscribe();
-    };
+    return unsubscribe;
   }, [loadPlayer]);
 
   const signIn = async () => {
     try {
-      // signInWithRedirect will navigate away, so we don't need to handle the result here
-      // The redirect result will be handled in the useEffect when the user returns
-      await signInWithGoogle();
+      const firebaseUser = await signInWithGoogle();
+      setUser(firebaseUser);
+      await loadPlayer(firebaseUser);
     } catch (error) {
       console.error("Error signing in:", error);
       throw error;

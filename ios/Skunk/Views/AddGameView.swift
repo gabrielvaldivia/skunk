@@ -8,6 +8,7 @@
 
         @State private var title = ""
         @State private var isBinaryScore = true
+        @State private var isTeamBased = false
         @State private var showingError = false
         @State private var errorMessage = ""
         @State private var minPlayers = 2
@@ -25,6 +26,7 @@
                     GameSettingsView(
                         title: $title,
                         isBinaryScore: $isBinaryScore,
+                        isTeamBased: $isTeamBased,
                         minPlayers: $minPlayers,
                         maxPlayers: $maxPlayers,
                         hasMax: $hasMax,
@@ -65,6 +67,7 @@
             let game = Game(
                 title: title,
                 isBinaryScore: isBinaryScore,
+                isTeamBased: isTeamBased,
                 supportedPlayerCounts: supportedCounts,
                 createdByID: authManager.userID,
                 countAllScores: !isBinaryScore ? countAllScores : false,
