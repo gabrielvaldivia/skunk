@@ -15,7 +15,7 @@ export function GamesPage() {
   const navigate = useNavigate();
   const { games, isLoading, error, addGame } = useGames();
   const { isAuthenticated, user } = useAuth();
-  const { champions, isLoading: championsLoading } = useGameChampions(games);
+  const { champions } = useGameChampions(games);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 

@@ -3,7 +3,6 @@ import { getMatches } from '../services/databaseService';
 import { getPlayers } from '../services/databaseService';
 import { computeWinnerID } from '../models/Match';
 import type { Game } from '../models/Game';
-import type { Match } from '../models/Match';
 import type { Player } from '../models/Player';
 
 export interface GameChampion {

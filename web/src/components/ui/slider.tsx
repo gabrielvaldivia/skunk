@@ -8,11 +8,10 @@ export interface SliderProps
 }
 
 const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
-  ({ className, value, onValueChange, onChange, ...props }, ref) => {
+  ({ className, value, onValueChange, ...props }, ref) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = parseInt(e.target.value)
       onValueChange?.(newValue)
-      onChange?.(e)
     }
 
     return (

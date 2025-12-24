@@ -202,9 +202,6 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
       }
       
       const winningTeamPlayers = winningTeam.playerIDs.map(id => getPlayer(id));
-      const otherTeamPlayers = otherTeams.flatMap(team => 
-        team.playerIDs.map(id => getPlayer(id))
-      );
       
       return (
         <>
@@ -323,10 +320,6 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
   };
 
   const game = getGame();
-  const winner = match.winnerID ? getPlayer(match.winnerID) : undefined;
-  const winningTeam = game?.isTeamBased && match.teams && match.winnerTeamId 
-    ? match.teams.find(t => t.teamId === match.winnerTeamId) 
-    : undefined;
 
   return (
     <>
