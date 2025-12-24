@@ -43,6 +43,49 @@
   cursor: pointer;
 }
 
+.game-list-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.game-cover-art-container {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+}
+
+.game-cover-art {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 8px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.game-cover-art-placeholder {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  background-color: hsl(var(--muted));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
 .game-list-name {
   font-size: 1rem;
   font-weight: 500;

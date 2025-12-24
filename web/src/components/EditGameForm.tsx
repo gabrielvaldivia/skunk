@@ -88,6 +88,8 @@ export function EditGameForm({
     "highest" | "lowest"
   >(roundWinningCondition as "highest" | "lowest");
   const [scoreCalculationState, setScoreCalculation] = useState<ScoreCalculation>(scoreCalculation);
+  const [coverArt, setCoverArt] = useState(game.coverArt || "");
+  const [coverArtPreview, setCoverArtPreview] = useState<string | null>(game.coverArt || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -103,6 +105,8 @@ export function EditGameForm({
       setHasMax(min !== max);
       setTrackScore(!game.isBinaryScore);
       setIsTeamBased(game.isTeamBased || false);
+      setCoverArt(game.coverArt || "");
+      setCoverArtPreview(game.coverArt || null);
       
       const winningConditionsStr = game.winningConditions || "game:high|round:high";
       const gameCond = winningConditionsStr.split("|").find(c => c.startsWith("game:"));
@@ -182,6 +186,7 @@ export function EditGameForm({
         highestScoreWins: matchWinningConditionState === "highest",
         highestRoundScoreWins: roundConditionValue === "highest",
         winningConditions,
+        ...(coverArt && coverArt.trim() ? { coverArt: coverArt.trim() } : coverArt === "" ? { coverArt: undefined } : {}),
       };
 
       await onSubmit(game.id, updatedGame);
@@ -223,6 +228,10 @@ export function EditGameForm({
               setRoundWinningCondition={setRoundWinningCondition}
               scoreCalculation={scoreCalculationState}
               setScoreCalculation={setScoreCalculation}
+              coverArt={coverArt}
+              setCoverArt={setCoverArt}
+              coverArtPreview={coverArtPreview || undefined}
+              setCoverArtPreview={setCoverArtPreview}
               isSubmitting={isSubmitting}
               onSubmit={handleSubmit}
               submitButtonText="Update Game"
@@ -311,6 +320,10 @@ export function EditGameForm({
             setRoundWinningCondition={setRoundWinningCondition}
             scoreCalculation={scoreCalculationState}
             setScoreCalculation={setScoreCalculation}
+            coverArt={coverArt}
+            setCoverArt={setCoverArt}
+            coverArtPreview={coverArtPreview || undefined}
+            setCoverArtPreview={setCoverArtPreview}
             isSubmitting={isSubmitting}
             onSubmit={handleSubmit}
             className="px-0"

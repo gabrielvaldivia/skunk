@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { RangeSlider } from "@/components/ui/range-slider";
 import { Slider } from "@/components/ui/slider";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -54,6 +54,10 @@ export interface GameFormContentProps {
   setRoundWinningCondition: (condition: "highest" | "lowest") => void;
   scoreCalculation: ScoreCalculation;
   setScoreCalculation: (calc: ScoreCalculation) => void;
+  coverArt?: string;
+  setCoverArt: (coverArt: string) => void;
+  coverArtPreview?: string;
+  setCoverArtPreview: (preview: string | null) => void;
   isSubmitting: boolean;
   onSubmit: (e: FormEvent) => void;
   className?: string;
@@ -83,6 +87,10 @@ export function GameFormContent({
   setRoundWinningCondition,
   scoreCalculation,
   setScoreCalculation,
+  coverArt,
+  setCoverArt,
+  coverArtPreview,
+  setCoverArtPreview,
   isSubmitting,
   onSubmit,
   className,
@@ -105,6 +113,66 @@ export function GameFormContent({
             autoFocus
             required
           />
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="coverArt">
+            Cover Art (optional)
+          </Label>
+          <Input
+            id="coverArt"
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+
+              if (!file.type.startsWith("image/")) {
+                alert("Please select an image file");
+                return;
+              }
+
+              if (file.size > 5 * 1024 * 1024) {
+                alert("Image size must be less than 5MB");
+                return;
+              }
+
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const result = reader.result as string;
+                setCoverArtPreview(result);
+                // Store as data URL for saving
+                setCoverArt(result);
+              };
+              reader.readAsDataURL(file);
+            }}
+            className="cursor-pointer"
+          />
+          {coverArtPreview && (
+            <div className="mt-2 flex items-center gap-2">
+              <img
+                src={coverArtPreview}
+                alt="Cover art preview"
+                className="w-20 h-20 object-cover rounded-md border"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setCoverArtPreview(null);
+                  setCoverArt("");
+                  // Reset file input
+                  const fileInput = document.getElementById('coverArt') as HTMLInputElement;
+                  if (fileInput) {
+                    fileInput.value = '';
+                  }
+                }}
+              >
+                Remove
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-2">
@@ -222,32 +290,32 @@ export function GameFormContent({
         </div>
 
         <div className="grid gap-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="trackScore"
-              checked={trackScore}
-              onCheckedChange={(checked) => setTrackScore(checked === true)}
-            />
-            <Label
-              htmlFor="trackScore"
-              className="font-normal cursor-pointer"
-            >
-              Track Score
-            </Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="isTeamBased"
-              checked={isTeamBased}
-              onCheckedChange={(checked) => setIsTeamBased(checked === true)}
-            />
+          <div className="flex items-center justify-between">
             <Label
               htmlFor="isTeamBased"
               className="font-normal cursor-pointer"
             >
               Team-Based Game
             </Label>
+            <Switch
+              id="isTeamBased"
+              checked={isTeamBased}
+              onCheckedChange={(checked) => setIsTeamBased(checked === true)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label
+              htmlFor="trackScore"
+              className="font-normal cursor-pointer"
+            >
+              Track Score
+            </Label>
+            <Switch
+              id="trackScore"
+              checked={trackScore}
+              onCheckedChange={(checked) => setTrackScore(checked === true)}
+            />
           </div>
 
           {trackScore && (
@@ -271,18 +339,18 @@ export function GameFormContent({
                 </select>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="trackRounds"
-                  checked={trackRounds}
-                  onCheckedChange={(checked) => setTrackRounds(checked === true)}
-                />
+              <div className="flex items-center justify-between">
                 <Label
                   htmlFor="trackRounds"
                   className="font-normal cursor-pointer"
                 >
                   Track Rounds
                 </Label>
+                <Switch
+                  id="trackRounds"
+                  checked={trackRounds}
+                  onCheckedChange={(checked) => setTrackRounds(checked === true)}
+                />
               </div>
 
               {trackRounds && (
@@ -364,6 +432,8 @@ export function AddGameForm({
   >("highest");
   const [scoreCalculation, setScoreCalculation] =
     useState<ScoreCalculation>("all");
+  const [coverArt, setCoverArt] = useState("");
+  const [coverArtPreview, setCoverArtPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -419,6 +489,7 @@ export function AddGameForm({
         highestRoundScoreWins: roundConditionValue === "highest",
         winningConditions,
         creationDate: Date.now(),
+        ...(coverArt && coverArt.trim() ? { coverArt: coverArt.trim() } : {}),
       };
 
       await onSubmit(newGame);
@@ -434,6 +505,8 @@ export function AddGameForm({
       setMatchWinningCondition("highest");
       setRoundWinningCondition("highest");
       setScoreCalculation("all");
+      setCoverArt("");
+      setCoverArtPreview(null);
     } catch (err) {
       console.error("Error creating game:", err);
       alert("Failed to create game");
@@ -470,6 +543,10 @@ export function AddGameForm({
             setRoundWinningCondition={setRoundWinningCondition}
             scoreCalculation={scoreCalculation}
             setScoreCalculation={setScoreCalculation}
+            coverArt={coverArt}
+            setCoverArt={setCoverArt}
+            coverArtPreview={coverArtPreview || undefined}
+            setCoverArtPreview={setCoverArtPreview}
             isSubmitting={isSubmitting}
             onSubmit={handleSubmit}
           />
@@ -495,6 +572,8 @@ export function AddGameForm({
           setHasMax={setHasMax}
           trackScore={trackScore}
           setTrackScore={setTrackScore}
+          isTeamBased={isTeamBased}
+          setIsTeamBased={setIsTeamBased}
           trackRounds={trackRounds}
           setTrackRounds={setTrackRounds}
           matchWinningCondition={matchWinningCondition}
@@ -503,6 +582,10 @@ export function AddGameForm({
           setRoundWinningCondition={setRoundWinningCondition}
           scoreCalculation={scoreCalculation}
           setScoreCalculation={setScoreCalculation}
+          coverArt={coverArt}
+          setCoverArt={setCoverArt}
+          coverArtPreview={coverArtPreview || undefined}
+          setCoverArtPreview={setCoverArtPreview}
           isSubmitting={isSubmitting}
           className="px-4"
           onSubmit={handleSubmit}

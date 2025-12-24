@@ -90,9 +90,27 @@ export function GameDetailPage() {
             ← Back
           </Button>
         </div>
-        <div className="page-header-title-row">
-          <h1>{game.title}</h1>
-          <div className="flex gap-2">
+        <div className="game-header-content">
+          <div className="game-cover-art-section">
+            <div className="game-cover-art-large">
+              {game.coverArt ? (
+                <img 
+                  src={game.coverArt} 
+                  alt={game.title}
+                  className="game-cover-art-image"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              ) : null}
+              {(!game.coverArt || game.coverArt === '') && (
+                <div className="game-cover-art-placeholder-large">
+                  {game.title.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="game-header-actions">
             {isAdmin && (
               <Button 
                 variant="outline"
@@ -109,27 +127,10 @@ export function GameDetailPage() {
             </Button>
           </div>
         </div>
-      </div>
-
-      <div className="game-info">
-        <div className="info-item">
-          <span className="info-label">Type:</span>
-          <span>{game.isBinaryScore ? 'Win/Loss' : 'Score-based'}</span>
-        </div>
-        <div className="info-item">
-          <span className="info-label">Players:</span>
-          <span>{game.supportedPlayerCounts.join(', ')}</span>
-        </div>
-        {game.highestScoreWins !== undefined && (
-          <div className="info-item">
-            <span className="info-label">Winner:</span>
-            <span>{game.highestScoreWins ? 'Highest score' : 'Lowest score'}</span>
-          </div>
-        )}
+        <h1 className="game-title-full-width">{game.title}</h1>
       </div>
 
       <div className="matches-section">
-        <h2>Matches ({gameMatches.length})</h2>
         {gameMatches.length === 0 ? (
           <div className="empty-state">
             <p>No matches yet</p>

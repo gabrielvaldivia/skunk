@@ -104,7 +104,25 @@ export function GamesPage() {
                 className="game-list-item"
                 onClick={() => navigate(`/games/${game.id}`)}
               >
-                <div className="game-list-name">{game.title}</div>
+                <div className="game-list-content">
+                  <div className="game-cover-art-container">
+                    <div className="game-cover-art-placeholder">
+                      {game.title.charAt(0).toUpperCase()}
+                    </div>
+                    {game.coverArt && (
+                      <img 
+                        src={game.coverArt} 
+                        alt={game.title}
+                        className="game-cover-art"
+                        onError={(e) => {
+                          // Hide image if it fails to load, placeholder will show
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div className="game-list-name">{game.title}</div>
+                </div>
                 {champion && champion.playerName && (
                   <div className="game-list-champion">
                     🏆 {champion.playerName}

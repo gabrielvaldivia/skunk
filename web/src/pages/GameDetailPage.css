@@ -15,17 +15,71 @@
   margin-bottom: 1rem;
 }
 
-.page-header-title-row {
+.game-header-content {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 1.5rem;
   width: 100%;
-  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
-.page-header-title-row h1 {
-  margin: 0;
-  flex: 1;
+.game-cover-art-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.game-cover-art-large {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+}
+
+.game-cover-art-image {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.game-cover-art-placeholder-large {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  background-color: hsl(var(--muted));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+.game-title-full-width {
+  margin: 1rem 0 0 0;
+  text-align: left;
+  word-break: break-word;
+  width: 100%;
+}
+
+.game-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  flex-shrink: 0;
 }
 
 .game-info {
@@ -53,4 +107,3 @@
 .matches-section h2 {
   margin-bottom: 1rem;
 }
-
