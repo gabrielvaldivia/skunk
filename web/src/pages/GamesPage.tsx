@@ -3,39 +3,69 @@ import { useNavigate } from "react-router-dom";
 import { useGames } from "../hooks/useGames";
 import { useAuth } from "../context/AuthContext";
 import { useGameChampions } from "../hooks/useGameChampions";
+import { useActivity } from "../hooks/useActivity";
 import { AddGameForm } from "../components/AddGameForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Game } from "../models/Game";
 import "./GamesPage.css";
 
-const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
-
 export function GamesPage() {
   const navigate = useNavigate();
   const { games, isLoading, error, addGame } = useGames();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { champions } = useGameChampions(games);
+  const { matches } = useActivity(10000); // Get all matches to determine latest match per game
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-  const isAdmin = user?.email === ADMIN_EMAIL;
 
   const handleSubmitGame = async (game: Omit<Game, "id">) => {
     await addGame(game);
   };
 
+  // Create a map of gameId -> latest match date
+  const gameLatestMatchDate = useMemo(() => {
+    const dateMap = new Map<string, number>();
+    matches.forEach((match) => {
+      if (match.gameID) {
+        const currentLatest = dateMap.get(match.gameID);
+        if (!currentLatest || match.date > currentLatest) {
+          dateMap.set(match.gameID, match.date);
+        }
+      }
+    });
+    return dateMap;
+  }, [matches]);
+
+  // Sort games by latest match date (most recent first), then alphabetically for games with no matches
+  const sortedGames = useMemo(() => {
+    return [...games].sort((a, b) => {
+      const aDate = gameLatestMatchDate.get(a.id) || 0;
+      const bDate = gameLatestMatchDate.get(b.id) || 0;
+      
+      // Games with matches come first, sorted by latest match date (descending)
+      if (aDate > 0 && bDate > 0) {
+        return bDate - aDate;
+      }
+      // Games with matches come before games without matches
+      if (aDate > 0) return -1;
+      if (bDate > 0) return 1;
+      // Games without matches sorted alphabetically
+      return a.title.localeCompare(b.title);
+    });
+  }, [games, gameLatestMatchDate]);
+
   // Filter games based on search query
   const filteredGames = useMemo(() => {
     if (!searchQuery.trim()) {
-      return games;
+      return sortedGames;
     }
 
     const query = searchQuery.toLowerCase().trim();
-    return games.filter((game) =>
+    return sortedGames.filter((game) =>
       game.title.toLowerCase().includes(query)
     );
-  }, [games, searchQuery]);
+  }, [sortedGames, searchQuery]);
 
   if (isLoading) {
     return <div className="loading">Loading games...</div>;
@@ -49,7 +79,7 @@ export function GamesPage() {
     <div className="games-page">
       <div className="page-header">
         <h1>Games</h1>
-        {isAuthenticated && isAdmin && (
+        {isAuthenticated && (
           <>
             <Button onClick={() => setShowAddForm(true)}>+ Add Game</Button>
             <AddGameForm
