@@ -1,65 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import type { Game } from '../models/Game';
-import { getGames, createGame, updateGame, deleteGame } from '../services/databaseService';
+import { createGame, updateGame, deleteGame } from '../services/databaseService';
+import { useDataCache } from '../context/DataCacheContext';
 
 export function useGames() {
-  const [games, setGames] = useState<Game[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { games, gamesLoading: isLoading, gamesError: error, refreshGames } = useDataCache();
 
-  const fetchGames = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const fetchedGames = await getGames();
-      setGames(fetchedGames);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch games'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchGames();
-  }, []);
-
-  const addGame = async (game: Omit<Game, 'id'>) => {
+  const addGame = useCallback(async (game: Omit<Game, 'id'>) => {
     try {
       const newGame = await createGame(game);
-      setGames(prev => [...prev, newGame].sort((a, b) => a.title.localeCompare(b.title)));
+      await refreshGames();
       return newGame;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to create game'));
-      throw err;
+      throw err instanceof Error ? err : new Error('Failed to create game');
     }
-  };
+  }, [refreshGames]);
 
-  const editGame = async (gameId: string, updates: Partial<Game>) => {
+  const editGame = useCallback(async (gameId: string, updates: Partial<Game>) => {
     try {
       await updateGame(gameId, updates);
-      setGames(prev => prev.map(game => game.id === gameId ? { ...game, ...updates } : game));
+      await refreshGames();
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to update game'));
-      throw err;
+      throw err instanceof Error ? err : new Error('Failed to update game');
     }
-  };
+  }, [refreshGames]);
 
-  const removeGame = async (gameId: string) => {
+  const removeGame = useCallback(async (gameId: string) => {
     try {
       await deleteGame(gameId);
-      setGames(prev => prev.filter(game => game.id !== gameId));
+      await refreshGames();
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to delete game'));
-      throw err;
+      throw err instanceof Error ? err : new Error('Failed to delete game');
     }
-  };
+  }, [refreshGames]);
 
   return {
     games,
     isLoading,
     error,
-    fetchGames,
+    fetchGames: refreshGames,
     addGame,
     editGame,
     removeGame

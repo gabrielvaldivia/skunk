@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SessionProvider } from "./context/SessionContext";
+import { DataCacheProvider } from "./context/DataCacheContext";
 import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "./components/ui/sonner";
 import { Layout } from "./components/Layout";
@@ -152,11 +153,13 @@ function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="skunk-ui-theme">
       <AuthProvider>
-        <SessionProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </SessionProvider>
+        <DataCacheProvider>
+          <SessionProvider>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </SessionProvider>
+        </DataCacheProvider>
       </AuthProvider>
       <Toaster />
     </ThemeProvider>

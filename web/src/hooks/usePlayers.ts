@@ -1,65 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import type { Player } from '../models/Player';
-import { getPlayers, createPlayer, updatePlayer, deletePlayer } from '../services/databaseService';
+import { createPlayer, updatePlayer, deletePlayer } from '../services/databaseService';
+import { useDataCache } from '../context/DataCacheContext';
 
 export function usePlayers() {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const { players, playersLoading: isLoading, playersError: error, refreshPlayers } = useDataCache();
 
-  const fetchPlayers = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const fetchedPlayers = await getPlayers();
-      setPlayers(fetchedPlayers);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch players'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPlayers();
-  }, []);
-
-  const addPlayer = async (player: Omit<Player, 'id'>) => {
+  const addPlayer = useCallback(async (player: Omit<Player, 'id'>) => {
     try {
       const newPlayer = await createPlayer(player);
-      setPlayers(prev => [...prev, newPlayer]);
+      await refreshPlayers();
       return newPlayer;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to create player'));
-      throw err;
+      throw err instanceof Error ? err : new Error('Failed to create player');
     }
-  };
+  }, [refreshPlayers]);
 
-  const editPlayer = async (playerId: string, updates: Partial<Player>) => {
+  const editPlayer = useCallback(async (playerId: string, updates: Partial<Player>) => {
     try {
       await updatePlayer(playerId, updates);
-      setPlayers(prev => prev.map(player => player.id === playerId ? { ...player, ...updates } : player));
+      await refreshPlayers();
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to update player'));
-      throw err;
+      throw err instanceof Error ? err : new Error('Failed to update player');
     }
-  };
+  }, [refreshPlayers]);
 
-  const removePlayer = async (playerId: string) => {
+  const removePlayer = useCallback(async (playerId: string) => {
     try {
       await deletePlayer(playerId);
-      setPlayers(prev => prev.filter(player => player.id !== playerId));
+      await refreshPlayers();
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to delete player'));
-      throw err;
+      throw err instanceof Error ? err : new Error('Failed to delete player');
     }
-  };
+  }, [refreshPlayers]);
 
   return {
     players,
     isLoading,
     error,
-    fetchPlayers,
+    fetchPlayers: refreshPlayers,
     addPlayer,
     editPlayer,
     removePlayer
