@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
 import { getGames, getPlayers } from '../services/databaseService';
