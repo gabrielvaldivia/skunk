@@ -134,3 +134,7 @@
 .matches-section h2 {
   margin-bottom: 1rem;
 }
+
+.matches-list {
+  padding: 0 1.25rem;
+}

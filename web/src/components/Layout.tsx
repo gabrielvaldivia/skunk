@@ -15,9 +15,19 @@ export function Layout({ children }: LayoutProps) {
     { path: "/profile", label: "Account", icon: "👤" },
   ];
 
+  const isGameDetailPage =
+    location.pathname.startsWith("/games/") && location.pathname !== "/games";
+
   return (
     <div className="pb-16 min-h-screen bg-background">
-      <main className="container px-5 py-6 mx-auto max-w-7xl">{children}</main>
+      <main
+        className={cn(
+          "container mx-auto max-w-7xl",
+          !isGameDetailPage && "px-5 py-6"
+        )}
+      >
+        {children}
+      </main>
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex max-w-[600px] items-center justify-around px-2">
           {navItems.map((item) => (
