@@ -85,10 +85,19 @@ export function GameDetailPage() {
   return (
     <div className="game-detail-page">
       <div className="page-header">
-        <div className="page-header-top">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
+        <div className="page-header-nav">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="back-button">
             ← Back
           </Button>
+          {isAdmin && (
+            <Button 
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(true)}
+              className="edit-button"
+            >
+              Edit
+            </Button>
+          )}
         </div>
         <div className="game-header-content">
           <div className="game-cover-art-section">
@@ -110,7 +119,7 @@ export function GameDetailPage() {
               )}
             </div>
           </div>
-          <div className="game-header-actions">
+          <div className="game-header-actions-desktop">
             {isAdmin && (
               <Button 
                 variant="outline"
@@ -126,8 +135,15 @@ export function GameDetailPage() {
               {isCreatingSession ? "Creating..." : "Add Session"}
             </Button>
           </div>
+          <h1 className="game-title-full-width">{game.title}</h1>
+          <Button 
+            onClick={handleCreateSession} 
+            disabled={isCreatingSession}
+            className="start-session-button"
+          >
+            {isCreatingSession ? "Creating..." : "Start Session"}
+          </Button>
         </div>
-        <h1 className="game-title-full-width">{game.title}</h1>
       </div>
 
       <div className="matches-section">

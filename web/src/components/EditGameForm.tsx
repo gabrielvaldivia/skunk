@@ -40,31 +40,43 @@ export function EditGameForm({
 }: EditGameFormProps) {
   const { user } = useAuth();
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  
+
   // Extract values from game
   const minPlayers = Math.min(...game.supportedPlayerCounts);
   const maxPlayers = Math.max(...game.supportedPlayerCounts);
   const hasMax = minPlayers !== maxPlayers;
   const trackScore = !game.isBinaryScore;
-  
+
   // Parse winning conditions
   const winningConditions = game.winningConditions || "game:high|round:high";
-  const gameCondition = winningConditions.split("|").find(c => c.startsWith("game:"));
-  const roundCondition = winningConditions.split("|").find(c => c.startsWith("round:"));
-  const matchWinningCondition = gameCondition?.includes("low") ? "lowest" : "highest";
-  const roundWinningCondition = roundCondition?.includes("low") ? "lowest" : "highest";
-  
+  const gameCondition = winningConditions
+    .split("|")
+    .find((c) => c.startsWith("game:"));
+  const roundCondition = winningConditions
+    .split("|")
+    .find((c) => c.startsWith("round:"));
+  const matchWinningCondition = gameCondition?.includes("low")
+    ? "lowest"
+    : "highest";
+  const roundWinningCondition = roundCondition?.includes("low")
+    ? "lowest"
+    : "highest";
+
   // Determine trackRounds and scoreCalculation
   // trackRounds is enabled if there's a round condition (but it's always in the string, so we check if it differs from default)
   // Actually, trackRounds should be determined by whether the game has rounds tracking enabled
   // For now, we'll infer it from whether countAllScores is being used (when score-based)
   // This is tricky - let's default to false and let the user adjust if needed
   const trackRounds = false; // Default - user can enable if needed
-  
+
   let scoreCalculation: ScoreCalculation = "all";
   if (game.countLosersOnly) {
     scoreCalculation = "losersSum";
-  } else if (!game.countAllScores && !game.countLosersOnly && !game.isBinaryScore) {
+  } else if (
+    !game.countAllScores &&
+    !game.countLosersOnly &&
+    !game.isBinaryScore
+  ) {
     scoreCalculation = "winnerOnly";
   }
 
@@ -81,9 +93,12 @@ export function EditGameForm({
   const [roundWinningConditionState, setRoundWinningCondition] = useState<
     "highest" | "lowest"
   >(roundWinningCondition as "highest" | "lowest");
-  const [scoreCalculationState, setScoreCalculation] = useState<ScoreCalculation>(scoreCalculation);
+  const [scoreCalculationState, setScoreCalculation] =
+    useState<ScoreCalculation>(scoreCalculation);
   const [coverArt, setCoverArt] = useState(game.coverArt || "");
-  const [coverArtPreview, setCoverArtPreview] = useState<string | null>(game.coverArt || null);
+  const [coverArtPreview, setCoverArtPreview] = useState<string | null>(
+    game.coverArt || null
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -101,19 +116,32 @@ export function EditGameForm({
       setIsTeamBased(game.isTeamBased || false);
       setCoverArt(game.coverArt || "");
       setCoverArtPreview(game.coverArt || null);
-      
-      const winningConditionsStr = game.winningConditions || "game:high|round:high";
-      const gameCond = winningConditionsStr.split("|").find(c => c.startsWith("game:"));
-      const roundCond = winningConditionsStr.split("|").find(c => c.startsWith("round:"));
-      setMatchWinningCondition(gameCond?.includes("low") ? "lowest" : "highest");
-      setRoundWinningCondition(roundCond?.includes("low") ? "lowest" : "highest");
+
+      const winningConditionsStr =
+        game.winningConditions || "game:high|round:high";
+      const gameCond = winningConditionsStr
+        .split("|")
+        .find((c) => c.startsWith("game:"));
+      const roundCond = winningConditionsStr
+        .split("|")
+        .find((c) => c.startsWith("round:"));
+      setMatchWinningCondition(
+        gameCond?.includes("low") ? "lowest" : "highest"
+      );
+      setRoundWinningCondition(
+        roundCond?.includes("low") ? "lowest" : "highest"
+      );
       // Note: trackRounds detection is difficult from existing data, defaulting to false
       setTrackRounds(false);
-      
+
       let calc: ScoreCalculation = "all";
       if (game.countLosersOnly) {
         calc = "losersSum";
-      } else if (!game.countAllScores && !game.countLosersOnly && !game.isBinaryScore) {
+      } else if (
+        !game.countAllScores &&
+        !game.countLosersOnly &&
+        !game.isBinaryScore
+      ) {
         calc = "winnerOnly";
       }
       setScoreCalculation(calc);
@@ -122,7 +150,7 @@ export function EditGameForm({
 
   const handleDelete = async () => {
     if (!onDelete) return;
-    
+
     setIsDeleting(true);
     try {
       await onDelete(game.id);
@@ -166,7 +194,9 @@ export function EditGameForm({
 
       // Build winning conditions string
       const gameCondition = `game:${matchWinningConditionState}`;
-      const roundConditionValue = trackRoundsState ? roundWinningConditionState : "highest";
+      const roundConditionValue = trackRoundsState
+        ? roundWinningConditionState
+        : "highest";
       const roundCondition = `round:${roundConditionValue}`;
       const winningConditions = `${gameCondition}|${roundCondition}`;
 
@@ -180,7 +210,11 @@ export function EditGameForm({
         highestScoreWins: matchWinningConditionState === "highest",
         highestRoundScoreWins: roundConditionValue === "highest",
         winningConditions,
-        ...(coverArt && coverArt.trim() ? { coverArt: coverArt.trim() } : coverArt === "" ? { coverArt: undefined } : {}),
+        ...(coverArt && coverArt.trim()
+          ? { coverArt: coverArt.trim() }
+          : coverArt === ""
+          ? { coverArt: undefined }
+          : {}),
       };
 
       await onSubmit(game.id, updatedGame);
@@ -254,13 +288,14 @@ export function EditGameForm({
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        
+
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Delete Game</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete "{game.title}"? This action cannot be undone.
+                Are you sure you want to delete "{game.title}"? This action
+                cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -288,93 +323,93 @@ export function EditGameForm({
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent>
-        <DrawerHeader className="text-left">
-          <DrawerTitle>Edit Game</DrawerTitle>
-        </DrawerHeader>
-        <div className="px-4 pb-4">
-          <GameFormContent
-            title={title}
-            setTitle={setTitle}
-            minPlayers={minPlayersState}
-            setMinPlayers={setMinPlayers}
-            maxPlayers={maxPlayersState}
-            setMaxPlayers={setMaxPlayers}
-            hasMax={hasMaxState}
-            setHasMax={setHasMax}
-            trackScore={trackScoreState}
-            setTrackScore={setTrackScore}
-            isTeamBased={isTeamBased}
-            setIsTeamBased={setIsTeamBased}
-            trackRounds={trackRoundsState}
-            setTrackRounds={setTrackRounds}
-            matchWinningCondition={matchWinningConditionState}
-            setMatchWinningCondition={setMatchWinningCondition}
-            roundWinningCondition={roundWinningConditionState}
-            setRoundWinningCondition={setRoundWinningCondition}
-            scoreCalculation={scoreCalculationState}
-            setScoreCalculation={setScoreCalculation}
-            coverArt={coverArt}
-            setCoverArt={setCoverArt}
-            coverArtPreview={coverArtPreview || undefined}
-            setCoverArtPreview={setCoverArtPreview}
-            isSubmitting={isSubmitting}
-            onSubmit={handleSubmit}
-            className="px-0"
-            submitButtonText="Update Game"
-            showSubmitButton={false}
-            formId="edit-game-form-mobile"
-          />
-        </div>
-        <DrawerFooter className="flex-col sm:flex-row sm:justify-between">
-          {onDelete && (
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteDialog(true)}
-              disabled={isSubmitting}
-            >
-              Delete Game
-            </Button>
-          )}
-          <div className={onDelete ? "ml-auto" : ""}>
+        <DrawerContent>
+          <DrawerHeader className="text-left">
+            <DrawerTitle>Edit Game</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-4">
+            <GameFormContent
+              title={title}
+              setTitle={setTitle}
+              minPlayers={minPlayersState}
+              setMinPlayers={setMinPlayers}
+              maxPlayers={maxPlayersState}
+              setMaxPlayers={setMaxPlayers}
+              hasMax={hasMaxState}
+              setHasMax={setHasMax}
+              trackScore={trackScoreState}
+              setTrackScore={setTrackScore}
+              isTeamBased={isTeamBased}
+              setIsTeamBased={setIsTeamBased}
+              trackRounds={trackRoundsState}
+              setTrackRounds={setTrackRounds}
+              matchWinningCondition={matchWinningConditionState}
+              setMatchWinningCondition={setMatchWinningCondition}
+              roundWinningCondition={roundWinningConditionState}
+              setRoundWinningCondition={setRoundWinningCondition}
+              scoreCalculation={scoreCalculationState}
+              setScoreCalculation={setScoreCalculation}
+              coverArt={coverArt}
+              setCoverArt={setCoverArt}
+              coverArtPreview={coverArtPreview || undefined}
+              setCoverArtPreview={setCoverArtPreview}
+              isSubmitting={isSubmitting}
+              onSubmit={handleSubmit}
+              className="px-0"
+              submitButtonText="Update Game"
+              showSubmitButton={false}
+              formId="edit-game-form-mobile"
+            />
+          </div>
+          <DrawerFooter className="flex-col gap-2">
             <Button
               type="submit"
               form="edit-game-form-mobile"
               disabled={isSubmitting || !title.trim()}
+              className="w-full"
             >
-              {isSubmitting ? "Updating..." : "Update Game"}
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
-          </div>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
-    <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Delete Game</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete "{game.title}"? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => setShowDeleteDialog(false)}
-            disabled={isDeleting}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            {isDeleting ? "Deleting..." : "Delete"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            {onDelete && (
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={isSubmitting}
+                className="w-full"
+              >
+                Delete Game
+              </Button>
+            )}
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Game</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{game.title}"? This action cannot
+              be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
-
