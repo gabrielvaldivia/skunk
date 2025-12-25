@@ -246,7 +246,12 @@ export function SessionPage() {
           <div className="matches-section-header">
             <h2>Matches ({sessionMatches.length})</h2>
             {games.length > 0 && sessionParticipants.length > 0 && (
-              <Button onClick={() => setShowAddForm(true)}>+ New Match</Button>
+              <Button
+                onClick={() => setShowAddForm(true)}
+                className="new-match-button-desktop"
+              >
+                + New Match
+              </Button>
             )}
           </div>
           {isLoadingMatches ? (
@@ -262,6 +267,16 @@ export function SessionPage() {
           )}
         </section>
       </div>
+
+      {games.length > 0 && sessionParticipants.length > 0 && (
+        <Button
+          onClick={() => setShowAddForm(true)}
+          className="new-match-button-mobile"
+          size="lg"
+        >
+          + New Match
+        </Button>
+      )}
 
       <AddMatchForm
         open={showAddForm}

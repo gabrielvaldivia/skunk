@@ -17,13 +17,15 @@ export function Layout({ children }: LayoutProps) {
 
   const isGameDetailPage =
     location.pathname.startsWith("/games/") && location.pathname !== "/games";
+  const isSessionPage = location.pathname.startsWith("/session/");
+  const shouldHideNavOnMobile = isGameDetailPage || isSessionPage;
 
   return (
     <div
       className={cn(
         "min-h-screen bg-background",
-        !isGameDetailPage && "pb-16",
-        isGameDetailPage && "pb-0 md:pb-16"
+        !shouldHideNavOnMobile && "pb-16",
+        shouldHideNavOnMobile && "pb-0 md:pb-16"
       )}
     >
       <main
@@ -37,7 +39,7 @@ export function Layout({ children }: LayoutProps) {
       <nav
         className={cn(
           "fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
-          isGameDetailPage && "hidden md:block"
+          shouldHideNavOnMobile && "hidden md:block"
         )}
       >
         <div className="container mx-auto flex max-w-[600px] items-center justify-around px-2">

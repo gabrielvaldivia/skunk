@@ -90,3 +90,34 @@
   flex-direction: column;
 }
 
+.new-match-button-desktop {
+  display: block;
+}
+
+.new-match-button-mobile {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .session-page {
+    padding-bottom: 6rem;
+  }
+
+  .new-match-button-desktop {
+    display: none;
+  }
+
+  .new-match-button-mobile {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 2rem);
+    max-width: 600px;
+    z-index: 40;
+    height: 3.5rem;
+    font-size: 1.125rem;
+  }
+}
+
