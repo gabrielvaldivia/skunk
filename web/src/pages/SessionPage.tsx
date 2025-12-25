@@ -244,7 +244,6 @@ export function SessionPage() {
 
         <section className="matches-section">
           <div className="matches-section-header">
-            <h2>Matches ({sessionMatches.length})</h2>
             {games.length > 0 && sessionParticipants.length > 0 && (
               <Button
                 onClick={() => setShowAddForm(true)}
