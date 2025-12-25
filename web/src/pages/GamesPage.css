@@ -8,7 +8,20 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 0;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 600px;
+  z-index: 40;
+  background-color: hsl(var(--background));
+  padding: 1rem 0;
+  margin: 0;
+  box-shadow: 0 1px 0 0 hsl(var(--border) / 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .page-header h1 {
@@ -17,7 +30,34 @@
 }
 
 .search-container {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
+  position: fixed;
+  top: 5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 600px;
+  z-index: 39;
+  background-color: hsl(var(--background));
+  padding: 0 0 1rem 0;
+  margin: 0;
+  box-shadow: 0 1px 0 0 hsl(var(--border) / 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@media (max-width: 767px) {
+  .page-header {
+    padding: 1rem;
+  }
+
+  .search-container {
+    padding: 0 1rem 1rem 1rem;
+  }
+}
+
+.games-page {
+  padding-top: 120px;
 }
 
 .search-input {
@@ -34,6 +74,8 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .game-list-item {
@@ -67,7 +109,7 @@
   .game-list-name-wrapper .game-list-champion {
     display: none;
   }
-  
+
   .game-list-champion-desktop {
     display: block;
   }
@@ -142,7 +184,6 @@
 .add-button:hover {
   background-color: #0056b3;
 }
-
 
 .game-item {
   position: relative;
@@ -255,7 +296,8 @@
   cursor: not-allowed;
 }
 
-.loading, .error {
+.loading,
+.error {
   text-align: center;
   padding: 2rem;
 }
@@ -263,4 +305,3 @@
 .error {
   color: #dc3545;
 }
-
