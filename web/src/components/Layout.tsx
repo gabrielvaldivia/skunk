@@ -16,8 +16,8 @@ export function Layout({ children }: LayoutProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-16">
-      <main className="container mx-auto max-w-7xl px-4 py-6">{children}</main>
+    <div className="pb-16 min-h-screen bg-background">
+      <main className="container px-5 py-6 mx-auto max-w-7xl">{children}</main>
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex max-w-[600px] items-center justify-around px-2">
           {navItems.map((item) => (

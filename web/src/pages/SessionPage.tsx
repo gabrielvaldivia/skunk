@@ -10,6 +10,7 @@ import { PlayerCard } from "../components/PlayerCard";
 import { MatchRow } from "../components/MatchRow";
 import { AddMatchForm } from "../components/AddMatchForm";
 import { Button } from "@/components/ui/button";
+import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import type { Match } from "../models/Match";
 import type { Player } from "../models/Player";
@@ -211,8 +212,8 @@ export function SessionPage() {
   return (
     <div className="session-page">
       <div className="page-header">
-        <Button variant="ghost" onClick={() => navigate(-1)}>
-          ← Back
+        <Button variant="outline" onClick={() => navigate(-1)} size="icon">
+          <ChevronLeft />
         </Button>
         <div className="header-actions">
           <Button variant="outline" onClick={handleCopyUrl}>

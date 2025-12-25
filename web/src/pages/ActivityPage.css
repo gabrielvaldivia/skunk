@@ -18,14 +18,8 @@
   max-width: 600px;
   z-index: 40;
   background-color: hsl(var(--background));
-  padding: 1rem 0;
+  padding: 1rem;
   margin: 0;
-}
-
-@media (max-width: 767px) {
-  .page-header {
-    padding: 1rem;
-  }
 }
 
 .activity-page {

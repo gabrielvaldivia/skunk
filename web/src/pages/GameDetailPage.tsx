@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { MatchRow } from "../components/MatchRow";
 import { EditGameForm } from "../components/EditGameForm";
 import { Button } from "@/components/ui/button";
+import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import type { Match } from "../models/Match";
 import type { Game } from "../models/Game";
@@ -90,11 +91,12 @@ export function GameDetailPage() {
       <div className="page-header">
         <div className="page-header-nav">
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={() => navigate(-1)}
             className="back-button"
+            size="icon"
           >
-            ← Back
+            <ChevronLeft />
           </Button>
           {isAdmin && (
             <Button

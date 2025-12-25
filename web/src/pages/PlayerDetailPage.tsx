@@ -4,6 +4,7 @@ import { useActivity } from '../hooks/useActivity';
 import { useGames } from '../hooks/useGames';
 import { MatchRow } from '../components/MatchRow';
 import { Button } from '@/components/ui/button';
+import { ChevronLeft } from 'lucide-react';
 import type { Match } from '../models/Match';
 import './PlayerDetailPage.css';
 
@@ -54,8 +55,8 @@ export function PlayerDetailPage() {
     <div className="player-detail-page">
       <div className="page-header">
         <div className="page-header-top">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            ← Back
+          <Button variant="outline" onClick={() => navigate(-1)} size="icon">
+            <ChevronLeft />
           </Button>
         </div>
         <div className="player-header-content">
