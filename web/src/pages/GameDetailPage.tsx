@@ -106,9 +106,9 @@ export function GameDetailPage() {
             </Button>
           )}
         </div>
-        <div className="game-cover-art-section">
-          <div className="game-cover-art-large">
-            {game.coverArt ? (
+        {game.coverArt && (
+          <div className="game-cover-art-section">
+            <div className="game-cover-art-large">
               <img
                 src={game.coverArt}
                 alt={game.title}
@@ -117,14 +117,9 @@ export function GameDetailPage() {
                   (e.target as HTMLImageElement).style.display = "none";
                 }}
               />
-            ) : null}
-            {(!game.coverArt || game.coverArt === "") && (
-              <div className="game-cover-art-placeholder-large">
-                {game.title.charAt(0).toUpperCase()}
-              </div>
-            )}
+            </div>
           </div>
-        </div>
+        )}
         <div className="game-header-content">
           <div className="game-header-actions-desktop">
             {isAdmin && (

@@ -2,7 +2,7 @@
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
-  padding: 1rem;
+  /* padding: 1rem; */
 }
 
 .game-detail-page .page-header {
@@ -58,7 +58,9 @@
 .game-cover-art-image {
   width: 100%;
   max-width: 400px;
+  max-height: 300px;
   height: auto;
+  object-fit: contain;
   border-radius: 8px;
   display: block;
   position: relative;
@@ -95,6 +97,12 @@
   height: 3.5rem;
   padding: 0 2rem;
   font-size: 1.125rem;
+}
+
+@media (max-width: 640px) {
+  .start-session-button {
+    width: 100%;
+  }
 }
 
 .game-header-actions-desktop {
