@@ -5,6 +5,12 @@
   /* padding: 1rem; */
 }
 
+@media (max-width: 640px) {
+  .game-detail-page {
+    padding-bottom: 6rem;
+  }
+}
+
 .game-detail-page .page-header {
   display: flex;
   flex-direction: column;
@@ -99,9 +105,28 @@
   font-size: 1.125rem;
 }
 
+.start-session-button-mobile {
+  display: none;
+}
+
+.start-session-button-desktop {
+  display: block;
+}
+
 @media (max-width: 640px) {
-  .start-session-button {
-    width: 100%;
+  .start-session-button-desktop {
+    display: none;
+  }
+
+  .start-session-button-mobile {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 2rem);
+    max-width: 600px;
+    z-index: 40;
   }
 }
 

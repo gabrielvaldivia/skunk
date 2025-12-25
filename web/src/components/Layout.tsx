@@ -19,7 +19,13 @@ export function Layout({ children }: LayoutProps) {
     location.pathname.startsWith("/games/") && location.pathname !== "/games";
 
   return (
-    <div className="pb-16 min-h-screen bg-background">
+    <div
+      className={cn(
+        "min-h-screen bg-background",
+        !isGameDetailPage && "pb-16",
+        isGameDetailPage && "pb-0 md:pb-16"
+      )}
+    >
       <main
         className={cn(
           "container mx-auto max-w-7xl",
@@ -28,7 +34,12 @@ export function Layout({ children }: LayoutProps) {
       >
         {children}
       </main>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <nav
+        className={cn(
+          "fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+          isGameDetailPage && "hidden md:block"
+        )}
+      >
         <div className="container mx-auto flex max-w-[600px] items-center justify-around px-2">
           {navItems.map((item) => (
             <Link

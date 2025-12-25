@@ -140,13 +140,22 @@ export function GameDetailPage() {
           <Button
             onClick={handleCreateSession}
             disabled={isCreatingSession}
-            className="start-session-button"
+            className="start-session-button start-session-button-desktop"
             size="lg"
           >
             {isCreatingSession ? "Creating..." : "Start Session"}
           </Button>
         </div>
       </div>
+
+      <Button
+        onClick={handleCreateSession}
+        disabled={isCreatingSession}
+        className="start-session-button start-session-button-mobile"
+        size="lg"
+      >
+        {isCreatingSession ? "Creating..." : "Start Session"}
+      </Button>
 
       <div className="matches-section">
         {gameMatches.length === 0 ? (
