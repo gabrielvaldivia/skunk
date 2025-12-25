@@ -262,7 +262,7 @@ export function EditGameForm({
               setCoverArtPreview={setCoverArtPreview}
               isSubmitting={isSubmitting}
               onSubmit={handleSubmit}
-              submitButtonText="Update Game"
+              submitButtonText="Save Changes"
               showSubmitButton={false}
               formId="edit-game-form"
             />
@@ -282,7 +282,7 @@ export function EditGameForm({
                   form="edit-game-form"
                   disabled={isSubmitting || !title.trim()}
                 >
-                  {isSubmitting ? "Updating..." : "Update Game"}
+                  {isSubmitting ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
             </DialogFooter>
@@ -356,7 +356,7 @@ export function EditGameForm({
               isSubmitting={isSubmitting}
               onSubmit={handleSubmit}
               className="px-0"
-              submitButtonText="Update Game"
+              submitButtonText="Save Changes"
               showSubmitButton={false}
               formId="edit-game-form-mobile"
             />

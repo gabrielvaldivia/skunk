@@ -99,7 +99,11 @@ export function GameFormContent({
   formId,
 }: GameFormContentProps) {
   return (
-    <form id={formId} onSubmit={onSubmit} className={cn("grid items-start gap-6", className)}>
+    <form
+      id={formId}
+      onSubmit={onSubmit}
+      className={cn("grid gap-6 items-start", className)}
+    >
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="title">
@@ -116,9 +120,7 @@ export function GameFormContent({
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="coverArt">
-            Cover Art (optional)
-          </Label>
+          <Label htmlFor="coverArt">Cover Art (optional)</Label>
           <Input
             id="coverArt"
             type="file"
@@ -149,11 +151,11 @@ export function GameFormContent({
             className="cursor-pointer"
           />
           {(coverArtPreview || coverArt) && (
-            <div className="mt-2 flex items-center gap-2">
+            <div className="flex gap-2 items-center mt-2">
               <img
-                src={coverArtPreview || coverArt || ''}
+                src={coverArtPreview || coverArt || ""}
                 alt="Cover art preview"
-                className="w-20 h-20 object-cover rounded-md border"
+                className="object-cover w-20 h-20 rounded-md border"
               />
               <Button
                 type="button"
@@ -163,9 +165,11 @@ export function GameFormContent({
                   setCoverArtPreview(null);
                   setCoverArt("");
                   // Reset file input
-                  const fileInput = document.getElementById('coverArt') as HTMLInputElement;
+                  const fileInput = document.getElementById(
+                    "coverArt"
+                  ) as HTMLInputElement;
                   if (fileInput) {
-                    fileInput.value = '';
+                    fileInput.value = "";
                   }
                 }}
               >
@@ -178,7 +182,7 @@ export function GameFormContent({
         <div className="grid gap-2">
           <div className="flex justify-between items-center">
             <Label>Player Count</Label>
-            <div className="flex items-center gap-2">
+            <div className="flex gap-2 items-center">
               {hasMax ? (
                 <>
                   <Input
@@ -194,7 +198,7 @@ export function GameFormContent({
                         }
                       }
                     }}
-                    className="w-16 h-8 text-center text-sm"
+                    className="w-16 h-8 text-sm text-center"
                   />
                   <span className="text-sm text-muted-foreground">-</span>
                   <div className="relative group">
@@ -208,7 +212,7 @@ export function GameFormContent({
                           setMaxPlayers(value);
                         }
                       }}
-                      className="w-16 h-8 text-center text-sm pr-6"
+                      className="pr-6 w-16 h-8 text-sm text-center"
                     />
                     <button
                       type="button"
@@ -216,7 +220,7 @@ export function GameFormContent({
                         setMaxPlayers(minPlayers);
                         setHasMax(false);
                       }}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground p-1"
+                      className="absolute right-1 top-1/2 p-1 opacity-100 transition-opacity -translate-y-1/2 md:opacity-0 md:group-hover:opacity-100 text-muted-foreground hover:text-foreground"
                       aria-label="Remove max"
                     >
                       <svg
@@ -249,7 +253,7 @@ export function GameFormContent({
                         setMaxPlayers(value);
                       }
                     }}
-                    className="w-16 h-8 text-center text-sm"
+                    className="w-16 h-8 text-sm text-center"
                   />
                   <button
                     type="button"
@@ -290,11 +294,8 @@ export function GameFormContent({
         </div>
 
         <div className="grid gap-4">
-          <div className="flex items-center justify-between">
-            <Label
-              htmlFor="isTeamBased"
-              className="font-normal cursor-pointer"
-            >
+          <div className="flex justify-between items-center">
+            <Label htmlFor="isTeamBased" className="font-normal cursor-pointer">
               Team-Based Game
             </Label>
             <Switch
@@ -304,11 +305,8 @@ export function GameFormContent({
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <Label
-              htmlFor="trackScore"
-              className="font-normal cursor-pointer"
-            >
+          <div className="flex justify-between items-center">
+            <Label htmlFor="trackScore" className="font-normal cursor-pointer">
               Track Score
             </Label>
             <Switch
@@ -321,9 +319,7 @@ export function GameFormContent({
           {trackScore && (
             <>
               <div className="grid gap-2">
-                <Label htmlFor="matchWinning">
-                  Match Winning Condition
-                </Label>
+                <Label htmlFor="matchWinning">Match Winning Condition</Label>
                 <select
                   id="matchWinning"
                   value={matchWinningCondition}
@@ -332,14 +328,14 @@ export function GameFormContent({
                       e.target.value as "highest" | "lowest"
                     )
                   }
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex px-3 py-2 w-full h-10 text-sm rounded-md border border-input bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value="highest">Highest Total Score Wins</option>
                   <option value="lowest">Lowest Total Score Wins</option>
                 </select>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex justify-between items-center">
                 <Label
                   htmlFor="trackRounds"
                   className="font-normal cursor-pointer"
@@ -349,7 +345,9 @@ export function GameFormContent({
                 <Switch
                   id="trackRounds"
                   checked={trackRounds}
-                  onCheckedChange={(checked) => setTrackRounds(checked === true)}
+                  onCheckedChange={(checked) =>
+                    setTrackRounds(checked === true)
+                  }
                 />
               </div>
 
@@ -367,7 +365,7 @@ export function GameFormContent({
                           e.target.value as "highest" | "lowest"
                         )
                       }
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex px-3 py-2 w-full h-10 text-sm rounded-md border border-input bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="highest">Highest Score Wins</option>
                       <option value="lowest">Lowest Score Wins</option>
@@ -384,7 +382,7 @@ export function GameFormContent({
                       onChange={(e) =>
                         setScoreCalculation(e.target.value as ScoreCalculation)
                       }
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex px-3 py-2 w-full h-10 text-sm rounded-md border border-input bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="all">All Players' Scores Count</option>
                       <option value="winnerOnly">
@@ -403,7 +401,11 @@ export function GameFormContent({
       </div>
       {showSubmitButton && (
         <Button type="submit" disabled={isSubmitting || !title.trim()}>
-          {isSubmitting ? (submitButtonText === "Update Game" ? "Updating..." : "Creating...") : submitButtonText}
+          {isSubmitting
+            ? submitButtonText === "Save Changes"
+              ? "Saving..."
+              : "Creating..."
+            : submitButtonText}
         </Button>
       )}
     </form>
@@ -473,7 +475,9 @@ export function AddGameForm({
       // Build winning conditions string
       // Always include round condition (use current value if trackRounds is enabled, otherwise default to "highest")
       const gameCondition = `game:${matchWinningCondition}`;
-      const roundConditionValue = trackRounds ? roundWinningCondition : "highest";
+      const roundConditionValue = trackRounds
+        ? roundWinningCondition
+        : "highest";
       const roundCondition = `round:${roundConditionValue}`;
       const winningConditions = `${gameCondition}|${roundCondition}`;
 
