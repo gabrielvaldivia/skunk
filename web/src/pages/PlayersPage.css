@@ -42,6 +42,13 @@
   gap: 20px;
 }
 
+@media (min-width: 768px) {
+  .players-list {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
 .player-item {
   display: flex;
   align-items: center;

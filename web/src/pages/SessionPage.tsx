@@ -212,19 +212,21 @@ export function SessionPage() {
   return (
     <div className="session-page">
       <div className="page-header">
-        <Button variant="outline" onClick={() => navigate(-1)} size="icon">
-          <ChevronLeft />
-        </Button>
-        <div className="header-actions">
-          <Button variant="outline" onClick={handleCopyUrl}>
-            Copy URL
+        <div className="page-header-top">
+          <Button variant="outline" onClick={() => navigate(-1)} size="icon">
+            <ChevronLeft />
           </Button>
-          <Button variant="outline" onClick={handleLeave} disabled={isLeaving}>
-            {isLeaving ? "Leaving..." : "Leave Session"}
-          </Button>
+          <div className="header-actions">
+            <Button variant="outline" onClick={handleCopyUrl}>
+              Copy URL
+            </Button>
+            <Button variant="outline" onClick={handleLeave} disabled={isLeaving}>
+              {isLeaving ? "Leaving..." : "Leave Session"}
+            </Button>
+          </div>
         </div>
+        <h1>Session {code}</h1>
       </div>
-      <h1>Session {code}</h1>
 
       <div className="session-content">
         <section className="participants-section">

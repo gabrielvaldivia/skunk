@@ -551,3 +551,33 @@ export async function getActiveSessions(): Promise<Session[]> {
   return sessions.sort((a, b) => b.lastActivityAt - a.lastActivityAt);
 }
 
+/**
+ * Get all active sessions for a specific player (non-expired, where player is a participant)
+ */
+export async function getSessionsForPlayer(playerId: string): Promise<Session[]> {
+  const sessionsRef = ref(database, SESSIONS_PATH);
+  const snapshot = await get(sessionsRef);
+
+  if (!snapshot.exists()) {
+    return [];
+  }
+
+  const sessionsData = snapshot.val();
+  const sessions: Session[] = [];
+
+  for (const sessionId in sessionsData) {
+    const session: Session = {
+      id: sessionId,
+      ...sessionsData[sessionId],
+    };
+
+    // Filter: must not be expired AND player must be a participant
+    if (!isSessionExpired(session) && session.participantIDs?.includes(playerId)) {
+      sessions.push(session);
+    }
+  }
+
+  // Sort by lastActivityAt descending (most recent first)
+  return sessions.sort((a, b) => b.lastActivityAt - a.lastActivityAt);
+}
+

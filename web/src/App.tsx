@@ -15,6 +15,7 @@ import { PlayerDetailPage } from "./pages/PlayerDetailPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ActivityPage } from "./pages/ActivityPage";
 import { SessionPage } from "./pages/SessionPage";
+import { SessionsListPage } from "./pages/SessionsListPage";
 import "./App.css";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -128,6 +129,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <SessionPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sessions"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <SessionsListPage />
             </Layout>
           </ProtectedRoute>
         }

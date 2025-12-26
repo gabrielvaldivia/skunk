@@ -1,0 +1,104 @@
+.sessions-list-page {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding-top: 7.5rem;
+}
+
+.sessions-list-page .page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 600px;
+  z-index: 40;
+  background-color: hsl(var(--background));
+  padding: 1rem;
+  margin: 0;
+}
+
+.sessions-list-page .page-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+  width: 100%;
+}
+
+.sessions-list-page .page-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: left;
+  width: 100%;
+}
+
+.sessions-list-page .loading,
+.sessions-list-page .error {
+  text-align: center;
+  padding: 2rem;
+}
+
+.sessions-list-page .error {
+  color: hsl(var(--destructive));
+}
+
+.sessions-list-page .empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.sessions-list-page .sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sessions-list-page .session-card {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.sessions-list-page .session-card:hover {
+  background-color: hsl(var(--accent) / 0.5);
+  border-color: hsl(var(--border));
+}
+
+.sessions-list-page .session-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.sessions-list-page .session-code {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.sessions-list-page .session-time {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.sessions-list-page .session-game {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: hsl(var(--foreground));
+}
+
+.sessions-list-page .session-participants {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+

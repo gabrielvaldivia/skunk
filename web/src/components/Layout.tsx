@@ -18,8 +18,10 @@ export function Layout({ children }: LayoutProps) {
   const isGameDetailPage =
     location.pathname.startsWith("/games/") && location.pathname !== "/games";
   const isSessionPage = location.pathname.startsWith("/session/");
-  const shouldHideNavOnMobile = isGameDetailPage || isSessionPage;
-  const shouldHideNav = isGameDetailPage || isSessionPage;
+  const isSessionsListPage = location.pathname === "/sessions";
+  const shouldHideNavOnMobile =
+    isGameDetailPage || isSessionPage || isSessionsListPage;
+  const shouldHideNav = isGameDetailPage || isSessionPage || isSessionsListPage;
 
   return (
     <div
