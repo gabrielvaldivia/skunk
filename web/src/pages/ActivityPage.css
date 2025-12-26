@@ -53,10 +53,12 @@
   background-color: #5a6268;
 }
 
-.matches-list {
+.activity-page .matches-list {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
 }
 
 .loading,
