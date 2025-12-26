@@ -140,9 +140,23 @@ VITE_FIREBASE_APP_ID=1:123456789:web:abc123
 ## Troubleshooting
 
 ### "Firebase: Error (auth/unauthorized-domain)"
-- Go to Authentication → Settings → Authorized domains
-- Add your localhost domain if testing locally
-- Add your production domain when deploying
+
+This error occurs when trying to sign in from a domain that isn't authorized for OAuth operations.
+
+**To fix:**
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Select your project
+3. Navigate to **Build** → **Authentication**
+4. Click the **Settings** tab
+5. Scroll down to **Authorized domains**
+6. Click **Add domain**
+7. Enter your domain (e.g., `www.skunk.games` or `skunk.games`)
+8. Click **Done**
+
+**Important:**
+- Add both `www.skunk.games` and `skunk.games` if you use both variants
+- `localhost` is automatically included for local development
+- Changes take effect immediately (no need to redeploy)
 
 ### Database URL not found
 - Make sure you enabled Realtime Database (not Firestore)

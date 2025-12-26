@@ -232,7 +232,7 @@ export function EditGameForm({
       <>
         <Dialog open={open} onOpenChange={onOpenChange}>
           <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-hidden !grid grid-rows-[auto_1fr_auto] gap-4">
-            <DialogHeader className="shrink-0">
+            <DialogHeader className="shrink-0 text-center">
               <DialogTitle>Edit Game</DialogTitle>
             </DialogHeader>
             <div className="overflow-y-auto min-h-0">
@@ -326,7 +326,7 @@ export function EditGameForm({
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="h-[95vh] flex flex-col">
-          <DrawerHeader className="text-left shrink-0">
+          <DrawerHeader className="shrink-0">
             <DrawerTitle>Edit Game</DrawerTitle>
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-y-auto flex-1 min-h-0">

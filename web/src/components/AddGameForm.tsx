@@ -18,8 +18,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { RangeSlider } from "@/components/ui/range-slider";
-import { Slider } from "@/components/ui/slider";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
@@ -121,9 +119,7 @@ export function GameFormContent({
     setCoverArtPreview(null);
     setCoverArt("");
     // Reset file input
-    const fileInput = document.getElementById(
-      "coverArt"
-    ) as HTMLInputElement;
+    const fileInput = document.getElementById("coverArt") as HTMLInputElement;
     if (fileInput) {
       fileInput.value = "";
     }
@@ -135,10 +131,10 @@ export function GameFormContent({
       onSubmit={onSubmit}
       className={cn("grid gap-6 items-start", className)}
     >
-      <div className="grid gap-4">
+      <div className="grid gap-6">
         <div className="grid gap-2">
           <div className="flex gap-2 items-center">
-            <div className="w-20 h-20 rounded-md border flex items-center justify-center bg-muted overflow-hidden">
+            <div className="flex overflow-hidden justify-center items-center w-20 h-20 rounded-md border bg-muted">
               {coverArtPreview || coverArt ? (
                 <img
                   src={coverArtPreview || coverArt || ""}
@@ -146,7 +142,7 @@ export function GameFormContent({
                   className="object-cover w-full h-full"
                 />
               ) : (
-                <span className="text-xs text-muted-foreground text-center px-2">
+                <span className="px-2 text-xs text-center text-muted-foreground">
                   No image
                 </span>
               )}
@@ -295,135 +291,108 @@ export function GameFormContent({
               )}
             </div>
           </div>
-          {hasMax ? (
-            <RangeSlider
-              min={2}
-              max={Math.max(10, minPlayers, maxPlayers)}
-              minValue={minPlayers}
-              maxValue={maxPlayers}
-              onValueChange={({ min, max }) => {
-                setMinPlayers(min);
-                setMaxPlayers(max);
-              }}
-            />
-          ) : (
-            <Slider
-              min={2}
-              max={Math.max(10, minPlayers)}
-              value={minPlayers}
-              onValueChange={(value) => {
-                setMinPlayers(value);
-                setMaxPlayers(value);
-              }}
-            />
-          )}
         </div>
 
-        <div className="grid gap-4">
-          <div className="flex justify-between items-center">
-            <Label htmlFor="isTeamBased" className="font-normal cursor-pointer">
-              Team-Based Game
-            </Label>
-            <Switch
-              id="isTeamBased"
-              checked={isTeamBased}
-              onCheckedChange={(checked) => setIsTeamBased(checked === true)}
-            />
-          </div>
-
-          <div className="flex justify-between items-center">
-            <Label htmlFor="trackScore" className="font-normal cursor-pointer">
-              Track Score
-            </Label>
-            <Switch
-              id="trackScore"
-              checked={trackScore}
-              onCheckedChange={(checked) => setTrackScore(checked === true)}
-            />
-          </div>
-
-          {trackScore && (
-            <>
-              <div className="grid gap-2">
-                <Label htmlFor="matchWinning">Match Winning Condition</Label>
-                <select
-                  id="matchWinning"
-                  value={matchWinningCondition}
-                  onChange={(e) =>
-                    setMatchWinningCondition(
-                      e.target.value as "highest" | "lowest"
-                    )
-                  }
-                  className="flex px-3 py-2 w-full h-10 text-sm rounded-md border border-input bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="highest">Highest Total Score Wins</option>
-                  <option value="lowest">Lowest Total Score Wins</option>
-                </select>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <Label
-                  htmlFor="trackRounds"
-                  className="font-normal cursor-pointer"
-                >
-                  Track Rounds
-                </Label>
-                <Switch
-                  id="trackRounds"
-                  checked={trackRounds}
-                  onCheckedChange={(checked) =>
-                    setTrackRounds(checked === true)
-                  }
-                />
-              </div>
-
-              {trackRounds && (
-                <>
-                  <div className="grid gap-2">
-                    <Label htmlFor="roundWinning">
-                      Round Winning Condition
-                    </Label>
-                    <select
-                      id="roundWinning"
-                      value={roundWinningCondition}
-                      onChange={(e) =>
-                        setRoundWinningCondition(
-                          e.target.value as "highest" | "lowest"
-                        )
-                      }
-                      className="flex px-3 py-2 w-full h-10 text-sm rounded-md border border-input bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <option value="highest">Highest Score Wins</option>
-                      <option value="lowest">Lowest Score Wins</option>
-                    </select>
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="scoreCalculation">
-                      Total Score Calculation
-                    </Label>
-                    <select
-                      id="scoreCalculation"
-                      value={scoreCalculation}
-                      onChange={(e) =>
-                        setScoreCalculation(e.target.value as ScoreCalculation)
-                      }
-                      className="flex px-3 py-2 w-full h-10 text-sm rounded-md border border-input bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <option value="all">All Players' Scores Count</option>
-                      <option value="winnerOnly">
-                        Only Winner's Score Counts
-                      </option>
-                      <option value="losersSum">
-                        Winner Gets Sum of Losers' Scores
-                      </option>
-                    </select>
-                  </div>
-                </>
-              )}
-            </>
-          )}
+        <div className="flex justify-between items-center">
+          <Label htmlFor="isTeamBased" className="cursor-pointer">
+            Team-Based Game
+          </Label>
+          <Switch
+            id="isTeamBased"
+            checked={isTeamBased}
+            onCheckedChange={(checked) => setIsTeamBased(checked === true)}
+          />
         </div>
+
+        <div className="flex justify-between items-center">
+          <Label htmlFor="trackScore" className="cursor-pointer">
+            Track Score
+          </Label>
+          <Switch
+            id="trackScore"
+            checked={trackScore}
+            onCheckedChange={(checked) => setTrackScore(checked === true)}
+          />
+        </div>
+
+        {trackScore && (
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="matchWinning" className="font-normal">
+                Match Winning Condition
+              </Label>
+              <select
+                id="matchWinning"
+                value={matchWinningCondition}
+                onChange={(e) =>
+                  setMatchWinningCondition(
+                    e.target.value as "highest" | "lowest"
+                  )
+                }
+                className="flex px-3 py-2 w-full h-10 text-sm rounded-md border border-input bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="highest">Highest Total Score Wins</option>
+                <option value="lowest">Lowest Total Score Wins</option>
+              </select>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <Label htmlFor="trackRounds" className="cursor-pointer">
+                Track Rounds
+              </Label>
+              <Switch
+                id="trackRounds"
+                checked={trackRounds}
+                onCheckedChange={(checked) => setTrackRounds(checked === true)}
+              />
+            </div>
+
+            {trackRounds && (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="roundWinning" className="font-normal">
+                    Round Winning Condition
+                  </Label>
+                  <select
+                    id="roundWinning"
+                    value={roundWinningCondition}
+                    onChange={(e) =>
+                      setRoundWinningCondition(
+                        e.target.value as "highest" | "lowest"
+                      )
+                    }
+                    className="flex px-3 py-2 w-full h-10 text-sm rounded-md border border-input bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="highest">Highest Score Wins</option>
+                    <option value="lowest">Lowest Score Wins</option>
+                  </select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="scoreCalculation" className="font-normal">
+                    Total Score Calculation
+                  </Label>
+                  <select
+                    id="scoreCalculation"
+                    value={scoreCalculation}
+                    onChange={(e) =>
+                      setScoreCalculation(e.target.value as ScoreCalculation)
+                    }
+                    className="flex px-3 py-2 w-full h-10 text-sm rounded-md border border-input bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="all">All Players' Scores Count</option>
+                    <option value="winnerOnly">
+                      Only Winner's Score Counts
+                    </option>
+                    <option value="losersSum">
+                      Winner Gets Sum of Losers' Scores
+                    </option>
+                  </select>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
       {showSubmitButton && (
         <Button type="submit" disabled={isSubmitting || !title.trim()}>
@@ -589,39 +558,41 @@ export function AddGameForm({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent>
-        <DrawerHeader>
+      <DrawerContent className="h-[95vh] flex flex-col">
+        <DrawerHeader className="shrink-0">
           <DrawerTitle>Add New Game</DrawerTitle>
         </DrawerHeader>
-        <GameFormContent
-          title={title}
-          setTitle={setTitle}
-          minPlayers={minPlayers}
-          setMinPlayers={setMinPlayers}
-          maxPlayers={maxPlayers}
-          setMaxPlayers={setMaxPlayers}
-          hasMax={hasMax}
-          setHasMax={setHasMax}
-          trackScore={trackScore}
-          setTrackScore={setTrackScore}
-          isTeamBased={isTeamBased}
-          setIsTeamBased={setIsTeamBased}
-          trackRounds={trackRounds}
-          setTrackRounds={setTrackRounds}
-          matchWinningCondition={matchWinningCondition}
-          setMatchWinningCondition={setMatchWinningCondition}
-          roundWinningCondition={roundWinningCondition}
-          setRoundWinningCondition={setRoundWinningCondition}
-          scoreCalculation={scoreCalculation}
-          setScoreCalculation={setScoreCalculation}
-          coverArt={coverArt}
-          setCoverArt={setCoverArt}
-          coverArtPreview={coverArtPreview || undefined}
-          setCoverArtPreview={setCoverArtPreview}
-          isSubmitting={isSubmitting}
-          className="px-4 pb-4"
-          onSubmit={handleSubmit}
-        />
+        <div className="overflow-y-auto flex-1 px-4 pb-4 min-h-0">
+          <GameFormContent
+            title={title}
+            setTitle={setTitle}
+            minPlayers={minPlayers}
+            setMinPlayers={setMinPlayers}
+            maxPlayers={maxPlayers}
+            setMaxPlayers={setMaxPlayers}
+            hasMax={hasMax}
+            setHasMax={setHasMax}
+            trackScore={trackScore}
+            setTrackScore={setTrackScore}
+            isTeamBased={isTeamBased}
+            setIsTeamBased={setIsTeamBased}
+            trackRounds={trackRounds}
+            setTrackRounds={setTrackRounds}
+            matchWinningCondition={matchWinningCondition}
+            setMatchWinningCondition={setMatchWinningCondition}
+            roundWinningCondition={roundWinningCondition}
+            setRoundWinningCondition={setRoundWinningCondition}
+            scoreCalculation={scoreCalculation}
+            setScoreCalculation={setScoreCalculation}
+            coverArt={coverArt}
+            setCoverArt={setCoverArt}
+            coverArtPreview={coverArtPreview || undefined}
+            setCoverArtPreview={setCoverArtPreview}
+            isSubmitting={isSubmitting}
+            className="px-0"
+            onSubmit={handleSubmit}
+          />
+        </div>
       </DrawerContent>
     </Drawer>
   );

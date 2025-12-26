@@ -2,6 +2,7 @@
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
+  padding-top: 120px;
 }
 
 .page-header {
@@ -32,7 +33,7 @@
 .search-container {
   margin-bottom: 0;
   position: fixed;
-  top: 5.3rem;
+  top: 5rem;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -52,12 +53,8 @@
   }
 
   .search-container {
-    padding: 0 1rem 1rem 1rem;
+    padding: 4px 1rem 1rem 1rem;
   }
-}
-
-.games-page {
-  padding-top: 120px;
 }
 
 .search-input {
@@ -108,7 +105,7 @@
 
 @media (min-width: 768px) {
   .search-container {
-    padding: 0 1rem 1rem 1rem;
+    padding: 5px 1rem 1rem 1rem;
   }
 
   .games-list {
