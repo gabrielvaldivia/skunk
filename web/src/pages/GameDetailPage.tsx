@@ -41,7 +41,13 @@ export function GameDetailPage() {
     setIsCreatingSession(true);
     try {
       const session = await createSession(id);
-      toast.success("Session created!");
+      const url = `${window.location.origin}/session/${session.code}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Session created! URL copied to clipboard.");
+      } catch {
+        toast.success("Session created!");
+      }
       navigate(`/session/${session.code}`);
     } catch (err) {
       const errorMessage =
@@ -124,27 +130,8 @@ export function GameDetailPage() {
         )}
         <div className="game-header-content">
           <div className="game-header-actions-desktop">
-            {isAdmin && (
-              <Button
-                variant="outline"
-                onClick={() => setIsEditDialogOpen(true)}
-              >
-                Edit
-              </Button>
-            )}
-            <Button onClick={handleCreateSession} disabled={isCreatingSession}>
-              {isCreatingSession ? "Creating..." : "Add Session"}
-            </Button>
           </div>
           <h1 className="game-title-full-width">{game.title}</h1>
-          <Button
-            onClick={handleCreateSession}
-            disabled={isCreatingSession}
-            className="start-session-button start-session-button-desktop"
-            size="lg"
-          >
-            {isCreatingSession ? "Creating..." : "Start Session"}
-          </Button>
         </div>
       </div>
 

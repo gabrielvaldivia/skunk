@@ -2,13 +2,8 @@
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
+  padding-bottom: 6rem;
   /* padding: 1rem; */
-}
-
-@media (max-width: 640px) {
-  .game-detail-page {
-    padding-bottom: 6rem;
-  }
 }
 
 .game-detail-page .page-header {
@@ -106,28 +101,18 @@
 }
 
 .start-session-button-mobile {
-  display: none;
+  display: block;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 2rem);
+  max-width: 600px;
+  z-index: 40;
 }
 
 .start-session-button-desktop {
-  display: block;
-}
-
-@media (max-width: 640px) {
-  .start-session-button-desktop {
-    display: none;
-  }
-
-  .start-session-button-mobile {
-    display: block;
-    position: fixed;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100% - 2rem);
-    max-width: 600px;
-    z-index: 40;
-  }
+  display: none;
 }
 
 .game-header-actions-desktop {

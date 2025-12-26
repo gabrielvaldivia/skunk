@@ -9,7 +9,6 @@ import { useActivity } from "../hooks/useActivity";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -18,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
   DrawerFooter,
@@ -351,19 +349,9 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
           )}
           {isDrawer ? (
             <DrawerFooter>
-              <DrawerClose asChild>
-                <Button type="button" variant="outline">
-                  Close
-                </Button>
-              </DrawerClose>
             </DrawerFooter>
           ) : (
             <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Close
-                </Button>
-              </DialogClose>
             </DialogFooter>
           )}
         </>
@@ -390,19 +378,9 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
           )}
           {isDrawer ? (
             <DrawerFooter>
-              <DrawerClose asChild>
-                <Button type="button" variant="outline">
-                  Close
-                </Button>
-              </DrawerClose>
             </DrawerFooter>
           ) : (
             <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Close
-                </Button>
-              </DialogClose>
             </DialogFooter>
           )}
         </>
@@ -432,7 +410,6 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                 setSelectedGameId(e.target.value);
               }}
               required
-              disabled={!!defaultGameId}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="">Select a game</option>
@@ -787,30 +764,12 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
         </div>
         {isDrawer ? (
           <DrawerFooter>
-            <DrawerClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            </DrawerClose>
             <Button type="submit" disabled={isSubmitting || !canSubmit()}>
               {isSubmitting ? "Creating..." : "Create Match"}
             </Button>
           </DrawerFooter>
         ) : (
           <DialogFooter>
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            </DialogClose>
             <Button type="submit" disabled={isSubmitting || !canSubmit()}>
               {isSubmitting ? "Creating..." : "Create Match"}
             </Button>

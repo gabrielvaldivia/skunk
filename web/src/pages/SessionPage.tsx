@@ -244,14 +244,6 @@ export function SessionPage() {
 
         <section className="matches-section">
           <div className="matches-section-header">
-            {games.length > 0 && sessionParticipants.length > 0 && (
-              <Button
-                onClick={() => setShowAddForm(true)}
-                className="new-match-button-desktop"
-              >
-                + New Match
-              </Button>
-            )}
           </div>
           {isLoadingMatches ? (
             <div className="loading">Loading matches...</div>
