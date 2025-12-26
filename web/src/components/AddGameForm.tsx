@@ -98,6 +98,39 @@ export function GameFormContent({
   showSubmitButton = true,
   formId,
 }: GameFormContentProps) {
+  const handleFileSelect = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size must be less than 5MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      setCoverArtPreview(result);
+      // Store as data URL for saving
+      setCoverArt(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveCoverArt = () => {
+    setCoverArtPreview(null);
+    setCoverArt("");
+    // Reset file input
+    const fileInput = document.getElementById(
+      "coverArt"
+    ) as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = "";
+    }
+  };
+
   return (
     <form
       id={formId}
@@ -105,6 +138,61 @@ export function GameFormContent({
       className={cn("grid gap-6 items-start", className)}
     >
       <div className="grid gap-4">
+        <div className="grid gap-2">
+          <div className="flex gap-2 items-center">
+            <div className="w-20 h-20 rounded-md border flex items-center justify-center bg-muted overflow-hidden">
+              {coverArtPreview || coverArt ? (
+                <img
+                  src={coverArtPreview || coverArt || ""}
+                  alt="Cover art preview"
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <span className="text-xs text-muted-foreground text-center px-2">
+                  No image
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const fileInput = document.getElementById(
+                    "coverArt"
+                  ) as HTMLInputElement;
+                  fileInput?.click();
+                }}
+              >
+                {coverArtPreview || coverArt ? "Change" : "Upload"}
+              </Button>
+              {(coverArtPreview || coverArt) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRemoveCoverArt}
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
+            <Input
+              id="coverArt"
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleFileSelect(file);
+                }
+              }}
+              className="hidden"
+            />
+          </div>
+        </div>
+
         <div className="grid gap-2">
           <Label htmlFor="title">
             Game Title <span className="text-destructive">*</span>
@@ -117,66 +205,6 @@ export function GameFormContent({
             autoFocus
             required
           />
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="coverArt">Cover Art (optional)</Label>
-          <Input
-            id="coverArt"
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-
-              if (!file.type.startsWith("image/")) {
-                alert("Please select an image file");
-                return;
-              }
-
-              if (file.size > 5 * 1024 * 1024) {
-                alert("Image size must be less than 5MB");
-                return;
-              }
-
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                const result = reader.result as string;
-                setCoverArtPreview(result);
-                // Store as data URL for saving
-                setCoverArt(result);
-              };
-              reader.readAsDataURL(file);
-            }}
-            className="cursor-pointer"
-          />
-          {(coverArtPreview || coverArt) && (
-            <div className="flex gap-2 items-center mt-2">
-              <img
-                src={coverArtPreview || coverArt || ""}
-                alt="Cover art preview"
-                className="object-cover w-20 h-20 rounded-md border"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setCoverArtPreview(null);
-                  setCoverArt("");
-                  // Reset file input
-                  const fileInput = document.getElementById(
-                    "coverArt"
-                  ) as HTMLInputElement;
-                  if (fileInput) {
-                    fileInput.value = "";
-                  }
-                }}
-              >
-                Remove
-              </Button>
-            </div>
-          )}
         </div>
 
         <div className="grid gap-2">
@@ -522,38 +550,40 @@ export function AddGameForm({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-hidden !grid grid-rows-[auto_1fr_auto] gap-4">
+          <DialogHeader className="shrink-0">
             <DialogTitle>Add New Game</DialogTitle>
           </DialogHeader>
-          <GameFormContent
-            title={title}
-            setTitle={setTitle}
-            minPlayers={minPlayers}
-            setMinPlayers={setMinPlayers}
-            maxPlayers={maxPlayers}
-            setMaxPlayers={setMaxPlayers}
-            hasMax={hasMax}
-            setHasMax={setHasMax}
-            trackScore={trackScore}
-            setTrackScore={setTrackScore}
-            isTeamBased={isTeamBased}
-            setIsTeamBased={setIsTeamBased}
-            trackRounds={trackRounds}
-            setTrackRounds={setTrackRounds}
-            matchWinningCondition={matchWinningCondition}
-            setMatchWinningCondition={setMatchWinningCondition}
-            roundWinningCondition={roundWinningCondition}
-            setRoundWinningCondition={setRoundWinningCondition}
-            scoreCalculation={scoreCalculation}
-            setScoreCalculation={setScoreCalculation}
-            coverArt={coverArt}
-            setCoverArt={setCoverArt}
-            coverArtPreview={coverArtPreview || undefined}
-            setCoverArtPreview={setCoverArtPreview}
-            isSubmitting={isSubmitting}
-            onSubmit={handleSubmit}
-          />
+          <div className="overflow-y-auto min-h-0">
+            <GameFormContent
+              title={title}
+              setTitle={setTitle}
+              minPlayers={minPlayers}
+              setMinPlayers={setMinPlayers}
+              maxPlayers={maxPlayers}
+              setMaxPlayers={setMaxPlayers}
+              hasMax={hasMax}
+              setHasMax={setHasMax}
+              trackScore={trackScore}
+              setTrackScore={setTrackScore}
+              isTeamBased={isTeamBased}
+              setIsTeamBased={setIsTeamBased}
+              trackRounds={trackRounds}
+              setTrackRounds={setTrackRounds}
+              matchWinningCondition={matchWinningCondition}
+              setMatchWinningCondition={setMatchWinningCondition}
+              roundWinningCondition={roundWinningCondition}
+              setRoundWinningCondition={setRoundWinningCondition}
+              scoreCalculation={scoreCalculation}
+              setScoreCalculation={setScoreCalculation}
+              coverArt={coverArt}
+              setCoverArt={setCoverArt}
+              coverArtPreview={coverArtPreview || undefined}
+              setCoverArtPreview={setCoverArtPreview}
+              isSubmitting={isSubmitting}
+              onSubmit={handleSubmit}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     );

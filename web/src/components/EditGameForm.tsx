@@ -231,42 +231,44 @@ export function EditGameForm({
     return (
       <>
         <Dialog open={open} onOpenChange={onOpenChange}>
-          <DialogContent className="sm:max-w-[525px]">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-hidden !grid grid-rows-[auto_1fr_auto] gap-4">
+            <DialogHeader className="shrink-0">
               <DialogTitle>Edit Game</DialogTitle>
             </DialogHeader>
-            <GameFormContent
-              title={title}
-              setTitle={setTitle}
-              minPlayers={minPlayersState}
-              setMinPlayers={setMinPlayers}
-              maxPlayers={maxPlayersState}
-              setMaxPlayers={setMaxPlayers}
-              hasMax={hasMaxState}
-              setHasMax={setHasMax}
-              trackScore={trackScoreState}
-              setTrackScore={setTrackScore}
-              isTeamBased={isTeamBased}
-              setIsTeamBased={setIsTeamBased}
-              trackRounds={trackRoundsState}
-              setTrackRounds={setTrackRounds}
-              matchWinningCondition={matchWinningConditionState}
-              setMatchWinningCondition={setMatchWinningCondition}
-              roundWinningCondition={roundWinningConditionState}
-              setRoundWinningCondition={setRoundWinningCondition}
-              scoreCalculation={scoreCalculationState}
-              setScoreCalculation={setScoreCalculation}
-              coverArt={coverArt}
-              setCoverArt={setCoverArt}
-              coverArtPreview={coverArtPreview || undefined}
-              setCoverArtPreview={setCoverArtPreview}
-              isSubmitting={isSubmitting}
-              onSubmit={handleSubmit}
-              submitButtonText="Save Changes"
-              showSubmitButton={false}
-              formId="edit-game-form"
-            />
-            <DialogFooter className="flex-col sm:flex-row sm:justify-between">
+            <div className="overflow-y-auto min-h-0">
+              <GameFormContent
+                title={title}
+                setTitle={setTitle}
+                minPlayers={minPlayersState}
+                setMinPlayers={setMinPlayers}
+                maxPlayers={maxPlayersState}
+                setMaxPlayers={setMaxPlayers}
+                hasMax={hasMaxState}
+                setHasMax={setHasMax}
+                trackScore={trackScoreState}
+                setTrackScore={setTrackScore}
+                isTeamBased={isTeamBased}
+                setIsTeamBased={setIsTeamBased}
+                trackRounds={trackRoundsState}
+                setTrackRounds={setTrackRounds}
+                matchWinningCondition={matchWinningConditionState}
+                setMatchWinningCondition={setMatchWinningCondition}
+                roundWinningCondition={roundWinningConditionState}
+                setRoundWinningCondition={setRoundWinningCondition}
+                scoreCalculation={scoreCalculationState}
+                setScoreCalculation={setScoreCalculation}
+                coverArt={coverArt}
+                setCoverArt={setCoverArt}
+                coverArtPreview={coverArtPreview || undefined}
+                setCoverArtPreview={setCoverArtPreview}
+                isSubmitting={isSubmitting}
+                onSubmit={handleSubmit}
+                submitButtonText="Save Changes"
+                showSubmitButton={false}
+                formId="edit-game-form"
+              />
+            </div>
+            <DialogFooter className="flex-col sm:flex-row sm:justify-between shrink-0">
               {onDelete && (
                 <Button
                   variant="destructive"
@@ -323,11 +325,11 @@ export function EditGameForm({
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent>
-          <DrawerHeader className="text-left">
+        <DrawerContent className="h-[95vh] flex flex-col">
+          <DrawerHeader className="text-left shrink-0">
             <DrawerTitle>Edit Game</DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-4">
+          <div className="px-4 pb-4 overflow-y-auto flex-1 min-h-0">
             <GameFormContent
               title={title}
               setTitle={setTitle}
@@ -361,7 +363,7 @@ export function EditGameForm({
               formId="edit-game-form-mobile"
             />
           </div>
-          <DrawerFooter className="flex-col gap-2">
+          <DrawerFooter className="flex-col gap-2 shrink-0">
             <Button
               type="submit"
               form="edit-game-form-mobile"
