@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGames } from "../hooks/useGames";
 import { useAuth } from "../context/AuthContext";
@@ -14,10 +14,11 @@ export function GamesPage() {
   const navigate = useNavigate();
   const { games, isLoading, error, addGame } = useGames();
   const { isAuthenticated } = useAuth();
-  const { champions } = useGameChampions(games);
-  const { matches } = useActivity(10000); // Get all matches to determine latest match per game
+  const { matches, isLoading: matchesLoading } = useActivity(10000); // Get all matches to determine latest match per game
+  const { champions } = useGameChampions(games, matches);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const cachedSortedGamesRef = useRef<Game[]>([]);
 
   const handleSubmitGame = async (game: Omit<Game, "id">) => {
     await addGame(game);
@@ -39,7 +40,25 @@ export function GamesPage() {
 
   // Sort games by latest match date (most recent first), then alphabetically for games with no matches
   const sortedGames = useMemo(() => {
-    return [...games].sort((a, b) => {
+    // Use cached sorted games if matches are still loading and we have cached games
+    if (matchesLoading && matches.length === 0 && cachedSortedGamesRef.current.length > 0) {
+      // Check if games have changed - if not, return cached order
+      const currentGameIds = new Set(games.map(g => g.id));
+      const cachedGameIds = new Set(cachedSortedGamesRef.current.map(g => g.id));
+      const idsMatch = games.length === cachedSortedGamesRef.current.length &&
+        games.every(g => cachedGameIds.has(g.id)) &&
+        cachedSortedGamesRef.current.every(g => currentGameIds.has(g.id));
+      
+      if (idsMatch) {
+        // Return cached order, but update with any game data changes
+        return cachedSortedGamesRef.current.map(cachedGame => {
+          const updatedGame = games.find(g => g.id === cachedGame.id);
+          return updatedGame || cachedGame;
+        });
+      }
+    }
+
+    const sorted = [...games].sort((a, b) => {
       const aDate = gameLatestMatchDate.get(a.id) || 0;
       const bDate = gameLatestMatchDate.get(b.id) || 0;
       
@@ -53,7 +72,12 @@ export function GamesPage() {
       // Games without matches sorted alphabetically
       return a.title.localeCompare(b.title);
     });
-  }, [games, gameLatestMatchDate]);
+
+    // Cache the sorted games
+    cachedSortedGamesRef.current = sorted;
+
+    return sorted;
+  }, [games, gameLatestMatchDate, matches, matchesLoading]);
 
   // Filter games based on search query
   const filteredGames = useMemo(() => {

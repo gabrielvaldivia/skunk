@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { getMatches } from '../services/databaseService';
-import { getPlayers } from '../services/databaseService';
+import { useMemo } from 'react';
 import { computeWinnerID } from '../models/Match';
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
+import type { Match } from '../models/Match';
+import { useDataCache } from '../context/DataCacheContext';
 
 export interface GameChampion {
   gameId: string;
@@ -12,95 +12,77 @@ export interface GameChampion {
   winCount: number;
 }
 
-export function useGameChampions(games: Game[]) {
-  const [champions, setChampions] = useState<Map<string, GameChampion>>(new Map());
-  const [isLoading, setIsLoading] = useState(true);
+export function useGameChampions(games: Game[], matches: Match[] = []) {
+  const { players } = useDataCache();
 
-  useEffect(() => {
-    async function calculateChampions() {
-      if (games.length === 0) {
-        setIsLoading(false);
+  const champions = useMemo(() => {
+    if (games.length === 0) {
+      return new Map<string, GameChampion>();
+    }
+
+    // Create a map of player ID to player name
+    const playerMap = new Map<string, Player>();
+    players.forEach(player => {
+      playerMap.set(player.id, player);
+    });
+
+    // Create a map of game ID to game
+    const gameMap = new Map<string, Game>();
+    games.forEach(game => {
+      gameMap.set(game.id, game);
+    });
+
+    // Calculate champions for each game
+    const championsMap = new Map<string, GameChampion>();
+
+    games.forEach(game => {
+      // Get all matches for this game
+      const gameMatches = matches.filter(match => match.gameID === game.id);
+
+      if (gameMatches.length === 0) {
+        championsMap.set(game.id, {
+          gameId: game.id,
+          playerId: undefined,
+          playerName: undefined,
+          winCount: 0
+        });
         return;
       }
 
-      try {
-        // Fetch all matches and players once
-        const [allMatches, allPlayers] = await Promise.all([
-          getMatches(),
-          getPlayers()
-        ]);
+      // Count wins per player
+      const winCounts = new Map<string, number>();
 
-        // Create a map of player ID to player name
-        const playerMap = new Map<string, Player>();
-        allPlayers.forEach(player => {
-          playerMap.set(player.id, player);
-        });
+      gameMatches.forEach(match => {
+        const winnerId = computeWinnerID(match, game);
+        if (winnerId) {
+          winCounts.set(winnerId, (winCounts.get(winnerId) || 0) + 1);
+        }
+      });
 
-        // Create a map of game ID to game
-        const gameMap = new Map<string, Game>();
-        games.forEach(game => {
-          gameMap.set(game.id, game);
-        });
+      // Find player with most wins
+      let championId: string | undefined;
+      let maxWins = 0;
 
-        // Calculate champions for each game
-        const championsMap = new Map<string, GameChampion>();
+      winCounts.forEach((wins, playerId) => {
+        if (wins > maxWins) {
+          maxWins = wins;
+          championId = playerId;
+        }
+      });
 
-        games.forEach(game => {
-          // Get all matches for this game
-          const gameMatches = allMatches.filter(match => match.gameID === game.id);
+      const championPlayer = championId ? playerMap.get(championId) : undefined;
 
-          if (gameMatches.length === 0) {
-            championsMap.set(game.id, {
-              gameId: game.id,
-              playerId: undefined,
-              playerName: undefined,
-              winCount: 0
-            });
-            return;
-          }
+      championsMap.set(game.id, {
+        gameId: game.id,
+        playerId: championId,
+        playerName: championPlayer?.name,
+        winCount: maxWins
+      });
+    });
 
-          // Count wins per player
-          const winCounts = new Map<string, number>();
+    return championsMap;
+  }, [games, matches, players]);
 
-          gameMatches.forEach(match => {
-            const winnerId = computeWinnerID(match, game);
-            if (winnerId) {
-              winCounts.set(winnerId, (winCounts.get(winnerId) || 0) + 1);
-            }
-          });
-
-          // Find player with most wins
-          let championId: string | undefined;
-          let maxWins = 0;
-
-          winCounts.forEach((wins, playerId) => {
-            if (wins > maxWins) {
-              maxWins = wins;
-              championId = playerId;
-            }
-          });
-
-          const championPlayer = championId ? playerMap.get(championId) : undefined;
-
-          championsMap.set(game.id, {
-            gameId: game.id,
-            playerId: championId,
-            playerName: championPlayer?.name,
-            winCount: maxWins
-          });
-        });
-
-        setChampions(championsMap);
-      } catch (error) {
-        console.error('Error calculating champions:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    calculateChampions();
-  }, [games]);
-
-  return { champions, isLoading };
+  return { champions, isLoading: false };
 }
 
