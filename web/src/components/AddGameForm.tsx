@@ -11,9 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
@@ -449,8 +447,8 @@ export function AddGameForm({
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [title, setTitle] = useState("");
   const [minPlayers, setMinPlayers] = useState(2);
-  const [maxPlayers, setMaxPlayers] = useState(4);
-  const [hasMax, setHasMax] = useState(true);
+  const [maxPlayers, setMaxPlayers] = useState(2);
+  const [hasMax, setHasMax] = useState(false);
   const [trackScore, setTrackScore] = useState(false);
   const [isTeamBased, setIsTeamBased] = useState(false);
   const [trackRounds, setTrackRounds] = useState(false);
@@ -529,8 +527,8 @@ export function AddGameForm({
       // Reset form
       setTitle("");
       setMinPlayers(2);
-      setMaxPlayers(4);
-      setHasMax(true);
+      setMaxPlayers(2);
+      setHasMax(false);
       setTrackScore(false);
       setIsTeamBased(false);
       setTrackRounds(false);
@@ -592,7 +590,7 @@ export function AddGameForm({
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
-        <DrawerHeader className="text-left">
+        <DrawerHeader>
           <DrawerTitle>Add New Game</DrawerTitle>
         </DrawerHeader>
         <GameFormContent
@@ -621,16 +619,9 @@ export function AddGameForm({
           coverArtPreview={coverArtPreview || undefined}
           setCoverArtPreview={setCoverArtPreview}
           isSubmitting={isSubmitting}
-          className="px-4"
+          className="px-4 pb-4"
           onSubmit={handleSubmit}
         />
-        <DrawerFooter className="pt-2">
-          <DrawerClose asChild>
-            <Button type="button" variant="outline" disabled={isSubmitting}>
-              Cancel
-            </Button>
-          </DrawerClose>
-        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );
