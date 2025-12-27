@@ -50,6 +50,22 @@ export function PlayerDetailPage() {
   };
 
   const wins = playerMatches.filter(m => m.winnerID === id).length;
+  const bestStreak = (() => {
+    const sorted = [...playerMatches].sort((a, b) => a.date - b.date);
+    let current = 0;
+    let best = 0;
+    for (const match of sorted) {
+      if (match.winnerID === (id || '')) {
+        current += 1;
+        if (current > best) {
+          best = current;
+        }
+      } else {
+        current = 0;
+      }
+    }
+    return best;
+  })();
 
   return (
     <div className="player-detail-page">
@@ -98,6 +114,10 @@ export function PlayerDetailPage() {
         <div className="stat-item">
           <span className="stat-value">{wins}</span>
           <span className="stat-label">Wins</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-value">{bestStreak}</span>
+          <span className="stat-label">Best Streak</span>
         </div>
       </div>
 
