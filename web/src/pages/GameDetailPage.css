@@ -170,6 +170,18 @@
 
 /* Use shared .matches-list styles from index.css */
 
+.game-detail-page .page-content {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 768px) {
+  .game-detail-page .page-content {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+}
+
 .game-stats {
   display: flex;
   gap: 1rem;
