@@ -16,10 +16,26 @@
 .page-header-nav {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   width: 100%;
   margin-bottom: 1rem;
   position: relative;
+}
+
+.page-title-top {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  max-width: 70%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .back-button {
@@ -57,15 +73,16 @@
 }
 
 .game-cover-art-image {
-  width: 100%;
-  max-width: 400px;
-  max-height: 300px;
+  width: auto;
+  max-width: 100%;
+  max-height: 150px;
   height: auto;
   object-fit: contain;
   border-radius: 8px;
   display: block;
   position: relative;
   z-index: 1;
+  margin: 0 auto;
 }
 
 .game-cover-art-placeholder-large {
@@ -150,4 +167,60 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.game-stats {
+  display: flex;
+  gap: 1rem;
+  margin: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: hsl(var(--muted));
+  border-radius: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  box-sizing: border-box;
+  width: auto;
+  max-width: 100%;
+}
+
+.game-stats .stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 50%;
+  min-width: 0;
+}
+
+.game-stats .stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: hsl(var(--foreground));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-stats .stat-label {
+  font-size: 0.9rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.game-champion-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+}
+
+.game-champion-avatar.initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  font-size: 0.9rem;
+  font-weight: 700;
 }
