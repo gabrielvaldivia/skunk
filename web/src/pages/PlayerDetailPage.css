@@ -92,16 +92,12 @@
   padding: 1rem;
   background: hsl(var(--muted));
   border-radius: 0.5rem;
-  justify-content: center;
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  flex: 1;
-  min-width: 0;
+  align-items: flex-start;
 }
 
 .stat-value {
@@ -121,11 +117,6 @@
 
 .matches-section h2 {
   margin-bottom: 1rem;
-  /* Remove horizontal padding by offsetting the page padding */
-  margin-left: -1.25rem;
-  margin-right: -1.25rem;
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
 }
 
 .player-detail-page .matches-list {

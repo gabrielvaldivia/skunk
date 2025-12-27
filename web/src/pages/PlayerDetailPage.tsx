@@ -1,12 +1,12 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { usePlayers } from '../hooks/usePlayers';
-import { useActivity } from '../hooks/useActivity';
-import { useGames } from '../hooks/useGames';
-import { MatchRow } from '../components/MatchRow';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft } from 'lucide-react';
-import type { Match } from '../models/Match';
-import './PlayerDetailPage.css';
+import { useParams, useNavigate } from "react-router-dom";
+import { usePlayers } from "../hooks/usePlayers";
+import { useActivity } from "../hooks/useActivity";
+import { useGames } from "../hooks/useGames";
+import { MatchRow } from "../components/MatchRow";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft } from "lucide-react";
+import type { Match } from "../models/Match";
+import "./PlayerDetailPage.css";
 
 export function PlayerDetailPage() {
   const navigate = useNavigate();
@@ -15,12 +15,12 @@ export function PlayerDetailPage() {
   const { matches: allMatches } = useActivity(500, 365 * 10);
   const { games } = useGames();
 
-  const player = players.find(p => p.id === id);
+  const player = players.find((p) => p.id === id);
   const playerMatches: Match[] = allMatches
-    .filter(m => m.playerIDs.includes(id || ''))
-    .map(match => ({
+    .filter((m) => m.playerIDs.includes(id || ""))
+    .map((match) => ({
       ...match,
-      game: games.find(g => g.id === match.gameID) || undefined
+      game: games.find((g) => g.id === match.gameID) || undefined,
     }));
 
   if (!player) {
@@ -33,39 +33,28 @@ export function PlayerDetailPage() {
 
   const getInitials = (name: string): string => {
     return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
-  const getPlayerColor = (player: { colorData?: string; name: string }): string => {
+  const getPlayerColor = (player: {
+    colorData?: string;
+    name: string;
+  }): string => {
     if (player.colorData) {
       return player.colorData;
     }
-    const hash = player.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hash = player.name
+      .split("")
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const hue = hash % 360;
     return `hsl(${hue}, 70%, 60%)`;
   };
 
-  const wins = playerMatches.filter(m => m.winnerID === id).length;
-  const bestStreak = (() => {
-    const sorted = [...playerMatches].sort((a, b) => a.date - b.date);
-    let current = 0;
-    let best = 0;
-    for (const match of sorted) {
-      if (match.winnerID === (id || '')) {
-        current += 1;
-        if (current > best) {
-          best = current;
-        }
-      } else {
-        current = 0;
-      }
-    }
-    return best;
-  })();
+  const wins = playerMatches.filter((m) => m.winnerID === id).length;
 
   return (
     <div className="player-detail-page">
@@ -76,14 +65,19 @@ export function PlayerDetailPage() {
           </Button>
         </div>
         <div className="player-header-content">
-          <div 
-            className="player-avatar-large" 
+          <div
+            className="player-avatar-large"
             style={{ backgroundColor: getPlayerColor(player) }}
           >
             {player.photoData ? (
-              <img src={`data:image/jpeg;base64,${player.photoData}`} alt={player.name} />
+              <img
+                src={`data:image/jpeg;base64,${player.photoData}`}
+                alt={player.name}
+              />
             ) : (
-              <span className="player-initials">{getInitials(player.name)}</span>
+              <span className="player-initials">
+                {getInitials(player.name)}
+              </span>
             )}
           </div>
           <div className="player-header-info">
@@ -91,15 +85,9 @@ export function PlayerDetailPage() {
             {(player.location || player.bio) && (
               <div className="player-details">
                 {player.location && (
-                  <div className="player-location">
-                    📍 {player.location}
-                  </div>
+                  <div className="player-location">📍 {player.location}</div>
                 )}
-                {player.bio && (
-                  <div className="player-bio">
-                    {player.bio}
-                  </div>
-                )}
+                {player.bio && <div className="player-bio">{player.bio}</div>}
               </div>
             )}
           </div>
@@ -115,10 +103,6 @@ export function PlayerDetailPage() {
           <span className="stat-value">{wins}</span>
           <span className="stat-label">Wins</span>
         </div>
-        <div className="stat-item">
-          <span className="stat-value">{bestStreak}</span>
-          <span className="stat-label">Best Streak</span>
-        </div>
       </div>
 
       <div className="matches-section">
@@ -129,7 +113,7 @@ export function PlayerDetailPage() {
           </div>
         ) : (
           <div className="matches-list">
-            {playerMatches.map(match => (
+            {playerMatches.map((match) => (
               <MatchRow key={match.id} match={match} hideGameTitle={false} />
             ))}
           </div>
@@ -138,4 +122,3 @@ export function PlayerDetailPage() {
     </div>
   );
 }
-
