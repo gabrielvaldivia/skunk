@@ -37,6 +37,7 @@ export function SessionPage() {
   const [sessionParticipants, setSessionParticipants] = useState<Player[]>([]);
   const [sessionMatches, setSessionMatches] = useState<Match[]>([]);
   const [isLoadingMatches, setIsLoadingMatches] = useState(false);
+  const [lastSelectedGameId, setLastSelectedGameId] = useState<string | undefined>(undefined);
 
   // Auto-join session when code is in URL and user is authenticated
   useEffect(() => {
@@ -127,6 +128,19 @@ export function SessionPage() {
     return () => clearInterval(interval);
   }, [currentSession, code, refreshSession]);
 
+  // Load last selected game for this session from localStorage
+  useEffect(() => {
+    if (!code) return;
+    try {
+      const stored = localStorage.getItem(`session:lastGame:${code}`);
+      if (stored) {
+        setLastSelectedGameId(stored);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, [code]);
+
   const handleCopyUrl = async () => {
     if (!code) return;
 
@@ -158,6 +172,15 @@ export function SessionPage() {
 
   const handleSubmitMatch = async (match: Omit<Match, "id">) => {
     await addMatch(match);
+    // Remember the last selected game for this session
+    if (code && match.gameID) {
+      try {
+        localStorage.setItem(`session:lastGame:${code}`, match.gameID);
+        setLastSelectedGameId(match.gameID);
+      } catch {
+        // ignore storage errors
+      }
+    }
     setShowAddForm(false);
     // Refresh matches after creating a new one
     if (code) {
@@ -275,7 +298,7 @@ export function SessionPage() {
         open={showAddForm}
         onOpenChange={setShowAddForm}
         onSubmit={handleSubmitMatch}
-        defaultGameId={currentSession.gameID}
+        defaultGameId={lastSelectedGameId || currentSession.gameID}
         sessionParticipants={sessionParticipants}
         sessionCode={code}
       />
