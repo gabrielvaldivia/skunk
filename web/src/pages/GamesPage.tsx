@@ -4,6 +4,8 @@ import { useGames } from "../hooks/useGames";
 import { useAuth } from "../context/AuthContext";
 import { useGameChampions } from "../hooks/useGameChampions";
 import { useActivity } from "../hooks/useActivity";
+import { useSession } from "../context/SessionContext";
+import { MiniSessionSheet } from "../components/MiniSessionSheet";
 import { AddGameForm } from "../components/AddGameForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +17,7 @@ export function GamesPage() {
   const { games, isLoading, error, addGame } = useGames();
   const { isAuthenticated } = useAuth();
   const { matches, isLoading: matchesLoading } = useActivity(10000); // Get all matches to determine latest match per game
+  const { currentSession } = useSession();
   const { champions } = useGameChampions(games, matches);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -114,6 +117,8 @@ export function GamesPage() {
           </>
         )}
       </div>
+
+      {currentSession && <MiniSessionSheet />}
 
       {games.length > 0 && (
         <div className="search-container">

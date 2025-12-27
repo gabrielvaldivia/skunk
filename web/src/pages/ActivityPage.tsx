@@ -1,14 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { useActivity } from '../hooks/useActivity';
-import { usePlayerSessions } from '../hooks/usePlayerSessions';
+import { useSession } from '../context/SessionContext';
+import { MiniSessionSheet } from '../components/MiniSessionSheet';
 import { MatchRow } from '../components/MatchRow';
-import { ChevronRight } from "lucide-react";
 import './ActivityPage.css';
 
 export function ActivityPage() {
   const navigate = useNavigate();
   const { matches, isLoading, error } = useActivity();
-  const { sessions, isLoading: sessionsLoading } = usePlayerSessions();
+  const { currentSession } = useSession();
 
   if (isLoading) {
     return <div className="loading">Loading activity...</div>;
@@ -18,38 +18,14 @@ export function ActivityPage() {
     return <div className="error">Error: {error.message}</div>;
   }
 
-  const activeSessions = sessions.filter(s => s); // Filter out any null/undefined
+  // currentSession comes from SessionContext and represents the user's active session (if any)
 
   return (
     <div className="activity-page">
       <div className="page-header">
         <h1>Activity</h1>
-        {!sessionsLoading && activeSessions.length > 0 && (
-          <div className="session-banner">
-            {activeSessions.length === 1 ? (
-              <button
-                className="session-banner-link"
-                onClick={() => navigate(`/session/${activeSessions[0].code}`)}
-              >
-                <span className="session-banner-text">
-                  You're in Session {activeSessions[0].code}
-                </span>
-                <ChevronRight className="session-banner-arrow" size={20} />
-              </button>
-            ) : (
-              <button
-                className="session-banner-link"
-                onClick={() => navigate('/sessions')}
-              >
-                <span className="session-banner-text">
-                  You're in {activeSessions.length} sessions
-                </span>
-                <ChevronRight className="session-banner-arrow" size={20} />
-              </button>
-            )}
-          </div>
-        )}
       </div>
+      {currentSession && <MiniSessionSheet />}
 
       {matches.length === 0 ? (
         <div className="empty-state">

@@ -114,6 +114,11 @@
   margin-top: 0;
 }
 
+.activity-page .mini-session-sheet {
+  /* Raise above bottom nav */
+  bottom: 4.5rem;
+}
+
 .loading,
 .error {
   text-align: center;

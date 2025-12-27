@@ -2,6 +2,8 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePlayers } from "../hooks/usePlayers";
 import { useAuth } from "../context/AuthContext";
+import { useSession } from "../context/SessionContext";
+import { MiniSessionSheet } from "../components/MiniSessionSheet";
 import { PlayerCard } from "../components/PlayerCard";
 import { useMediaQuery } from "../hooks/use-media-query";
 import { Button } from "@/components/ui/button";
@@ -92,6 +94,7 @@ export function PlayersPage() {
   const navigate = useNavigate();
   const { players, isLoading, error, addPlayer, removePlayer } = usePlayers();
   const { user, player: currentUserPlayer, isAuthenticated } = useAuth();
+  const { currentSession } = useSession();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -214,6 +217,8 @@ export function PlayersPage() {
           <Button onClick={() => setShowAddForm(true)}>+ Add Player</Button>
         )}
       </div>
+
+      {currentSession && <MiniSessionSheet />}
 
       {showAddForm && (
         <div className="modal-overlay" onClick={() => setShowAddForm(false)}>

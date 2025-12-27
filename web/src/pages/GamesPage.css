@@ -312,3 +312,8 @@
 .error {
   color: #dc3545;
 }
+
+.games-page .mini-session-sheet {
+  /* Raise above bottom nav */
+  bottom: 4.5rem;
+}
