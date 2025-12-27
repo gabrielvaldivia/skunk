@@ -118,34 +118,36 @@ export function PlayerDetailPage() {
         </div>
       </div>
 
-      <div className="player-stats">
-        <div className="stat-item">
-          <span className="stat-value">{playerMatches.length}</span>
-          <span className="stat-label">Matches</span>
+      <div className="page-content">
+        <div className="player-stats">
+          <div className="stat-item">
+            <span className="stat-value">{playerMatches.length}</span>
+            <span className="stat-label">Matches</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-value">{wins}</span>
+            <span className="stat-label">Wins</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-value">{bestWinStreak}</span>
+            <span className="stat-label">Best Streak</span>
+          </div>
         </div>
-        <div className="stat-item">
-          <span className="stat-value">{wins}</span>
-          <span className="stat-label">Wins</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-value">{bestWinStreak}</span>
-          <span className="stat-label">Best Streak</span>
-        </div>
-      </div>
 
-      <div className="matches-section">
-        <h2>Match History</h2>
-        {playerMatches.length === 0 ? (
-          <div className="empty-state">
-            <p>No matches yet</p>
-          </div>
-        ) : (
-          <div className="matches-list">
-            {playerMatches.map((match) => (
-              <MatchRow key={match.id} match={match} hideGameTitle={false} />
-            ))}
-          </div>
-        )}
+        <div className="matches-section">
+          <h2>Match History</h2>
+          {playerMatches.length === 0 ? (
+            <div className="empty-state">
+              <p>No matches yet</p>
+            </div>
+          ) : (
+            <div className="matches-list">
+              {playerMatches.map((match) => (
+                <MatchRow key={match.id} match={match} hideGameTitle={false} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

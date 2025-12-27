@@ -180,203 +180,211 @@ export function GameDetailPage() {
         {/* Game cover art intentionally hidden per design */}
       </div>
 
-      {placements.length > 0 && (
-        <div className="game-stats">
-          <div className="game-leaderboard">
-            {placements.length >= 2 && (
-              <div className="leader second">
-                {placements[1].players.length > 1 ? (
-                  <div className="avatar-pile diagonal">
-                    {placements[1].players.slice(0, 2).map((p, idx) =>
-                      p.photoData ? (
+      <div className="page-content">
+        {placements.length > 0 && (
+          <div className="game-stats">
+            <div className="game-leaderboard">
+              {placements.length >= 2 && (
+                <div className="leader second">
+                  {placements[1].players.length > 1 ? (
+                    <div className="avatar-pile diagonal">
+                      {placements[1].players.slice(0, 2).map((p, idx) =>
+                        p.photoData ? (
+                          <img
+                            key={p.id}
+                            className={`avatar ${
+                              idx === 0 ? "pos-a" : "pos-b"
+                            }`}
+                            src={`data:image/jpeg;base64,${p.photoData}`}
+                            alt={p.name}
+                          />
+                        ) : (
+                          <span
+                            key={p.id}
+                            className={`avatar initials ${
+                              idx === 0 ? "pos-a" : "pos-b"
+                            }`}
+                          >
+                            {getInitials(p.name)}
+                          </span>
+                        )
+                      )}
+                      <span className="rank-badge">2</span>
+                    </div>
+                  ) : (
+                    <div className="avatar-wrap">
+                      {placements[1].players[0]?.photoData ? (
                         <img
-                          key={p.id}
-                          className={`avatar ${idx === 0 ? "pos-a" : "pos-b"}`}
-                          src={`data:image/jpeg;base64,${p.photoData}`}
-                          alt={p.name}
+                          className="avatar"
+                          src={`data:image/jpeg;base64,${placements[1].players[0].photoData}`}
+                          alt={placements[1].players[0].name}
                         />
                       ) : (
-                        <span
-                          key={p.id}
-                          className={`avatar initials ${
-                            idx === 0 ? "pos-a" : "pos-b"
-                          }`}
-                        >
-                          {getInitials(p.name)}
+                        <span className="avatar initials">
+                          {placements[1].players[0] &&
+                            getInitials(placements[1].players[0].name)}
                         </span>
-                      )
-                    )}
-                    <span className="rank-badge">2</span>
-                  </div>
-                ) : (
-                  <div className="avatar-wrap">
-                    {placements[1].players[0]?.photoData ? (
-                      <img
-                        className="avatar"
-                        src={`data:image/jpeg;base64,${placements[1].players[0].photoData}`}
-                        alt={placements[1].players[0].name}
-                      />
-                    ) : (
-                      <span className="avatar initials">
-                        {placements[1].players[0] &&
-                          getInitials(placements[1].players[0].name)}
-                      </span>
-                    )}
-                    <span className="rank-badge">2</span>
-                  </div>
-                )}
-                <div className="meta">
-                  <div className="name">
-                    {getPlacementLabel(placements[1].players)}
-                  </div>
-                  <div className="wins">
-                    {placements[1].wins}{" "}
-                    {placements[1].wins === 1 ? "win" : "wins"}
+                      )}
+                      <span className="rank-badge">2</span>
+                    </div>
+                  )}
+                  <div className="meta">
+                    <div className="name">
+                      {getPlacementLabel(placements[1].players)}
+                    </div>
+                    <div className="wins">
+                      {placements[1].wins}{" "}
+                      {placements[1].wins === 1 ? "win" : "wins"}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            {placements.length >= 1 && (
-              <div className="leader first">
-                <div className="crown" aria-hidden>
-                  👑
-                </div>
-                {placements[0].players.length > 1 ? (
-                  <div className="avatar-pile diagonal">
-                    {placements[0].players.slice(0, 2).map((p, idx) =>
-                      p.photoData ? (
+              )}
+              {placements.length >= 1 && (
+                <div className="leader first">
+                  <div className="crown" aria-hidden>
+                    👑
+                  </div>
+                  {placements[0].players.length > 1 ? (
+                    <div className="avatar-pile diagonal">
+                      {placements[0].players.slice(0, 2).map((p, idx) =>
+                        p.photoData ? (
+                          <img
+                            key={p.id}
+                            className={`avatar ${
+                              idx === 0 ? "pos-a" : "pos-b"
+                            }`}
+                            src={`data:image/jpeg;base64,${p.photoData}`}
+                            alt={p.name}
+                          />
+                        ) : (
+                          <span
+                            key={p.id}
+                            className={`avatar initials ${
+                              idx === 0 ? "pos-a" : "pos-b"
+                            }`}
+                          >
+                            {getInitials(p.name)}
+                          </span>
+                        )
+                      )}
+                      <span className="rank-badge primary">1</span>
+                    </div>
+                  ) : (
+                    <div className="avatar-wrap">
+                      {placements[0].players[0]?.photoData ? (
                         <img
-                          key={p.id}
-                          className={`avatar ${idx === 0 ? "pos-a" : "pos-b"}`}
-                          src={`data:image/jpeg;base64,${p.photoData}`}
-                          alt={p.name}
+                          className="avatar"
+                          src={`data:image/jpeg;base64,${placements[0].players[0].photoData}`}
+                          alt={placements[0].players[0].name}
                         />
                       ) : (
-                        <span
-                          key={p.id}
-                          className={`avatar initials ${
-                            idx === 0 ? "pos-a" : "pos-b"
-                          }`}
-                        >
-                          {getInitials(p.name)}
+                        <span className="avatar initials">
+                          {placements[0].players[0] &&
+                            getInitials(placements[0].players[0].name)}
                         </span>
-                      )
-                    )}
-                    <span className="rank-badge primary">1</span>
-                  </div>
-                ) : (
-                  <div className="avatar-wrap">
-                    {placements[0].players[0]?.photoData ? (
-                      <img
-                        className="avatar"
-                        src={`data:image/jpeg;base64,${placements[0].players[0].photoData}`}
-                        alt={placements[0].players[0].name}
-                      />
-                    ) : (
-                      <span className="avatar initials">
-                        {placements[0].players[0] &&
-                          getInitials(placements[0].players[0].name)}
-                      </span>
-                    )}
-                    <span className="rank-badge primary">1</span>
-                  </div>
-                )}
-                <div className="meta">
-                  <div className="name">
-                    {getPlacementLabel(placements[0].players)}
-                  </div>
-                  <div className="wins">
-                    {placements[0].wins}{" "}
-                    {placements[0].wins === 1 ? "win" : "wins"}
+                      )}
+                      <span className="rank-badge primary">1</span>
+                    </div>
+                  )}
+                  <div className="meta">
+                    <div className="name">
+                      {getPlacementLabel(placements[0].players)}
+                    </div>
+                    <div className="wins">
+                      {placements[0].wins}{" "}
+                      {placements[0].wins === 1 ? "win" : "wins"}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            {placements.length >= 3 && (
-              <div className="leader third">
-                {placements[2].players.length > 1 ? (
-                  <div className="avatar-pile diagonal">
-                    {placements[2].players.slice(0, 2).map((p, idx) =>
-                      p.photoData ? (
+              )}
+              {placements.length >= 3 && (
+                <div className="leader third">
+                  {placements[2].players.length > 1 ? (
+                    <div className="avatar-pile diagonal">
+                      {placements[2].players.slice(0, 2).map((p, idx) =>
+                        p.photoData ? (
+                          <img
+                            key={p.id}
+                            className={`avatar ${
+                              idx === 0 ? "pos-a" : "pos-b"
+                            }`}
+                            src={`data:image/jpeg;base64,${p.photoData}`}
+                            alt={p.name}
+                          />
+                        ) : (
+                          <span
+                            key={p.id}
+                            className={`avatar initials ${
+                              idx === 0 ? "pos-a" : "pos-b"
+                            }`}
+                          >
+                            {getInitials(p.name)}
+                          </span>
+                        )
+                      )}
+                      <span className="rank-badge">3</span>
+                    </div>
+                  ) : (
+                    <div className="avatar-wrap">
+                      {placements[2].players[0]?.photoData ? (
                         <img
-                          key={p.id}
-                          className={`avatar ${idx === 0 ? "pos-a" : "pos-b"}`}
-                          src={`data:image/jpeg;base64,${p.photoData}`}
-                          alt={p.name}
+                          className="avatar"
+                          src={`data:image/jpeg;base64,${placements[2].players[0].photoData}`}
+                          alt={placements[2].players[0].name}
                         />
                       ) : (
-                        <span
-                          key={p.id}
-                          className={`avatar initials ${
-                            idx === 0 ? "pos-a" : "pos-b"
-                          }`}
-                        >
-                          {getInitials(p.name)}
+                        <span className="avatar initials">
+                          {placements[2].players[0] &&
+                            getInitials(placements[2].players[0].name)}
                         </span>
-                      )
-                    )}
-                    <span className="rank-badge">3</span>
-                  </div>
-                ) : (
-                  <div className="avatar-wrap">
-                    {placements[2].players[0]?.photoData ? (
-                      <img
-                        className="avatar"
-                        src={`data:image/jpeg;base64,${placements[2].players[0].photoData}`}
-                        alt={placements[2].players[0].name}
-                      />
-                    ) : (
-                      <span className="avatar initials">
-                        {placements[2].players[0] &&
-                          getInitials(placements[2].players[0].name)}
-                      </span>
-                    )}
-                    <span className="rank-badge">3</span>
-                  </div>
-                )}
-                <div className="meta">
-                  <div className="name">
-                    {getPlacementLabel(placements[2].players)}
-                  </div>
-                  <div className="wins">
-                    {placements[2].wins}{" "}
-                    {placements[2].wins === 1 ? "win" : "wins"}
+                      )}
+                      <span className="rank-badge">3</span>
+                    </div>
+                  )}
+                  <div className="meta">
+                    <div className="name">
+                      {getPlacementLabel(placements[2].players)}
+                    </div>
+                    <div className="wins">
+                      {placements[2].wins}{" "}
+                      {placements[2].wins === 1 ? "win" : "wins"}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {!currentSession && (
-        <Button
-          onClick={handleCreateSession}
-          disabled={isCreatingSession}
-          className="start-session-button start-session-button-mobile"
-          size="lg"
-        >
-          {isCreatingSession ? "Creating..." : "Start Session"}
-        </Button>
-      )}
-      {currentSession && <MiniSessionSheet />}
-
-      <div className="matches-section">
-        {gameMatches.length > 0 && <h2>Matches</h2>}
-        {gameMatches.length === 0 ? (
-          <div className="empty-state">
-            <p>No matches yet</p>
-            <p className="muted-text">
-              Start a session to invite others to play.
-            </p>
-          </div>
-        ) : (
-          <div className="matches-list">
-            {gameMatches.map((match) => (
-              <MatchRow key={match.id} match={match} hideGameTitle={true} />
-            ))}
+              )}
+            </div>
           </div>
         )}
+
+        {!currentSession && (
+          <Button
+            onClick={handleCreateSession}
+            disabled={isCreatingSession}
+            className="start-session-button start-session-button-mobile"
+            size="lg"
+          >
+            {isCreatingSession ? "Creating..." : "Start Session"}
+          </Button>
+        )}
+        {currentSession && <MiniSessionSheet />}
+
+        <div className="matches-section">
+          {gameMatches.length > 0 && <h2>Matches</h2>}
+          {gameMatches.length === 0 ? (
+            <div className="empty-state">
+              <p>No matches yet</p>
+              <p className="muted-text">
+                Start a session to invite others to play.
+              </p>
+            </div>
+          ) : (
+            <div className="matches-list">
+              {gameMatches.map((match) => (
+                <MatchRow key={match.id} match={match} hideGameTitle={true} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {isAdmin && game && (

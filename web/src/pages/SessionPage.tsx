@@ -262,7 +262,7 @@ export function SessionPage() {
         </div>
       </div>
 
-      <div className="session-content">
+      <div className="session-content page-content">
         <section className="participants-section">
           <h2>Players ({sessionParticipants.length})</h2>
           {playersLoading ? (

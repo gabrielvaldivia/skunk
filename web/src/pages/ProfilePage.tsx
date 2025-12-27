@@ -264,7 +264,7 @@ export function ProfilePage() {
         <div style={{ width: 40 }} />
       </div>
 
-      <div className="profile-content">
+      <div className="profile-content page-content">
         {/* Profile Info Container */}
         <div className="profile-section">
           <div className="profile-form">

@@ -19,15 +19,19 @@
   background-color: hsl(var(--background));
   padding: 1rem;
   margin: 0;
+  box-shadow: 0 1px 0 0 hsl(var(--border) / 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.players-page .page-content {
+  padding-top: var(--page-header-height);
 }
 
 .page-header h1 {
   margin: 0;
   font-size: 2rem;
-}
-
-.players-page {
-  padding-top: 4.5rem;
+  font-weight: bold;
 }
 
 .players-list {
@@ -41,8 +45,6 @@
     padding: 1rem 0;
   }
   .players-list {
-    /* padding-left: 1rem;
-    padding-right: 1rem; */
   }
 }
 

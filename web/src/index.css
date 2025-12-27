@@ -4,6 +4,10 @@
 
 @layer base {
   :root {
+    --page-max-width: 600px;
+    --page-padding-x: 0;
+    --page-header-height: 4.5rem;
+    --page-subheader-height: 0rem;
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -65,5 +69,58 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Desktop breakpoint: slightly increase horizontal padding */
+@media (min-width: 768px) {
+  :root {
+    --page-padding-x: 1.25rem;
+  }
+}
+
+@layer components {
+  /* Shared page header: horizontal padding + centered max width */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: var(--page-max-width);
+    margin: 0 auto;
+    padding: 1rem var(--page-padding-x);
+    background-color: hsl(var(--background));
+  }
+
+  /* Shared content wrapper: horizontal padding + centered max width */
+  .page-content {
+    width: 100%;
+    max-width: var(--page-max-width);
+    margin: 0 auto;
+    padding: 0 var(--page-padding-x);
+    box-sizing: border-box;
+  }
+
+  /* Desktop: remove horizontal padding from page-content only */
+  @media (min-width: 768px) {
+    .page-content {
+      padding-left: 0;
+      padding-right: 0;
+    }
+  }
+
+  /* Shared constrained page container */
+  .page-container {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* Shared vertical list of matches with consistent horizontal padding */
+  .matches-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
   }
 }

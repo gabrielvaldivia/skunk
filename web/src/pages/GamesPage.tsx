@@ -132,51 +132,64 @@ export function GamesPage() {
         </div>
       )}
 
-      {games.length === 0 ? (
-        <div className="empty-state">
-          <p>No games yet</p>
-          {isAuthenticated ? (
-            <p className="empty-hint">
-              Click "Add Game" to create your first game
-            </p>
-          ) : (
-            <p className="empty-hint">Sign in to create games</p>
-          )}
-        </div>
-      ) : filteredGames.length === 0 ? (
-        <div className="empty-state">
-          <p>No games found matching "{searchQuery}"</p>
-          <p className="empty-hint">Try a different search term</p>
-        </div>
-      ) : (
-        <div className="games-list">
-          {filteredGames.map((game) => {
-            const champion = champions.get(game.id);
-            return (
-              <div
-                key={game.id}
-                className="game-list-item"
-                onClick={() => navigate(`/games/${game.id}`)}
-              >
-                <div className="game-list-content">
-                  <div className="game-cover-art-container">
-                    <div className="game-cover-art-placeholder">
-                      {game.title.charAt(0).toUpperCase()}
+      <div className="page-content">
+        {games.length === 0 ? (
+          <div className="empty-state">
+            <p>No games yet</p>
+            {isAuthenticated ? (
+              <p className="empty-hint">
+                Click "Add Game" to create your first game
+              </p>
+            ) : (
+              <p className="empty-hint">Sign in to create games</p>
+            )}
+          </div>
+        ) : filteredGames.length === 0 ? (
+          <div className="empty-state">
+            <p>No games found matching "{searchQuery}"</p>
+            <p className="empty-hint">Try a different search term</p>
+          </div>
+        ) : (
+          <div className="games-list">
+            {filteredGames.map((game) => {
+              const champion = champions.get(game.id);
+              return (
+                <div
+                  key={game.id}
+                  className="game-list-item"
+                  onClick={() => navigate(`/games/${game.id}`)}
+                >
+                  <div className="game-list-content">
+                    <div className="game-cover-art-container">
+                      <div className="game-cover-art-placeholder">
+                        {game.title.charAt(0).toUpperCase()}
+                      </div>
+                      {game.coverArt && (
+                        <img 
+                          src={game.coverArt} 
+                          alt={game.title}
+                          className="game-cover-art"
+                          onError={(e) => {
+                            // Hide image if it fails to load, placeholder will show
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      )}
                     </div>
-                    {game.coverArt && (
-                      <img 
-                        src={game.coverArt} 
-                        alt={game.title}
-                        className="game-cover-art"
-                        onError={(e) => {
-                          // Hide image if it fails to load, placeholder will show
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    )}
+                    <div className="game-list-name-wrapper">
+                      <div className="game-list-name">{game.title}</div>
+                      {champion && champion.playerName && (
+                        <div className="game-list-champion">
+                          🏆 {champion.playerName}
+                          {champion.winCount > 1 && ` (${champion.winCount} wins)`}
+                        </div>
+                      )}
+                      {champion && !champion.playerName && champion.winCount === 0 && (
+                        <div className="game-list-champion no-champion">No matches yet</div>
+                      )}
+                    </div>
                   </div>
-                  <div className="game-list-name-wrapper">
-                    <div className="game-list-name">{game.title}</div>
+                  <div className="game-list-champion-desktop">
                     {champion && champion.playerName && (
                       <div className="game-list-champion">
                         🏆 {champion.playerName}
@@ -188,22 +201,11 @@ export function GamesPage() {
                     )}
                   </div>
                 </div>
-                <div className="game-list-champion-desktop">
-                  {champion && champion.playerName && (
-                    <div className="game-list-champion">
-                      🏆 {champion.playerName}
-                      {champion.winCount > 1 && ` (${champion.winCount} wins)`}
-                    </div>
-                  )}
-                  {champion && !champion.playerName && champion.winCount === 0 && (
-                    <div className="game-list-champion no-champion">No matches yet</div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

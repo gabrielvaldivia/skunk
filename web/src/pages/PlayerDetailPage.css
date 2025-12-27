@@ -127,10 +127,4 @@
   margin-right: 0;
 }
 
-.player-detail-page .matches-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-left: -1.25rem;
-  margin-right: -1.25rem;
-}
+/* Use shared .matches-list styles from index.css */

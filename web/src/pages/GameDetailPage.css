@@ -165,21 +165,15 @@
 }
 
 .matches-section h2 {
-  margin: 0 1.25rem 1rem;
+  margin: 0 0 1rem;
 }
 
-.matches-list {
-  /* padding: 0 1.25rem; */
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+/* Use shared .matches-list styles from index.css */
 
 .game-stats {
   display: flex;
   gap: 1rem;
-  margin: 1.25rem;
-  padding: 0 1.25rem;
+  margin: 1.25rem 0;
   padding-bottom: 1.25rem;
   background: transparent;
   border-radius: 0.5rem;

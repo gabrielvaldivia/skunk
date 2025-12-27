@@ -56,17 +56,19 @@ export function ActivityPage() {
       </div>
       {currentSession && <MiniSessionSheet />}
 
-      {matches.length === 0 ? (
-        <div className="empty-state">
-          <p>No matches yet</p>
-        </div>
-      ) : (
-        <div className="matches-list">
-          {matches.map(match => (
-            <MatchRow key={match.id} match={match} hideGameTitle={false} />
-          ))}
-        </div>
-      )}
+      <div className="page-content">
+        {matches.length === 0 ? (
+          <div className="empty-state">
+            <p>No matches yet</p>
+          </div>
+        ) : (
+          <div className="matches-list">
+            {matches.map(match => (
+              <MatchRow key={match.id} match={match} hideGameTitle={false} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

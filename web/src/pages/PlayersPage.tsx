@@ -250,35 +250,37 @@ export function PlayersPage() {
         </div>
       )}
 
-      {allPlayers.length === 0 ? (
-        <div className="empty-state">
-          <p>No players yet</p>
-          {isAdmin ? (
-            <p className="empty-hint">Click "Add Player" to create a player</p>
-          ) : (
-            <p className="empty-hint">Only administrators can add players</p>
-          )}
-        </div>
-      ) : (
-        <div className="players-list">
-          {allPlayers.map((player) => {
-            const canDelete =
-              isAuthenticated &&
-              (isAdmin ||
-                (player.ownerID === user?.uid && player.googleUserID !== user?.uid));
-            
-            return (
-              <PlayerItem
-                key={player.id}
-                player={player}
-                canDelete={canDelete}
-                onNavigate={(playerId) => navigate(`/players/${playerId}`)}
-                onLongPress={handleLongPress}
-              />
-            );
-          })}
-        </div>
-      )}
+      <div className="page-content">
+        {allPlayers.length === 0 ? (
+          <div className="empty-state">
+            <p>No players yet</p>
+            {isAdmin ? (
+              <p className="empty-hint">Click "Add Player" to create a player</p>
+            ) : (
+              <p className="empty-hint">Only administrators can add players</p>
+            )}
+          </div>
+        ) : (
+          <div className="players-list">
+            {allPlayers.map((player) => {
+              const canDelete =
+                isAuthenticated &&
+                (isAdmin ||
+                  (player.ownerID === user?.uid && player.googleUserID !== user?.uid));
+              
+              return (
+                <PlayerItem
+                  key={player.id}
+                  player={player}
+                  canDelete={canDelete}
+                  onNavigate={(playerId) => navigate(`/players/${playerId}`)}
+                  onLongPress={handleLongPress}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {isDesktop ? (
         <Dialog 

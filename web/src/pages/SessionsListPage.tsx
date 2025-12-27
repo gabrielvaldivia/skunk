@@ -58,34 +58,36 @@ export function SessionsListPage() {
         <h1>My Sessions</h1>
       </div>
 
-      {sessions.length === 0 ? (
-        <div className="empty-state">
-          <p>You're not in any sessions</p>
-        </div>
-      ) : (
-        <div className="sessions-list">
-          {sessions.map(session => (
-            <div
-              key={session.id}
-              className="session-card"
-              onClick={() => navigate(`/session/${session.code}`)}
-            >
-              <div className="session-card-header">
-                <h2 className="session-code">Session {session.code}</h2>
-                <span className="session-time">{formatDate(session.lastActivityAt)}</span>
-              </div>
-              {session.gameID && (
-                <div className="session-game">
-                  {getGameTitle(session.gameID) || "Unknown Game"}
+      <div className="page-content">
+        {sessions.length === 0 ? (
+          <div className="empty-state">
+            <p>You're not in any sessions</p>
+          </div>
+        ) : (
+          <div className="sessions-list">
+            {sessions.map(session => (
+              <div
+                key={session.id}
+                className="session-card"
+                onClick={() => navigate(`/session/${session.code}`)}
+              >
+                <div className="session-card-header">
+                  <h2 className="session-code">Session {session.code}</h2>
+                  <span className="session-time">{formatDate(session.lastActivityAt)}</span>
                 </div>
-              )}
-              <div className="session-participants">
-                {session.participantIDs.length} participant{session.participantIDs.length !== 1 ? 's' : ''}
+                {session.gameID && (
+                  <div className="session-game">
+                    {getGameTitle(session.gameID) || "Unknown Game"}
+                  </div>
+                )}
+                <div className="session-participants">
+                  {session.participantIDs.length} participant{session.participantIDs.length !== 1 ? 's' : ''}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
