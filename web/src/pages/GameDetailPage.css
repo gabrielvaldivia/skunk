@@ -145,6 +145,10 @@
   border-radius: 0.5rem;
 }
 
+.muted-text {
+  color: hsl(var(--muted-foreground));
+}
+
 .info-item {
   display: flex;
   gap: 1rem;

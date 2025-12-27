@@ -149,6 +149,7 @@ export function GameDetailPage() {
           >
             <ChevronLeft />
           </Button>
+          <h2 className="page-title-top">{game.title}</h2>
           {isAdmin && (
             <Button
               variant="outline"
@@ -159,21 +160,7 @@ export function GameDetailPage() {
             </Button>
           )}
         </div>
-        {game.coverArt && (
-          <div className="game-cover-art-section">
-            <div className="game-cover-art-large">
-              <img
-                src={game.coverArt}
-                alt={game.title}
-                className="game-cover-art-image"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
-              />
-            </div>
-          </div>
-        )}
-        <h1 className="game-title-full-width">{game.title}</h1>
+        {/* Game cover art intentionally hidden per design */}
       </div>
 
       {sortedTop.length > 0 && (
@@ -283,11 +270,13 @@ export function GameDetailPage() {
       </Button>
 
       <div className="matches-section">
-        <h2>Matches</h2>
+        {gameMatches.length > 0 && <h2>Matches</h2>}
         {gameMatches.length === 0 ? (
           <div className="empty-state">
             <p>No matches yet</p>
-            <p>Start a session to invite others to play.</p>
+            <p className="muted-text">
+              Start a session to invite others to play.
+            </p>
           </div>
         ) : (
           <div className="matches-list">
