@@ -17,14 +17,8 @@
   max-width: 600px;
   z-index: 40;
   background-color: hsl(var(--background));
-  padding: 1rem 0;
+  padding: 1rem;
   margin: 0;
-}
-
-@media (max-width: 767px) {
-  .page-header {
-    padding: 1rem;
-  }
 }
 
 .page-header h1 {
@@ -43,9 +37,12 @@
 }
 
 @media (min-width: 768px) {
+  .page-header {
+    padding: 1rem 0;
+  }
   .players-list {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    /* padding-left: 1rem;
+    padding-right: 1rem; */
   }
 }
 

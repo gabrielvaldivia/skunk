@@ -18,7 +18,7 @@
   max-width: 600px;
   z-index: 40;
   background-color: hsl(var(--background));
-  padding: 1rem 0;
+  padding: 1rem;
   margin: 0;
   box-shadow: 0 1px 0 0 hsl(var(--border) / 0.1);
   backdrop-filter: blur(10px);
@@ -40,21 +40,15 @@
   max-width: 600px;
   z-index: 39;
   background-color: hsl(var(--background));
-  padding: 0 0 1rem 0;
+  padding: 4px 1rem 1rem 1rem;
   margin: 0;
   box-shadow: 0 1px 0 0 hsl(var(--border) / 0.1);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
 
+/* Mobile */
 @media (max-width: 767px) {
-  .page-header {
-    padding: 1rem;
-  }
-
-  .search-container {
-    padding: 4px 1rem 1rem 1rem;
-  }
 }
 
 .search-input {
@@ -74,6 +68,8 @@
   gap: 20px;
   position: relative;
   z-index: 1;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .game-list-item {
@@ -104,13 +100,16 @@
 }
 
 @media (min-width: 768px) {
+  .page-header {
+    padding: 1rem 0;
+  }
   .search-container {
-    padding: 5px 1rem 1rem 1rem;
+    padding: 5px 0rem 1rem 0rem;
   }
 
   .games-list {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    /* padding-left: 1rem;
+    padding-right: 1rem; */
   }
 
   .game-list-name-wrapper .game-list-champion {

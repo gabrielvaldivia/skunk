@@ -15,7 +15,7 @@
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  max-width: 600px;
+  /* max-width: 600px; */
   z-index: 40;
   background-color: hsl(var(--background));
   padding: 1rem;
@@ -125,14 +125,20 @@
   gap: 20px;
   margin-left: -1.25rem;
   margin-right: -1.25rem;
+  margin: 0 auto;
 }
 
+/* Desktop */
 @media (min-width: 768px) {
+  .page-header {
+    padding: 1rem 0;
+  }
   .activity-page .matches-list {
     margin-left: 0;
     margin-right: 0;
-    padding-left: 1rem;
-    padding-right: 1rem;
+    width: 100%;
+    /* padding-left: 1rem;
+    padding-right: 1rem; */
   }
 }
 
