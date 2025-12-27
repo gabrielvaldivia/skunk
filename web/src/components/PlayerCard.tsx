@@ -6,9 +6,10 @@ interface PlayerCardProps {
   player: Player;
   onClick?: () => void;
   rightAction?: ReactNode;
+  subtitle?: string;
 }
 
-export function PlayerCard({ player, onClick, rightAction }: PlayerCardProps) {
+export function PlayerCard({ player, onClick, rightAction, subtitle }: PlayerCardProps) {
   // Generate a color if colorData is not available (similar to Swift implementation)
   const getPlayerColor = (player: Player): string => {
     if (player.colorData) {
@@ -45,7 +46,11 @@ export function PlayerCard({ player, onClick, rightAction }: PlayerCardProps) {
       </div>
       <div className="player-info">
         <h3 className="player-name">{player.name}</h3>
-        {player.email && <p className="player-email">{player.email}</p>}
+        {subtitle ? (
+          <p className="player-subtitle">{subtitle}</p>
+        ) : (
+          player.email && <p className="player-email">{player.email}</p>
+        )}
       </div>
       {rightAction && <div className="player-actions">{rightAction}</div>}
     </div>

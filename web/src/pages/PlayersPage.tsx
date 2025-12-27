@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePlayers } from "../hooks/usePlayers";
 import { useAuth } from "../context/AuthContext";
@@ -6,6 +6,7 @@ import { useSession } from "../context/SessionContext";
 import { MiniSessionSheet } from "../components/MiniSessionSheet";
 import { PlayerCard } from "../components/PlayerCard";
 import { useMediaQuery } from "../hooks/use-media-query";
+import { useActivity } from "../hooks/useActivity";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,9 +35,10 @@ interface PlayerItemProps {
   canDelete: boolean;
   onNavigate: (playerId: string) => void;
   onLongPress: (playerId: string, ownerID?: string) => void;
+  subtitle?: string;
 }
 
-function PlayerItem({ player, canDelete, onNavigate, onLongPress }: PlayerItemProps) {
+function PlayerItem({ player, canDelete, onNavigate, onLongPress, subtitle }: PlayerItemProps) {
   const longPressTimerRef = useRef<number | null>(null);
   const isLongPressRef = useRef(false);
 
@@ -85,7 +87,7 @@ function PlayerItem({ player, canDelete, onNavigate, onLongPress }: PlayerItemPr
       onTouchEnd={canDelete ? handlePressEnd : undefined}
       onClick={canDelete ? handleClick : () => onNavigate(player.id)}
     >
-      <PlayerCard player={player} />
+      <PlayerCard player={player} subtitle={subtitle} />
     </div>
   );
 }
@@ -101,45 +103,51 @@ export function PlayersPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState<string | null>(null);
   const [playerToDelete, setPlayerToDelete] = useState<{ id: string; ownerID?: string } | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const { matches } = useActivity(10000);
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
-  // Organize players similar to Swift implementation, but ensure all players are shown
-  const currentUser = currentUserPlayer;
-  
-  // Get all player IDs we've already included
-  const includedPlayerIds = new Set<string>();
-  if (currentUser) {
-    includedPlayerIds.add(currentUser.id);
-  }
-  
-  // Managed players: owned by current user but no googleUserID (not the current user's profile)
-  const managedPlayers = players.filter(
-    (p) => p.ownerID === user?.uid && !p.googleUserID && !includedPlayerIds.has(p.id)
-  );
-  managedPlayers.forEach(p => includedPlayerIds.add(p.id));
-  
-  // Other users: have googleUserID but not the current user's, and not owned by current user
-  const otherUsers = players.filter(
-    (p) =>
-      p.googleUserID && 
-      p.googleUserID !== user?.uid && 
-      p.ownerID !== user?.uid &&
-      !includedPlayerIds.has(p.id)
-  );
-  otherUsers.forEach(p => includedPlayerIds.add(p.id));
-  
-  // All remaining players that weren't included in the above categories
-  const remainingPlayers = players.filter(
-    (p) => !includedPlayerIds.has(p.id)
-  );
+  // Previous grouping removed; we sort everyone by last played
 
-  const allPlayers = [
-    ...(currentUser ? [currentUser] : []),
-    ...managedPlayers.sort((a, b) => a.name.localeCompare(b.name)),
-    ...otherUsers.sort((a, b) => a.name.localeCompare(b.name)),
-    ...remainingPlayers.sort((a, b) => a.name.localeCompare(b.name)),
-  ];
+  // Map latest match date for each player
+  const lastPlayedMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const match of matches) {
+      for (const pid of match.playerIDs) {
+        const current = map.get(pid) || 0;
+        if (match.date > current) {
+          map.set(pid, match.date);
+        }
+      }
+    }
+    return map;
+  }, [matches]);
+
+  const formatRelative = (timestamp?: number) => {
+    if (!timestamp) return "No matches yet";
+    const now = Date.now();
+    const diffMs = now - timestamp;
+    const mins = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMs / 3600000);
+    const days = Math.floor(diffMs / 86400000);
+    if (mins < 60) return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    const date = new Date(timestamp);
+    return date.toLocaleDateString();
+  };
+
+  // Sort players by most recent match date (desc). Ties fall back to name.
+  const sortedPlayers = useMemo(() => {
+    const arr = [...players];
+    arr.sort((a, b) => {
+      const tb = lastPlayedMap.get(b.id) || 0;
+      const ta = lastPlayedMap.get(a.id) || 0;
+      if (tb !== ta) return tb - ta;
+      return a.name.localeCompare(b.name);
+    });
+    return arr;
+  }, [players, lastPlayedMap]);
 
   const handleAddPlayer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,7 +259,7 @@ export function PlayersPage() {
       )}
 
       <div className="page-content">
-        {allPlayers.length === 0 ? (
+        {players.length === 0 ? (
           <div className="empty-state">
             <p>No players yet</p>
             {isAdmin ? (
@@ -262,11 +270,15 @@ export function PlayersPage() {
           </div>
         ) : (
           <div className="players-list">
-            {allPlayers.map((player) => {
+            {sortedPlayers.map((player) => {
               const canDelete =
                 isAuthenticated &&
                 (isAdmin ||
                   (player.ownerID === user?.uid && player.googleUserID !== user?.uid));
+              const lastPlayed = lastPlayedMap.get(player.id);
+              const subtitle = lastPlayed && lastPlayed > 0
+                ? `Last played ${formatRelative(lastPlayed)}`
+                : 'No matches yet';
               
               return (
                 <PlayerItem
@@ -275,6 +287,7 @@ export function PlayersPage() {
                   canDelete={canDelete}
                   onNavigate={(playerId) => navigate(`/players/${playerId}`)}
                   onLongPress={handleLongPress}
+                  subtitle={subtitle}
                 />
               );
             })}
