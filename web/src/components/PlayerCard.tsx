@@ -1,12 +1,14 @@
 import type { Player } from '../models/Player';
+import type { ReactNode } from 'react';
 import './PlayerCard.css';
 
 interface PlayerCardProps {
   player: Player;
   onClick?: () => void;
+  rightAction?: ReactNode;
 }
 
-export function PlayerCard({ player, onClick }: PlayerCardProps) {
+export function PlayerCard({ player, onClick, rightAction }: PlayerCardProps) {
   // Generate a color if colorData is not available (similar to Swift implementation)
   const getPlayerColor = (player: Player): string => {
     if (player.colorData) {
@@ -45,6 +47,7 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
         <h3 className="player-name">{player.name}</h3>
         {player.email && <p className="player-email">{player.email}</p>}
       </div>
+      {rightAction && <div className="player-actions">{rightAction}</div>}
     </div>
   );
 }

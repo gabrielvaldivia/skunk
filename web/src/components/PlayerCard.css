@@ -42,6 +42,18 @@
   flex: 1;
 }
 
+.player-actions {
+  margin-left: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0;
+}
+
+.button-leave {
+  margin-right: 0;
+}
+
 .player-name {
   margin: 0;
   font-size: 1.1rem;

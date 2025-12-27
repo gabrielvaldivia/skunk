@@ -1,0 +1,101 @@
+.mini-session-sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0.5rem;
+  transform: translateX(-50%);
+  width: calc(100% - 2rem);
+  max-width: 600px;
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem 0.75rem 0.75rem;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+
+.mini-session-handle {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: hsl(var(--muted));
+}
+
+.mini-session-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding-top: 8px; /* make room for handle */
+}
+
+.mini-session-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.mini-session-created {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.85rem;
+}
+
+.mini-session-facepile {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1 1 auto; /* grow to fill remaining space */
+  gap: 0;
+  padding-top: 8px; /* line up with content under handle */
+}
+
+.facepile-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid hsl(var(--card));
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.facepile-avatar.overlap,
+.facepile-more.overlap {
+  margin-left: -10px;
+}
+
+.facepile-avatar.initials {
+  text-transform: uppercase;
+}
+
+.facepile-more {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 2px solid hsl(var(--card));
+}
+
+

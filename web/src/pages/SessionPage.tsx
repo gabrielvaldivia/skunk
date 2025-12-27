@@ -37,7 +37,9 @@ export function SessionPage() {
   const [sessionParticipants, setSessionParticipants] = useState<Player[]>([]);
   const [sessionMatches, setSessionMatches] = useState<Match[]>([]);
   const [isLoadingMatches, setIsLoadingMatches] = useState(false);
-  const [lastSelectedGameId, setLastSelectedGameId] = useState<string | undefined>(undefined);
+  const [lastSelectedGameId, setLastSelectedGameId] = useState<
+    string | undefined
+  >(undefined);
 
   // Auto-join session when code is in URL and user is authenticated
   useEffect(() => {
@@ -141,15 +143,27 @@ export function SessionPage() {
     }
   }, [code]);
 
-  const handleCopyUrl = async () => {
+  const handleShare = async () => {
     if (!code) return;
 
     const url = `${window.location.origin}/session/${code}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success("Session URL copied to clipboard!");
-    } catch {
-      toast.error("Failed to copy URL");
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Session ${code}`,
+          text: "Join my session on Skunk",
+          url,
+        });
+      } catch {
+        // User may cancel share; no toast needed
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Session link copied");
+      } catch {
+        toast.error("Failed to share link");
+      }
     }
   };
 
@@ -239,16 +253,13 @@ export function SessionPage() {
           <Button variant="outline" onClick={() => navigate(-1)} size="icon">
             <ChevronLeft />
           </Button>
+          <h1 className="page-title-top">Session {code}</h1>
           <div className="header-actions">
-            <Button variant="outline" onClick={handleCopyUrl}>
-              Copy URL
-            </Button>
-            <Button variant="outline" onClick={handleLeave} disabled={isLeaving}>
-              {isLeaving ? "Leaving..." : "Leave Session"}
+            <Button variant="outline" onClick={handleShare}>
+              Share
             </Button>
           </div>
         </div>
-        <h1>Session {code}</h1>
       </div>
 
       <div className="session-content">
@@ -261,7 +272,25 @@ export function SessionPage() {
           ) : (
             <div className="participants-grid">
               {sessionParticipants.map((participant) => (
-                <PlayerCard key={participant.id} player={participant} />
+                <PlayerCard
+                  key={participant.id}
+                  player={participant}
+                  rightAction={
+                    player && participant.id === player.id ? (
+                      <Button
+                        variant="outline"
+                        className="button-leave"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLeave();
+                        }}
+                        disabled={isLeaving}
+                      >
+                        {isLeaving ? "Leaving..." : "Leave"}
+                      </Button>
+                    ) : undefined
+                  }
+                />
               ))}
             </div>
           )}
@@ -269,6 +298,7 @@ export function SessionPage() {
 
         <section className="matches-section">
           <div className="matches-section-header">
+            <h2>Matches ({sessionMatches.length})</h2>
           </div>
           {isLoadingMatches ? (
             <div className="loading">Loading matches...</div>

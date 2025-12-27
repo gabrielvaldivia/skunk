@@ -5,6 +5,7 @@ import { useActivity } from "../hooks/useActivity";
 import { useDataCache } from "../context/DataCacheContext";
 import { computeWinnerID } from "../models/Match";
 import { useSession } from "../context/SessionContext";
+import { MiniSessionSheet } from "../components/MiniSessionSheet";
 import { useAuth } from "../context/AuthContext";
 import { MatchRow } from "../components/MatchRow";
 import { EditGameForm } from "../components/EditGameForm";
@@ -24,7 +25,7 @@ export function GameDetailPage() {
   const { games, editGame, removeGame } = useGames();
   const { matches: allMatches } = useActivity(500, 365 * 10);
   const { players } = useDataCache();
-  const { createSession } = useSession();
+  const { createSession, currentSession } = useSession();
   const { user, isAuthenticated } = useAuth();
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -348,14 +349,17 @@ export function GameDetailPage() {
         </div>
       )}
 
-      <Button
-        onClick={handleCreateSession}
-        disabled={isCreatingSession}
-        className="start-session-button start-session-button-mobile"
-        size="lg"
-      >
-        {isCreatingSession ? "Creating..." : "Start Session"}
-      </Button>
+      {!currentSession && (
+        <Button
+          onClick={handleCreateSession}
+          disabled={isCreatingSession}
+          className="start-session-button start-session-button-mobile"
+          size="lg"
+        >
+          {isCreatingSession ? "Creating..." : "Start Session"}
+        </Button>
+      )}
+      {currentSession && <MiniSessionSheet />}
 
       <div className="matches-section">
         {gameMatches.length > 0 && <h2>Matches</h2>}

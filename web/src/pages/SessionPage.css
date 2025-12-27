@@ -25,14 +25,22 @@
   align-items: center;
   gap: 1rem;
   width: 100%;
+  position: relative;
 }
 
-.session-page .page-header h1 {
+.session-page .page-title-top {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   margin: 0;
-  font-size: 2rem;
-  font-weight: bold;
-  text-align: left;
-  width: 100%;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  max-width: 70%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .session-page .header-actions {
@@ -56,7 +64,7 @@
 
 .session-page .participants-section h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 600;
 }
 
@@ -98,7 +106,7 @@
 
 .session-page .matches-section h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 600;
 }
 
