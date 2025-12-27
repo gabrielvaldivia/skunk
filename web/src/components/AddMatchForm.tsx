@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { computeWinnerID } from "../models/Match";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { ChevronsUpDown } from "lucide-react";
 import "./AddGameForm.css";
 
 interface AddMatchFormProps {
@@ -46,6 +47,9 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
   const { players, isLoading: playersLoading } = usePlayers();
   const { matches: recentMatches } = useActivity(100, 90); // Last 100 matches from last 90 days
   const [selectedGameId, setSelectedGameId] = useState<string>(defaultGameId || "");
+  const [gameQuery, setGameQuery] = useState<string>("");
+  const [showGameSuggestions, setShowGameSuggestions] = useState<boolean>(false);
+  const [highlightedGameIndex, setHighlightedGameIndex] = useState<number>(-1);
   const [playerInputs, setPlayerInputs] = useState<string[]>([]);
   const [scores, setScores] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,6 +58,30 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
   const [teams, setTeams] = useState<string[]>(["team1", "team2"]); // Array of team IDs
 
   const selectedGame = games.find((g) => g.id === selectedGameId);
+
+  const getPlayerColor = (player: Player) => {
+    if (player.colorData) {
+      return player.colorData;
+    }
+    const hash = player.name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hue = hash % 360;
+    return `hsl(${hue}, 70%, 60%)`;
+  };
+
+  const getInitials = (name: string): string => {
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Keep the game query in sync with the selected game
+  useEffect(() => {
+    const selected = games.find((g) => g.id === selectedGameId);
+    setGameQuery(selected ? selected.title : "");
+  }, [selectedGameId, games]);
 
   // Get recently used players from recent matches, ordered by most recently used
   const getRecentlyUsedPlayers = (): Player[] => {
@@ -87,6 +115,19 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
       setSelectedGameId(defaultGameId);
     }
   }, [open, defaultGameId, games]);
+
+  const getGameSuggestions = (query: string) => {
+    const lower = query.trim().toLowerCase();
+    if (!lower) {
+      // Alphabetical when empty
+      return [...games].sort((a, b) => a.title.localeCompare(b.title));
+    }
+    return games
+      .filter((g) => g.title.toLowerCase().includes(lower))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  };
+
+  const visibleGameSuggestions = getGameSuggestions(gameQuery);
 
   // Initialize player inputs when game changes or when session participants are provided
   useEffect(() => {
@@ -400,25 +441,82 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
         )}
         <div className={isDrawer ? "grid gap-4 py-4 px-4" : "grid gap-4 py-4"}>
           <div className="grid gap-2">
-            <Label htmlFor="game">
-              Game <span className="text-destructive">*</span>
-            </Label>
-            <select
-              id="game"
-              value={selectedGameId}
-              onChange={(e) => {
-                setSelectedGameId(e.target.value);
-              }}
-              required
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">Select a game</option>
-              {games.map((game) => (
-                <option key={game.id} value={game.id}>
-                  {game.title}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <Input
+                id="game"
+                type="text"
+                value={gameQuery}
+                onChange={(e) => {
+                  setGameQuery(e.target.value);
+                  setShowGameSuggestions(true);
+                  setHighlightedGameIndex(-1);
+                }}
+                onFocus={() => {
+                  setShowGameSuggestions(true);
+                }}
+                onBlur={() => {
+                  // Delay to allow click on suggestion
+                  setTimeout(() => setShowGameSuggestions(false), 150);
+                }}
+                onKeyDown={(e) => {
+                  if (!showGameSuggestions) return;
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setHighlightedGameIndex((prev) =>
+                      Math.min(prev + 1, visibleGameSuggestions.length - 1)
+                    );
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setHighlightedGameIndex((prev) =>
+                      Math.max(prev - 1, 0)
+                    );
+                  } else if (e.key === "Enter") {
+                    if (highlightedGameIndex >= 0 && highlightedGameIndex < visibleGameSuggestions.length) {
+                      const game = visibleGameSuggestions[highlightedGameIndex];
+                      setSelectedGameId(game.id);
+                      setGameQuery(game.title);
+                      setShowGameSuggestions(false);
+                      e.preventDefault();
+                    }
+                  } else if (e.key === "Escape") {
+                    setShowGameSuggestions(false);
+                  }
+                }}
+                placeholder="Search games…"
+                className="w-full pr-9"
+              />
+              <button
+                type="button"
+                aria-label="Toggle game list"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  setShowGameSuggestions((prev) => !prev);
+                  setHighlightedGameIndex(-1);
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+              >
+                <ChevronsUpDown size={16} />
+              </button>
+              {showGameSuggestions && visibleGameSuggestions.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
+                  {visibleGameSuggestions.map((game, idx) => (
+                    <button
+                      key={game.id}
+                      type="button"
+                      className={`w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground ${idx === highlightedGameIndex ? "bg-accent text-accent-foreground" : ""}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setSelectedGameId(game.id);
+                        setGameQuery(game.title);
+                        setShowGameSuggestions(false);
+                      }}
+                    >
+                      {game.title}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {selectedGame && (
@@ -439,6 +537,22 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                       return (
                         <div key={index} className="relative grid gap-1">
                           <div className="flex gap-2 items-center">
+                            {/* Player avatar */}
+                            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-medium text-white shrink-0"
+                              style={player ? { backgroundColor: getPlayerColor(player) } : undefined}
+                            >
+                              {player?.photoData ? (
+                                <img
+                                  src={`data:image/jpeg;base64,${player.photoData}`}
+                                  alt={player.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : player ? (
+                                <span>{getInitials(player.name)}</span>
+                              ) : (
+                                <span className="text-muted-foreground">?</span>
+                              )}
+                            </div>
                             <div className="flex-1 relative">
                               <Input
                                 type="text"
@@ -471,7 +585,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                                   }, 200);
                                 }}
                                 placeholder={`Player ${index + 1}`}
-                                className="w-full"
+                                className="w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent px-0"
                               />
                               {state.showSuggestions && suggestions.length > 0 && (
                                 <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
@@ -635,6 +749,22 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                     return (
                       <div key={index} className="relative grid gap-1">
                         <div className="flex gap-2 items-center">
+                          {/* Player avatar */}
+                          <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-medium text-white shrink-0"
+                            style={player ? { backgroundColor: getPlayerColor(player) } : undefined}
+                          >
+                            {player?.photoData ? (
+                              <img
+                                src={`data:image/jpeg;base64,${player.photoData}`}
+                                alt={player.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : player ? (
+                              <span>{getInitials(player.name)}</span>
+                            ) : (
+                              <span className="text-muted-foreground">?</span>
+                            )}
+                          </div>
                           <div className="flex-1 relative">
                             <Input
                               type="text"
@@ -672,7 +802,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                                 }, 200);
                               }}
                               placeholder={`Player ${index + 1}`}
-                              className="w-full"
+                              className="w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent px-0"
                             />
                             {state.showSuggestions && suggestions.length > 0 && (
                               <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
