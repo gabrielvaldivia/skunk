@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useGames } from "../hooks/useGames";
 import { useActivity } from "../hooks/useActivity";
-import { useGameChampions } from "../hooks/useGameChampions";
 import { useDataCache } from "../context/DataCacheContext";
+import { computeWinnerID } from "../models/Match";
 import { useSession } from "../context/SessionContext";
 import { useAuth } from "../context/AuthContext";
 import { MatchRow } from "../components/MatchRow";
@@ -23,7 +23,6 @@ export function GameDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { games, editGame, removeGame } = useGames();
   const { matches: allMatches } = useActivity(500, 365 * 10);
-  const { champions } = useGameChampions(games, allMatches);
   const { players } = useDataCache();
   const { createSession } = useSession();
   const { user, isAuthenticated } = useAuth();
@@ -103,8 +102,6 @@ export function GameDetailPage() {
     );
   }
 
-  const championEntry = champions.get(game.id);
-  const championPlayer = players.find((p) => p.id === championEntry?.playerId);
   const getInitials = (name: string): string =>
     name
       .split(" ")
@@ -112,6 +109,33 @@ export function GameDetailPage() {
       .join("")
       .toUpperCase()
       .slice(0, 2);
+  const getFirstName = (name: string): string =>
+    name.trim().split(" ")[0] || name;
+
+  // Compute top 3 players by wins for this game
+  const winCounts = new Map<string, number>();
+  for (const match of gameMatches) {
+    const winnerOrTeamId = computeWinnerID(match, game);
+    if (!winnerOrTeamId) continue;
+    if (game.isTeamBased && match.teams && match.teams.length > 0) {
+      const team = match.teams.find((t) => t.teamId === winnerOrTeamId);
+      if (team) {
+        team.playerIDs.forEach((pid) => {
+          winCounts.set(pid, (winCounts.get(pid) || 0) + 1);
+        });
+      }
+    } else {
+      winCounts.set(winnerOrTeamId, (winCounts.get(winnerOrTeamId) || 0) + 1);
+    }
+  }
+  const sortedTop = Array.from(winCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([playerId, wins]) => ({
+      player: players.find((p) => p.id === playerId),
+      wins,
+    }))
+    .filter((x) => x.player);
 
   return (
     <div className="game-detail-page">
@@ -125,7 +149,6 @@ export function GameDetailPage() {
           >
             <ChevronLeft />
           </Button>
-          <h2 className="page-title-top">{game.title}</h2>
           {isAdmin && (
             <Button
               variant="outline"
@@ -150,32 +173,105 @@ export function GameDetailPage() {
             </div>
           </div>
         )}
+        <h1 className="game-title-full-width">{game.title}</h1>
       </div>
 
-      <div className="game-stats">
-        <div className="stat-item">
-          <span className="stat-value">{gameMatches.length}</span>
-          <span className="stat-label">Matches</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-value">
-            {championPlayer?.photoData ? (
-              <img
-                className="game-champion-avatar"
-                src={`data:image/jpeg;base64,${championPlayer.photoData}`}
-                alt={championPlayer.name}
-              />
-            ) : championPlayer?.name ? (
-              <span className="game-champion-avatar initials">
-                {getInitials(championPlayer.name)}
-              </span>
-            ) : (
-              "—"
+      {sortedTop.length > 0 && (
+        <div className="game-stats">
+          <div className="game-leaderboard">
+            {sortedTop.length >= 2 && (
+              <div className="leader second">
+                <div className="avatar-wrap">
+                  {sortedTop[1].player!.photoData ? (
+                    <img
+                      className="avatar"
+                      src={`data:image/jpeg;base64,${
+                        sortedTop[1].player!.photoData
+                      }`}
+                      alt={sortedTop[1].player!.name}
+                    />
+                  ) : (
+                    <span className="avatar initials">
+                      {getInitials(sortedTop[1].player!.name)}
+                    </span>
+                  )}
+                  <span className="rank-badge">2</span>
+                </div>
+                <div className="meta">
+                  <div className="name">
+                    {getFirstName(sortedTop[1].player!.name)}
+                  </div>
+                  <div className="wins">
+                    {sortedTop[1].wins}{" "}
+                    {sortedTop[1].wins === 1 ? "win" : "wins"}
+                  </div>
+                </div>
+              </div>
             )}
-          </span>
-          <span className="stat-label">Champion</span>
+            {sortedTop.length >= 1 && (
+              <div className="leader first">
+                <div className="crown" aria-hidden>
+                  👑
+                </div>
+                <div className="avatar-wrap">
+                  {sortedTop[0].player!.photoData ? (
+                    <img
+                      className="avatar"
+                      src={`data:image/jpeg;base64,${
+                        sortedTop[0].player!.photoData
+                      }`}
+                      alt={sortedTop[0].player!.name}
+                    />
+                  ) : (
+                    <span className="avatar initials">
+                      {getInitials(sortedTop[0].player!.name)}
+                    </span>
+                  )}
+                  <span className="rank-badge primary">1</span>
+                </div>
+                <div className="meta">
+                  <div className="name">
+                    {getFirstName(sortedTop[0].player!.name)}
+                  </div>
+                  <div className="wins">
+                    {sortedTop[0].wins}{" "}
+                    {sortedTop[0].wins === 1 ? "win" : "wins"}
+                  </div>
+                </div>
+              </div>
+            )}
+            {sortedTop.length >= 3 && (
+              <div className="leader third">
+                <div className="avatar-wrap">
+                  {sortedTop[2].player!.photoData ? (
+                    <img
+                      className="avatar"
+                      src={`data:image/jpeg;base64,${
+                        sortedTop[2].player!.photoData
+                      }`}
+                      alt={sortedTop[2].player!.name}
+                    />
+                  ) : (
+                    <span className="avatar initials">
+                      {getInitials(sortedTop[2].player!.name)}
+                    </span>
+                  )}
+                  <span className="rank-badge">3</span>
+                </div>
+                <div className="meta">
+                  <div className="name">
+                    {getFirstName(sortedTop[2].player!.name)}
+                  </div>
+                  <div className="wins">
+                    {sortedTop[2].wins}{" "}
+                    {sortedTop[2].wins === 1 ? "win" : "wins"}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <Button
         onClick={handleCreateSession}
@@ -187,6 +283,7 @@ export function GameDetailPage() {
       </Button>
 
       <div className="matches-section">
+        <h2>Matches</h2>
         {gameMatches.length === 0 ? (
           <div className="empty-state">
             <p>No matches yet</p>

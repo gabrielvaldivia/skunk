@@ -75,7 +75,7 @@
 .game-cover-art-image {
   width: auto;
   max-width: 100%;
-  max-height: 150px;
+  max-height: 120px;
   height: auto;
   object-fit: contain;
   border-radius: 8px;
@@ -101,10 +101,12 @@
 }
 
 .game-title-full-width {
-  margin: 1.5rem 0 0 0;
+  margin: 0.75rem 0 0 0;
   text-align: center;
   word-break: break-word;
   width: 100%;
+  font-size: 2rem;
+  font-weight: 800;
 }
 
 .start-session-button {
@@ -159,7 +161,7 @@
 }
 
 .matches-section h2 {
-  margin-bottom: 1rem;
+  margin: 0 1.25rem 1rem;
 }
 
 .matches-list {
@@ -173,8 +175,9 @@
   display: flex;
   gap: 1rem;
   margin: 1.25rem;
-  padding: 1rem 1.25rem;
-  background: hsl(var(--muted));
+  padding: 0 1.25rem;
+  padding-bottom: 1.25rem;
+  background: transparent;
   border-radius: 0.5rem;
   justify-content: center;
   align-items: center;
@@ -223,4 +226,110 @@
   color: hsl(var(--secondary-foreground));
   font-size: 0.9rem;
   font-weight: 700;
+}
+
+/* Leaderboard layout */
+.game-leaderboard {
+  display: grid;
+  grid-template-columns: 108px 108px 108px;
+  align-items: end;
+  justify-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 0.75rem;
+}
+
+.leader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: end;
+}
+
+.leader .avatar-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.leader .avatar {
+  width: 69px;
+  height: 69px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  border: 2px solid hsl(var(--background));
+}
+
+.leader.first .avatar {
+  width: 108px;
+  height: 108px;
+  aspect-ratio: 1 / 1;
+  border-width: 3px;
+}
+
+/* Fixed columns so positions remain centered with 1, 2, or 3 items */
+.leader.first {
+  grid-column: 2;
+}
+.leader.second {
+  grid-column: 1;
+}
+.leader.third {
+  grid-column: 3;
+}
+
+.leader .avatar.initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  font-weight: 700;
+}
+
+.leader .rank-badge {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  font-size: 0.75rem;
+  font-weight: 700;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid hsl(var(--background));
+}
+
+.leader .rank-badge.primary {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.leader .crown {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.leader .meta {
+  margin-top: 0.8rem;
+  text-align: center;
+}
+
+.leader .name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.leader .wins {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.2;
+  margin-top: 0.2rem;
 }
