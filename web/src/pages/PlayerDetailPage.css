@@ -86,8 +86,9 @@
 }
 
 .player-stats {
-  display: flex;
-  gap: 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
   margin: 2rem 0;
   padding: 1rem;
   background: hsl(var(--muted));
@@ -97,7 +98,8 @@
 .stat-item {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
 }
 
 .stat-value {
@@ -117,6 +119,12 @@
 
 .matches-section h2 {
   margin-bottom: 1rem;
+}
+
+.player-detail-page .matches-section h2 {
+  /* reduce horizontal padding only for Player detail's Match History heading */
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .player-detail-page .matches-list {

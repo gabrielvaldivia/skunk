@@ -55,6 +55,30 @@ export function PlayerDetailPage() {
   };
 
   const wins = playerMatches.filter((m) => m.winnerID === id).length;
+  const bestWinStreak = (() => {
+    const sortedMatches = [...playerMatches].sort((a, b) => a.date - b.date);
+    let current = 0;
+    let best = 0;
+    for (const m of sortedMatches) {
+      const playerId = id || "";
+      const didWin =
+        (m.winnerID && m.winnerID === playerId) ||
+        (!!m.winnerTeamId &&
+          !!m.teams &&
+          m.teams.some(
+            (team) =>
+              team.teamId === m.winnerTeamId &&
+              team.playerIDs.includes(playerId)
+          ));
+      if (didWin) {
+        current += 1;
+        if (current > best) best = current;
+      } else {
+        current = 0;
+      }
+    }
+    return best;
+  })();
 
   return (
     <div className="player-detail-page">
@@ -102,6 +126,10 @@ export function PlayerDetailPage() {
         <div className="stat-item">
           <span className="stat-value">{wins}</span>
           <span className="stat-label">Wins</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-value">{bestWinStreak}</span>
+          <span className="stat-label">Best Streak</span>
         </div>
       </div>
 
