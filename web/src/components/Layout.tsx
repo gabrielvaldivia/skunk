@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -7,12 +8,14 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
 
   const navItems = [
     { path: "/activity", label: "Activity", icon: "📋" },
     { path: "/games", label: "Games", icon: "🎮" },
     { path: "/players", label: "Players", icon: "👥" },
-    { path: "/profile", label: "Account", icon: "👤" },
+    // Only show Account when signed in
+    ...(isAuthenticated ? [{ path: "/profile", label: "Account", icon: "👤" }] : []),
   ];
 
   const isGameDetailPage =

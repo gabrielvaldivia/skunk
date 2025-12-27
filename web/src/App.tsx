@@ -66,41 +66,33 @@ function AppRoutes() {
       <Route
         path="/games"
         element={
-          <ProtectedRoute>
-            <Layout>
-              <GamesPage />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <GamesPage />
+          </Layout>
         }
       />
       <Route
         path="/games/:id"
         element={
-          <ProtectedRoute>
-            <Layout>
-              <GameDetailPage />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <GameDetailPage />
+          </Layout>
         }
       />
       <Route
         path="/players"
         element={
-          <ProtectedRoute>
-            <Layout>
-              <PlayersPage />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <PlayersPage />
+          </Layout>
         }
       />
       <Route
         path="/players/:id"
         element={
-          <ProtectedRoute>
-            <Layout>
-              <PlayerDetailPage />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <PlayerDetailPage />
+          </Layout>
         }
       />
       <Route
@@ -116,11 +108,9 @@ function AppRoutes() {
       <Route
         path="/activity"
         element={
-          <ProtectedRoute>
-            <Layout>
-              <ActivityPage />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <ActivityPage />
+          </Layout>
         }
       />
       <Route

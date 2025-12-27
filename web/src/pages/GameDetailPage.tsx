@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useGames } from "../hooks/useGames";
 import { useActivity } from "../hooks/useActivity";
 import { useSession } from "../context/SessionContext";
@@ -17,11 +17,12 @@ const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
 
 export function GameDetailPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { games, editGame, removeGame } = useGames();
   const { matches: allMatches } = useActivity(500, 365 * 10);
   const { createSession } = useSession();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -37,6 +38,12 @@ export function GameDetailPage() {
 
   const handleCreateSession = async () => {
     if (!id) return;
+
+    // Require sign-in before creating a session
+    if (!isAuthenticated) {
+      navigate("/signin", { state: { from: location }, replace: true });
+      return;
+    }
 
     setIsCreatingSession(true);
     try {
@@ -129,8 +136,7 @@ export function GameDetailPage() {
           </div>
         )}
         <div className="game-header-content">
-          <div className="game-header-actions-desktop">
-          </div>
+          <div className="game-header-actions-desktop"></div>
           <h1 className="game-title-full-width">{game.title}</h1>
         </div>
       </div>
@@ -148,6 +154,7 @@ export function GameDetailPage() {
         {gameMatches.length === 0 ? (
           <div className="empty-state">
             <p>No matches yet</p>
+            <p>Start a session to invite others to play.</p>
           </div>
         ) : (
           <div className="matches-list">

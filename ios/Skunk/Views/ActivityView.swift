@@ -20,7 +20,7 @@
                     if isLoading && matches.isEmpty {
                         ProgressView()
                     } else if matches.isEmpty {
-                        Text("No matches yet")
+                        Text("No matches yet. Start a session to invite others to play.")
                             .foregroundStyle(.secondary)
                     } else {
                         ForEach(sortedMatches) { match in

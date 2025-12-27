@@ -47,9 +47,9 @@ export function SignInView() {
 
   const handleClose = () => {
     if (isAdminView && isAdmin) {
-      navigate("/profile");
+      navigate("/profile", { replace: true });
     } else {
-      navigate(from || "/");
+      navigate(from || "/", { replace: true });
     }
   };
 
@@ -58,7 +58,7 @@ export function SignInView() {
       <button className="sign-in-close-button" onClick={handleClose}>
         <X size={20} />
       </button>
-      <div className="sign-in-card">
+      <div className="sign-in-content">
         <h1>Skunk</h1>
         <p>Sign in to create and edit games, players, and matches</p>
         <Button onClick={handleSignIn} disabled={isLoading} size="lg">
