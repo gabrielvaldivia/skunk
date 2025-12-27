@@ -24,33 +24,32 @@ export function ActivityPage() {
     <div className="activity-page">
       <div className="page-header">
         <h1>Activity</h1>
+        {!sessionsLoading && activeSessions.length > 0 && (
+          <div className="session-banner">
+            {activeSessions.length === 1 ? (
+              <button
+                className="session-banner-link"
+                onClick={() => navigate(`/session/${activeSessions[0].code}`)}
+              >
+                <span className="session-banner-text">
+                  You're in Session {activeSessions[0].code}
+                </span>
+                <ChevronRight className="session-banner-arrow" size={20} />
+              </button>
+            ) : (
+              <button
+                className="session-banner-link"
+                onClick={() => navigate('/sessions')}
+              >
+                <span className="session-banner-text">
+                  You're in {activeSessions.length} sessions
+                </span>
+                <ChevronRight className="session-banner-arrow" size={20} />
+              </button>
+            )}
+          </div>
+        )}
       </div>
-
-      {!sessionsLoading && activeSessions.length > 0 && (
-        <div className="session-banner">
-          {activeSessions.length === 1 ? (
-            <button
-              className="session-banner-link"
-              onClick={() => navigate(`/session/${activeSessions[0].code}`)}
-            >
-              <span className="session-banner-text">
-                You're in Session {activeSessions[0].code}
-              </span>
-              <ChevronRight className="session-banner-arrow" size={20} />
-            </button>
-          ) : (
-            <button
-              className="session-banner-link"
-              onClick={() => navigate('/sessions')}
-            >
-              <span className="session-banner-text">
-                You're in {activeSessions.length} sessions
-              </span>
-              <ChevronRight className="session-banner-arrow" size={20} />
-            </button>
-          )}
-        </div>
-      )}
 
       {matches.length === 0 ? (
         <div className="empty-state">
