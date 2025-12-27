@@ -34,7 +34,7 @@
 
 .session-banner {
   position: fixed;
-  top: 4.5rem;
+  top: 5.25rem;
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -113,7 +113,7 @@
 }
 
 .activity-page:has(.session-banner) {
-  padding-top: 7.5rem;
+  padding-top: 8.25rem;
 }
 
 .activity-page:has(.session-banner) .matches-list {
