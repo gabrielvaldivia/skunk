@@ -9,6 +9,7 @@ import {
 } from "../services/databaseService";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ChevronLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -256,7 +257,11 @@ export function ProfilePage() {
   return (
     <div className="profile-page">
       <div className="page-header">
+        <Button variant="outline" onClick={() => navigate(-1)} size="icon" aria-label="Go back">
+          <ChevronLeft />
+        </Button>
         <h1>Account</h1>
+        <div style={{ width: 40 }} />
       </div>
 
       <div className="profile-content">

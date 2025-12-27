@@ -14,17 +14,17 @@ export function Layout({ children }: LayoutProps) {
     { path: "/activity", label: "Activity", icon: "📋" },
     { path: "/games", label: "Games", icon: "🎮" },
     { path: "/players", label: "Players", icon: "👥" },
-    // Only show Account when signed in
-    ...(isAuthenticated ? [{ path: "/profile", label: "Account", icon: "👤" }] : []),
   ];
 
   const isGameDetailPage =
     location.pathname.startsWith("/games/") && location.pathname !== "/games";
   const isSessionPage = location.pathname.startsWith("/session/");
   const isSessionsListPage = location.pathname === "/sessions";
+  const isProfilePage = location.pathname === "/profile";
   const shouldHideNavOnMobile =
-    isGameDetailPage || isSessionPage || isSessionsListPage;
-  const shouldHideNav = isGameDetailPage || isSessionPage || isSessionsListPage;
+    isGameDetailPage || isSessionPage || isSessionsListPage || isProfilePage;
+  const shouldHideNav =
+    isGameDetailPage || isSessionPage || isSessionsListPage || isProfilePage;
 
   return (
     <div

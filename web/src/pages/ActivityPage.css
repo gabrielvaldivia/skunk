@@ -73,6 +73,36 @@
   gap: 0.5rem;
 }
 
+.profile-avatar-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+.profile-avatar.initials {
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
 .refresh-button {
   padding: 0.75rem 1.5rem;
   background-color: #6c757d;
