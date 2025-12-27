@@ -272,6 +272,57 @@
   border-width: 3px;
 }
 
+.avatar-pile {
+  position: relative;
+  display: inline-block;
+}
+
+.leader .avatar-wrap,
+.leader .avatar-pile {
+  width: 69px;
+  height: 69px;
+}
+.leader.first .avatar-wrap,
+.leader.first .avatar-pile {
+  width: 108px;
+  height: 108px;
+}
+
+.avatar.overlap {
+  margin-left: -10px;
+}
+
+.avatar.overlap:first-child {
+  margin-left: 0;
+}
+
+.leader .avatar-pile .avatar {
+  width: 36px;
+  height: 36px;
+}
+
+.leader.first .avatar-pile .avatar {
+  width: 42px;
+  height: 42px;
+}
+
+/* Use higher-specificity rules to override generic pile avatar sizing */
+.leader .avatar-pile.diagonal .avatar {
+  position: absolute;
+  width: 70%;
+  height: 70%;
+  border-radius: 50%;
+}
+.leader .avatar-pile.diagonal .avatar.pos-a {
+  top: -5%;
+  left: -5%;
+  z-index: 2;
+}
+.leader .avatar-pile.diagonal .avatar.pos-b {
+  right: -5%;
+  bottom: -5%;
+  z-index: 1;
+}
 /* Fixed columns so positions remain centered with 1, 2, or 3 items */
 .leader.first {
   grid-column: 2;
@@ -308,6 +359,7 @@
   align-items: center;
   justify-content: center;
   border: 2px solid hsl(var(--background));
+  z-index: 3;
 }
 
 .leader .rank-badge.primary {

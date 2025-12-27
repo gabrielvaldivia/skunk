@@ -111,6 +111,11 @@ export function GameDetailPage() {
       .slice(0, 2);
   const getFirstName = (name: string): string =>
     name.trim().split(" ")[0] || name;
+  const getPlacementLabel = (ps: { name: string }[]) =>
+    ps
+      .slice(0, 2)
+      .map((p) => getFirstName(p.name))
+      .join(" & ");
 
   // Compute top 3 players by wins for this game
   const winCounts = new Map<string, number>();
@@ -128,14 +133,25 @@ export function GameDetailPage() {
       winCounts.set(winnerOrTeamId, (winCounts.get(winnerOrTeamId) || 0) + 1);
     }
   }
-  const sortedTop = Array.from(winCounts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([playerId, wins]) => ({
-      player: players.find((p) => p.id === playerId),
-      wins,
-    }))
-    .filter((x) => x.player);
+  const sortedEntries = Array.from(winCounts.entries()).sort(
+    (a, b) => b[1] - a[1]
+  );
+  const groups: Array<{ wins: number; playerIds: string[] }> = [];
+  for (let i = 0; i < sortedEntries.length && groups.length < 3; ) {
+    const wins = sortedEntries[i][1];
+    const tied: string[] = [];
+    while (i < sortedEntries.length && sortedEntries[i][1] === wins) {
+      tied.push(sortedEntries[i][0]);
+      i++;
+    }
+    groups.push({ wins, playerIds: tied });
+  }
+  const placements = groups.map((g) => ({
+    wins: g.wins,
+    players: g.playerIds
+      .map((id) => players.find((p) => p.id === id))
+      .filter((p): p is NonNullable<typeof p> => !!p),
+  }));
 
   return (
     <div className="game-detail-page">
@@ -163,95 +179,167 @@ export function GameDetailPage() {
         {/* Game cover art intentionally hidden per design */}
       </div>
 
-      {sortedTop.length > 0 && (
+      {placements.length > 0 && (
         <div className="game-stats">
           <div className="game-leaderboard">
-            {sortedTop.length >= 2 && (
+            {placements.length >= 2 && (
               <div className="leader second">
-                <div className="avatar-wrap">
-                  {sortedTop[1].player!.photoData ? (
-                    <img
-                      className="avatar"
-                      src={`data:image/jpeg;base64,${
-                        sortedTop[1].player!.photoData
-                      }`}
-                      alt={sortedTop[1].player!.name}
-                    />
-                  ) : (
-                    <span className="avatar initials">
-                      {getInitials(sortedTop[1].player!.name)}
-                    </span>
-                  )}
-                  <span className="rank-badge">2</span>
-                </div>
+                {placements[1].players.length > 1 ? (
+                  <div className="avatar-pile diagonal">
+                    {placements[1].players.slice(0, 2).map((p, idx) =>
+                      p.photoData ? (
+                        <img
+                          key={p.id}
+                          className={`avatar ${idx === 0 ? "pos-a" : "pos-b"}`}
+                          src={`data:image/jpeg;base64,${p.photoData}`}
+                          alt={p.name}
+                        />
+                      ) : (
+                        <span
+                          key={p.id}
+                          className={`avatar initials ${
+                            idx === 0 ? "pos-a" : "pos-b"
+                          }`}
+                        >
+                          {getInitials(p.name)}
+                        </span>
+                      )
+                    )}
+                    <span className="rank-badge">2</span>
+                  </div>
+                ) : (
+                  <div className="avatar-wrap">
+                    {placements[1].players[0]?.photoData ? (
+                      <img
+                        className="avatar"
+                        src={`data:image/jpeg;base64,${placements[1].players[0].photoData}`}
+                        alt={placements[1].players[0].name}
+                      />
+                    ) : (
+                      <span className="avatar initials">
+                        {placements[1].players[0] &&
+                          getInitials(placements[1].players[0].name)}
+                      </span>
+                    )}
+                    <span className="rank-badge">2</span>
+                  </div>
+                )}
                 <div className="meta">
                   <div className="name">
-                    {getFirstName(sortedTop[1].player!.name)}
+                    {getPlacementLabel(placements[1].players)}
                   </div>
                   <div className="wins">
-                    {sortedTop[1].wins}{" "}
-                    {sortedTop[1].wins === 1 ? "win" : "wins"}
+                    {placements[1].wins}{" "}
+                    {placements[1].wins === 1 ? "win" : "wins"}
                   </div>
                 </div>
               </div>
             )}
-            {sortedTop.length >= 1 && (
+            {placements.length >= 1 && (
               <div className="leader first">
                 <div className="crown" aria-hidden>
                   👑
                 </div>
-                <div className="avatar-wrap">
-                  {sortedTop[0].player!.photoData ? (
-                    <img
-                      className="avatar"
-                      src={`data:image/jpeg;base64,${
-                        sortedTop[0].player!.photoData
-                      }`}
-                      alt={sortedTop[0].player!.name}
-                    />
-                  ) : (
-                    <span className="avatar initials">
-                      {getInitials(sortedTop[0].player!.name)}
-                    </span>
-                  )}
-                  <span className="rank-badge primary">1</span>
-                </div>
+                {placements[0].players.length > 1 ? (
+                  <div className="avatar-pile diagonal">
+                    {placements[0].players.slice(0, 2).map((p, idx) =>
+                      p.photoData ? (
+                        <img
+                          key={p.id}
+                          className={`avatar ${idx === 0 ? "pos-a" : "pos-b"}`}
+                          src={`data:image/jpeg;base64,${p.photoData}`}
+                          alt={p.name}
+                        />
+                      ) : (
+                        <span
+                          key={p.id}
+                          className={`avatar initials ${
+                            idx === 0 ? "pos-a" : "pos-b"
+                          }`}
+                        >
+                          {getInitials(p.name)}
+                        </span>
+                      )
+                    )}
+                    <span className="rank-badge primary">1</span>
+                  </div>
+                ) : (
+                  <div className="avatar-wrap">
+                    {placements[0].players[0]?.photoData ? (
+                      <img
+                        className="avatar"
+                        src={`data:image/jpeg;base64,${placements[0].players[0].photoData}`}
+                        alt={placements[0].players[0].name}
+                      />
+                    ) : (
+                      <span className="avatar initials">
+                        {placements[0].players[0] &&
+                          getInitials(placements[0].players[0].name)}
+                      </span>
+                    )}
+                    <span className="rank-badge primary">1</span>
+                  </div>
+                )}
                 <div className="meta">
                   <div className="name">
-                    {getFirstName(sortedTop[0].player!.name)}
+                    {getPlacementLabel(placements[0].players)}
                   </div>
                   <div className="wins">
-                    {sortedTop[0].wins}{" "}
-                    {sortedTop[0].wins === 1 ? "win" : "wins"}
+                    {placements[0].wins}{" "}
+                    {placements[0].wins === 1 ? "win" : "wins"}
                   </div>
                 </div>
               </div>
             )}
-            {sortedTop.length >= 3 && (
+            {placements.length >= 3 && (
               <div className="leader third">
-                <div className="avatar-wrap">
-                  {sortedTop[2].player!.photoData ? (
-                    <img
-                      className="avatar"
-                      src={`data:image/jpeg;base64,${
-                        sortedTop[2].player!.photoData
-                      }`}
-                      alt={sortedTop[2].player!.name}
-                    />
-                  ) : (
-                    <span className="avatar initials">
-                      {getInitials(sortedTop[2].player!.name)}
-                    </span>
-                  )}
-                  <span className="rank-badge">3</span>
-                </div>
+                {placements[2].players.length > 1 ? (
+                  <div className="avatar-pile diagonal">
+                    {placements[2].players.slice(0, 2).map((p, idx) =>
+                      p.photoData ? (
+                        <img
+                          key={p.id}
+                          className={`avatar ${idx === 0 ? "pos-a" : "pos-b"}`}
+                          src={`data:image/jpeg;base64,${p.photoData}`}
+                          alt={p.name}
+                        />
+                      ) : (
+                        <span
+                          key={p.id}
+                          className={`avatar initials ${
+                            idx === 0 ? "pos-a" : "pos-b"
+                          }`}
+                        >
+                          {getInitials(p.name)}
+                        </span>
+                      )
+                    )}
+                    <span className="rank-badge">3</span>
+                  </div>
+                ) : (
+                  <div className="avatar-wrap">
+                    {placements[2].players[0]?.photoData ? (
+                      <img
+                        className="avatar"
+                        src={`data:image/jpeg;base64,${placements[2].players[0].photoData}`}
+                        alt={placements[2].players[0].name}
+                      />
+                    ) : (
+                      <span className="avatar initials">
+                        {placements[2].players[0] &&
+                          getInitials(placements[2].players[0].name)}
+                      </span>
+                    )}
+                    <span className="rank-badge">3</span>
+                  </div>
+                )}
                 <div className="meta">
                   <div className="name">
-                    {getFirstName(sortedTop[2].player!.name)}
+                    {getPlacementLabel(placements[2].players)}
                   </div>
                   <div className="wins">
-                    {sortedTop[2].wins}{" "}
-                    {sortedTop[2].wins === 1 ? "win" : "wins"}
+                    {placements[2].wins}{" "}
+                    {placements[2].wins === 1 ? "win" : "wins"}
                   </div>
                 </div>
               </div>

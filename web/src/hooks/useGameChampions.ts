@@ -9,6 +9,8 @@ export interface GameChampion {
   gameId: string;
   playerId: string | undefined;
   playerName: string | undefined;
+  playerIds?: string[];
+  playerNames?: string[];
   winCount: number;
 }
 
@@ -59,23 +61,26 @@ export function useGameChampions(games: Game[], matches: Match[] = []) {
         }
       });
 
-      // Find player with most wins
-      let championId: string | undefined;
+      // Find max wins and handle ties
       let maxWins = 0;
-
+      winCounts.forEach((wins) => {
+        if (wins > maxWins) maxWins = wins;
+      });
+      const championIds: string[] = [];
       winCounts.forEach((wins, playerId) => {
-        if (wins > maxWins) {
-          maxWins = wins;
-          championId = playerId;
+        if (wins === maxWins) {
+          championIds.push(playerId);
         }
       });
-
-      const championPlayer = championId ? playerMap.get(championId) : undefined;
+      const championPlayers = championIds.map(id => playerMap.get(id)).filter(Boolean) as Player[];
+      const championNames = championPlayers.map(p => p.name).sort((a, b) => a.localeCompare(b));
 
       championsMap.set(game.id, {
         gameId: game.id,
-        playerId: championId,
-        playerName: championPlayer?.name,
+        playerId: championIds[0],
+        playerName: championNames.length > 1 ? championNames.join(" & ") : championNames[0],
+        playerIds: championIds,
+        playerNames: championNames,
         winCount: maxWins
       });
     });
