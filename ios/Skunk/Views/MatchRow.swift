@@ -7,7 +7,17 @@ import SwiftUI
         let match: Match
         var hideGameTitle: Bool = false
 
-        private var relativeTimeString: String {
+        private var matchDateDisplayString: String {
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: Date())
+            let matchDay = calendar.startOfDay(for: match.date)
+
+            // Only show relative text if the match is within the last 30 days.
+            let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: today) ?? today
+            if matchDay < thirtyDaysAgo {
+                return match.date.formatted(date: .abbreviated, time: .omitted)
+            }
+
             let formatter = RelativeDateTimeFormatter()
             formatter.unitsStyle = .full
             return formatter.localizedString(for: match.date, relativeTo: Date())
@@ -66,7 +76,7 @@ import SwiftUI
                         }
                     }
 
-                    Text(relativeTimeString)
+                    Text(matchDateDisplayString)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
