@@ -95,7 +95,7 @@ function PlayerItem({ player, canDelete, onNavigate, onLongPress, subtitle }: Pl
 export function PlayersPage() {
   const navigate = useNavigate();
   const { players, isLoading, error, addPlayer, removePlayer } = usePlayers();
-  const { user, player: currentUserPlayer, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { currentSession } = useSession();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState("");
