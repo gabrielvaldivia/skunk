@@ -23,17 +23,23 @@ function saveLastPick(id: string) {
 }
 
 interface CardGamePickerProps {
-  /** Card games in the deck, already narrowed by any shelf search */
+  /** Card games in the deck, already narrowed by the tab (My Games) and any shelf search */
   games: Game[];
+  /** Every card game, for searching past what's in the deck */
+  allCardGames: Game[];
   onClose: () => void;
 }
 
 // Detail view for the shelf's deck of cards: pick a card game, see its page.
 // Opens on the game you picked last time.
-export function CardGamePicker({ games, onClose }: CardGamePickerProps) {
-  const [chosenId, setChosenId] = useState(() => readLastPick());
-  // The last pick may not be in this (searched) deck; fall back to the first
-  const chosen = games.find((g) => g.id === chosenId) ?? games[0];
+export function CardGamePicker({ games, allCardGames, onClose }: CardGamePickerProps) {
+  const [chosenId, setChosenId] = useState<string | null>(null);
+  // Opens on the last pick if it's in this deck, else the deck's first game;
+  // once you pick, it's whatever you picked, from anywhere
+  const chosen =
+    (chosenId && allCardGames.find((g) => g.id === chosenId)) ||
+    games.find((g) => g.id === readLastPick()) ||
+    games[0];
   if (!chosen) return null;
 
   const choose = (id: string) => {
@@ -46,7 +52,7 @@ export function CardGamePicker({ games, onClose }: CardGamePickerProps) {
       key={chosen.id}
       gameId={chosen.id}
       onClose={onClose}
-      navTitle={<GameCombobox games={games} value={chosen} onChange={choose} />}
+      navTitle={<GameCombobox games={games} allGames={allCardGames} value={chosen} onChange={choose} />}
     />
   );
 }
@@ -65,8 +71,9 @@ function liftToTop(field: HTMLElement) {
   const target = probe.getBoundingClientRect().top;
   probe.remove();
   scroller.style.paddingBottom = `${window.innerHeight}px`;
-  const by = field.getBoundingClientRect().top - target;
-  scroller.scrollTo({ top: scroller.scrollTop + by, behavior: "smooth" });
+  // Jump rather than animate: typing right away cancels a smooth scroll,
+  // leaving the field under the keyboard
+  scroller.scrollTop += field.getBoundingClientRect().top - target;
 }
 
 function settle(field: HTMLElement | null) {
@@ -75,17 +82,28 @@ function settle(field: HTMLElement | null) {
 }
 
 // Type to filter, arrows to move, Enter to pick, Escape to back out
-function GameCombobox({ games, value, onChange }: { games: Game[]; value: Game; onChange: (id: string) => void }) {
+function GameCombobox({
+  games,
+  allGames,
+  value,
+  onChange,
+}: {
+  games: Game[];
+  allGames: Game[];
+  value: Game;
+  onChange: (id: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
   const listId = useId();
 
+  // Empty, it lists the deck's games; typing searches every card game
   const options = useMemo(() => {
     const q = text.trim().toLowerCase();
-    return q ? games.filter((g) => g.title.toLowerCase().includes(q)) : games;
-  }, [games, text]);
+    return q ? allGames.filter((g) => g.title.toLowerCase().includes(q)) : games;
+  }, [games, allGames, text]);
 
   const openList = () => {
     if (input.current) liftToTop(input.current);

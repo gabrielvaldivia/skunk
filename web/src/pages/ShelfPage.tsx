@@ -17,7 +17,7 @@ import { CardGamePicker } from "../components/CardGamePicker";
 import { CloseIcon } from "../components/icons";
 import { MiniSessionSheet } from "../components/MiniSessionSheet";
 import { useSession } from "../context/SessionContext";
-import { CARD_DECK_ID, foldCardGames } from "@/lib/cardDeck";
+import { CARD_DECK_ID, foldCardGames, isCardGame } from "@/lib/cardDeck";
 
 // Width of the desktop detail panel; the selected box centres in the space left of it
 const PANEL_WIDTH = 440;
@@ -76,6 +76,7 @@ export function ShelfPage() {
     [sorted, mine, myIds, needsSignIn, searching]
   );
   const { shelf: shown, inDeck } = useMemo(() => foldCardGames(scoped, query), [scoped, query]);
+  const allCardGames = useMemo(() => sorted.filter(isCardGame), [sorted]);
   const selected = shown.find((g) => g.id === selectedId);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const viewportHeight = useViewportHeight();
@@ -177,7 +178,7 @@ export function ShelfPage() {
         >
         <PanelFrameProvider value={detailFrame}>
           {selected.id === CARD_DECK_ID ? (
-            <CardGamePicker games={inDeck} onClose={() => select(null)} />
+            <CardGamePicker games={inDeck} allCardGames={allCardGames} onClose={() => select(null)} />
           ) : (
             <GameDetailPage key={selected.id} gameId={selected.id} onClose={() => select(null)} />
           )}
