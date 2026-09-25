@@ -54,11 +54,12 @@
 .form-section input[type="number"],
 .form-section select {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid hsl(var(--input));
-  background: hsl(var(--background));
+  height: 2.75rem;
+  padding: 0 0.875rem;
+  border: 1px solid transparent;
+  background: hsl(var(--secondary));
   color: hsl(var(--foreground));
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   font-size: 1rem;
   box-sizing: border-box;
 }
@@ -94,9 +95,7 @@
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid hsl(var(--border));
+  margin-top: 1.5rem;
 }
 
 
@@ -108,10 +107,10 @@
 }
 
 .player-option {
-  padding: 0.5rem 1rem;
-  border: 1px solid hsl(var(--border));
-  border-radius: 0.5rem;
-  background-color: hsl(var(--background));
+  padding: 0.5rem 0.875rem;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  background-color: hsl(var(--secondary));
   color: hsl(var(--foreground));
   cursor: pointer;
   transition: all 0.2s;
@@ -120,7 +119,6 @@
 
 .player-option:hover:not(.disabled) {
   background-color: hsl(var(--accent));
-  border-color: hsl(var(--primary));
 }
 
 .player-option.selected {

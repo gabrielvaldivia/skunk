@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { computeWinnerID } from "../models/Match";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { ChevronsUpDown } from "lucide-react";
+import { SelectorIcon } from "./icons";
 import "./AddGameForm.css";
 import { getPlayerColor, getInitials } from "@/lib/player";
 
@@ -476,10 +476,10 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                 }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
               >
-                <ChevronsUpDown size={16} />
+                <SelectorIcon size={16} />
               </button>
               {showGameSuggestions && visibleGameSuggestions.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
+                <div className="absolute z-50 w-full mt-1 bg-popover border rounded-xl shadow-xl max-h-60 overflow-auto">
                   {visibleGameSuggestions.map((game, idx) => (
                     <button
                       key={game.id}
@@ -569,7 +569,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                                 className="w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent px-0"
                               />
                               {state.showSuggestions && suggestions.length > 0 && (
-                                <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
+                                <div className="absolute z-50 w-full mt-1 bg-popover border rounded-xl shadow-xl max-h-60 overflow-auto">
                                   {suggestions.map((player) => (
                                     <button
                                       key={player.id}
@@ -599,7 +599,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                                     });
                                   }
                                 }}
-                                className="flex h-10 w-32 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                className="flex h-10 w-32 rounded-xl border border-transparent bg-secondary px-3 py-2 text-sm"
                               >
                                 {teams.map((teamId, teamIndex) => (
                                   <option key={teamId} value={teamId}>
@@ -786,7 +786,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                               className="w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent px-0"
                             />
                             {state.showSuggestions && suggestions.length > 0 && (
-                              <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
+                              <div className="absolute z-50 w-full mt-1 bg-popover border rounded-xl shadow-xl max-h-60 overflow-auto">
                                 {suggestions.map((player) => (
                                   <button
                                     key={player.id}

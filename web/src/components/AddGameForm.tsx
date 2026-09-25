@@ -60,6 +60,8 @@ export interface GameFormContentProps {
   submitButtonText?: string;
   showSubmitButton?: boolean;
   formId?: string;
+  /** Extra fields shown after the standard ones */
+  children?: React.ReactNode;
 }
 
 export function GameFormContent({
@@ -93,6 +95,7 @@ export function GameFormContent({
   submitButtonText = "Create Game",
   showSubmitButton = true,
   formId,
+  children,
 }: GameFormContentProps) {
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -393,6 +396,7 @@ export function GameFormContent({
             )}
           </div>
         )}
+        {children}
       </div>
       {showSubmitButton && (
         <Button type="submit" disabled={isSubmitting || !title.trim()}>

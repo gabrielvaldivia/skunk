@@ -1,0 +1,31 @@
+{
+  "rules": {
+    "games": {
+      ".read": true,
+      "$gameId": {
+        ".write": "auth != null && (!data.exists() || data.child('createdByID').val() == auth.uid || (auth.token.email == 'valdivia.gabriel@gmail.com' && auth.token.email_verified == true))"
+      }
+    },
+    "players": {
+      ".read": true,
+      "$playerId": {
+        ".write": "auth != null && (!data.exists() || data.child('ownerID').val() == auth.uid || data.child('linkedGoogleUserIDs').child(auth.uid).exists() || (auth.token.email == 'valdivia.gabriel@gmail.com' && auth.token.email_verified == true))"
+      },
+      ".indexOn": [
+        "googleUserID"
+      ]
+    },
+    "matches": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "sessions": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "sessionsByCode": {
+      ".read": true,
+      ".write": "auth != null"
+    }
+  }
+}

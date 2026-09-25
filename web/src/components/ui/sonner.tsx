@@ -1,10 +1,4 @@
-import {
-  CircleCheck,
-  Info,
-  LoaderCircle,
-  OctagonX,
-  TriangleAlert,
-} from "lucide-react"
+import { ErrorIcon, InfoIcon, SpinnerIcon, SuccessIcon, WarningIcon } from "../icons";
 import { useTheme } from "../theme-provider"
 import { Toaster as Sonner } from "sonner"
 
@@ -17,17 +11,18 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      position="top-center"
       icons={{
-        success: <CircleCheck className="h-4 w-4" />,
-        info: <Info className="h-4 w-4" />,
-        warning: <TriangleAlert className="h-4 w-4" />,
-        error: <OctagonX className="h-4 w-4" />,
-        loading: <LoaderCircle className="h-4 w-4 animate-spin" />,
+        success: <SuccessIcon className="h-4 w-4" />,
+        info: <InfoIcon className="h-4 w-4" />,
+        warning: <WarningIcon className="h-4 w-4" />,
+        error: <ErrorIcon className="h-4 w-4" />,
+        loading: <SpinnerIcon className="h-4 w-4 animate-spin" />,
       }}
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
+            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-xl group-[.toaster]:rounded-2xl",
           description: "group-[.toast]:text-muted-foreground",
           actionButton:
             "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",

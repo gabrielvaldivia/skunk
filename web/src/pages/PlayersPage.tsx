@@ -1,13 +1,16 @@
 import { useMemo, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { usePlayers } from "../hooks/usePlayers";
 import { useAuth } from "../context/AuthContext";
 import { useSession } from "../context/SessionContext";
 import { MiniSessionSheet } from "../components/MiniSessionSheet";
 import { PlayerCard } from "../components/PlayerCard";
+import { NavBar } from "../components/NavBar";
+import { useAppNavigate } from "../components/AppLink";
 import { useMediaQuery } from "../hooks/use-media-query";
 import { useActivity } from "../hooks/useActivity";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ChevronRightIcon, PlusIcon } from "../components/icons";
 import {
   Dialog,
   DialogContent,
@@ -78,7 +81,7 @@ function PlayerItem({ player, canDelete, onNavigate, onLongPress, subtitle }: Pl
 
   return (
     <div 
-      className={`player-item ${canDelete ? 'player-item-deletable' : ''}`}
+      className={`player-item row-press ${canDelete ? 'player-item-deletable' : ''}`}
       onMouseDown={canDelete ? handlePressStart : undefined}
       onMouseUp={canDelete ? handlePressEnd : undefined}
       onMouseLeave={canDelete ? handlePressEnd : undefined}
@@ -86,15 +89,19 @@ function PlayerItem({ player, canDelete, onNavigate, onLongPress, subtitle }: Pl
       onTouchEnd={canDelete ? handlePressEnd : undefined}
       onClick={canDelete ? handleClick : () => onNavigate(player.id)}
     >
-      <PlayerCard player={player} subtitle={subtitle} />
+      <PlayerCard
+        player={player}
+        subtitle={subtitle}
+        rightAction={<ChevronRightIcon className="player-item-chevron" aria-hidden />}
+      />
     </div>
   );
 }
 
 export function PlayersPage() {
-  const navigate = useNavigate();
+  const openPage = useAppNavigate();
   const { players, isLoading, error, addPlayer, removePlayer } = usePlayers();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, player: currentPlayer } = useAuth();
   const { currentSession } = useSession();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState("");
@@ -218,44 +225,49 @@ export function PlayersPage() {
 
   return (
     <div className="players-page">
-      <div className="page-header">
-        <h1>Players</h1>
-        {isAdmin && (
-          <Button onClick={() => setShowAddForm(true)}>+ Add Player</Button>
-        )}
-      </div>
+      <NavBar
+        title="Players"
+        action={
+          isAdmin && (
+            <Button variant="secondary" size="icon" onClick={() => setShowAddForm(true)} aria-label="Add player">
+              <PlusIcon className="!size-5" />
+            </Button>
+          )
+        }
+      />
 
       {currentSession && <MiniSessionSheet />}
 
-      {showAddForm && (
-        <div className="modal-overlay" onClick={() => setShowAddForm(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>Add New Player</h2>
-            <form onSubmit={handleAddPlayer}>
-              <input
-                type="text"
-                value={newPlayerName}
-                onChange={(e) => setNewPlayerName(e.target.value)}
-                placeholder="Player name"
-                autoFocus
-                required
-              />
-              <div className="form-actions">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowAddForm(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Adding..." : "Add"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Player</DialogTitle>
+            <DialogDescription>Create a player who doesn't have an account yet.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAddPlayer} className="grid gap-4">
+            <Input
+              type="text"
+              value={newPlayerName}
+              onChange={(e) => setNewPlayerName(e.target.value)}
+              placeholder="Player name"
+              autoFocus
+              required
+            />
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowAddForm(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting || !newPlayerName.trim()}>
+                {isSubmitting ? "Adding..." : "Add"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <div className="page-content">
         {players.length === 0 ? (
@@ -268,23 +280,25 @@ export function PlayersPage() {
             )}
           </div>
         ) : (
-          <div className="players-list">
+          <div className="players-list list">
             {sortedPlayers.map((player) => {
               const canDelete =
                 isAuthenticated &&
                 (isAdmin ||
                   (player.ownerID === user?.uid && player.googleUserID !== user?.uid));
               const lastPlayed = lastPlayedMap.get(player.id);
-              const subtitle = lastPlayed && lastPlayed > 0
+              const played = lastPlayed && lastPlayed > 0
                 ? `Last played ${formatRelative(lastPlayed)}`
                 : 'No matches yet';
+              // So you can find yourself, e.g. among players with the same name
+              const subtitle = player.id === currentPlayer?.id ? `You · ${played}` : played;
               
               return (
                 <PlayerItem
                   key={player.id}
                   player={player}
                   canDelete={canDelete}
-                  onNavigate={(playerId) => navigate(`/players/${playerId}`)}
+                  onNavigate={(playerId) => openPage(`/players/${playerId}`)}
                   onLongPress={handleLongPress}
                   subtitle={subtitle}
                 />

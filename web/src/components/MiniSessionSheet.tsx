@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "../context/SessionContext";
 import { useDataCache } from "../context/DataCacheContext";
+import { Avatar } from "./Avatar";
 import "./MiniSessionSheet.css";
 
 function formatRelativeTime(timestamp: number): string {
@@ -87,36 +88,17 @@ export function MiniSessionSheet() {
         }
       }}
     >
-      <div className="mini-session-handle" aria-hidden />
+      <span className="mini-session-live" aria-hidden />
       <div className="mini-session-content">
         <div className="mini-session-title">Session {currentSession.code}</div>
-        <div className="mini-session-created">Created {createdLabel}</div>
+        <div className="mini-session-created">Started {createdLabel}</div>
       </div>
       <div className="mini-session-facepile" aria-label="Participants">
-        {participantList.slice(0, 5).map((p, idx) =>
-          p.photoData ? (
-            <img
-              key={p.id}
-              className={`facepile-avatar ${idx > 0 ? "overlap" : ""}`}
-              src={`data:image/jpeg;base64,${p.photoData}`}
-              alt={p.name}
-            />
-          ) : (
-            <span
-              key={p.id}
-              className={`facepile-avatar initials ${idx > 0 ? "overlap" : ""}`}
-            >
-              {p.name
-                .split(" ")
-                .map((part) => part[0])
-                .join("")
-                .toUpperCase()
-                .slice(0, 2)}
-            </span>
-          )
-        )}
-        {participantList.length > 5 && (
-          <span className="facepile-more overlap">+{participantList.length - 5}</span>
+        {participantList.slice(0, 4).map((p) => (
+          <Avatar key={p.id} player={p} size={32} />
+        ))}
+        {participantList.length > 4 && (
+          <span className="facepile-more">+{participantList.length - 4}</span>
         )}
       </div>
     </div>

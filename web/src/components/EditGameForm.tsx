@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
-import type { Game } from "../models/Game";
+import type { BoxDims, Game } from "../models/Game";
 import type { FieldUpdates } from "../services/databaseService";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/drawer";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { GameFormContent } from "./AddGameForm";
+import { BoxSizeField } from "./BoxSizeField";
 
 type ScoreCalculation = "all" | "winnerOnly" | "losersSum";
 
@@ -100,6 +101,7 @@ export function EditGameForm({
   const [coverArtPreview, setCoverArtPreview] = useState<string | null>(
     game.coverArt || null
   );
+  const [boxDims, setBoxDims] = useState<BoxDims | null>(game.boxDims ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -117,6 +119,7 @@ export function EditGameForm({
       setIsTeamBased(game.isTeamBased || false);
       setCoverArt(game.coverArt || "");
       setCoverArtPreview(game.coverArt || null);
+      setBoxDims(game.boxDims ?? null);
 
       const winningConditionsStr =
         game.winningConditions || "game:high|round:high";
@@ -216,6 +219,7 @@ export function EditGameForm({
           : coverArt === ""
           ? { coverArt: null }
           : {}),
+        boxDims,
       };
 
       await onSubmit(game.id, updatedGame);
@@ -267,7 +271,9 @@ export function EditGameForm({
                 submitButtonText="Save Changes"
                 showSubmitButton={false}
                 formId="edit-game-form"
-              />
+              >
+                <BoxSizeField game={game} coverArt={coverArtPreview || coverArt} value={boxDims} onChange={setBoxDims} />
+              </GameFormContent>
             </div>
             <DialogFooter className="flex-col sm:flex-row sm:justify-between shrink-0">
               {onDelete && (
@@ -362,7 +368,9 @@ export function EditGameForm({
               submitButtonText="Save Changes"
               showSubmitButton={false}
               formId="edit-game-form-mobile"
-            />
+            >
+              <BoxSizeField game={game} coverArt={coverArtPreview || coverArt} value={boxDims} onChange={setBoxDims} />
+            </GameFormContent>
           </div>
           <DrawerFooter className="flex-col gap-2 shrink-0">
             <Button

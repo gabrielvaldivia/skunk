@@ -6,6 +6,8 @@ import { DataCacheProvider } from "./context/DataCacheContext";
 import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "./components/ui/sonner";
 import { Layout } from "./components/Layout";
+import { PanelProvider } from "./context/PanelContext";
+import { PanelHost } from "./components/PanelHost";
 import { SignInView } from "./components/SignInView";
 import "./App.css";
 import { isAdminEmail } from "@/lib/admin";
@@ -13,6 +15,7 @@ import { isAdminEmail } from "@/lib/admin";
 // Route-level code splitting so the first load doesn't pull in every page
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage").then((m) => ({ default: m.OnboardingPage })));
 const GamesPage = lazy(() => import("./pages/GamesPage").then((m) => ({ default: m.GamesPage })));
+const ShelfPage = lazy(() => import("./pages/ShelfPage").then((m) => ({ default: m.ShelfPage })));
 const GameDetailPage = lazy(() => import("./pages/GameDetailPage").then((m) => ({ default: m.GameDetailPage })));
 const PlayersPage = lazy(() => import("./pages/PlayersPage").then((m) => ({ default: m.PlayersPage })));
 const PlayerDetailPage = lazy(() => import("./pages/PlayerDetailPage").then((m) => ({ default: m.PlayerDetailPage })));
@@ -69,10 +72,19 @@ function AppRoutes() {
         path="/games"
         element={
           <Layout>
+            <ShelfPage />
+          </Layout>
+        }
+      />
+      <Route
+        path="/games/list"
+        element={
+          <Layout>
             <GamesPage />
           </Layout>
         }
       />
+      <Route path="/games/shelf" element={<Navigate to="/games" replace />} />
       <Route
         path="/games/:id"
         element={
@@ -136,7 +148,7 @@ function AppRoutes() {
         }
       />
       <Route path="/matches" element={<Navigate to="/activity" replace />} />
-      <Route path="/" element={<Navigate to="/activity" replace />} />
+      <Route path="/" element={<Navigate to="/games" replace />} />
     </Routes>
     </Suspense>
   );
@@ -149,7 +161,10 @@ function App() {
         <DataCacheProvider>
           <SessionProvider>
             <BrowserRouter>
-              <AppRoutes />
+              <PanelProvider>
+                <AppRoutes />
+                <PanelHost />
+              </PanelProvider>
             </BrowserRouter>
           </SessionProvider>
         </DataCacheProvider>

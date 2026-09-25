@@ -7,10 +7,12 @@ import { useActivity } from "../hooks/useActivity";
 import { useSession } from "../context/SessionContext";
 import { MiniSessionSheet } from "../components/MiniSessionSheet";
 import { AddGameForm } from "../components/AddGameForm";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { ChevronRightIcon, TrophyIcon } from "../components/icons";
 import type { Game } from "../models/Game";
 import "./GamesPage.css";
+import { GamesHeader } from "../components/GamesHeader";
+import { useSearchQuery } from "../hooks/useSearchQuery";
+import { useGameScope, useMyGameIds } from "../hooks/useGameScope";
 
 export function GamesPage() {
   const navigate = useNavigate();
@@ -20,7 +22,9 @@ export function GamesPage() {
   const { currentSession } = useSession();
   const { champions } = useGameChampions(games, matches);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useSearchQuery();
+  const [scope, setScope] = useGameScope();
+  const { ids: myIds } = useMyGameIds(games);
 
   const handleSubmitGame = async (game: Omit<Game, "id">) => {
     await addGame(game);
@@ -62,15 +66,11 @@ export function GamesPage() {
 
   // Filter games based on search query
   const filteredGames = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return sortedGames;
-    }
-
     const query = searchQuery.toLowerCase().trim();
-    return sortedGames.filter((game) =>
-      game.title.toLowerCase().includes(query)
-    );
-  }, [sortedGames, searchQuery]);
+    // Searching always covers every game, whichever tab you're on
+    const scoped = scope === "mine" && !query ? sortedGames.filter((g) => myIds.has(g.id)) : sortedGames;
+    return query ? scoped.filter((game) => game.title.toLowerCase().includes(query)) : scoped;
+  }, [sortedGames, searchQuery, scope, myIds]);
 
   if (isLoading) {
     return <div className="loading">Loading games...</div>;
@@ -82,35 +82,21 @@ export function GamesPage() {
 
   return (
     <div className="games-page">
-      <div className="page-header">
-        <h1>Games</h1>
-        {isAuthenticated && (
-          <>
-            <Button onClick={() => setShowAddForm(true)}>+ Add Game</Button>
-            <AddGameForm
-              open={showAddForm}
-              onOpenChange={setShowAddForm}
-              onSubmit={handleSubmitGame}
-            />
-          </>
-        )}
-      </div>
+      <GamesHeader
+        scope={scope}
+        onScopeChange={setScope}
+        query={searchQuery}
+        onQueryChange={setSearchQuery}
+        onAdd={() => (isAuthenticated ? setShowAddForm(true) : navigate("/signin"))}
+      />
+      {isAuthenticated && (
+        <AddGameForm open={showAddForm} onOpenChange={setShowAddForm} onSubmit={handleSubmitGame} />
+      )}
 
       {currentSession && <MiniSessionSheet />}
 
-      {games.length > 0 && (
-        <div className="search-container">
-          <Input
-            type="text"
-            placeholder="Search games..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
-          />
-        </div>
-      )}
-
-      <div className="page-content">
+      {/* Clears the floating header */}
+      <div className="page-content" style={{ paddingTop: "calc(var(--safe-top) + 0.75rem + 3rem + 1rem)" }}>
         {games.length === 0 ? (
           <div className="empty-state">
             <p>No games yet</p>
@@ -128,57 +114,49 @@ export function GamesPage() {
             <p className="empty-hint">Try a different search term</p>
           </div>
         ) : (
-          <div className="games-list">
+          <div className="games-list list">
             {filteredGames.map((game) => {
               const champion = champions.get(game.id);
               return (
-                <div
+                <button
+                  type="button"
                   key={game.id}
-                  className="game-list-item"
+                  className="game-list-item row-press"
                   onClick={() => navigate(`/games/${game.id}`)}
                 >
-                  <div className="game-list-content">
-                    <div className="game-cover-art-container">
-                      <div className="game-cover-art-placeholder">
-                        {game.title.charAt(0).toUpperCase()}
-                      </div>
-                      {game.coverArt && (
-                        <img 
-                          src={game.coverArt} 
-                          alt={game.title}
-                          className="game-cover-art"
-                          onError={(e) => {
-                            // Hide image if it fails to load, placeholder will show
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      )}
+                  <div className="game-cover-art-container">
+                    <div className="game-cover-art-placeholder">
+                      {game.title.charAt(0).toUpperCase()}
                     </div>
-                    <div className="game-list-name-wrapper">
-                      <div className="game-list-name">{game.title}</div>
-                      {champion && champion.playerName && (
-                        <div className="game-list-champion">
-                          🏆 {champion.playerName}
-                          {champion.winCount > 1 && ` (${champion.winCount} wins)`}
-                        </div>
-                      )}
-                      {champion && !champion.playerName && champion.winCount === 0 && (
-                        <div className="game-list-champion no-champion">No matches yet</div>
-                      )}
-                    </div>
+                    {game.coverArt && (
+                      <img
+                        src={game.coverArt}
+                        alt=""
+                        className="game-cover-art"
+                        loading="lazy"
+                        onError={(e) => {
+                          // Hide image if it fails to load, placeholder will show
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    )}
                   </div>
-                  <div className="game-list-champion-desktop">
-                    {champion && champion.playerName && (
+                  <div className="game-list-name-wrapper">
+                    <div className="game-list-name">{game.title}</div>
+                    {champion && champion.playerName ? (
                       <div className="game-list-champion">
-                        🏆 {champion.playerName}
-                        {champion.winCount > 1 && ` (${champion.winCount} wins)`}
+                        <TrophyIcon className="game-list-trophy" aria-hidden />
+                        <span>
+                          {champion.playerName}
+                          {champion.winCount > 1 && ` · ${champion.winCount} wins`}
+                        </span>
                       </div>
-                    )}
-                    {champion && !champion.playerName && champion.winCount === 0 && (
-                      <div className="game-list-champion no-champion">No matches yet</div>
+                    ) : (
+                      <div className="game-list-champion">No matches yet</div>
                     )}
                   </div>
-                </div>
+                  <ChevronRightIcon className="game-list-chevron" aria-hidden />
+                </button>
               );
             })}
           </div>

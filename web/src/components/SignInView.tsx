@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { CloseIcon } from "./icons";
 import "./SignInView.css";
 import { isAdminEmail } from "@/lib/admin";
 
@@ -54,16 +54,19 @@ export function SignInView() {
 
   return (
     <div className="sign-in-container">
-      <button className="sign-in-close-button" onClick={handleClose}>
-        <X size={20} />
+      <button className="sign-in-close-button" onClick={handleClose} aria-label="Close">
+        <CloseIcon size={18} />
       </button>
       <div className="sign-in-content">
+        <div className="sign-in-mark" aria-hidden>🦨</div>
         <h1>Skunk</h1>
-        <p>Sign in to create and edit games, players, and matches</p>
-        <Button onClick={handleSignIn} disabled={isLoading} size="lg">
-          {isLoading ? "Signing in..." : "Sign in with Google"}
-        </Button>
-        {error && <p className="error-message">{error}</p>}
+        <p>Track every game night. Sign in to log matches, games and players.</p>
+        <div className="sign-in-actions">
+          <Button onClick={handleSignIn} disabled={isLoading} size="lg" className="w-full">
+            {isLoading ? "Signing in..." : "Continue with Google"}
+          </Button>
+          {error && <p className="error-message">{error}</p>}
+        </div>
       </div>
     </div>
   );

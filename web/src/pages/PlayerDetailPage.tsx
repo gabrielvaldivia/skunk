@@ -1,17 +1,18 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { usePlayers } from "../hooks/usePlayers";
 import { useActivity } from "../hooks/useActivity";
 import { useGames } from "../hooks/useGames";
 import { MatchRow } from "../components/MatchRow";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { NavBar } from "../components/NavBar";
+import { Avatar } from "../components/Avatar";
+import { LocationIcon } from "../components/icons";
 import type { Match } from "../models/Match";
 import "./PlayerDetailPage.css";
-import { getPlayerColor, getInitials } from "@/lib/player";
 
-export function PlayerDetailPage() {
-  const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
+/** `playerId` shows that player instead of the one in the URL, e.g. in a panel */
+export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
+  const params = useParams<{ id: string }>();
+  const id = playerId ?? params.id;
   const { players } = usePlayers();
   const { matches: allMatches } = useActivity(10000); // Full history for stats; shares the listener with list pages
   const { games } = useGames();
@@ -60,40 +61,17 @@ export function PlayerDetailPage() {
 
   return (
     <div className="player-detail-page">
-      <div className="page-header">
-        <div className="page-header-top">
-          <Button variant="outline" onClick={() => navigate(-1)} size="icon">
-            <ChevronLeft />
-          </Button>
-        </div>
-        <div className="player-header-content">
-          <div
-            className="player-avatar-large"
-            style={{ backgroundColor: getPlayerColor(player) }}
-          >
-            {player.photoData ? (
-              <img
-                src={`data:image/jpeg;base64,${player.photoData}`}
-                alt={player.name}
-              />
-            ) : (
-              <span className="player-initials">
-                {getInitials(player.name)}
-              </span>
-            )}
+      <NavBar />
+      <div className="player-hero">
+        <Avatar player={player} size={96} />
+        <h1 className="player-hero-name">{player.name}</h1>
+        {player.location && (
+          <div className="player-location">
+            <LocationIcon aria-hidden />
+            {player.location}
           </div>
-          <div className="player-header-info">
-            <h1>{player.name}</h1>
-            {(player.location || player.bio) && (
-              <div className="player-details">
-                {player.location && (
-                  <div className="player-location">📍 {player.location}</div>
-                )}
-                {player.bio && <div className="player-bio">{player.bio}</div>}
-              </div>
-            )}
-          </div>
-        </div>
+        )}
+        {player.bio && <p className="player-bio">{player.bio}</p>}
       </div>
 
       <div className="page-content">
@@ -113,7 +91,7 @@ export function PlayerDetailPage() {
         </div>
 
         <div className="matches-section">
-          <h2>Match History</h2>
+          <h2 className="section-title">Match History</h2>
           {playerMatches.length === 0 ? (
             <div className="empty-state">
               <p>No matches yet</p>

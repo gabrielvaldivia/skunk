@@ -124,10 +124,18 @@ export async function getPlayer(playerId: string): Promise<Player | null> {
 }
 
 export async function getPlayerByGoogleUserID(googleUserID: string): Promise<Player | null> {
-  const playersQuery = query(ref(database, PLAYERS_PATH), orderByChild('googleUserID'), equalTo(googleUserID));
-  const snapshot = await get(playersQuery);
-  const [player] = snapshotToList<Player>(snapshot);
-  return player ?? null;
+  try {
+    const playersQuery = query(ref(database, PLAYERS_PATH), orderByChild('googleUserID'), equalTo(googleUserID));
+    const [player] = snapshotToList<Player>(await get(playersQuery));
+    if (player) return player;
+  } catch {
+    // The query needs ".indexOn": "googleUserID" in the database rules; without
+    // it, fall through to the scan below
+  }
+  // Also covers merged accounts, where this login was linked to an existing
+  // player. Players are few, so a scan is cheap.
+  const all = snapshotToList<Player>(await get(ref(database, PLAYERS_PATH)));
+  return all.find((p) => p.googleUserID === googleUserID || p.linkedGoogleUserIDs?.[googleUserID]) ?? null;
 }
 
 export async function createPlayer(player: Omit<Player, 'id'>): Promise<Player> {

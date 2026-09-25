@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { AppLink } from './AppLink';
 import type { Match } from '../models/Match';
 import { usePlayers } from '../hooks/usePlayers';
 import { useGames } from '../hooks/useGames';
@@ -25,7 +25,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import './MatchRow.css';
-import { getPlayerColor, getInitials } from "@/lib/player";
+import { Avatar } from "./Avatar";
 import { isAdminEmail } from "@/lib/admin";
 
 interface MatchRowProps {
@@ -51,16 +51,22 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - timestamp;
+    const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    if (diffMs >= 0 && diffMs < 60 * 60 * 1000) {
+      const mins = Math.max(1, Math.floor(diffMs / 60000));
+      return `${mins}m ago`;
+    }
+    if (timestamp >= startOfToday) return `Today · ${time}`;
+    if (timestamp >= startOfToday - 86400000) return `Yesterday · ${time}`;
     const datePart = date.toLocaleDateString('en-US', {
-      year: 'numeric',
       month: 'short',
       day: 'numeric',
+      ...(date.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}),
     });
-    const timePart = date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-    return `${datePart} at ${timePart}`;
+    return `${datePart} · ${time}`;
   };
 
   const getPlayer = (playerID: string) => {
@@ -128,49 +134,16 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
 
   const renderWinnerAvatar = () => {
     const game = getGame();
-    
+    let winnerId: string | undefined;
     // For team-based games, show first player of winning team
     if (game?.isTeamBased && match.teams && match.winnerTeamId) {
-      const winningTeam = match.teams.find(t => t.teamId === match.winnerTeamId);
-      if (winningTeam && winningTeam.playerIDs.length > 0) {
-        const firstPlayer = getPlayer(winningTeam.playerIDs[0]);
-        if (firstPlayer) {
-          const backgroundColor = getPlayerColor(firstPlayer);
-          return (
-            <div 
-              className="match-winner-avatar" 
-              style={{ backgroundColor }}
-            >
-              {firstPlayer.photoData ? (
-                <img src={`data:image/jpeg;base64,${firstPlayer.photoData}`} alt={firstPlayer.name} />
-              ) : (
-                <span className="match-winner-initials">{getInitials(firstPlayer.name)}</span>
-              )}
-            </div>
-          );
-        }
-      }
-      return null;
+      winnerId = match.teams.find(t => t.teamId === match.winnerTeamId)?.playerIDs[0];
+    } else {
+      winnerId = match.winnerID;
     }
-    
-    // Individual player games (existing logic)
-    const winner = match.winnerID ? getPlayer(match.winnerID) : undefined;
-    if (!winner) return null;
-    
-    const backgroundColor = getPlayerColor(winner);
-    
-    return (
-      <div 
-        className="match-winner-avatar" 
-        style={{ backgroundColor }}
-      >
-        {winner.photoData ? (
-          <img src={`data:image/jpeg;base64,${winner.photoData}`} alt={winner.name} />
-        ) : (
-          <span className="match-winner-initials">{getInitials(winner.name)}</span>
-        )}
-      </div>
-    );
+    const winner = winnerId ? getPlayer(winnerId) : undefined;
+    if (!winner) return <span className="match-winner-avatar-empty" />;
+    return <Avatar player={winner} size={40} />;
   };
 
   const renderMatchText = () => {
@@ -193,9 +166,9 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
           {winningTeamPlayers.map((player, index) => (
             <span key={player?.id || winningTeam.playerIDs[index]}>
               {player ? (
-                <Link to={`/players/${player.id}`} className="match-link">
+                <AppLink to={`/players/${player.id}`} className="match-link">
                   {player.name}
-                </Link>
+                </AppLink>
               ) : (
                 <span>{winningTeam.playerIDs[index]}</span>
               )}
@@ -212,9 +185,9 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
                 return (
                   <span key={playerId}>
                     {player ? (
-                      <Link to={`/players/${player.id}`} className="match-link">
+                      <AppLink to={`/players/${player.id}`} className="match-link">
                         {player.name}
-                      </Link>
+                      </AppLink>
                     ) : (
                       <span>{playerId}</span>
                     )}
@@ -227,9 +200,9 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
           {!hideGameTitle && game && (
             <>
               <span> at </span>
-              <Link to={`/games/${match.gameID}`} className="match-link">
+              <AppLink to={`/games/${match.gameID}`} className="match-link">
                 {game.title}
-              </Link>
+              </AppLink>
             </>
           )}
         </>
@@ -248,9 +221,9 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
       return (
         <>
           {winner ? (
-            <Link to={`/players/${match.winnerID}`} className="match-link">
+            <AppLink to={`/players/${match.winnerID}`} className="match-link">
               {winner.name}
-            </Link>
+            </AppLink>
           ) : (
             <span>{match.winnerID}</span>
           )}
@@ -264,9 +237,9 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     return (
       <>
         {winner ? (
-          <Link to={`/players/${match.winnerID}`} className="match-link">
+          <AppLink to={`/players/${match.winnerID}`} className="match-link">
             {winner.name}
-          </Link>
+          </AppLink>
         ) : (
           <span>{match.winnerID}</span>
         )}
@@ -274,9 +247,9 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
         {otherPlayers.map((player, index) => (
           <span key={player?.id || otherPlayerIDs[index]}>
             {player ? (
-              <Link to={`/players/${player.id}`} className="match-link">
+              <AppLink to={`/players/${player.id}`} className="match-link">
                 {player.name}
-              </Link>
+              </AppLink>
             ) : (
               <span>{otherPlayerIDs[index]}</span>
             )}
@@ -293,9 +266,9 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
           return game ? (
             <>
               <span> at </span>
-              <Link to={`/games/${match.gameID}`} className="match-link">
+              <AppLink to={`/games/${match.gameID}`} className="match-link">
                 {game.title}
-              </Link>
+              </AppLink>
             </>
           ) : null;
         })()}

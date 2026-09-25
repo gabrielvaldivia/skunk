@@ -7,9 +7,9 @@ import {
 } from "../services/databaseService";
 import type { FieldUpdates } from "../services/databaseService";
 import type { Player } from "../models/Player";
-import { Plus } from "lucide-react";
+import { CameraIcon } from "../components/icons";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { NavBar } from "../components/NavBar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -222,161 +222,120 @@ export function ProfilePage() {
 
   return (
     <div className="profile-page">
-      <div className="page-header">
-        <Button variant="outline" onClick={() => navigate(-1)} size="icon" aria-label="Go back">
-          <ChevronLeft />
-        </Button>
-        <h1>Account</h1>
-        <div style={{ width: 40 }} />
-      </div>
+      <NavBar title="Account" closeInCorner />
 
       <div className="profile-content page-content">
-        {/* Profile Info Container */}
-        <div className="profile-section">
-          <div className="profile-form">
-            <div className="form-group">
-              <div className="profile-avatar-container">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  style={{ display: "none" }}
-                  id="photo-upload"
-                />
-                <button
-                  type="button"
-                  className="profile-avatar-button"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {photoPreview ? (
-                    <img src={photoPreview} alt={displayName} />
-                  ) : (
-                    <div className="profile-avatar-placeholder">
-                      <Plus className="profile-plus-icon" />
-                    </div>
-                  )}
-                </button>
-                {photoPreview && (
-                  <div className="avatar-actions">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRemovePhoto}
-                    >
-                      Remove Photo
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="form-group">
-              <Label htmlFor="name">
-                Name <span className="required">*</span>
-              </Label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-              />
-            </div>
-
-            <div className="form-group">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="City, Country"
-              />
-            </div>
-
-            <div className="form-group">
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Tell us about yourself..."
-                rows={4}
-              />
-            </div>
-          </div>
-
-          <div className="profile-section-footer">
-            <Button
-              onClick={handleSave}
-              disabled={isSaving || !name.trim() || !hasChanges()}
-            >
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-          </div>
+        <div className="profile-avatar-container">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            style={{ display: "none" }}
+            id="photo-upload"
+          />
+          <button
+            type="button"
+            className="profile-avatar-button"
+            onClick={() => fileInputRef.current?.click()}
+            aria-label={photoPreview ? "Change photo" : "Add photo"}
+          >
+            {photoPreview ? (
+              <img src={photoPreview} alt={displayName} />
+            ) : (
+              <span className="profile-avatar-placeholder">
+                <CameraIcon className="profile-plus-icon" />
+              </span>
+            )}
+          </button>
+          {photoPreview && (
+            <button type="button" className="text-button" onClick={handleRemovePhoto}>
+              Remove photo
+            </button>
+          )}
         </div>
 
-        {/* Theme Container */}
-        <div className="profile-section">
+        <section className="profile-group">
           <div className="form-group">
-            <label>Theme</label>
-            <div className="theme-toggle-container">
-              <ThemeToggle />
-            </div>
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
+            />
           </div>
-        </div>
 
-        {/* Admin Section */}
-        {isAdmin && (
-          <div className="profile-section">
-            <div className="form-group">
-              <h3>Admin Tools</h3>
-              <p className="form-hint">Tools for testing and development</p>
-              <div className="form-actions">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/onboarding")}
-                >
-                  Replay Onboarding
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/signin?admin=true")}
-                >
-                  View Sign In Screen
-                </Button>
-              </div>
-            </div>
+          <div className="form-group">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="City, Country"
+            />
           </div>
+
+          <div className="form-group">
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea
+              id="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Tell us about yourself"
+              rows={3}
+            />
+          </div>
+
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || !name.trim() || !hasChanges()}
+            className="w-full"
+          >
+            {isSaving ? "Saving..." : "Save changes"}
+          </Button>
+        </section>
+
+        <section className="profile-group profile-row">
+          <span className="profile-row-label">Appearance</span>
+          <ThemeToggle />
+        </section>
+
+        {isAdmin && (
+          <section className="profile-group">
+            <div>
+              <h2 className="profile-group-title">Admin tools</h2>
+              <p className="form-hint">Tools for testing and development</p>
+            </div>
+            <div className="profile-actions">
+              <Button variant="secondary" onClick={() => navigate("/onboarding")}>
+                Replay onboarding
+              </Button>
+              <Button variant="secondary" onClick={() => navigate("/signin?admin=true")}>
+                View sign-in screen
+              </Button>
+            </div>
+          </section>
         )}
 
-        {/* Danger Zone Container */}
-        <div className="profile-section danger-zone-section">
-          <div className="danger-zone">
-            <h3>Danger Zone</h3>
-            <p className="danger-zone-description">
-              Deleting your account will permanently remove your profile and all
-              matches you participated in.
-            </p>
-            <div className="danger-zone-actions">
-              <Button
-                onClick={handleSignOut}
-                variant="outline"
-                className="sign-out-button"
-              >
-                Sign Out
-              </Button>
-              <Button
-                onClick={handleDeleteAccount}
-                variant="destructive"
-                className="delete-account-button"
-              >
-                Delete Account
-              </Button>
-            </div>
-          </div>
-        </div>
+        <section className="profile-actions">
+          <Button onClick={handleSignOut} variant="secondary" className="w-full">
+            Sign out
+          </Button>
+          <Button
+            onClick={handleDeleteAccount}
+            variant="ghost"
+            className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+          >
+            Delete account
+          </Button>
+          <p className="form-hint profile-delete-hint">
+            Deleting your account removes your name, photo and profile. Your past
+            matches stay, credited to "Deleted player".
+          </p>
+        </section>
       </div>
     </div>
   );

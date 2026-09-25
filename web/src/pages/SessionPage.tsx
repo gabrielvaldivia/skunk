@@ -10,7 +10,8 @@ import { PlayerCard } from "../components/PlayerCard";
 import { MatchRow } from "../components/MatchRow";
 import { AddMatchForm } from "../components/AddMatchForm";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { PlusIcon, ShareIcon } from "../components/icons";
+import { NavBar } from "../components/NavBar";
 import { toast } from "sonner";
 import type { Match } from "../models/Match";
 import type { Player } from "../models/Player";
@@ -224,29 +225,29 @@ export function SessionPage() {
 
   return (
     <div className="session-page">
-      <div className="page-header">
-        <div className="page-header-top">
-          <Button variant="outline" onClick={() => navigate(-1)} size="icon">
-            <ChevronLeft />
+      <NavBar
+        title={`Session ${code}`}
+        action={
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={handleShare}
+            aria-label="Share session link"
+          >
+            <ShareIcon />
           </Button>
-          <h1 className="page-title-top">Session {code}</h1>
-          <div className="header-actions">
-            <Button variant="outline" onClick={handleShare}>
-              Share
-            </Button>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="session-content page-content">
         <section className="participants-section">
-          <h2>Players ({sessionParticipants.length})</h2>
+          <h2 className="section-title">Players · {sessionParticipants.length}</h2>
           {playersLoading ? (
             <div className="loading">Loading participants...</div>
           ) : sessionParticipants.length === 0 ? (
             <div className="empty-state">No participants yet</div>
           ) : (
-            <div className="participants-grid">
+            <div className="participants-grid list">
               {sessionParticipants.map((participant) => (
                 <PlayerCard
                   key={participant.id}
@@ -254,7 +255,8 @@ export function SessionPage() {
                   rightAction={
                     player && participant.id === player.id ? (
                       <Button
-                        variant="outline"
+                        variant="secondary"
+                        size="sm"
                         className="button-leave"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -274,7 +276,7 @@ export function SessionPage() {
 
         <section className="matches-section">
           <div className="matches-section-header">
-            <h2>Matches ({sessionMatches.length})</h2>
+            <h2 className="section-title">Matches · {sessionMatches.length}</h2>
           </div>
           {isLoadingMatches ? (
             <div className="loading">Loading matches...</div>
@@ -293,10 +295,11 @@ export function SessionPage() {
       {games.length > 0 && sessionParticipants.length > 0 && (
         <Button
           onClick={() => setShowAddForm(true)}
-          className="new-match-button-mobile"
+          className="floating-cta"
           size="lg"
         >
-          + New Match
+          <PlusIcon className="!size-5" />
+          New Match
         </Button>
       )}
 

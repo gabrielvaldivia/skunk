@@ -26,7 +26,7 @@ export default defineConfig([
       // Context hooks and cva variants live next to their providers/components by convention
       'react-refresh/only-export-components': [
         'error',
-        { allowConstantExport: true, allowExportNames: ['useAuth', 'useSession', 'useDataCache', 'useTheme', 'buttonVariants'] },
+        { allowConstantExport: true, allowExportNames: ['useAuth', 'useSession', 'useDataCache', 'useTheme', 'buttonVariants', 'usePanel', 'usePanelFrame', 'entryFromPath', 'useAppNavigate'] },
       ],
     },
   },

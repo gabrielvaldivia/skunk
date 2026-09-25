@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useGames } from "../hooks/useGames";
 import { useActivity } from "../hooks/useActivity";
@@ -10,19 +10,37 @@ import { useAuth } from "../context/AuthContext";
 import { MatchRow } from "../components/MatchRow";
 import { EditGameForm } from "../components/EditGameForm";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { EditIcon } from "../components/icons";
+import { NavBar } from "../components/NavBar";
+import { Avatar } from "../components/Avatar";
+import type { Player } from "../models/Player";
 import { toast } from "sonner";
 import type { Match } from "../models/Match";
 import type { Game } from "../models/Game";
 import type { FieldUpdates } from "../services/databaseService";
 import "./GameDetailPage.css";
-import { getInitials } from "@/lib/player";
 import { isAdminEmail } from "@/lib/admin";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
-export function GameDetailPage() {
+interface GameDetailPageProps {
+  /** Show this game instead of the one in the URL, e.g. in the shelf's side panel */
+  gameId?: string;
+  /** When set, the page is embedded: the host provides the close button and the cover is hidden */
+  onClose?: () => void;
+  /** Replaces the nav bar's (empty) centre, e.g. with a game picker */
+  navTitle?: React.ReactNode;
+}
+
+// three.js loads only when a game page is opened
+const GameBoxPreview = lazy(() =>
+  import("../components/shelf/GameBoxPreview").then((m) => ({ default: m.GameBoxPreview }))
+);
+
+export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProps = {}) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { id } = useParams<{ id: string }>();
+  const params = useParams<{ id: string }>();
+  const id = gameId ?? params.id;
   const { games, editGame, removeGame } = useGames();
   const { matches: allMatches } = useActivity(10000); // Full history for stats; shares the listener with list pages
   const { players } = useDataCache();
@@ -32,6 +50,7 @@ export function GameDetailPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const isAdmin = isAdminEmail(user?.email);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const game = games.find((g) => g.id === id);
   const gameMatches: Match[] = allMatches
@@ -87,7 +106,8 @@ export function GameDetailPage() {
       await removeGame(gameId);
       toast.success("Game deleted!");
       setIsEditDialogOpen(false);
-      navigate("/games");
+      if (onClose) onClose();
+      else navigate("/games");
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to delete game";
@@ -148,205 +168,72 @@ export function GameDetailPage() {
       .filter((p): p is NonNullable<typeof p> => !!p),
   }));
 
+  const totalPlayers = new Set(gameMatches.flatMap((m) => m.playerIDs)).size;
+
   return (
     <div className="game-detail-page">
-      <div className="page-header">
-        <div className="page-header-nav">
-          <Button
-            variant="outline"
-            onClick={() => navigate(-1)}
-            className="back-button"
-            size="icon"
-          >
-            <ChevronLeft />
-          </Button>
-          <h2 className="page-title-top">{game.title}</h2>
-          {isAdmin && (
+      <NavBar
+        title={navTitle}
+        hideBack={!!onClose}
+        // Full-screen on phones, the edit button joins the close button in the corners
+        actionInCorner={!!onClose && !isDesktop}
+        action={
+          isAdmin && (
             <Button
-              variant="outline"
+              variant="secondary"
+              size="icon"
               onClick={() => setIsEditDialogOpen(true)}
-              className="edit-button"
+              aria-label="Edit game"
             >
-              Edit
+              <EditIcon />
             </Button>
-          )}
-        </div>
-        {/* Game cover art intentionally hidden per design */}
-      </div>
+          )
+        }
+      />
 
       <div className="page-content">
-        {placements.length > 0 && (
-          <div className="game-stats">
-            <div className="game-leaderboard">
-              {placements.length >= 2 && (
-                <div className="leader second">
-                  {placements[1].players.length > 1 ? (
-                    <div className="avatar-pile diagonal">
-                      {placements[1].players.slice(0, 2).map((p, idx) =>
-                        p.photoData ? (
-                          <img
-                            key={p.id}
-                            className={`avatar ${
-                              idx === 0 ? "pos-a" : "pos-b"
-                            }`}
-                            src={`data:image/jpeg;base64,${p.photoData}`}
-                            alt={p.name}
-                          />
-                        ) : (
-                          <span
-                            key={p.id}
-                            className={`avatar initials ${
-                              idx === 0 ? "pos-a" : "pos-b"
-                            }`}
-                          >
-                            {getInitials(p.name)}
-                          </span>
-                        )
-                      )}
-                      <span className="rank-badge">2</span>
-                    </div>
-                  ) : (
-                    <div className="avatar-wrap">
-                      {placements[1].players[0]?.photoData ? (
-                        <img
-                          className="avatar"
-                          src={`data:image/jpeg;base64,${placements[1].players[0].photoData}`}
-                          alt={placements[1].players[0].name}
-                        />
-                      ) : (
-                        <span className="avatar initials">
-                          {placements[1].players[0] &&
-                            getInitials(placements[1].players[0].name)}
-                        </span>
-                      )}
-                      <span className="rank-badge">2</span>
-                    </div>
-                  )}
-                  <div className="meta">
-                    <div className="name">
-                      {getPlacementLabel(placements[1].players)}
-                    </div>
-                    <div className="wins">
-                      {placements[1].wins}{" "}
-                      {placements[1].wins === 1 ? "win" : "wins"}
-                    </div>
-                  </div>
-                </div>
-              )}
-              {placements.length >= 1 && (
-                <div className="leader first">
-                  <div className="crown" aria-hidden>
-                    👑
-                  </div>
-                  {placements[0].players.length > 1 ? (
-                    <div className="avatar-pile diagonal">
-                      {placements[0].players.slice(0, 2).map((p, idx) =>
-                        p.photoData ? (
-                          <img
-                            key={p.id}
-                            className={`avatar ${
-                              idx === 0 ? "pos-a" : "pos-b"
-                            }`}
-                            src={`data:image/jpeg;base64,${p.photoData}`}
-                            alt={p.name}
-                          />
-                        ) : (
-                          <span
-                            key={p.id}
-                            className={`avatar initials ${
-                              idx === 0 ? "pos-a" : "pos-b"
-                            }`}
-                          >
-                            {getInitials(p.name)}
-                          </span>
-                        )
-                      )}
-                      <span className="rank-badge primary">1</span>
-                    </div>
-                  ) : (
-                    <div className="avatar-wrap">
-                      {placements[0].players[0]?.photoData ? (
-                        <img
-                          className="avatar"
-                          src={`data:image/jpeg;base64,${placements[0].players[0].photoData}`}
-                          alt={placements[0].players[0].name}
-                        />
-                      ) : (
-                        <span className="avatar initials">
-                          {placements[0].players[0] &&
-                            getInitials(placements[0].players[0].name)}
-                        </span>
-                      )}
-                      <span className="rank-badge primary">1</span>
-                    </div>
-                  )}
-                  <div className="meta">
-                    <div className="name">
-                      {getPlacementLabel(placements[0].players)}
-                    </div>
-                    <div className="wins">
-                      {placements[0].wins}{" "}
-                      {placements[0].wins === 1 ? "win" : "wins"}
-                    </div>
-                  </div>
-                </div>
-              )}
-              {placements.length >= 3 && (
-                <div className="leader third">
-                  {placements[2].players.length > 1 ? (
-                    <div className="avatar-pile diagonal">
-                      {placements[2].players.slice(0, 2).map((p, idx) =>
-                        p.photoData ? (
-                          <img
-                            key={p.id}
-                            className={`avatar ${
-                              idx === 0 ? "pos-a" : "pos-b"
-                            }`}
-                            src={`data:image/jpeg;base64,${p.photoData}`}
-                            alt={p.name}
-                          />
-                        ) : (
-                          <span
-                            key={p.id}
-                            className={`avatar initials ${
-                              idx === 0 ? "pos-a" : "pos-b"
-                            }`}
-                          >
-                            {getInitials(p.name)}
-                          </span>
-                        )
-                      )}
-                      <span className="rank-badge">3</span>
-                    </div>
-                  ) : (
-                    <div className="avatar-wrap">
-                      {placements[2].players[0]?.photoData ? (
-                        <img
-                          className="avatar"
-                          src={`data:image/jpeg;base64,${placements[2].players[0].photoData}`}
-                          alt={placements[2].players[0].name}
-                        />
-                      ) : (
-                        <span className="avatar initials">
-                          {placements[2].players[0] &&
-                            getInitials(placements[2].players[0].name)}
-                        </span>
-                      )}
-                      <span className="rank-badge">3</span>
-                    </div>
-                  )}
-                  <div className="meta">
-                    <div className="name">
-                      {getPlacementLabel(placements[2].players)}
-                    </div>
-                    <div className="wins">
-                      {placements[2].wins}{" "}
-                      {placements[2].wins === 1 ? "win" : "wins"}
-                    </div>
-                  </div>
-                </div>
+        <div className="game-hero">
+          {/* Embedded next to the shelf's 3D box, which already shows it.
+              Otherwise the box in 3D, with the flat cover while three.js loads */}
+          {!onClose && (
+            <Suspense fallback={
+            <div className="game-hero-art">
+              <span className="game-hero-placeholder">
+                {game.title.charAt(0).toUpperCase()}
+              </span>
+              {game.coverArt && (
+                <img
+                  src={game.coverArt}
+                  alt=""
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
               )}
             </div>
+            }>
+              <GameBoxPreview game={game} />
+            </Suspense>
+          )}
+          <h1 className="game-hero-title">{game.title}</h1>
+          <p className="game-hero-meta">
+            {gameMatches.length} {gameMatches.length === 1 ? "match" : "matches"}
+            {totalPlayers > 0 &&
+              ` · ${totalPlayers} ${totalPlayers === 1 ? "player" : "players"}`}
+          </p>
+        </div>
+
+        {placements.length > 0 && (
+          <div className="game-leaderboard">
+            {placements.map((placement, idx) => (
+              <PodiumSpot
+                key={idx}
+                rank={idx + 1}
+                wins={placement.wins}
+                players={placement.players}
+                label={getPlacementLabel(placement.players)}
+              />
+            ))}
           </div>
         )}
 
@@ -354,7 +241,7 @@ export function GameDetailPage() {
           <Button
             onClick={handleCreateSession}
             disabled={isCreatingSession}
-            className="start-session-button start-session-button-mobile"
+            className="floating-cta"
             size="lg"
           >
             {isCreatingSession ? "Creating..." : "Start Session"}
@@ -363,11 +250,11 @@ export function GameDetailPage() {
         {currentSession && <MiniSessionSheet />}
 
         <div className="matches-section">
-          {gameMatches.length > 0 && <h2>Matches</h2>}
+          {gameMatches.length > 0 && <h2 className="section-title">Matches</h2>}
           {gameMatches.length === 0 ? (
             <div className="empty-state">
               <p>No matches yet</p>
-              <p className="muted-text">
+              <p className="empty-hint">
                 Start a session to invite others to play.
               </p>
             </div>
@@ -390,6 +277,45 @@ export function GameDetailPage() {
           onDelete={handleDeleteGame}
         />
       )}
+    </div>
+  );
+}
+
+const PODIUM_COLUMN = { 1: 2, 2: 1, 3: 3 } as const;
+
+function PodiumSpot({
+  rank,
+  wins,
+  players,
+  label,
+}: {
+  rank: 1 | 2 | 3 | number;
+  wins: number;
+  players: Player[];
+  label: string;
+}) {
+  const size = rank === 1 ? 84 : 60;
+  const pile = players.slice(0, 2);
+  return (
+    <div
+      className={`leader ${rank === 1 ? "first" : ""}`}
+      style={{ gridColumn: PODIUM_COLUMN[rank as 1 | 2 | 3], gridRow: 1 }}
+    >
+      <div className="leader-avatar" style={{ width: size, height: size }}>
+        {pile.length > 1 ? (
+          <>
+            <Avatar player={pile[0]} size={size * 0.68} className="pile-a" />
+            <Avatar player={pile[1]} size={size * 0.68} className="pile-b" />
+          </>
+        ) : (
+          pile[0] && <Avatar player={pile[0]} size={size} />
+        )}
+        <span className={`rank-badge ${rank === 1 ? "gold" : ""}`}>{rank}</span>
+      </div>
+      <div className="leader-name">{label}</div>
+      <div className="leader-wins">
+        {wins} {wins === 1 ? "win" : "wins"}
+      </div>
     </div>
   );
 }

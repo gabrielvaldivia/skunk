@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { X, Plus } from "lucide-react";
+import { CloseIcon, PlusIcon } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { updatePlayer } from "../services/databaseService";
 import { Button } from "@/components/ui/button";
@@ -131,7 +131,7 @@ export function OnboardingPage() {
           onClick={() => navigate("/")}
           aria-label="Close"
         >
-          <X className="h-5 w-5" />
+          <CloseIcon className="h-5 w-5" />
         </Button>
         <div className="onboarding-header">
           <h1>Welcome to Skunk!</h1>
@@ -158,7 +158,7 @@ export function OnboardingPage() {
                   <img src={photoPreview} alt={displayName} />
                 ) : (
                   <div className="onboarding-avatar-placeholder">
-                    <Plus className="onboarding-plus-icon" />
+                    <PlusIcon className="onboarding-plus-icon" />
                   </div>
                 )}
               </button>

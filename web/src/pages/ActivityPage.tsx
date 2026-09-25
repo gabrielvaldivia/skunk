@@ -1,17 +1,17 @@
-import { useNavigate } from "react-router-dom";
 import { useActivity } from '../hooks/useActivity';
-import { useAuth } from '../context/AuthContext';
 import { useSession } from '../context/SessionContext';
 import { MiniSessionSheet } from '../components/MiniSessionSheet';
 import { MatchRow } from '../components/MatchRow';
 import './ActivityPage.css';
-import { getInitials } from "@/lib/player";
+import { useAppNavigate } from "../components/AppLink";
+import { NavBar } from "../components/NavBar";
+import { Button } from "@/components/ui/button";
+import { PlayersIcon } from "../components/icons";
 
 export function ActivityPage() {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const { matches, isLoading, error } = useActivity();
   const { currentSession } = useSession();
-  const { isAuthenticated, player } = useAuth();
 
   if (isLoading) {
     return <div className="loading">Loading activity...</div>;
@@ -25,34 +25,21 @@ export function ActivityPage() {
 
   return (
     <div className="activity-page">
-      <div className="page-header">
-        <h1>Activity</h1>
-        {isAuthenticated && player && (
-          <button
-            className="profile-avatar-btn"
-            onClick={() => navigate('/profile')}
-            aria-label="Account"
-          >
-            {player.photoData ? (
-              <img
-                className="profile-avatar"
-                src={`data:image/jpeg;base64,${player.photoData}`}
-                alt={player.name}
-              />
-            ) : (
-              <span className="profile-avatar initials">
-                {getInitials(player.name)}
-              </span>
-            )}
-          </button>
-        )}
-      </div>
+      <NavBar
+        title="Activity"
+        action={
+          <Button variant="secondary" size="icon" onClick={() => navigate("/players")} aria-label="Players">
+            <PlayersIcon className="!size-5" />
+          </Button>
+        }
+      />
       {currentSession && <MiniSessionSheet />}
 
       <div className="page-content">
         {matches.length === 0 ? (
           <div className="empty-state">
             <p>No matches yet</p>
+            <p className="empty-hint">Start a session from any game to record one.</p>
           </div>
         ) : (
           <div className="matches-list">

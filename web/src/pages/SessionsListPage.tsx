@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { usePlayerSessions } from "../hooks/usePlayerSessions";
 import { useGames } from "../hooks/useGames";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronRightIcon } from "../components/icons";
+import { NavBar } from "../components/NavBar";
 import "./SessionsListPage.css";
 
 export function SessionsListPage() {
@@ -49,14 +49,7 @@ export function SessionsListPage() {
 
   return (
     <div className="sessions-list-page">
-      <div className="page-header">
-        <div className="page-header-top">
-          <Button variant="outline" onClick={() => navigate(-1)} size="icon">
-            <ChevronLeft />
-          </Button>
-        </div>
-        <h1>My Sessions</h1>
-      </div>
+      <NavBar title="My Sessions" />
 
       <div className="page-content">
         {sessions.length === 0 ? (
@@ -64,26 +57,24 @@ export function SessionsListPage() {
             <p>You're not in any sessions</p>
           </div>
         ) : (
-          <div className="sessions-list">
+          <div className="sessions-list list">
             {sessions.map(session => (
-              <div
+              <button
+                type="button"
                 key={session.id}
-                className="session-card"
+                className="session-row row-press"
                 onClick={() => navigate(`/session/${session.code}`)}
               >
-                <div className="session-card-header">
-                  <h2 className="session-code">Session {session.code}</h2>
-                  <span className="session-time">{formatDate(session.lastActivityAt)}</span>
-                </div>
-                {session.gameID && (
-                  <div className="session-game">
-                    {getGameTitle(session.gameID) || "Unknown Game"}
+                <div className="session-row-main">
+                  <div className="session-code">Session {session.code}</div>
+                  <div className="session-meta">
+                    {session.gameID && `${getGameTitle(session.gameID) || "Unknown Game"} · `}
+                    {session.participantIDs.length} player{session.participantIDs.length !== 1 ? 's' : ''}
+                    {` · ${formatDate(session.lastActivityAt)}`}
                   </div>
-                )}
-                <div className="session-participants">
-                  {session.participantIDs.length} participant{session.participantIDs.length !== 1 ? 's' : ''}
                 </div>
-              </div>
+                <ChevronRightIcon className="session-chevron" aria-hidden />
+              </button>
             ))}
           </div>
         )}

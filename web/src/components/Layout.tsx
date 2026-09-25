@@ -1,70 +1,35 @@
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { AccountButton } from "./AccountButton";
+import { usePanel } from "../context/PanelContext";
 import { cn } from "@/lib/utils";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
+// The Games tab (shelf or list) is home; everything else is reached from it
+const HOME_PATHS = ["/games", "/games/list"];
+
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
-
-  const navItems = [
-    { path: "/activity", label: "Activity", icon: "📋" },
-    { path: "/games", label: "Games", icon: "🎮" },
-    { path: "/players", label: "Players", icon: "👥" },
-  ];
-
-  const isGameDetailPage =
-    location.pathname.startsWith("/games/") && location.pathname !== "/games";
-  const isSessionPage = location.pathname.startsWith("/session/");
-  const isSessionsListPage = location.pathname === "/sessions";
-  const isProfilePage = location.pathname === "/profile";
-  const shouldHideNavOnMobile =
-    isGameDetailPage || isSessionPage || isSessionsListPage || isProfilePage;
-  const shouldHideNav =
-    isGameDetailPage || isSessionPage || isSessionsListPage || isProfilePage;
+  const isHome = HOME_PATHS.includes(location.pathname);
+  // On desktop, your account opens in the side panel over the page
+  const panel = usePanel();
 
   return (
-    <div
-      className={cn(
-        "min-h-screen bg-background",
-        !shouldHideNavOnMobile && "pb-16",
-        shouldHideNavOnMobile && "pb-0 md:pb-16"
-      )}
-    >
+    <div className={cn("min-h-dvh bg-background", isHome && "has-account")}>
       <main
-        className={cn(
-          "container mx-auto max-w-7xl",
-          !isGameDetailPage && "px-5 py-6"
-        )}
+        className="mx-auto w-full max-w-[var(--page-max-width)] px-[var(--page-gutter)]"
+        style={{ paddingBottom: "calc(var(--safe-bottom) + 6rem)" }}
       >
         {children}
       </main>
-      <nav
-        className={cn(
-          "fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
-          shouldHideNav && "hidden",
-          shouldHideNavOnMobile && !shouldHideNav && "hidden md:block"
-        )}
-      >
-        <div className="container mx-auto flex max-w-[600px] items-center justify-around px-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs transition-colors",
-                location.pathname === item.path
-                  ? "text-foreground"
-                  : "text-foreground/60"
-              )}
-            >
-              <span className="text-lg">{item.icon}</span>
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </Link>
-          ))}
+      {isHome && (
+        // Pinned to the screen corner; page headers leave room for it
+        <div className="chrome-fade fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-50">
+          <AccountButton size={48} variant="pill" onOpen={panel ? () => panel.open({ type: "profile" }) : undefined} />
         </div>
-      </nav>
+      )}
     </div>
   );
 }
