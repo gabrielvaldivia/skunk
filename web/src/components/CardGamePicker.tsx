@@ -2,25 +2,8 @@ import { useId, useMemo, useRef, useState } from "react";
 import type { Game } from "../models/Game";
 import { GameDetailPage } from "../pages/GameDetailPage";
 import { ChevronDownIcon } from "./icons";
+import { NavBar } from "./NavBar";
 import { cn } from "@/lib/utils";
-
-const LAST_PICK_KEY = "skunk.lastCardGame";
-
-function readLastPick() {
-  try {
-    return localStorage.getItem(LAST_PICK_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function saveLastPick(id: string) {
-  try {
-    localStorage.setItem(LAST_PICK_KEY, id);
-  } catch {
-    // Storage unavailable (private mode); the default just won't stick
-  }
-}
 
 interface CardGamePickerProps {
   /** Card games in the deck, already narrowed by the tab (My Games) and any shelf search */
@@ -31,28 +14,26 @@ interface CardGamePickerProps {
 }
 
 // Detail view for the shelf's deck of cards: pick a card game, see its page.
-// Opens on the game you picked last time.
+// Opens blank; nothing shows until you search for and pick a game.
 export function CardGamePicker({ games, allCardGames, onClose }: CardGamePickerProps) {
   const [chosenId, setChosenId] = useState<string | null>(null);
-  // Opens on the last pick if it's in this deck, else the deck's first game;
-  // once you pick, it's whatever you picked, from anywhere
-  const chosen =
-    (chosenId && allCardGames.find((g) => g.id === chosenId)) ||
-    games.find((g) => g.id === readLastPick()) ||
-    games[0];
-  if (!chosen) return null;
+  const chosen = chosenId ? allCardGames.find((g) => g.id === chosenId) : undefined;
+  const combobox = <GameCombobox games={games} allGames={allCardGames} value={chosen} onChange={setChosenId} />;
 
-  const choose = (id: string) => {
-    setChosenId(id);
-    saveLastPick(id);
-  };
+  if (!chosen) {
+    return (
+      <div className="game-detail-page">
+        <NavBar title={combobox} hideBack />
+      </div>
+    );
+  }
 
   return (
     <GameDetailPage
       key={chosen.id}
       gameId={chosen.id}
       onClose={onClose}
-      navTitle={<GameCombobox games={games} allGames={allCardGames} value={chosen} onChange={choose} />}
+      navTitle={combobox}
     />
   );
 }
@@ -90,7 +71,7 @@ function GameCombobox({
 }: {
   games: Game[];
   allGames: Game[];
-  value: Game;
+  value: Game | undefined;
   onChange: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -109,7 +90,7 @@ function GameCombobox({
     if (input.current) liftToTop(input.current);
     setOpen(true);
     setText("");
-    setActive(Math.max(0, games.findIndex((g) => g.id === value.id)));
+    setActive(Math.max(0, games.findIndex((g) => g.id === value?.id)));
   };
   const pick = (game: Game) => {
     onChange(game.id);
@@ -126,8 +107,8 @@ function GameCombobox({
         aria-controls={listId}
         aria-activedescendant={open && options[active] ? `${listId}-${options[active].id}` : undefined}
         aria-label="Card game"
-        value={open ? text : value.title}
-        placeholder={value.title}
+        value={open ? text : (value?.title ?? "")}
+        placeholder={value?.title ?? "Search card games"}
         onFocus={openList}
         onBlur={() => {
           setOpen(false);
@@ -175,7 +156,7 @@ function GameCombobox({
               key={g.id}
               id={`${listId}-${g.id}`}
               role="option"
-              aria-selected={g.id === value.id}
+              aria-selected={g.id === value?.id}
               // mousedown, not click: fires before the input's blur closes the list
               onMouseDown={(e) => {
                 e.preventDefault();
@@ -185,7 +166,7 @@ function GameCombobox({
               className={cn(
                 "cursor-pointer truncate rounded-xl px-3 py-2.5",
                 i === active && "bg-muted",
-                g.id === value.id && "font-semibold"
+                g.id === value?.id && "font-semibold"
               )}
             >
               {g.title}
