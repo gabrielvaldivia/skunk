@@ -15,7 +15,10 @@ export function useKeyboardInsets() {
     const root = document.documentElement;
     const update = () => {
       const top = Math.max(0, vv.offsetTop);
-      const kb = Math.max(0, window.innerHeight - vv.height);
+      // The layout viewport, which (unlike innerHeight on iOS Safari) keeps
+      // its full height while the keyboard is up
+      const layoutHeight = document.documentElement.clientHeight;
+      const kb = Math.max(0, layoutHeight - vv.height);
       root.style.setProperty("--vv-top", `${top}px`);
       root.style.setProperty("--kb", `${kb}px`);
     };
