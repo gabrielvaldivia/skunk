@@ -38,8 +38,25 @@ export const BOX_GEOMETRY = (() => {
   return g;
 })();
 
-// Body + lid materials for a box, matching the two groups of BOX_GEOMETRY
-export function boxMaterials(art: BoxArt | null) {
+/** Phones and tablets: fragment shading is the main cost there */
+export const IS_TOUCH = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+
+// Body + lid materials for a box, matching the two groups of BOX_GEOMETRY.
+// `glossy` adds the clearcoat sheen; it costs a second specular pass per pixel.
+export function boxMaterials(art: BoxArt | null, glossy = true) {
+  if (!glossy) {
+    return [
+      new THREE.MeshStandardMaterial({ color: art?.color ?? "#9a9a9a", roughness: 0.75 }),
+      new THREE.MeshStandardMaterial({
+        map: art?.cover ?? null,
+        color: art ? "#fff" : "#9a9a9a",
+        emissiveMap: art?.cover ?? null,
+        emissive: art ? "#fff" : "#000",
+        emissiveIntensity: 0.3,
+        roughness: 0.45,
+      }),
+    ];
+  }
   return [
     // Raw cardboard edges: matte
     new THREE.MeshStandardMaterial({ color: art?.color ?? "#9a9a9a", roughness: 0.75 }),

@@ -6,7 +6,7 @@ import * as THREE from "three";
 import type { Game } from "@/models/Game";
 import { shelfBoxFor, type ShelfBox } from "@/lib/boxDimensions";
 import { requestBoxArt, type BoxArt } from "./boxTextures";
-import { BOX_GEOMETRY, boxMaterials } from "./boxMaterials";
+import { BOX_GEOMETRY, IS_TOUCH, boxMaterials } from "./boxMaterials";
 import { tiledWood, woodTextures, type WoodSet } from "./woodTexture";
 import { useCoverAspects } from "@/hooks/useCoverAspects";
 import { traditionalKind } from "@/lib/traditionalGames";
@@ -121,7 +121,9 @@ function GameBox({
   const size = useThree((s) => s.size);
   const dragged = useContext(DragContext);
 
-  const materials = useMemo(() => boxMaterials(art), [art]);
+  // On touch devices, only the box you pick up gets the glossy lid
+  const glossy = !IS_TOUCH || selected;
+  const materials = useMemo(() => boxMaterials(art, glossy), [art, glossy]);
 
   useEffect(() => () => materials.forEach((m) => m.dispose()), [materials]);
 
@@ -391,6 +393,8 @@ function CameraRig({
   const { camera, gl, size, invalidate } = useThree();
   const dragged = useContext(DragContext);
   const scrollY = useRef(0); // world units scrolled down from the top
+  const fling = useRef(0); // momentum after a flick, world units per second
+  const touching = useRef(false); // a finger is dragging the shelf
   const target = useRef(new THREE.Vector3());
 
   const top = PLANK + CLEARANCE + HEADER_ROOM;
@@ -416,23 +420,40 @@ function CameraRig({
     let downY = 0;
     let downScroll = 0;
     let down = false;
+    let samples: { t: number; y: number }[] = [];
     const onDown = (e: PointerEvent) => {
       down = true;
       dragged.current = false;
       downY = e.clientY;
       downScroll = scrollY.current;
+      // Catching a moving shelf stops it, like a native scroll view
+      fling.current = 0;
+      samples = [{ t: performance.now(), y: e.clientY }];
     };
     const onMove = (e: PointerEvent) => {
       if (!down || !enabled) return;
       const dy = e.clientY - downY;
       if (Math.abs(dy) > 6) dragged.current = true;
       if (dragged.current) {
+        touching.current = true;
         scrollY.current = clamp(downScroll - dy * pxToWorld);
+        const now = performance.now();
+        samples.push({ t: now, y: e.clientY });
+        while (samples.length > 2 && now - samples[0].t > 80) samples.shift();
         invalidate();
       }
     };
     const onUp = () => {
+      if (down && touching.current && samples.length > 1) {
+        // Carry the release speed on as momentum (world units per second)
+        const first = samples[0];
+        const last = samples[samples.length - 1];
+        const dt = Math.max(1, last.t - first.t);
+        if (performance.now() - last.t < 60) fling.current = (-(last.y - first.y) / dt) * 1000 * pxToWorld;
+        invalidate();
+      }
       down = false;
+      touching.current = false;
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     el.addEventListener("pointerdown", onDown);
@@ -447,6 +468,15 @@ function CameraRig({
   }, [gl, maxScroll, pxToWorld, enabled, invalidate, dragged]);
 
   useFrame((_, dt) => {
+    const d = Math.min(dt, 0.05);
+    // Momentum from a fling, slowing like native scrolling
+    if (fling.current !== 0) {
+      scrollY.current += fling.current * d;
+      fling.current *= Math.exp(-d * 2.2);
+      if (scrollY.current < 0 || scrollY.current > maxScroll || Math.abs(fling.current) < 0.02) fling.current = 0;
+      scrollY.current = THREE.MathUtils.clamp(scrollY.current, 0, maxScroll);
+      invalidate();
+    }
     scrollY.current = Math.min(scrollY.current, maxScroll);
     target.current.set(0, startY - scrollY.current, fitDist + (SHELF_DEPTH / 2) * S);
     // Distance only changes on first load or a resize: jump there instead of
@@ -456,7 +486,9 @@ function CameraRig({
       invalidate();
       return;
     }
-    if (easing.damp3(camera.position, target.current, 0.12, Math.min(dt, 0.05))) invalidate();
+    // Fingers and flings track tightly; the wheel keeps a little smoothing
+    const smooth = touching.current || fling.current !== 0 ? 0.02 : 0.12;
+    if (easing.damp3(camera.position, target.current, smooth, d)) invalidate();
   });
   return null;
 }
@@ -531,7 +563,7 @@ function KeyLight({ width, viewH, dark }: { width: number; viewH: number; dark: 
       ref={light}
       intensity={dark ? 1.6 : 2.2}
       castShadow
-      shadow-mapSize={[2048, 2048]}
+      shadow-mapSize={IS_TOUCH ? [1024, 1024] : [2048, 2048]}
       shadow-bias={-0.0004}
       shadow-normalBias={0.02}
       shadow-radius={6}
@@ -620,7 +652,8 @@ export function GameShelf({
       <Canvas
         frameloop="demand"
         shadows="soft"
-        dpr={[1, 1.75]}
+        // Phones have 3× screens; 1.5× looks nearly the same at half the pixels
+        dpr={IS_TOUCH ? [1, 1.5] : [1, 1.75]}
         camera={{ fov: 30, near: 0.05, far: 100, position: [0, 0, 10] }}
         gl={{ antialias: true, alpha: true }}
         // Neutral keeps cover art colours true; R3F's default ACES washes them out

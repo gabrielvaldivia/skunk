@@ -26,7 +26,7 @@ export function Layout({ children }: LayoutProps) {
       </main>
       {isHome && (
         // Pinned to the screen corner; page headers leave room for it
-        <div className="chrome-fade fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-50">
+        <div className="chrome-fade fixed left-[var(--page-gutter)] top-[calc(var(--vv-top,0px)+var(--safe-top)+0.75rem)] z-50">
           <AccountButton size={48} variant="pill" onOpen={panel ? () => panel.open({ type: "profile" }) : undefined} />
         </div>
       )}

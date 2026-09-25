@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GamesHeader } from "../components/GamesHeader";
 import { useSearchQuery } from "../hooks/useSearchQuery";
 import { useDragToDismiss } from "../hooks/useDragToDismiss";
+import { useKeyboardInsets } from "../hooks/useKeyboardInsets";
 import { useGameScope, useMyGameIds } from "../hooks/useGameScope";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,8 @@ export function ShelfPage() {
   const selected = shown.find((g) => g.id === selectedId);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const viewportHeight = useViewportHeight();
+  // iOS pans the page up when the search field focuses; follow the visible area
+  useKeyboardInsets();
   const panelOpen = !!selected;
   // Where the selected box floats: left of the desktop panel, or above the
   // phone sheet (clear of the close button)
@@ -168,7 +171,9 @@ export function ShelfPage() {
   );
 
   return (
-    <div className="fixed inset-0 bg-background">
+    // Shifted down by however far iOS panned for the keyboard, so the shelf and
+    // header stay in view (the header is fixed inside, so it moves with this)
+    <div className="fixed inset-0 bg-background [transform:translateY(var(--vv-top,0px))]">
       <GamesHeader
         scope={scope}
         onScopeChange={(s) => {

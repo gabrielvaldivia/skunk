@@ -248,7 +248,8 @@ async function buildBoxArt(
 type Job = { run: () => Promise<void>; cancelled: boolean };
 const queue: Job[] = [];
 let active = 0;
-const MAX_ACTIVE = 2;
+// One at a time on phones, so building covers doesn't stutter a fling
+const MAX_ACTIVE = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches ? 1 : 2;
 
 function pump() {
   while (active < MAX_ACTIVE && queue.length) {

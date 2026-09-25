@@ -106,7 +106,7 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
           Desktop: a small "Search" pill bottom-middle that grows when focused */}
       <label
         className={cn(
-          "fixed bottom-[calc(var(--safe-bottom)+1.25rem)] right-[var(--page-gutter)] flex h-12 cursor-text items-center overflow-hidden rounded-full transition-[width] duration-300 ease-out md:left-1/2 md:right-auto md:-translate-x-1/2",
+          "fixed bottom-[calc(var(--safe-bottom)+1.25rem+var(--kb,0px))] right-[var(--page-gutter)] flex h-12 cursor-text items-center overflow-hidden rounded-full transition-[width] duration-300 ease-out md:left-1/2 md:right-auto md:-translate-x-1/2",
           PILL,
           open
             ? "w-[calc(100%-2*var(--page-gutter))] md:w-[min(28rem,calc(100%-2*var(--page-gutter)))]"
