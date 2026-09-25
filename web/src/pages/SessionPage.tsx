@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { usePlayers } from "../hooks/usePlayers";
 import { useMatches } from "../hooks/useMatches";
 import { useGames } from "../hooks/useGames";
+import { heartGame } from "../hooks/useGameScope";
 import { subscribeToMatchesForSession } from "../services/databaseService";
 import { PlayerCard } from "../components/PlayerCard";
 import { MatchRow } from "../components/MatchRow";
@@ -27,7 +28,7 @@ export function SessionPage() {
     refreshSession,
     isLoading: sessionContextLoading,
   } = useSession();
-  const { player, isAuthenticated } = useAuth();
+  const { player, isAuthenticated, refreshPlayer } = useAuth();
   const { players, isLoading: playersLoading } = usePlayers();
   const { addMatch } = useMatches();
   const { games } = useGames();
@@ -169,6 +170,10 @@ export function SessionPage() {
 
   const handleSubmitMatch = async (match: Omit<Match, "id">) => {
     await addMatch(match);
+    // Playing a game hearts it into My Games, even if you'd un-hearted it before
+    if (player && match.gameID && match.playerIDs.includes(player.id)) {
+      heartGame(player, match.gameID, refreshPlayer).catch((err) => console.error("Error hearting game:", err));
+    }
     // Remember the last selected game for this session
     if (code && match.gameID) {
       try {

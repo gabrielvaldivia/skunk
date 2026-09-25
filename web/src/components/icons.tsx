@@ -72,3 +72,18 @@ export const InfoIcon = makeIcon(InformationCircleIcon, "InfoIcon");
 export const WarningIcon = makeIcon(Alert02Icon, "WarningIcon");
 export const ErrorIcon = makeIcon(CancelCircleIcon, "ErrorIcon");
 export const SpinnerIcon = makeIcon(Loading03Icon, "SpinnerIcon");
+
+// Drawn here rather than from Hugeicons so it can fill in when a game is hearted
+export function HeartIcon({ filled, className }: { filled?: boolean; className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width={24} height={24} className={className} aria-hidden>
+      <path
+        d="M12 20.5s-7.5-4.6-9.2-9.6C1.7 7.6 3.8 4.5 7.2 4.5c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.4 0 5.5 3.1 4.4 6.4-1.7 5-9.2 9.6-9.2 9.6Z"
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

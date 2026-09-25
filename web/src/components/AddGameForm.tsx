@@ -6,7 +6,7 @@ import type { Game } from "../models/Game";
 import { useAuth } from "../context/AuthContext";
 import { useGames } from "../hooks/useGames";
 import { isAdminEmail } from "@/lib/admin";
-import { addOwnedGame } from "../services/databaseService";
+import { heartGame } from "../hooks/useGameScope";
 import { CoverScanner } from "./CoverScanner";
 import { Button } from "@/components/ui/button";
 import {
@@ -544,10 +544,7 @@ export function AddGameForm({
     setScanning(false);
     onOpenChange(false);
     try {
-      if (player) {
-        await addOwnedGame(player.id, game.id);
-        await refreshPlayer();
-      }
+      await heartGame(player, game.id, refreshPlayer);
       if (user && (game.createdByID === user.uid || isAdminEmail(user.email))) {
         await editGame(game.id, { coverArt: cover });
       }

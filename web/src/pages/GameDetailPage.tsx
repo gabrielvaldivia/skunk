@@ -10,7 +10,8 @@ import { useAuth } from "../context/AuthContext";
 import { MatchRow } from "../components/MatchRow";
 import { EditGameForm } from "../components/EditGameForm";
 import { Button } from "@/components/ui/button";
-import { EditIcon } from "../components/icons";
+import { EditIcon, HeartIcon } from "../components/icons";
+import { useGameHeart } from "../hooks/useGameScope";
 import { NavBar } from "../components/NavBar";
 import { Avatar } from "../components/Avatar";
 import type { Player } from "../models/Player";
@@ -50,6 +51,7 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const isAdmin = isAdminEmail(user?.email);
+  const heart = useGameHeart(id, games);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const game = games.find((g) => g.id === id);
@@ -178,15 +180,31 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
         // Full-screen on phones, the edit button joins the close button in the corners
         actionInCorner={!!onClose && !isDesktop}
         action={
-          isAdmin && (
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={() => setIsEditDialogOpen(true)}
-              aria-label="Edit game"
-            >
-              <EditIcon />
-            </Button>
+          (heart.canHeart || isAdmin) && (
+            <>
+              {heart.canHeart && (
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={heart.toggle}
+                  aria-pressed={heart.hearted}
+                  aria-label={heart.hearted ? "Remove from My Games" : "Add to My Games"}
+                  className={heart.hearted ? "text-red-500 hover:text-red-500" : undefined}
+                >
+                  <HeartIcon filled={heart.hearted} className="!size-5" />
+                </Button>
+              )}
+              {isAdmin && (
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  onClick={() => setIsEditDialogOpen(true)}
+                  aria-label="Edit game"
+                >
+                  <EditIcon />
+                </Button>
+              )}
+            </>
           )
         }
       />

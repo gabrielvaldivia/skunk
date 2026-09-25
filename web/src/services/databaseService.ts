@@ -157,9 +157,9 @@ export async function updatePlayer(playerId: string, player: FieldUpdates<Player
   await update(playerRef, player);
 }
 
-// Put a game in the player's My Games; a keyed write so it can't clobber other entries
-export async function addOwnedGame(playerId: string, gameId: string): Promise<void> {
-  await update(ref(database, `${PLAYERS_PATH}/${playerId}/ownedGameIDs`), { [gameId]: Date.now() });
+// Heart (or un-heart) a game for My Games; a keyed write so it can't clobber other hearts
+export async function setGameHeart(playerId: string, gameId: string, hearted: boolean): Promise<void> {
+  await update(ref(database, `${PLAYERS_PATH}/${playerId}/gameHearts`), { [gameId]: hearted });
 }
 
 // Strip personal data but keep the record so other players' matches still resolve

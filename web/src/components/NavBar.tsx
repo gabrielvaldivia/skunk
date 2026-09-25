@@ -35,7 +35,7 @@ export function NavBar({ title, action, onBack, hideBack: hideBackProp, closeInC
     actionInCorner &&
     action &&
     createPortal(
-      <div className="fixed right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] [&>button]:size-12 [&>button]:rounded-full [&>button]:border [&>button]:border-border/60 [&>button]:bg-background/75 [&>button]:shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)] [&>button]:backdrop-blur-xl">
+      <div className="fixed right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] flex gap-2 [&>button]:size-12 [&>button]:rounded-full [&>button]:border [&>button]:border-border/60 [&>button]:bg-background/75 [&>button]:shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)] [&>button]:backdrop-blur-xl">
         {action}
       </div>,
       document.body
@@ -61,7 +61,7 @@ export function NavBar({ title, action, onBack, hideBack: hideBackProp, closeInC
         </Button>
       )}
       <h1 className="nav-bar-title">{title}</h1>
-      <div className="nav-bar-action">{!actionInCorner && action}</div>
+      <div className="nav-bar-action gap-2">{!actionInCorner && action}</div>
       {cornerAction}
       {/* Portalled: the header's backdrop blur would otherwise pin it to the header */}
       {closeInCorner &&

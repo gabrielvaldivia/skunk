@@ -9,7 +9,13 @@ export type Player = {
    * keyed by uid so database rules can check them
    */
   linkedGoogleUserIDs?: Record<string, true>;
-  /** Games you've added to My Games without creating them (e.g. by scanning the box), keyed by game id with when */
+  /**
+   * Hearts on games, keyed by game id: true puts a game in My Games, false keeps
+   * it out even if you added or played it. Games without an entry follow
+   * whether you added or played them.
+   */
+  gameHearts?: Record<string, boolean>;
+  /** @deprecated Scanned games from before hearts; read as hearted */
   ownedGameIDs?: Record<string, number>;
   ownerID?: string;
   email?: string;
