@@ -122,7 +122,8 @@ export async function readCover(cover: HTMLCanvasElement): Promise<OcrResult> {
           words.push({ text: w.text, confidence: w.confidence, height: w.bbox.y1 - w.bbox.y0 });
         }
         const text = cleanLine(line.text);
-        if (line.confidence >= 55 && /[a-z]{2}/i.test(text)) {
+        // Skip fragments misread from artwork ("Nn", "Kd")
+        if (line.confidence >= 60 && /\p{L}{3}/u.test(text)) {
           lines.push({ text, top: line.bbox.y0, bottom: line.bbox.y1, left: line.bbox.x0 });
         }
       }
@@ -216,4 +217,96 @@ export function matchGames(games: Game[], ocr: OcrResult, limit = 3): Game[] {
     .sort((a, b) => b.score - a.score || b.size - a.size)
     .slice(0, limit)
     .map((s) => s.game);
+}
+
+// --- matching by artwork ---------------------------------------------------
+
+// Titles in stylised logos often can't be read, so also compare the scan to
+// the covers games already have. A cover's signature is a tiny, blurred
+// colour thumbnail, normalised per channel so lighting and white balance
+// in the photo matter less.
+const GRID = 16;
+const signatures = new Map<string, Promise<Float32Array | null>>();
+
+function signature(source: CanvasImageSource, width: number, height: number): Float32Array {
+  // Step down in two passes so each cell averages its area instead of sampling a pixel
+  const mid = document.createElement("canvas");
+  mid.width = mid.height = GRID * 4;
+  const mctx = mid.getContext("2d")!;
+  mctx.imageSmoothingQuality = "high";
+  // Skip a thin border, where the scan's corners are least exact
+  const ix = width * 0.04, iy = height * 0.04;
+  mctx.drawImage(source, ix, iy, width - ix * 2, height - iy * 2, 0, 0, mid.width, mid.height);
+  const small = document.createElement("canvas");
+  small.width = small.height = GRID;
+  const sctx = small.getContext("2d", { willReadFrequently: true })!;
+  sctx.imageSmoothingQuality = "high";
+  sctx.drawImage(mid, 0, 0, GRID, GRID);
+  const px = sctx.getImageData(0, 0, GRID, GRID).data;
+
+  const n = GRID * GRID;
+  const sig = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const r = px[i * 4], g = px[i * 4 + 1], b = px[i * 4 + 2];
+    sig[i] = (r + g + b) / 3; // brightness
+    sig[n + i] = r - g; // red–green
+    sig[n * 2 + i] = (r + g) / 2 - b; // yellow–blue
+  }
+  for (let c = 0; c < 3; c++) {
+    let mean = 0, sq = 0;
+    for (let i = 0; i < n; i++) mean += sig[c * n + i];
+    mean /= n;
+    for (let i = 0; i < n; i++) sq += (sig[c * n + i] - mean) ** 2;
+    const sd = Math.sqrt(sq / n);
+    for (let i = 0; i < n; i++) sig[c * n + i] = sd > 4 ? (sig[c * n + i] - mean) / sd : 0;
+  }
+  return sig;
+}
+
+// Correlation of two signatures, -1..1, with brightness counting double
+function similarity(a: Float32Array, b: Float32Array) {
+  const n = GRID * GRID;
+  const weights = [2, 1, 1];
+  let total = 0;
+  for (let c = 0; c < 3; c++) {
+    let dot = 0;
+    for (let i = c * n; i < (c + 1) * n; i++) dot += a[i] * b[i];
+    total += (weights[c] * dot) / n;
+  }
+  return total / 4;
+}
+
+function coverSignature(url: string) {
+  let p = signatures.get(url);
+  if (!p) {
+    p = new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          resolve(signature(img, img.naturalWidth, img.naturalHeight));
+        } catch {
+          resolve(null); // Host doesn't allow reading its pixels
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+    signatures.set(url, p);
+  }
+  return p;
+}
+
+/** Games whose cover art looks like the scan, with how alike they are (0..1) */
+export async function matchCovers(games: Game[], scan: HTMLCanvasElement) {
+  const sig = signature(scan, scan.width, scan.height);
+  const scored = await Promise.all(
+    games
+      .filter((g) => g.coverArt)
+      .map(async (game) => {
+        const other = await coverSignature(game.coverArt!);
+        return { game, score: other ? similarity(sig, other) : 0 };
+      })
+  );
+  return scored.sort((a, b) => b.score - a.score);
 }

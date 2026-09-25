@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { BackIcon, CloseIcon, ImageIcon, SearchIcon, SpinnerIcon } from "./icons";
 import {
   loadImageFile,
+  matchCovers,
   matchGames,
   normalize,
   readCover,
@@ -28,6 +29,10 @@ interface CoverScannerProps {
 type Stage = "camera" | "adjust" | "result";
 
 const LOUPE = 104;
+// How alike a cover has to look to the scan to count as a match (0..1)
+const COVER_MATCH = 0.4;
+
+type Found = { ocr: OcrResult; lookalikes: Game[] };
 
 // Full-screen box scanner: camera → drag the corners onto the cover →
 // flattened cover, matched to a game by reading its text on the device
@@ -36,8 +41,7 @@ export function CoverScanner({ games, onClose, onPickGame, onNewGame }: CoverSca
   const [source, setSource] = useState<HTMLCanvasElement | null>(null);
   const [quad, setQuad] = useState<Quad | null>(null);
   const [cover, setCover] = useState<string | null>(null);
-  const [ocr, setOcr] = useState<OcrResult | null>(null);
-  const [ocrError, setOcrError] = useState(false);
+  const [found, setFound] = useState<Found | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const start = (canvas: HTMLCanvasElement, corners: Quad) => {
@@ -62,16 +66,23 @@ export function CoverScanner({ games, onClose, onPickGame, onNewGame }: CoverSca
     if (!source || !quad) return;
     const warped = warpQuad(source, quad);
     setCover(warped.toDataURL("image/jpeg", 0.85));
-    setOcr(null);
-    setOcrError(false);
+    setFound(null);
     setStage("result");
     const id = ++scanId.current;
-    readCover(warped)
-      .then((r) => id === scanId.current && setOcr(r))
-      .catch((err) => {
+    // Read the box's text and compare its art to the covers we have, side by side
+    Promise.all([
+      readCover(warped).catch((err): OcrResult => {
         console.error("Cover OCR failed:", err);
-        if (id === scanId.current) setOcrError(true);
-      });
+        return { words: [], title: "" };
+      }),
+      matchCovers(games, warped).catch((err) => {
+        console.error("Cover matching failed:", err);
+        return [];
+      }),
+    ]).then(([ocr, looks]) => {
+      if (id !== scanId.current) return;
+      setFound({ ocr, lookalikes: looks.filter((l) => l.score >= COVER_MATCH).map((l) => l.game) });
+    });
   };
 
   useEffect(() => () => void scanId.current++, []);
@@ -116,8 +127,7 @@ export function CoverScanner({ games, onClose, onPickGame, onNewGame }: CoverSca
         <ResultStage
           cover={cover}
           games={games}
-          ocr={ocr}
-          ocrError={ocrError}
+          found={found}
           onPickGame={(g) => onPickGame(g, cover)}
           onNewGame={(title) => onNewGame(cover, title)}
         />
@@ -264,7 +274,7 @@ function AdjustStage({
   const areaRef = useRef<HTMLDivElement>(null);
   const [area, setArea] = useState({ w: 0, h: 0 });
   const url = useMemo(() => source.toDataURL("image/jpeg", 0.9), [source]);
-  const [drag, setDrag] = useState<{ index: number; dx: number; dy: number } | null>(null);
+  const [drag, setDrag] = useState<{ index: number; dx: number; dy: number; photoTop: number } | null>(null);
 
   useLayoutEffect(() => {
     const el = areaRef.current;
@@ -285,7 +295,12 @@ function AdjustStage({
     e.currentTarget.setPointerCapture(e.pointerId);
     const rect = e.currentTarget.parentElement!.getBoundingClientRect();
     // Keep the finger's offset from the corner so the handle doesn't jump
-    setDrag({ index, dx: screen[index][0] - (e.clientX - rect.left), dy: screen[index][1] - (e.clientY - rect.top) });
+    setDrag({
+      index,
+      dx: screen[index][0] - (e.clientX - rect.left),
+      dy: screen[index][1] - (e.clientY - rect.top),
+      photoTop: rect.top,
+    });
   };
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!drag || !scale) return;
@@ -299,10 +314,25 @@ function AdjustStage({
 
   const active = drag ? screen[drag.index] : null;
   const zoom = 2.5;
+  // The magnifier sits above the finger, never below it. Near the top of the
+  // screen it stops at the edge and moves aside instead, so the finger never covers it.
+  let loupe: { left: number; top: number } | null = null;
+  if (drag && active) {
+    const gap = 28;
+    const minTop = 8 - drag.photoTop;
+    const top = active[1] - LOUPE - gap;
+    loupe =
+      top >= minTop
+        ? { top, left: active[0] - LOUPE / 2 }
+        : {
+            top: minTop,
+            left: active[0] > dw / 2 ? active[0] - LOUPE - gap : active[0] + gap,
+          };
+  }
 
   return (
     <>
-      <div ref={areaRef} className="relative flex flex-1 touch-none items-center justify-center overflow-hidden">
+      <div ref={areaRef} className="relative flex flex-1 touch-none items-center justify-center">
         {scale > 0 && (
           <div className="relative" style={{ width: dw, height: dh }}>
             <img src={url} alt="" className="size-full select-none" draggable={false} />
@@ -341,15 +371,15 @@ function AdjustStage({
                 />
               </div>
             ))}
-            {active && (
+            {active && loupe && (
               // Magnifier above the finger, so the corner stays visible while placing it
               <div
-                className="pointer-events-none absolute overflow-hidden rounded-full border-2 border-white shadow-xl"
+                className="pointer-events-none absolute z-10 overflow-hidden rounded-full border-2 border-white shadow-xl"
                 style={{
                   width: LOUPE,
                   height: LOUPE,
-                  left: Math.min(dw - LOUPE / 2, Math.max(LOUPE / 2, active[0])) - LOUPE / 2,
-                  top: active[1] - LOUPE - 40 < -pad ? active[1] + 40 : active[1] - LOUPE - 40,
+                  left: loupe.left,
+                  top: loupe.top,
                   backgroundImage: `url(${url})`,
                   backgroundSize: `${dw * zoom}px ${dh * zoom}px`,
                   backgroundPosition: `${LOUPE / 2 - active[0] * zoom}px ${LOUPE / 2 - active[1] * zoom}px`,
@@ -378,26 +408,29 @@ function AdjustStage({
 function ResultStage({
   cover,
   games,
-  ocr,
-  ocrError,
+  found,
   onPickGame,
   onNewGame,
 }: {
   cover: string;
   games: Game[];
-  ocr: OcrResult | null;
-  ocrError: boolean;
+  found: Found | null;
   onPickGame: (game: Game) => void;
   onNewGame: (title: string) => void;
 }) {
   const [query, setQuery] = useState("");
-  const matches = useMemo(() => (ocr ? matchGames(games, ocr) : []), [games, ocr]);
+  // A cover that looks alike is the surer sign, so it leads; then titles read off the box
+  const matches = useMemo(() => {
+    if (!found) return [];
+    const all = [...found.lookalikes.slice(0, 2), ...matchGames(games, found.ocr)];
+    return all.filter((g, i) => all.findIndex((o) => o.id === g.id) === i).slice(0, 3);
+  }, [games, found]);
   const searched = useMemo(() => {
     const q = normalize(query);
     if (!q) return [];
     return games.filter((g) => normalize(g.title).includes(q)).slice(0, 8);
   }, [games, query]);
-  const reading = !ocr && !ocrError;
+  const reading = !found;
   const list = query.trim() ? searched : matches;
 
   return (
@@ -460,7 +493,7 @@ function ResultStage({
       <div className="shrink-0 px-5 pb-4 pt-2">
         <Button
           className="h-12 w-full rounded-full bg-white text-black hover:bg-white/90"
-          onClick={() => onNewGame(ocr?.title ?? "")}
+          onClick={() => onNewGame(found?.ocr.title ?? "")}
         >
           Add as new game
         </Button>
