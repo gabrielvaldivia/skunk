@@ -27,7 +27,7 @@ function formatRelativeTime(timestamp: number): string {
 export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact?: boolean } = {}) {
   const navigate = useNavigate();
   const { currentSession } = useSession();
-  const { players } = useDataCache();
+  const { players, games } = useDataCache();
   const [isPressing, setIsPressing] = useState(false);
   const startYRef = useRef<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
@@ -38,6 +38,9 @@ export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact
     .map((id) => players.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);
   const createdLabel = formatRelativeTime(currentSession.createdAt);
+  // Named after the game being played; the code only when there isn't one yet
+  const gameTitle = games.find((g) => g.id === currentSession.gameID)?.title;
+  const title = gameTitle ?? `Session ${currentSession.code}`;
 
   const navigateToSession = () => {
     navigate(`/session/${currentSession.code}`);
@@ -97,12 +100,12 @@ export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact
       {compact ? (
         <div className="mini-session-content">
           <div className="mini-session-title">
-            {currentSession.code} <span className="mini-session-created">· {createdLabel}</span>
+            {title} <span className="mini-session-created">· {createdLabel}</span>
           </div>
         </div>
       ) : (
         <div className="mini-session-content">
-          <div className="mini-session-title">Session {currentSession.code}</div>
+          <div className="mini-session-title">{title}</div>
           <div className="mini-session-created">Started {createdLabel}</div>
         </div>
       )}
