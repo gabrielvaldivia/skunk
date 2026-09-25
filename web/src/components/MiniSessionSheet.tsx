@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSession } from "../context/SessionContext";
 import { useDataCache } from "../context/DataCacheContext";
 import "./MiniSessionSheet.css";
+import { getPlayerPhotoSrc } from "@/lib/player";
 
 function formatRelativeTime(timestamp: number): string {
   const now = Date.now();
@@ -94,11 +95,11 @@ export function MiniSessionSheet() {
       </div>
       <div className="mini-session-facepile" aria-label="Participants">
         {participantList.slice(0, 5).map((p, idx) =>
-          p.photoData ? (
+          getPlayerPhotoSrc(p) ? (
             <img
               key={p.id}
               className={`facepile-avatar ${idx > 0 ? "overlap" : ""}`}
-              src={`data:image/jpeg;base64,${p.photoData}`}
+              src={getPlayerPhotoSrc(p)}
               alt={p.name}
             />
           ) : (

@@ -25,7 +25,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import './MatchRow.css';
-import { getPlayerColor, getInitials } from "@/lib/player";
+import { getPlayerColor, getInitials, getPlayerPhotoSrc } from "@/lib/player";
 import { isAdminEmail } from "@/lib/admin";
 import { toast } from "sonner";
 
@@ -142,8 +142,8 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
               className="match-winner-avatar" 
               style={{ backgroundColor }}
             >
-              {firstPlayer.photoData ? (
-                <img src={`data:image/jpeg;base64,${firstPlayer.photoData}`} alt={firstPlayer.name} />
+              {getPlayerPhotoSrc(firstPlayer) ? (
+                <img src={getPlayerPhotoSrc(firstPlayer)} alt={firstPlayer.name} />
               ) : (
                 <span className="match-winner-initials">{getInitials(firstPlayer.name)}</span>
               )}
@@ -165,8 +165,8 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
         className="match-winner-avatar" 
         style={{ backgroundColor }}
       >
-        {winner.photoData ? (
-          <img src={`data:image/jpeg;base64,${winner.photoData}`} alt={winner.name} />
+        {getPlayerPhotoSrc(winner) ? (
+          <img src={getPlayerPhotoSrc(winner)} alt={winner.name} />
         ) : (
           <span className="match-winner-initials">{getInitials(winner.name)}</span>
         )}

@@ -22,6 +22,7 @@ import {
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { GameFormContent } from "./AddGameForm";
 import { toast } from "sonner";
+import { storeImage, COVER_ART_MAX_SIZE } from "../services/storageService";
 
 type ScoreCalculation = "all" | "winnerOnly" | "losersSum";
 
@@ -213,7 +214,7 @@ export function EditGameForm({
         highestRoundScoreWins: roundConditionValue === "highest",
         winningConditions,
         ...(coverArt && coverArt.trim()
-          ? { coverArt: coverArt.trim() }
+          ? { coverArt: await storeImage(coverArt.trim(), `games/${game.id}`, COVER_ART_MAX_SIZE) }
           : coverArt === ""
           ? { coverArt: null }
           : {}),

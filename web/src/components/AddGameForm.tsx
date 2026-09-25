@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { storeImage, COVER_ART_MAX_SIZE } from "../services/storageService";
 
 interface AddGameFormProps {
   open: boolean;
@@ -489,7 +490,9 @@ export function AddGameForm({
         highestRoundScoreWins: roundConditionValue === "highest",
         winningConditions,
         creationDate: Date.now(),
-        ...(coverArt && coverArt.trim() ? { coverArt: coverArt.trim() } : {}),
+        ...(coverArt && coverArt.trim()
+          ? { coverArt: await storeImage(coverArt.trim(), "games", COVER_ART_MAX_SIZE) }
+          : {}),
       };
 
       await onSubmit(newGame);

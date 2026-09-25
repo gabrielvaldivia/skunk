@@ -30,7 +30,7 @@ import { computeWinnerID } from "../models/Match";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ChevronsUpDown } from "lucide-react";
 import "./AddGameForm.css";
-import { getPlayerColor, getInitials } from "@/lib/player";
+import { getPlayerColor, getInitials, getPlayerPhotoSrc } from "@/lib/player";
 import { toast } from "sonner";
 
 interface AddMatchFormProps {
@@ -523,9 +523,9 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                             <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-medium text-white shrink-0"
                               style={player ? { backgroundColor: getPlayerColor(player) } : undefined}
                             >
-                              {player?.photoData ? (
+                              {player && getPlayerPhotoSrc(player) ? (
                                 <img
-                                  src={`data:image/jpeg;base64,${player.photoData}`}
+                                  src={getPlayerPhotoSrc(player)}
                                   alt={player.name}
                                   className="w-full h-full object-cover"
                                 />
@@ -735,9 +735,9 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                           <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-medium text-white shrink-0"
                             style={player ? { backgroundColor: getPlayerColor(player) } : undefined}
                           >
-                            {player?.photoData ? (
+                            {player && getPlayerPhotoSrc(player) ? (
                               <img
-                                src={`data:image/jpeg;base64,${player.photoData}`}
+                                src={getPlayerPhotoSrc(player)}
                                 alt={player.name}
                                 className="w-full h-full object-cover"
                               />

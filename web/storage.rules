@@ -1,0 +1,13 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Player avatars and game cover art: public read, signed-in upload of images under 5MB
+    match /{folder}/{path=**} {
+      allow read: if folder in ['players', 'games'];
+      allow create, update: if folder in ['players', 'games']
+        && request.auth != null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

@@ -16,7 +16,7 @@ import type { Match } from "../models/Match";
 import type { Game } from "../models/Game";
 import type { FieldUpdates } from "../services/databaseService";
 import "./GameDetailPage.css";
-import { getInitials } from "@/lib/player";
+import { getInitials, getPlayerPhotoSrc } from "@/lib/player";
 import { isAdminEmail } from "@/lib/admin";
 
 export function GameDetailPage() {
@@ -183,13 +183,13 @@ export function GameDetailPage() {
                   {placements[1].players.length > 1 ? (
                     <div className="avatar-pile diagonal">
                       {placements[1].players.slice(0, 2).map((p, idx) =>
-                        p.photoData ? (
+                        getPlayerPhotoSrc(p) ? (
                           <img
                             key={p.id}
                             className={`avatar ${
                               idx === 0 ? "pos-a" : "pos-b"
                             }`}
-                            src={`data:image/jpeg;base64,${p.photoData}`}
+                            src={getPlayerPhotoSrc(p)}
                             alt={p.name}
                           />
                         ) : (
@@ -207,10 +207,10 @@ export function GameDetailPage() {
                     </div>
                   ) : (
                     <div className="avatar-wrap">
-                      {placements[1].players[0]?.photoData ? (
+                      {getPlayerPhotoSrc(placements[1].players[0]) ? (
                         <img
                           className="avatar"
-                          src={`data:image/jpeg;base64,${placements[1].players[0].photoData}`}
+                          src={getPlayerPhotoSrc(placements[1].players[0])}
                           alt={placements[1].players[0].name}
                         />
                       ) : (
@@ -241,13 +241,13 @@ export function GameDetailPage() {
                   {placements[0].players.length > 1 ? (
                     <div className="avatar-pile diagonal">
                       {placements[0].players.slice(0, 2).map((p, idx) =>
-                        p.photoData ? (
+                        getPlayerPhotoSrc(p) ? (
                           <img
                             key={p.id}
                             className={`avatar ${
                               idx === 0 ? "pos-a" : "pos-b"
                             }`}
-                            src={`data:image/jpeg;base64,${p.photoData}`}
+                            src={getPlayerPhotoSrc(p)}
                             alt={p.name}
                           />
                         ) : (
@@ -265,10 +265,10 @@ export function GameDetailPage() {
                     </div>
                   ) : (
                     <div className="avatar-wrap">
-                      {placements[0].players[0]?.photoData ? (
+                      {getPlayerPhotoSrc(placements[0].players[0]) ? (
                         <img
                           className="avatar"
-                          src={`data:image/jpeg;base64,${placements[0].players[0].photoData}`}
+                          src={getPlayerPhotoSrc(placements[0].players[0])}
                           alt={placements[0].players[0].name}
                         />
                       ) : (
@@ -296,13 +296,13 @@ export function GameDetailPage() {
                   {placements[2].players.length > 1 ? (
                     <div className="avatar-pile diagonal">
                       {placements[2].players.slice(0, 2).map((p, idx) =>
-                        p.photoData ? (
+                        getPlayerPhotoSrc(p) ? (
                           <img
                             key={p.id}
                             className={`avatar ${
                               idx === 0 ? "pos-a" : "pos-b"
                             }`}
-                            src={`data:image/jpeg;base64,${p.photoData}`}
+                            src={getPlayerPhotoSrc(p)}
                             alt={p.name}
                           />
                         ) : (
@@ -320,10 +320,10 @@ export function GameDetailPage() {
                     </div>
                   ) : (
                     <div className="avatar-wrap">
-                      {placements[2].players[0]?.photoData ? (
+                      {getPlayerPhotoSrc(placements[2].players[0]) ? (
                         <img
                           className="avatar"
-                          src={`data:image/jpeg;base64,${placements[2].players[0].photoData}`}
+                          src={getPlayerPhotoSrc(placements[2].players[0])}
                           alt={placements[2].players[0].name}
                         />
                       ) : (

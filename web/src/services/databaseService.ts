@@ -123,6 +123,7 @@ export async function anonymizePlayer(playerId: string): Promise<void> {
   const updates: FieldUpdates<Player> & { email: null } = {
     name: 'Deleted player',
     photoData: null,
+    photoURL: null,
     email: null,
     googleUserID: null,
     ownerID: null,

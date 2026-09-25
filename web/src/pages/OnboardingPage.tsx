@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { storeImage, AVATAR_MAX_SIZE } from "../services/storageService";
 import "./OnboardingPage.css";
 
 export function OnboardingPage() {
@@ -20,7 +21,7 @@ export function OnboardingPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [photoData, setPhotoData] = useState<string | null>(null); // base64 without data: prefix
+  const [photoData, setPhotoData] = useState<string | null>(null); // data: URL
 
   // Prefill name from Google account
   useEffect(() => {
@@ -49,7 +50,7 @@ export function OnboardingPage() {
     reader.onloadend = () => {
       const result = reader.result as string;
       setPhotoPreview(result);
-      setPhotoData(result.split(",")[1]);
+      setPhotoData(result);
     };
     reader.readAsDataURL(file);
   };
@@ -92,7 +93,7 @@ export function OnboardingPage() {
       }
 
       if (photoData) {
-        updates.photoData = photoData;
+        updates.photoURL = await storeImage(photoData, `players/${player.id}`, AVATAR_MAX_SIZE);
       }
 
       await updatePlayer(player.id, updates);

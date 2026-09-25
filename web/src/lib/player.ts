@@ -16,3 +16,10 @@ export function getInitials(name: string): string {
     .toUpperCase()
     .slice(0, 2);
 }
+
+// Storage URL for new uploads, falling back to the legacy inline base64 photo
+export function getPlayerPhotoSrc(player: { photoURL?: string; photoData?: string } | null | undefined): string | undefined {
+  if (!player) return undefined;
+  if (player.photoURL) return player.photoURL;
+  return player.photoData ? `data:image/jpeg;base64,${player.photoData}` : undefined;
+}
