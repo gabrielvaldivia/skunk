@@ -4,8 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import "./SignInView.css";
-
-const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
+import { isAdminEmail } from "@/lib/admin";
 
 export function SignInView() {
   const { signIn, isAuthenticated, user } = useAuth();
@@ -21,7 +20,7 @@ export function SignInView() {
   // Check if this is an admin viewing the sign-in screen intentionally
   const searchParams = new URLSearchParams(location.search);
   const isAdminView = searchParams.get("admin") === "true";
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user?.email);
 
   useEffect(() => {
     // Don't redirect if admin is viewing the sign-in screen intentionally

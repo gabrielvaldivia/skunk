@@ -16,8 +16,8 @@ import type { Match } from "../models/Match";
 import type { Game } from "../models/Game";
 import type { FieldUpdates } from "../services/databaseService";
 import "./GameDetailPage.css";
-
-const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
+import { getInitials } from "@/lib/player";
+import { isAdminEmail } from "@/lib/admin";
 
 export function GameDetailPage() {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ export function GameDetailPage() {
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user?.email);
 
   const game = games.find((g) => g.id === id);
   const gameMatches: Match[] = allMatches
@@ -104,13 +104,6 @@ export function GameDetailPage() {
     );
   }
 
-  const getInitials = (name: string): string =>
-    name
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
   const getFirstName = (name: string): string =>
     name.trim().split(" ")[0] || name;
   const getPlacementLabel = (ps: { name: string }[]) =>

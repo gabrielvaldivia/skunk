@@ -13,8 +13,8 @@ import { top100Games } from "./generate-top-100-games";
 import { createGame, getGames } from "../services/databaseService";
 import { getCurrentUser } from "../services/authService";
 import type { Game } from "../models/Game";
+import { isAdminEmail } from '../lib/admin';
 
-const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
 
 export interface PopulateProgress {
   total: number;
@@ -35,7 +35,7 @@ export async function populateUniversalGames(
 ): Promise<PopulateProgress> {
   // Check if user is admin
   const user = getCurrentUser();
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (!user || !isAdminEmail(user.email)) {
     throw new Error("Only admins can populate universal games.");
   }
 

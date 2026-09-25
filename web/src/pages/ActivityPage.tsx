@@ -5,20 +5,13 @@ import { useSession } from '../context/SessionContext';
 import { MiniSessionSheet } from '../components/MiniSessionSheet';
 import { MatchRow } from '../components/MatchRow';
 import './ActivityPage.css';
+import { getInitials } from "@/lib/player";
 
 export function ActivityPage() {
   const navigate = useNavigate();
   const { matches, isLoading, error } = useActivity();
   const { currentSession } = useSession();
   const { isAuthenticated, player } = useAuth();
-
-  const getInitials = (name: string): string =>
-    name
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
 
   if (isLoading) {
     return <div className="loading">Loading activity...</div>;

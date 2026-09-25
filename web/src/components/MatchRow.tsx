@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import type { Match } from '../models/Match';
-import type { Player } from '../models/Player';
 import { usePlayers } from '../hooks/usePlayers';
 import { useGames } from '../hooks/useGames';
 import { useAuth } from '../context/AuthContext';
@@ -26,8 +25,8 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import './MatchRow.css';
-
-const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
+import { getPlayerColor, getInitials } from "@/lib/player";
+import { isAdminEmail } from "@/lib/admin";
 
 interface MatchRowProps {
   match: Match;
@@ -68,29 +67,11 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     return players.find(p => p.id === playerID);
   };
 
-  const getPlayerColor = (player: Player) => {
-    if (player.colorData) {
-      return player.colorData;
-    }
-    const hash = player.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const hue = hash % 360;
-    return `hsl(${hue}, 70%, 60%)`;
-  };
-
-  const getInitials = (name: string): string => {
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   const canDelete = () => {
     if (!user) return false;
     
     // Admins can delete any match
-    const isAdmin = user.email === ADMIN_EMAIL;
+    const isAdmin = isAdminEmail(user.email);
     if (isAdmin) return true;
     
     // Can delete if user created the match or if current player is part of the match

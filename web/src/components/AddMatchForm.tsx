@@ -30,6 +30,7 @@ import { computeWinnerID } from "../models/Match";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ChevronsUpDown } from "lucide-react";
 import "./AddGameForm.css";
+import { getPlayerColor, getInitials } from "@/lib/player";
 
 interface AddMatchFormProps {
   open: boolean;
@@ -58,24 +59,6 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
   const [teams, setTeams] = useState<string[]>(["team1", "team2"]); // Array of team IDs
 
   const selectedGame = games.find((g) => g.id === selectedGameId);
-
-  const getPlayerColor = (player: Player) => {
-    if (player.colorData) {
-      return player.colorData;
-    }
-    const hash = player.name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const hue = hash % 360;
-    return `hsl(${hue}, 70%, 60%)`;
-  };
-
-  const getInitials = (name: string): string => {
-    return name
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   // Keep the game query in sync with the selected game
   useEffect(() => {

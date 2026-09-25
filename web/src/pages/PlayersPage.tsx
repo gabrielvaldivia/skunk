@@ -27,8 +27,7 @@ import {
 } from "@/components/ui/drawer";
 import type { Player } from "../models/Player";
 import "./PlayersPage.css";
-
-const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
+import { isAdminEmail } from "@/lib/admin";
 
 interface PlayerItemProps {
   player: Player;
@@ -105,7 +104,7 @@ export function PlayersPage() {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { matches } = useActivity(10000);
 
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user?.email);
 
   // Previous grouping removed; we sort everyone by last played
 

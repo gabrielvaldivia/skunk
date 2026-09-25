@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import type { Match } from "../models/Match";
 import "./PlayerDetailPage.css";
+import { getPlayerColor, getInitials } from "@/lib/player";
 
 export function PlayerDetailPage() {
   const navigate = useNavigate();
@@ -30,29 +31,6 @@ export function PlayerDetailPage() {
       </div>
     );
   }
-
-  const getInitials = (name: string): string => {
-    return name
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const getPlayerColor = (player: {
-    colorData?: string;
-    name: string;
-  }): string => {
-    if (player.colorData) {
-      return player.colorData;
-    }
-    const hash = player.name
-      .split("")
-      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const hue = hash % 360;
-    return `hsl(${hue}, 70%, 60%)`;
-  };
 
   const wins = playerMatches.filter((m) => m.winnerID === id).length;
   const bestWinStreak = (() => {

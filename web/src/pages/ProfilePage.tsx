@@ -16,13 +16,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ThemeToggle } from "../components/theme-toggle";
 import { toast } from "sonner";
 import "./ProfilePage.css";
-
-const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
+import { isAdminEmail } from "@/lib/admin";
 
 export function ProfilePage() {
   const navigate = useNavigate();
   const { user, player, isAuthenticated, refreshPlayer, signOut } = useAuth();
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user?.email);
   const [name, setName] = useState(player?.name || "");
   const [location, setLocation] = useState(player?.location || "");
   const [bio, setBio] = useState(player?.bio || "");

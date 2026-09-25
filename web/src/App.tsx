@@ -17,6 +17,7 @@ import { ActivityPage } from "./pages/ActivityPage";
 import { SessionPage } from "./pages/SessionPage";
 import { SessionsListPage } from "./pages/SessionsListPage";
 import "./App.css";
+import { isAdminEmail } from "@/lib/admin";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, needsOnboarding, isLoading } = useAuth();
@@ -39,8 +40,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
-
 function AppRoutes() {
   const { isLoading, isAuthenticated, needsOnboarding, user } = useAuth();
 
@@ -48,7 +47,7 @@ function AppRoutes() {
     return <div className="loading">Loading...</div>;
   }
 
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user?.email);
 
   return (
     <Routes>
