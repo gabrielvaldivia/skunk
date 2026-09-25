@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { usePanelFrame } from "../context/PanelContext";
-import { Glass, GlassIconButton } from "./Glass";
 import { BackIcon, CloseIcon } from "./icons";
 import { Button } from "@/components/ui/button";
 
@@ -36,8 +35,8 @@ export function NavBar({ title, action, onBack, hideBack: hideBackProp, closeInC
     actionInCorner &&
     action &&
     createPortal(
-      <div className="fixed right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] size-12">
-        <Glass className="size-full [&_button]:size-full [&_button]:!bg-transparent">{action}</Glass>
+      <div className="fixed right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] [&>button]:size-12 [&>button]:rounded-full [&>button]:border [&>button]:border-border/60 [&>button]:bg-background/75 [&>button]:shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)] [&>button]:backdrop-blur-xl">
+        {action}
       </div>,
       document.body
     );
@@ -67,9 +66,14 @@ export function NavBar({ title, action, onBack, hideBack: hideBackProp, closeInC
       {/* Portalled: the header's backdrop blur would otherwise pin it to the header */}
       {closeInCorner &&
         createPortal(
-          <GlassIconButton onClick={goBack} aria-label="Close" className="fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-50">
+          <button
+            type="button"
+            onClick={goBack}
+            aria-label="Close"
+            className="fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-50 flex size-12 items-center justify-center rounded-full border border-border/60 bg-background/75 text-foreground shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)] backdrop-blur-xl backdrop-saturate-150 active:scale-95"
+          >
             <CloseIcon className="size-5" />
-          </GlassIconButton>,
+          </button>,
           document.body
         )}
     </div>

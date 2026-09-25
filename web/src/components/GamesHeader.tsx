@@ -2,10 +2,10 @@ import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ActivityIcon, CloseIcon, PlusIcon, SearchIcon } from "./icons";
 import { cn } from "@/lib/utils";
-import { Glass } from "./Glass";
 import type { GameScope } from "../hooks/useGameScope";
 
-
+const PILL =
+  "border border-border/60 bg-background/75 shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)] backdrop-blur-xl backdrop-saturate-150";
 
 interface GamesHeaderProps {
   scope: GameScope;
@@ -34,9 +34,13 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
   const [focused, setFocused] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const open = focused || query !== "";
-  // Round glass buttons: the wrapper positions, the glass fills it
-  const iconButton =
-    "flex size-full items-center justify-center rounded-full transition-transform active:scale-95";
+  const activityClass = cn(
+    "fixed bottom-[calc(var(--safe-bottom)+1.25rem)] left-[var(--page-gutter)] flex size-12 items-center justify-center rounded-full text-muted-foreground hover:text-foreground active:scale-95 md:absolute md:bottom-auto md:left-auto md:right-[calc(var(--page-gutter)+3.5rem)] md:top-[calc(var(--safe-top)+0.75rem)]",
+    PILL,
+    !hidden && "pointer-events-auto",
+    // On phones the open search field takes the whole bottom row
+    open && "transition-opacity max-md:pointer-events-none max-md:opacity-0"
+  );
 
   return (
     <header
@@ -53,10 +57,10 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
           "absolute inset-x-[calc(var(--page-gutter)+3.5rem)] top-[calc(var(--safe-top)+0.75rem)] flex justify-center md:inset-x-0"
         )}
       >
-        <Glass
+        <div
           role="tablist"
           aria-label="Which games"
-          className={cn("flex h-12 items-center p-1", !hidden && "pointer-events-auto")}
+          className={cn("flex h-12 items-center rounded-full p-1", PILL, !hidden && "pointer-events-auto")}
         >
           {SCOPES.map(({ value, label }) => (
             <button
@@ -68,47 +72,37 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
               tabIndex={hidden ? -1 : undefined}
               className={cn(
                 "h-10 whitespace-nowrap rounded-full px-3 text-[13px] font-semibold transition-colors max-[389px]:px-2",
-                scope === value ? "bg-foreground text-background [text-shadow:none]" : "text-white/90 hover:text-white"
+                scope === value ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
               )}
             >
               {label}
             </button>
           ))}
-        </Glass>
+        </div>
       </div>
 
-      <div
+      {onActivity ? (
+        <button type="button" onClick={onActivity} aria-label="Activity" tabIndex={hidden ? -1 : undefined} className={activityClass}>
+          <ActivityIcon className="size-5" />
+        </button>
+      ) : (
+        <Link to="/activity" aria-label="Activity" tabIndex={hidden ? -1 : undefined} className={activityClass}>
+          <ActivityIcon className="size-5" />
+        </Link>
+      )}
+      <button
+        type="button"
+        onClick={onAdd}
+        aria-label="Add game"
+        tabIndex={hidden ? -1 : undefined}
         className={cn(
-          "fixed bottom-[calc(var(--safe-bottom)+1.25rem)] left-[var(--page-gutter)] size-12 transition-opacity md:absolute md:bottom-auto md:left-auto md:right-[calc(var(--page-gutter)+3.5rem)] md:top-[calc(var(--safe-top)+0.75rem)]",
-          !hidden && "pointer-events-auto",
-          // On phones the open search field takes the whole bottom row
-          open && "max-md:pointer-events-none max-md:opacity-0"
-        )}
-      >
-        <Glass className="size-full">
-          {onActivity ? (
-            <button type="button" onClick={onActivity} aria-label="Activity" tabIndex={hidden ? -1 : undefined} className={iconButton}>
-              <ActivityIcon className="size-5" />
-            </button>
-          ) : (
-            <Link to="/activity" aria-label="Activity" tabIndex={hidden ? -1 : undefined} className={iconButton}>
-              <ActivityIcon className="size-5" />
-            </Link>
-          )}
-        </Glass>
-      </div>
-      <div
-        className={cn(
-          "absolute right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] size-12",
+          "absolute right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] flex size-12 items-center justify-center rounded-full text-muted-foreground hover:text-foreground active:scale-95",
+          PILL,
           !hidden && "pointer-events-auto"
         )}
       >
-        <Glass className="size-full">
-          <button type="button" onClick={onAdd} aria-label="Add game" tabIndex={hidden ? -1 : undefined} className={iconButton}>
-            <PlusIcon className="size-5" />
-          </button>
-        </Glass>
-      </div>
+        <PlusIcon className="size-5" />
+      </button>
 
       {bottomCenter && (
         <div
@@ -125,18 +119,17 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
 
       {/* Phones: a round button bottom-right that grows leftward to full width.
           Desktop: a small "Search" pill bottom-middle that grows when focused */}
-      <div
+      <label
         className={cn(
-          "fixed bottom-[calc(var(--safe-bottom)+1.25rem+var(--kb,0px))] right-[var(--page-gutter)] h-12 transition-[width] duration-300 ease-out md:left-1/2 md:right-auto md:-translate-x-1/2",
+          "fixed bottom-[calc(var(--safe-bottom)+1.25rem+var(--kb,0px))] right-[var(--page-gutter)] flex h-12 cursor-text items-center overflow-hidden rounded-full transition-[width] duration-300 ease-out md:left-1/2 md:right-auto md:-translate-x-1/2",
+          PILL,
           open
             ? "w-[calc(100%-2*var(--page-gutter))] md:w-[min(28rem,calc(100%-2*var(--page-gutter)))]"
             : "w-12 md:w-[8.5rem]",
           !hidden && "pointer-events-auto"
         )}
       >
-        <Glass className="size-full">
-          <label className="flex size-full cursor-text items-center overflow-hidden rounded-full">
-        <span className="flex size-12 shrink-0 items-center justify-center" aria-hidden>
+        <span className="flex size-12 shrink-0 items-center justify-center text-muted-foreground" aria-hidden>
           <SearchIcon className="size-[18px]" />
         </span>
         <input
@@ -156,7 +149,7 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
           aria-label="Search games"
           tabIndex={hidden ? -1 : undefined}
           className={cn(
-            "h-full min-w-0 flex-1 bg-transparent pr-2 text-base text-white outline-none placeholder:text-white/80 [&::-webkit-search-cancel-button]:hidden",
+            "h-full min-w-0 flex-1 bg-transparent pr-2 text-base outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden",
             // Collapsed on phones it's just the icon
             !open && "max-md:opacity-0"
           )}
@@ -169,14 +162,12 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
               input.current?.focus();
             }}
             aria-label="Clear search"
-            className="mr-1.5 flex size-9 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/15 hover:text-white"
+            className="mr-1.5 flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <CloseIcon className="size-4" />
           </button>
         )}
-          </label>
-        </Glass>
-      </div>
+      </label>
     </header>
   );
 }

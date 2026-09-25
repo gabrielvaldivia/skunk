@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useSession } from "../context/SessionContext";
 import { useDataCache } from "../context/DataCacheContext";
 import { Avatar } from "./Avatar";
-import { Glass } from "./Glass";
 import "./MiniSessionSheet.css";
 
 function formatRelativeTime(timestamp: number): string {
@@ -94,7 +93,6 @@ export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact
         }
       }}
     >
-      {compact && <Glass className="mini-session-glass" aria-hidden />}
       <span className="mini-session-live" aria-hidden />
       {compact ? (
         <div className="mini-session-content">

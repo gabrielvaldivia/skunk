@@ -15,7 +15,6 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { GameDetailPage } from "./GameDetailPage";
 import { CardGamePicker } from "../components/CardGamePicker";
 import { CloseIcon } from "../components/icons";
-import { GlassIconButton } from "../components/Glass";
 import { MiniSessionSheet } from "../components/MiniSessionSheet";
 import { useSession } from "../context/SessionContext";
 import { CARD_DECK_ID, foldCardGames } from "@/lib/cardDeck";
@@ -266,9 +265,14 @@ export function ShelfPage() {
         // Page-level close in the corner the account button just vacated; portalled
         // so it stays above the phone's full-screen card game sheet
         createPortal(
-          <GlassIconButton onClick={() => select(null)} aria-label="Close" className="fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] animate-in fade-in duration-200">
+          <button
+            type="button"
+            onClick={() => select(null)}
+            aria-label="Close"
+            className="fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] flex size-12 items-center justify-center rounded-full border border-border/60 bg-background/75 text-foreground shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)] backdrop-blur-xl backdrop-saturate-150 animate-in fade-in duration-200 active:scale-95"
+          >
             <CloseIcon className="size-5" />
-          </GlassIconButton>,
+          </button>,
           document.body
         )}
 

@@ -121,30 +121,3 @@
   width: 28px;
   height: 28px;
 }
-
-/* The compact pill sits on a liquid glass layer instead of its own fill */
-.mini-session-compact {
-  background: transparent;
-  border-color: transparent;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-.mini-session-compact .mini-session-glass {
-  position: absolute !important;
-  inset: 0;
-  z-index: -1;
-}
-
-.mini-session-compact {
-  isolation: isolate;
-}
-
-.mini-session-compact {
-  color: #fff;
-  text-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
-}
-
-.mini-session-compact .mini-session-created {
-  color: rgb(255 255 255 / 0.85);
-}
