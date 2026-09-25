@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GamesHeader } from "../components/GamesHeader";
@@ -15,6 +15,8 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { GameDetailPage } from "./GameDetailPage";
 import { CardGamePicker } from "../components/CardGamePicker";
 import { CloseIcon } from "../components/icons";
+import { MiniSessionSheet } from "../components/MiniSessionSheet";
+import { useSession } from "../context/SessionContext";
 import { CARD_DECK_ID, foldCardGames } from "@/lib/cardDeck";
 
 // Width of the desktop detail panel; the selected box centres in the space left of it
@@ -54,6 +56,7 @@ export function ShelfPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const panel = usePanel();
   const { isAuthenticated } = useAuth();
+  const { currentSession } = useSession();
   const [scope, setScope] = useGameScope();
   const { ids: myIds, isLoading: myLoading } = useMyGameIds(games);
   const mine = scope === "mine";
@@ -76,6 +79,8 @@ export function ShelfPage() {
   const selected = shown.find((g) => g.id === selectedId);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const viewportHeight = useViewportHeight();
+  // How far the phone game view has scrolled; read by the 3D box every frame
+  const detailScroll = useRef(0);
   // iOS pans the page up when the search field focuses; follow the visible area
   useKeyboardInsets();
   const panelOpen = !!selected;
@@ -85,8 +90,20 @@ export function ShelfPage() {
     ? undefined
     : isDesktop
       ? { top: 0, right: PANEL_WIDTH + PANEL_MARGIN, bottom: 0, margin: 1.6 }
-      : { top: 72, right: 0, bottom: viewportHeight * (1 - SHEET_TOP), margin: 1.3, marginX: 1.25, solidBackdrop: true };
-  const select = (id: string | null) => setSelectedId(id);
+      : {
+          top: 72,
+          right: 0,
+          bottom: viewportHeight * (1 - SHEET_TOP),
+          margin: 1.3,
+          marginX: 1.25,
+          solidBackdrop: true,
+          // The box scrolls with the page, as its hero
+          scroll: detailScroll,
+        };
+  const select = (id: string | null) => {
+    detailScroll.current = 0;
+    setSelectedId(id);
+  };
 
   // Fade the tab bar and account button while a game is showing
   useEffect(() => {
@@ -144,6 +161,7 @@ export function ShelfPage() {
             ? "min-h-0 flex-1 overflow-y-auto px-[var(--page-gutter)] pb-28"
             : "min-h-0 flex-1 overflow-y-auto overscroll-contain"
         }
+        onScroll={isDesktop ? undefined : (e) => (detailScroll.current = e.currentTarget.scrollTop)}
       >
         {/* Phones: room for the 3D box as the hero; the details scroll up over it */}
         {!isDesktop && <div aria-hidden style={{ height: `${SHEET_TOP * 100}vh` }} />}
@@ -247,6 +265,11 @@ export function ShelfPage() {
         )}
 
       {panelOpen && detailPanel}
+
+      {/* Your live session, just above the search and Activity buttons */}
+      {currentSession && !selected && (
+        <MiniSessionSheet bottom="calc(var(--safe-bottom) + 1.25rem + 3rem + 0.75rem)" />
+      )}
 
       {isAuthenticated && (
         <AddGameForm

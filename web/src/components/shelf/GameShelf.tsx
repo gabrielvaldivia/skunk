@@ -29,6 +29,11 @@ export type FocusArea = {
   marginX?: number;
   /** Fade the shelf out to the page background, for a full-screen page look */
   solidBackdrop?: boolean;
+  /**
+   * Pixels a page on top has scrolled; the selected box moves up with it, so
+   * box and page scroll as one. A ref, so scrolling doesn't re-render.
+   */
+  scroll?: { current: number };
 };
 const NO_FOCUS_INSETS: FocusArea = { top: 0, right: 0, bottom: 0, margin: 1.6 };
 
@@ -118,6 +123,7 @@ function GameBox({
   const [near, setNear] = useState(false);
   const art = useBoxArt(game, box, near || selected);
   const group = useRef<THREE.Group>(null);
+  const scrollGroup = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
   const invalidate = useThree((s) => s.invalidate);
   const size = useThree((s) => s.size);
@@ -202,11 +208,17 @@ function GameBox({
         spin.multiplyScalar(Math.exp(-d * 6));
       }
     }
+    const sg = scrollGroup.current;
+    if (sg) {
+      if (selected) sg.position.y = (focus.scroll?.current ?? 0) * drag.current.worldPerPx;
+      // Closing: ease the leftover scroll offset out as the box flies home
+      else if (sg.position.y !== 0 && !easing.damp(sg.position, "y", 0, 0.08, d)) sg.position.y = 0;
+    }
     const following = drag.current.active;
     const moved = easing.damp3(g.position, target, following ? 0.03 : 0.08, d);
     const turned = easing.dampE(g.rotation, rot, following ? 0.06 : 0.1, d);
     // The selected box idles, so keep it rendering; everything else settles
-    if (moved || turned || selected || drag.current.spin.lengthSq() > 1e-4) invalidate();
+    if (moved || turned || selected || (sg && sg.position.y !== 0) || drag.current.spin.lengthSq() > 1e-4) invalidate();
   });
 
   const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
@@ -291,6 +303,9 @@ function GameBox({
 
   return (
     <>
+    {/* Outer group carries the page scroll offset, applied directly (no
+        easing) so the box stays glued to the content scrolling with it */}
+    <group ref={scrollGroup}>
     <group ref={group} position={home}>
       <mesh
         geometry={BOX_GEOMETRY}
@@ -306,6 +321,7 @@ function GameBox({
         onPointerCancel={onPointerUp}
         onClick={onClick}
       />
+    </group>
     </group>
     </>
   );

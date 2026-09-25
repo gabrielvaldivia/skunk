@@ -87,6 +87,16 @@
   padding: 0.75rem 0.75rem 0.75rem 1.125rem;
 }
 
+/* Phones: the label above its control, so a wide control (the Appearance
+   switcher) isn't squeezed beside it */
+@media (max-width: 767px) {
+  .profile-row {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1rem 1.125rem;
+  }
+}
+
 .profile-row-label {
   font-size: 0.9375rem;
   font-weight: 500;

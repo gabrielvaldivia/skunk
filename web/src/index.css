@@ -228,10 +228,13 @@
   }
 
   /* Floating primary action that sits above the safe area */
+  /* Centred with auto margins, not a transform: the button's press effect
+     (active:scale) replaces the transform, which made it jump sideways */
   .floating-cta {
     position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
+    margin-inline: auto;
     bottom: calc(var(--safe-bottom) + var(--tabbar-gap));
     z-index: 45;
     width: calc(100% - 2 * var(--page-gutter));

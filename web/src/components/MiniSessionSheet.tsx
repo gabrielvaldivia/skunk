@@ -20,7 +20,8 @@ function formatRelativeTime(timestamp: number): string {
   return date.toLocaleDateString();
 }
 
-export function MiniSessionSheet() {
+/** `bottom` lifts the sheet, e.g. above a page's own floating buttons */
+export function MiniSessionSheet({ bottom }: { bottom?: string } = {}) {
   const navigate = useNavigate();
   const { currentSession } = useSession();
   const { players } = useDataCache();
@@ -69,6 +70,7 @@ export function MiniSessionSheet() {
     <div
       className="mini-session-sheet"
       style={{
+        bottom,
         transform:
           dragOffset !== 0
             ? `translateX(-50%) translateY(${dragOffset}px)`
