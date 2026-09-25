@@ -1,7 +1,12 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import type { Game } from "../models/Game";
 import { useAuth } from "../context/AuthContext";
+import { useGames } from "../hooks/useGames";
+import { isAdminEmail } from "@/lib/admin";
+import { CoverScanner } from "./CoverScanner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -60,6 +65,8 @@ export interface GameFormContentProps {
   submitButtonText?: string;
   showSubmitButton?: boolean;
   formId?: string;
+  /** Shows a Scan button that opens the camera to scan the box cover */
+  onScan?: () => void;
   /** Focus the title on open (desktop only: on phones it pops the keyboard up over the sheet) */
   autoFocusTitle?: boolean;
   /** Extra fields shown after the standard ones */
@@ -97,6 +104,7 @@ export function GameFormContent({
   submitButtonText = "Create Game",
   showSubmitButton = true,
   formId,
+  onScan,
   autoFocusTitle = false,
   children,
 }: GameFormContentProps) {
@@ -167,6 +175,11 @@ export function GameFormContent({
               >
                 {coverArtPreview || coverArt ? "Change" : "Upload"}
               </Button>
+              {onScan && (
+                <Button type="button" variant="outline" size="sm" onClick={onScan}>
+                  Scan
+                </Button>
+              )}
               {(coverArtPreview || coverArt) && (
                 <Button
                   type="button"
@@ -420,7 +433,10 @@ export function AddGameForm({
   onSubmit,
 }: AddGameFormProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { games, editGame } = useGames();
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [scanning, setScanning] = useState(false);
   const [title, setTitle] = useState("");
   const [minPlayers, setMinPlayers] = useState(2);
   const [maxPlayers, setMaxPlayers] = useState(2);
@@ -521,6 +537,31 @@ export function AddGameForm({
     }
   };
 
+  // Scanned a box that's already here: give it the cover if it's yours, then open it
+  const handleScannedGame = async (game: Game, cover: string) => {
+    setScanning(false);
+    onOpenChange(false);
+    if (user && (game.createdByID === user.uid || isAdminEmail(user.email))) {
+      try {
+        await editGame(game.id, { coverArt: cover });
+        toast.success(`Updated the cover for ${game.title}`);
+      } catch (err) {
+        console.error("Error saving scanned cover:", err);
+        toast.error("Couldn't save the cover");
+      }
+    } else {
+      toast(`${game.title} is already here`);
+    }
+    navigate(`/games/${game.id}`);
+  };
+
+  const handleScannedNewGame = (cover: string, scannedTitle: string) => {
+    setScanning(false);
+    setCoverArt(cover);
+    setCoverArtPreview(cover);
+    if (scannedTitle && !title.trim()) setTitle(scannedTitle);
+  };
+
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -602,8 +643,17 @@ export function AddGameForm({
             isSubmitting={isSubmitting}
             className="px-0"
             onSubmit={handleSubmit}
+            onScan={() => setScanning(true)}
           />
         </div>
+        {scanning && (
+          <CoverScanner
+            games={games}
+            onClose={() => setScanning(false)}
+            onPickGame={handleScannedGame}
+            onNewGame={handleScannedNewGame}
+          />
+        )}
       </DrawerContent>
     </Drawer>
   );
