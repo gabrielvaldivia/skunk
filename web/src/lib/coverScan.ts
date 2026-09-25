@@ -112,7 +112,7 @@ export type OcrResult = { words: OcrWord[]; title: string };
 
 export async function readCover(cover: HTMLCanvasElement): Promise<OcrResult> {
   const worker = await getWorker();
-  const { data } = await worker.recognize(cover, {}, { blocks: true });
+  const { data } = await worker.recognize(forOcr(cover), {}, { blocks: true });
   const words: OcrWord[] = [];
   const lines: { text: string; top: number; bottom: number; left: number }[] = [];
   for (const block of data.blocks ?? []) {
@@ -123,7 +123,7 @@ export async function readCover(cover: HTMLCanvasElement): Promise<OcrResult> {
         }
         const text = cleanLine(line.text);
         // Skip fragments misread from artwork ("Nn", "Kd")
-        if (line.confidence >= 60 && /\p{L}{3}/u.test(text)) {
+        if (line.confidence >= 70 && /\p{L}{3}/u.test(text)) {
           lines.push({ text, top: line.bbox.y0, bottom: line.bbox.y1, left: line.bbox.x0 });
         }
       }
@@ -144,6 +144,25 @@ function guessTitle(lines: { text: string; top: number; bottom: number; left: nu
   while (from > 0 && near(big[from - 1], big[from])) from--;
   while (to < big.length - 1 && near(big[to], big[to + 1])) to++;
   return big.slice(from, to + 1).map((l) => l.text).join(" ");
+}
+
+// Tesseract reads colour art poorly: text over busy artwork comes back as noise.
+// Greyscale at around 1600px reads far better ("LOST CITIES" went from nothing to clean).
+function forOcr(cover: HTMLCanvasElement) {
+  const scale = Math.min(2.5, Math.max(1, 1600 / Math.max(cover.width, cover.height)));
+  const out = document.createElement("canvas");
+  out.width = Math.round(cover.width * scale);
+  out.height = Math.round(cover.height * scale);
+  const ctx = out.getContext("2d", { willReadFrequently: true })!;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(cover, 0, 0, out.width, out.height);
+  const img = ctx.getImageData(0, 0, out.width, out.height);
+  const px = img.data;
+  for (let i = 0; i < px.length; i += 4) {
+    px[i] = px[i + 1] = px[i + 2] = 0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2];
+  }
+  ctx.putImageData(img, 0, 0);
+  return out;
 }
 
 function cleanLine(s: string) {
@@ -201,7 +220,10 @@ export function matchGames(games: Game[], ocr: OcrResult, limit = 3): Game[] {
     let hits = 0;
     for (const t of tokens) {
       if (wordSet.has(t)) hits += 1;
-      else if (t.length >= 4 && words.some((w) => levenshtein(t, w) <= (t.length >= 7 ? 2 : 1))) hits += 0.8;
+      // Allow a misread letter only in longer, all-letter words; short ones
+      // like "Red7" matched noise ("rede") far too easily
+      else if (t.length >= 5 && /^[a-z]+$/.test(t) && words.some((w) => w.length >= 4 && levenshtein(t, w) <= (t.length >= 8 ? 2 : 1)))
+        hits += 0.8;
     }
     let score = hits / tokens.length;
     // OCR often splits or merges words in stylised logos ("7 WONDERS" → "7WONDERS")
