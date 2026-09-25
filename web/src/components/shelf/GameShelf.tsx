@@ -25,6 +25,8 @@ export type FocusArea = {
   right: number;
   bottom: number;
   margin: number;
+  /** Room left beside the box, as a multiple of its width (default 1.5) */
+  marginX?: number;
   /** Fade the shelf out to the page background, for a full-screen page look */
   solidBackdrop?: boolean;
 };
@@ -171,7 +173,7 @@ function GameBox({
       const aspect = freeWidth / freeHeight;
       const dist = Math.max(
         (box.height * S * focus.margin) / fitHeight / (freeHeight / size.height),
-        (box.width * S * 1.5) / (fitHeight * aspect) / (freeHeight / size.height)
+        (box.width * S * (focus.marginX ?? 1.5)) / (fitHeight * aspect) / (freeHeight / size.height)
       );
       const worldPerPx = (dist * fitHeight) / size.height;
       drag.current.worldPerPx = worldPerPx;

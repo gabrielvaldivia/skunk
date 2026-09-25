@@ -22,7 +22,7 @@ const PANEL_WIDTH = 440;
 const PANEL_MARGIN = 20;
 // Phones: the game's details slide up in a sheet from here down, and the box
 // floats large in the space above it, as the page's hero
-const SHEET_TOP = 0.46;
+const SHEET_TOP = 0.44;
 
 function useViewportHeight() {
   const [h, setH] = useState(() => window.innerHeight);
@@ -85,7 +85,7 @@ export function ShelfPage() {
     ? undefined
     : isDesktop
       ? { top: 0, right: PANEL_WIDTH + PANEL_MARGIN, bottom: 0, margin: 1.6 }
-      : { top: 72, right: 0, bottom: viewportHeight * (1 - SHEET_TOP) + 12, margin: 1.75, solidBackdrop: true };
+      : { top: 72, right: 0, bottom: viewportHeight * (1 - SHEET_TOP), margin: 1.3, marginX: 1.25, solidBackdrop: true };
   const select = (id: string | null) => setSelectedId(id);
 
   // Fade the tab bar and account button while a game is showing
@@ -130,7 +130,7 @@ export function ShelfPage() {
         isDesktop
           ? "absolute z-20 flex flex-col overflow-hidden rounded-3xl border border-border/60 bg-background shadow-[0_24px_64px_-24px_rgb(0_0_0/0.45)] [transform:translateZ(0)] animate-in fade-in slide-in-from-right-8 duration-200"
           // Full screen, see-through at the top so the 3D box shows as the hero
-          : "pointer-events-none absolute inset-0 z-20 flex flex-col [transform:translateZ(0)]"
+          : "absolute inset-0 z-20 flex flex-col [transform:translateZ(0)]"
       }
       style={
         isDesktop
@@ -142,11 +142,10 @@ export function ShelfPage() {
         className={
           isDesktop
             ? "min-h-0 flex-1 overflow-y-auto px-[var(--page-gutter)] pb-28"
-            : "min-h-0 flex-1 overflow-y-auto"
+            : "min-h-0 flex-1 overflow-y-auto overscroll-contain"
         }
       >
-        {/* Phones: taps on the hero area reach the box (drag to throw it back);
-            the details scroll up over it */}
+        {/* Phones: room for the 3D box as the hero; the details scroll up over it */}
         {!isDesktop && <div aria-hidden style={{ height: `${SHEET_TOP * 100}vh` }} />}
         <div
           className={
@@ -154,7 +153,7 @@ export function ShelfPage() {
               ? undefined
               // Fades in with the shelf fading to the page colour behind it (no
               // slide), so the whole screen turns into the page at once
-              : "pointer-events-auto min-h-[calc(100vh-var(--hero))] bg-background px-[var(--page-gutter)] pb-28 animate-in fade-in duration-200 ease-out"
+              : "min-h-[calc(100vh-var(--hero))] bg-background px-[var(--page-gutter)] pb-28 animate-in fade-in duration-200 ease-out"
           }
           style={isDesktop ? undefined : ({ "--hero": `${SHEET_TOP * 100}vh` } as React.CSSProperties)}
         >
