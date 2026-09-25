@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/drawer";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { GameFormContent } from "./AddGameForm";
+import { toast } from "sonner";
 
 type ScoreCalculation = "all" | "winnerOnly" | "losersSum";
 
@@ -159,7 +160,7 @@ export function EditGameForm({
       setShowDeleteDialog(false);
     } catch (err) {
       console.error("Error deleting game:", err);
-      alert("Failed to delete game");
+      toast.error("Failed to delete game");
     } finally {
       setIsDeleting(false);
     }
@@ -222,7 +223,7 @@ export function EditGameForm({
       onOpenChange(false);
     } catch (err) {
       console.error("Error updating game:", err);
-      alert("Failed to update game");
+      toast.error("Failed to update game");
     } finally {
       setIsSubmitting(false);
     }

@@ -27,6 +27,7 @@ import {
 import './MatchRow.css';
 import { getPlayerColor, getInitials } from "@/lib/player";
 import { isAdminEmail } from "@/lib/admin";
+import { toast } from "sonner";
 
 interface MatchRowProps {
   match: Match;
@@ -88,7 +89,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
       }
     } catch (err) {
       console.error('Error deleting match:', err);
-      alert('Failed to delete match');
+      toast.error('Failed to delete match');
     }
   };
 

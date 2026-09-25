@@ -31,6 +31,7 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { ChevronsUpDown } from "lucide-react";
 import "./AddGameForm.css";
 import { getPlayerColor, getInitials } from "@/lib/player";
+import { toast } from "sonner";
 
 interface AddMatchFormProps {
   open: boolean;
@@ -340,7 +341,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
       onOpenChange(false);
     } catch (err) {
       console.error("Error creating match:", err);
-      alert("Failed to create match");
+      toast.error("Failed to create match");
     } finally {
       setIsSubmitting(false);
     }
