@@ -36,7 +36,7 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
   const open = focused || query !== "";
   // Round glass buttons: the wrapper positions, the glass fills it
   const iconButton =
-    "flex size-full items-center justify-center rounded-full text-foreground/80 transition-transform hover:text-foreground active:scale-95";
+    "flex size-full items-center justify-center rounded-full transition-transform active:scale-95";
 
   return (
     <header
@@ -68,7 +68,7 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
               tabIndex={hidden ? -1 : undefined}
               className={cn(
                 "h-10 whitespace-nowrap rounded-full px-3 text-[13px] font-semibold transition-colors max-[389px]:px-2",
-                scope === value ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                scope === value ? "bg-foreground text-background [text-shadow:none]" : "text-white/90 hover:text-white"
               )}
             >
               {label}
@@ -136,7 +136,7 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
       >
         <Glass className="size-full">
           <label className="flex size-full cursor-text items-center overflow-hidden rounded-full">
-        <span className="flex size-12 shrink-0 items-center justify-center text-muted-foreground" aria-hidden>
+        <span className="flex size-12 shrink-0 items-center justify-center" aria-hidden>
           <SearchIcon className="size-[18px]" />
         </span>
         <input
@@ -156,7 +156,7 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
           aria-label="Search games"
           tabIndex={hidden ? -1 : undefined}
           className={cn(
-            "h-full min-w-0 flex-1 bg-transparent pr-2 text-base outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden",
+            "h-full min-w-0 flex-1 bg-transparent pr-2 text-base text-white outline-none placeholder:text-white/80 [&::-webkit-search-cancel-button]:hidden",
             // Collapsed on phones it's just the icon
             !open && "max-md:opacity-0"
           )}
@@ -169,7 +169,7 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
               input.current?.focus();
             }}
             aria-label="Clear search"
-            className="mr-1.5 flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="mr-1.5 flex size-9 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/15 hover:text-white"
           >
             <CloseIcon className="size-4" />
           </button>

@@ -30,7 +30,7 @@ export function AccountButton({ className, size = 36, variant = "default", onOpe
         "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full transition-transform duration-150 active:scale-95",
         !showsPhoto &&
           (variant === "pill"
-            ? "text-foreground/80 hover:text-foreground"
+            ? ""
             : "bg-secondary text-secondary-foreground"),
         variant === "pill" && showsPhoto && "shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)]",
         className

@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils";
 export function Glass({ className, style, optics, ...props }: ComponentProps<typeof LiquidGlass>) {
   return (
     <LiquidGlass
-      className={cn("rounded-full text-foreground", className)}
+      // White content with a soft shadow, legible over any cover or wood
+      className={cn("rounded-full text-white [text-shadow:0_1px_3px_rgb(0_0_0/0.35)] [&_svg]:drop-shadow-[0_1px_2px_rgb(0_0_0/0.35)]", className)}
       // A light veil of the page colour, so the tint follows light/dark mode
       style={{ background: "hsl(var(--background) / 0.22)", ...style }}
       optics={{ frost: 6, ...optics }}
@@ -30,7 +31,7 @@ export function GlassIconButton({
       <Glass className="size-full">
         <button
           type="button"
-          className="flex size-full items-center justify-center rounded-full text-foreground transition-transform active:scale-95"
+          className="flex size-full items-center justify-center rounded-full transition-transform active:scale-95"
           {...props}
         >
           {children}
