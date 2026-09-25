@@ -48,41 +48,11 @@ This is the value you'll use for `VITE_FIREBASE_DATABASE_URL` in your `.env` fil
 
 ## Step 4: Set Up Security Rules
 
-1. In Realtime Database, click the **"Rules"** tab
-2. Replace the rules with:
+The rules are versioned in `database.rules.json` and `storage.rules`. Enable Firebase Storage in the console, then deploy them from `web/`:
 
-```json
-{
-  "rules": {
-    "games": {
-      ".read": true,
-      ".write": "auth != null",
-      "$gameId": {
-        ".write": "!data.exists() || data.child('createdByID').val() == auth.uid"
-      }
-    },
-    "players": {
-      ".read": true,
-      ".write": "auth != null",
-      "$playerId": {
-        ".write": "!data.exists() || data.child('ownerID').val() == auth.uid"
-      }
-    },
-    "matches": {
-      ".read": true,
-      ".write": "auth != null"
-    }
-  }
-}
+```bash
+firebase deploy --only database,storage --project <your-project-id>
 ```
-
-3. Click **"Publish"**
-
-**What these rules do:**
-- Anyone can read games, players, and matches
-- Only authenticated users can write
-- Users can only update/delete games they created
-- Users can only update/delete players they own
 
 ## Step 5: Enable Google Sign-In Authentication
 

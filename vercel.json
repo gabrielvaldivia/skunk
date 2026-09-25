@@ -3,6 +3,11 @@
   "outputDirectory": "web/dist",
   "devCommand": "cd web && npm run dev",
   "installCommand": "cd web && npm install",
-  "framework": null
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
-
