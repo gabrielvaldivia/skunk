@@ -5,7 +5,7 @@ import { createGame, updateGame, deleteGame } from '../services/databaseService'
 import { useDataCache } from '../context/DataCacheContext';
 
 export function useGames() {
-  const { games, gamesLoading: isLoading, gamesError: error } = useDataCache();
+  const { games, gamesById, gamesLoading: isLoading, gamesError: error } = useDataCache();
 
   const addGame = useCallback(async (game: Omit<Game, 'id'>) => {
     try {
@@ -34,6 +34,7 @@ export function useGames() {
 
   return {
     games,
+    gamesById,
     isLoading,
     error,
     addGame,

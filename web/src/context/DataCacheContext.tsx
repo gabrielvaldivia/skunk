@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
 import { subscribeToGames, subscribeToPlayers } from '../services/databaseService';
@@ -6,6 +6,8 @@ import { subscribeToGames, subscribeToPlayers } from '../services/databaseServic
 interface DataCacheContextType {
   games: Game[];
   players: Player[];
+  gamesById: Map<string, Game>;
+  playersById: Map<string, Player>;
   gamesLoading: boolean;
   playersLoading: boolean;
   gamesError: Error | null;
@@ -53,9 +55,15 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  // O(1) lookups for list rows instead of games.find/players.find per row
+  const gamesById = useMemo(() => new Map(games.map((g) => [g.id, g])), [games]);
+  const playersById = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
+
   const value: DataCacheContextType = {
     games,
     players,
+    gamesById,
+    playersById,
     gamesLoading,
     playersLoading,
     gamesError,
