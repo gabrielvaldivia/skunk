@@ -562,7 +562,8 @@ export function AddGameForm({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="h-[95vh] flex flex-col">
+      {/* Full screen on phones, clear of the status bar; swipe down still closes it */}
+      <DrawerContent className="mt-0 flex h-[100dvh] flex-col rounded-none border-t-0 pt-[var(--safe-top)]">
         <DrawerHeader className="shrink-0">
           <DrawerTitle>Add New Game</DrawerTitle>
         </DrawerHeader>
