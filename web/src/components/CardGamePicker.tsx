@@ -51,6 +51,29 @@ export function CardGamePicker({ games, onClose }: CardGamePickerProps) {
   );
 }
 
+// Phones: the field sits low, under the 3D box, where the keyboard covers the
+// list. Scroll the sheet so the field sits at the top, just under the corner
+// buttons, with the results below it. Short pages get room added to scroll into.
+function liftToTop(field: HTMLElement) {
+  if (window.matchMedia("(min-width: 768px)").matches) return;
+  const scroller = field.closest<HTMLElement>(".overflow-y-auto");
+  if (!scroller) return;
+  // Where the field should land: below the close/heart buttons in the corners
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:fixed;top:calc(var(--safe-top, env(safe-area-inset-top)) + 4.25rem)";
+  document.body.appendChild(probe);
+  const target = probe.getBoundingClientRect().top;
+  probe.remove();
+  scroller.style.paddingBottom = `${window.innerHeight}px`;
+  const by = field.getBoundingClientRect().top - target;
+  scroller.scrollTo({ top: scroller.scrollTop + by, behavior: "smooth" });
+}
+
+function settle(field: HTMLElement | null) {
+  const scroller = field?.closest<HTMLElement>(".overflow-y-auto");
+  if (scroller) scroller.style.paddingBottom = "";
+}
+
 // Type to filter, arrows to move, Enter to pick, Escape to back out
 function GameCombobox({ games, value, onChange }: { games: Game[]; value: Game; onChange: (id: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -65,6 +88,7 @@ function GameCombobox({ games, value, onChange }: { games: Game[]; value: Game; 
   }, [games, text]);
 
   const openList = () => {
+    if (input.current) liftToTop(input.current);
     setOpen(true);
     setText("");
     setActive(Math.max(0, games.findIndex((g) => g.id === value.id)));
@@ -87,7 +111,10 @@ function GameCombobox({ games, value, onChange }: { games: Game[]; value: Game; 
         value={open ? text : value.title}
         placeholder={value.title}
         onFocus={openList}
-        onBlur={() => setOpen(false)}
+        onBlur={() => {
+          setOpen(false);
+          settle(input.current);
+        }}
         onChange={(e) => {
           setText(e.target.value);
           setActive(0);
