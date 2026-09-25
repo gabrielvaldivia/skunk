@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useGames } from "../hooks/useGames";
 import { useActivity } from "../hooks/useActivity";
 import { useDataCache } from "../context/DataCacheContext";
-import { computeWinnerID } from "../models/Match";
+import { getMatchWinnerID } from "../models/Match";
 import { useSession } from "../context/SessionContext";
 import { MiniSessionSheet } from "../components/MiniSessionSheet";
 import { useAuth } from "../context/AuthContext";
@@ -121,7 +121,7 @@ export function GameDetailPage() {
   // Compute top 3 players by wins for this game
   const winCounts = new Map<string, number>();
   for (const match of gameMatches) {
-    const winnerOrTeamId = computeWinnerID(match, game);
+    const winnerOrTeamId = getMatchWinnerID(match, game);
     if (!winnerOrTeamId) continue;
     if (game.isTeamBased && match.teams && match.teams.length > 0) {
       const team = match.teams.find((t) => t.teamId === winnerOrTeamId);

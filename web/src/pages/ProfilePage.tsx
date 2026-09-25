@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   updatePlayer,
-  deletePlayer,
-  getMatchesForPlayer,
-  deleteMatch,
+  anonymizePlayer,
 } from "../services/databaseService";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -212,8 +210,8 @@ export function ProfilePage() {
 
     const confirmMessage =
       "Are you sure you want to delete your account? This will permanently delete:\n\n" +
-      "- Your player profile\n" +
-      "- All matches you participated in\n\n" +
+      "- Your name, photo, email and profile details\n\n" +
+      "Matches you played will remain for the other players, credited to \"Deleted player\".\n\n" +
       "This action cannot be undone.";
 
     if (!window.confirm(confirmMessage)) {
@@ -230,20 +228,8 @@ export function ProfilePage() {
     }
 
     try {
-      // Get all matches where this player participated
-      const playerMatches = await getMatchesForPlayer(player.id);
-
-      // Delete all matches
-      for (const match of playerMatches) {
-        try {
-          await deleteMatch(match.id);
-        } catch (error) {
-          console.error(`Error deleting match ${match.id}:`, error);
-        }
-      }
-
-      // Delete the player account
-      await deletePlayer(player.id);
+      // Anonymize rather than delete so other players' match history stays intact
+      await anonymizePlayer(player.id);
 
       // Sign out and redirect to sign in page
       await signOut();

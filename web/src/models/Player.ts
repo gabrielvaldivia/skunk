@@ -8,4 +8,5 @@ export type Player = {
   email?: string;
   location?: string;
   bio?: string;
+  needsOnboarding?: boolean; // Set on creation, cleared when onboarding completes
 };

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { computeWinnerID } from '../models/Match';
+import { getMatchWinnerID } from '../models/Match';
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
 import type { Match } from '../models/Match';
@@ -55,7 +55,7 @@ export function useGameChampions(games: Game[], matches: Match[] = []) {
       const winCounts = new Map<string, number>();
 
       gameMatches.forEach(match => {
-        const winnerId = computeWinnerID(match, game);
+        const winnerId = getMatchWinnerID(match, game);
         if (winnerId) {
           winCounts.set(winnerId, (winCounts.get(winnerId) || 0) + 1);
         }

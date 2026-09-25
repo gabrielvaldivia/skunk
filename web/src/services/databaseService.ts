@@ -151,6 +151,20 @@ export async function updatePlayer(playerId: string, player: Partial<Player>): P
   await update(playerRef, player);
 }
 
+// Strip personal data but keep the record so other players' matches still resolve
+export async function anonymizePlayer(playerId: string): Promise<void> {
+  const playerRef = ref(database, `${PLAYERS_PATH}/${playerId}`);
+  await update(playerRef, {
+    name: 'Deleted player',
+    photoData: null,
+    email: null,
+    googleUserID: null,
+    ownerID: null,
+    location: null,
+    bio: null,
+  });
+}
+
 export async function deletePlayer(playerId: string): Promise<void> {
   const playerRef = ref(database, `${PLAYERS_PATH}/${playerId}`);
   await remove(playerRef);
@@ -259,7 +273,7 @@ export async function createMatch(match: Omit<Match, 'id'>): Promise<Match> {
     id: matchId,
     date: match.date || Date.now(),
     lastModified: match.lastModified || Date.now(),
-    playerIDsString: match.playerIDs.sort().join(',')
+    playerIDsString: [...match.playerIDs].sort().join(',')
   };
   
   await set(newMatchRef, matchWithId);
@@ -274,7 +288,7 @@ export async function updateMatch(matchId: string, match: Partial<Match>): Promi
   };
   
   if (match.playerIDs) {
-    updates.playerIDsString = match.playerIDs.sort().join(',');
+    updates.playerIDsString = [...match.playerIDs].sort().join(',');
   }
   
   await update(matchRef, updates);

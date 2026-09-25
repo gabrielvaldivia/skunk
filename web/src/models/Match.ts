@@ -33,6 +33,18 @@ export type Match = {
 };
 
 /**
+ * Winner for display/stats. Prefers the winner stored at creation time: matches
+ * saved before the playerOrder fix have a sorted playerOrder that no longer lines
+ * up with scores, so recomputing from scores can credit the wrong player.
+ */
+export function getMatchWinnerID(match: Match, game: Game): string | undefined {
+  if (game?.isTeamBased && match.teams && match.teams.length > 0) {
+    return match.winnerTeamId ?? computeWinnerID(match, game);
+  }
+  return match.winnerID ?? computeWinnerID(match, game);
+}
+
+/**
  * Calculate the winner ID for a match based on game rules
  * For team-based games, returns winnerTeamId instead of winnerID
  * This matches the logic from Match.computedWinnerID in Swift

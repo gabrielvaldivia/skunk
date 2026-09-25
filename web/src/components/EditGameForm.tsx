@@ -213,7 +213,7 @@ export function EditGameForm({
         ...(coverArt && coverArt.trim()
           ? { coverArt: coverArt.trim() }
           : coverArt === ""
-          ? { coverArt: undefined }
+          ? { coverArt: null }
           : {}),
       };
 

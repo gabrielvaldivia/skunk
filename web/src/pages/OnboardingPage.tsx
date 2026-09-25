@@ -75,6 +75,7 @@ export function OnboardingPage() {
     try {
       const updates: Partial<typeof player> = {
         name: name.trim(),
+        needsOnboarding: false,
       };
 
       // Only include location if it has a value

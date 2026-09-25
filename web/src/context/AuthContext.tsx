@@ -61,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           googleUserID: googleUserID,
           ownerID: googleUserID,
           email: firebaseUser.email || undefined,
+          needsOnboarding: true,
         });
       } else if (currentPlayer.googleUserID && !currentPlayer.email && firebaseUser.email) {
         // Update existing player with email if missing
@@ -133,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const needsOnboarding = !!(
     player &&
-    !player.name
+    (!player.name || player.needsOnboarding)
   );
 
   const value: AuthContextType = {
