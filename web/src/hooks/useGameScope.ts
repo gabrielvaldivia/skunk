@@ -28,7 +28,7 @@ export function useGameScope() {
   return [scope, setScope] as const;
 }
 
-/** Ids of games you've added or played in */
+/** Ids of games you've added, scanned into your games, or played in */
 export function useMyGameIds(games: Game[]) {
   const { user, player } = useAuth();
   const { matches, isLoading } = useActivity(10000);
@@ -38,6 +38,7 @@ export function useMyGameIds(games: Game[]) {
     // Games added under any of your logins (merged accounts have several)
     const logins = new Set([user.uid, player?.googleUserID, ...Object.keys(player?.linkedGoogleUserIDs ?? {})]);
     for (const g of games) if (g.createdByID && logins.has(g.createdByID)) ids.add(g.id);
+    for (const id of Object.keys(player?.ownedGameIDs ?? {})) ids.add(id);
     if (player) {
       for (const m of matches) {
         if (m.gameID && m.playerIDs.includes(player.id)) ids.add(m.gameID);

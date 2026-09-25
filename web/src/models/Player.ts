@@ -9,6 +9,8 @@ export type Player = {
    * keyed by uid so database rules can check them
    */
   linkedGoogleUserIDs?: Record<string, true>;
+  /** Games you've added to My Games without creating them (e.g. by scanning the box), keyed by game id with when */
+  ownedGameIDs?: Record<string, number>;
   ownerID?: string;
   email?: string;
   location?: string;

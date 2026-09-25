@@ -6,6 +6,7 @@ import type { Game } from "../models/Game";
 import { useAuth } from "../context/AuthContext";
 import { useGames } from "../hooks/useGames";
 import { isAdminEmail } from "@/lib/admin";
+import { addOwnedGame } from "../services/databaseService";
 import { CoverScanner } from "./CoverScanner";
 import { Button } from "@/components/ui/button";
 import {
@@ -432,7 +433,7 @@ export function AddGameForm({
   onOpenChange,
   onSubmit,
 }: AddGameFormProps) {
-  const { user } = useAuth();
+  const { user, player, refreshPlayer } = useAuth();
   const navigate = useNavigate();
   const { games, editGame } = useGames();
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -537,20 +538,23 @@ export function AddGameForm({
     }
   };
 
-  // Scanned a box that's already here: give it the cover if it's yours, then open it
+  // Scanned a box that's already here: it's yours now, so put it in My Games
+  // (and give it the cover if you can edit it), then open it
   const handleScannedGame = async (game: Game, cover: string) => {
     setScanning(false);
     onOpenChange(false);
-    if (user && (game.createdByID === user.uid || isAdminEmail(user.email))) {
-      try {
-        await editGame(game.id, { coverArt: cover });
-        toast.success(`Updated the cover for ${game.title}`);
-      } catch (err) {
-        console.error("Error saving scanned cover:", err);
-        toast.error("Couldn't save the cover");
+    try {
+      if (player) {
+        await addOwnedGame(player.id, game.id);
+        await refreshPlayer();
       }
-    } else {
-      toast(`${game.title} is already here`);
+      if (user && (game.createdByID === user.uid || isAdminEmail(user.email))) {
+        await editGame(game.id, { coverArt: cover });
+      }
+      toast.success(`Added ${game.title} to My Games`);
+    } catch (err) {
+      console.error("Error adding scanned game:", err);
+      toast.error(`Couldn't add ${game.title} to My Games`);
     }
     navigate(`/games/${game.id}`);
   };

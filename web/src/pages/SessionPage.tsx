@@ -156,7 +156,8 @@ export function SessionPage() {
     try {
       await leaveSession();
       toast.success("Left session");
-      navigate("/activity");
+      // Back to the shelf; replace, since going back to the session page would rejoin it
+      navigate("/games", { replace: true });
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to leave session";

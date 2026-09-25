@@ -438,32 +438,36 @@ function ResultStage({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
+          <div className="relative mt-1">
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/50" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Find another game"
+              className="h-11 rounded-full border-0 bg-white/10 pl-9 text-white placeholder:text-white/50"
+            />
+          </div>
         <img
           src={cover}
           alt="Scanned cover"
-          className="mx-auto mt-2 max-h-[34dvh] max-w-full rounded-lg shadow-[0_16px_48px_-12px_rgb(0_0_0/0.8)]"
+          className="mx-auto mt-5 max-h-[34dvh] max-w-full rounded-lg shadow-[0_16px_48px_-12px_rgb(0_0_0/0.8)]"
         />
 
         <div className="mt-6">
-          {reading ? (
+          {/* Matches speak for themselves; only say something when there's nothing to show */}
+          {reading && !query.trim() ? (
             <p className="flex items-center gap-2 text-sm text-white/70">
               <SpinnerIcon className="size-4 animate-spin" /> Reading the cover…
             </p>
           ) : (
-            <p className="text-sm text-white/70">
-              {query.trim()
-                ? searched.length
-                  ? "Games"
-                  : "No games match"
-                : matches.length
-                  ? matches.length === 1
-                    ? "Looks like this one"
-                    : "Is it one of these?"
-                  : "Couldn't match it to a game"}
-            </p>
+            list.length === 0 && (
+              <p className="text-sm text-white/70">
+                {query.trim() ? "No games match" : "Couldn't match it to a game"}
+              </p>
+            )
           )}
           {list.length > 0 && (
-            <ul className="mt-2 divide-y divide-white/10 overflow-hidden rounded-2xl bg-white/10">
+            <ul className="divide-y divide-white/10 overflow-hidden rounded-2xl bg-white/10">
               {list.map((g) => (
                 <li key={g.id}>
                   <button
@@ -481,15 +485,6 @@ function ResultStage({
               ))}
             </ul>
           )}
-          <div className="relative mt-3">
-            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/50" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Find another game"
-              className="h-11 rounded-full border-0 bg-white/10 pl-9 text-white placeholder:text-white/50"
-            />
-          </div>
         </div>
       </div>
       <div className="shrink-0 px-5 pb-4 pt-2">
