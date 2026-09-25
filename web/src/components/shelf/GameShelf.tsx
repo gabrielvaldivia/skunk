@@ -317,8 +317,12 @@ function Shelves({ planks, width, dark, viewH }: { planks: number[]; width: numb
   const top = PLANK + CLEARANCE + HEADER_ROOM + 30;
   // …and a full screen past the bottom, so short shelves (a search, a small
   // My Games) still fill tall phone screens
-  const bottom = (planks.length ? planks[planks.length - 1] - PLANK : 0) - Math.max(60, (viewH / S) * 1.2);
-  const h = top - bottom;
+  const needed = top - ((planks.length ? planks[planks.length - 1] - PLANK : 0) - Math.max(60, (viewH / S) * 1.2));
+  // One fixed height, whatever the number of shelves, so the wood grain stays
+  // put when switching My Games / All Games or searching (textures are tiled
+  // from the panel's edge, so a different height would shift them)
+  const h = Math.max(needed, 6000);
+  const bottom = top - h;
   const outer = width + 4;
 
   const materials = useMemo(() => {
