@@ -3,20 +3,21 @@ import {
   query, orderByChild, equalTo, type DataSnapshot, type Unsubscribe,
 } from 'firebase/database';
 import { database } from './firebase';
-import type { Game } from '../models/Game';
-import type { Player } from '../models/Player';
-import type { Match } from '../models/Match';
-import type { Session } from '../models/Session';
+import { parseGame, type Game } from '../models/Game';
+import { parsePlayer, type Player } from '../models/Player';
+import { parseMatch, type Match } from '../models/Match';
+import { isSessionExpired, parseSession, type Session } from '../models/Session';
 
 // Partial update where null deletes the field (RTDB rejects undefined values)
 export type FieldUpdates<T> = { [K in keyof T]?: T[K] | null };
 
-// Turn a keyed RTDB snapshot into a list, copying each key into `id`
-function snapshotToList<T extends { id: string }>(snapshot: DataSnapshot): T[] {
+// Turn a keyed RTDB snapshot into a list of validated models
+function snapshotToList<T>(snapshot: DataSnapshot, parse: (id: string, value: unknown) => T): T[] {
   if (!snapshot.exists()) return [];
-  const data = snapshot.val() as Record<string, Omit<T, 'id'>>;
-  return Object.entries(data).map(([id, value]) => ({ ...value, id }) as T);
+  return Object.entries(snapshot.val() as Record<string, unknown>).map(([id, value]) => parse(id, value));
 }
+
+export { isSessionExpired };
 
 const GAMES_PATH = 'games';
 const PLAYERS_PATH = 'players';
@@ -27,38 +28,25 @@ const SESSIONS_BY_CODE_PATH = 'sessionsByCode';
 // ==================== Games ====================
 
 export async function getGames(): Promise<Game[]> {
-  const gamesRef = ref(database, GAMES_PATH);
-  const snapshot = await get(gamesRef);
-  
-  if (!snapshot.exists()) {
-    return [];
-  }
-  
-  const gamesData = snapshot.val();
-  const games: Game[] = [];
-  
-  for (const gameId in gamesData) {
-    games.push({
-      id: gameId,
-      ...gamesData[gameId]
-    });
-  }
-  
+  const snapshot = await get(ref(database, GAMES_PATH));
+  return sortGames(snapshotToList(snapshot, parseGame));
+}
+
+function sortGames(games: Game[]): Game[] {
   return games.sort((a, b) => a.title.localeCompare(b.title));
 }
 
+export function subscribeToGames(onChange: (games: Game[]) => void, onError?: (error: Error) => void): Unsubscribe {
+  return onValue(
+    ref(database, GAMES_PATH),
+    (snapshot) => onChange(sortGames(snapshotToList(snapshot, parseGame))),
+    onError
+  );
+}
+
 export async function getGame(gameId: string): Promise<Game | null> {
-  const gameRef = ref(database, `${GAMES_PATH}/${gameId}`);
-  const snapshot = await get(gameRef);
-  
-  if (!snapshot.exists()) {
-    return null;
-  }
-  
-  return {
-    id: gameId,
-    ...snapshot.val()
-  };
+  const snapshot = await get(ref(database, `${GAMES_PATH}/${gameId}`));
+  return snapshot.exists() ? parseGame(gameId, snapshot.val()) : null;
 }
 
 export async function createGame(game: Omit<Game, 'id'>): Promise<Game> {
@@ -89,44 +77,23 @@ export async function deleteGame(gameId: string): Promise<void> {
 // ==================== Players ====================
 
 export async function getPlayers(): Promise<Player[]> {
-  const playersRef = ref(database, PLAYERS_PATH);
-  const snapshot = await get(playersRef);
-  
-  if (!snapshot.exists()) {
-    return [];
-  }
-  
-  const playersData = snapshot.val();
-  const players: Player[] = [];
-  
-  for (const playerId in playersData) {
-    players.push({
-      id: playerId,
-      ...playersData[playerId]
-    });
-  }
-  
-  return players;
+  const snapshot = await get(ref(database, PLAYERS_PATH));
+  return snapshotToList(snapshot, parsePlayer);
+}
+
+export function subscribeToPlayers(onChange: (players: Player[]) => void, onError?: (error: Error) => void): Unsubscribe {
+  return onValue(ref(database, PLAYERS_PATH), (snapshot) => onChange(snapshotToList(snapshot, parsePlayer)), onError);
 }
 
 export async function getPlayer(playerId: string): Promise<Player | null> {
-  const playerRef = ref(database, `${PLAYERS_PATH}/${playerId}`);
-  const snapshot = await get(playerRef);
-  
-  if (!snapshot.exists()) {
-    return null;
-  }
-  
-  return {
-    id: playerId,
-    ...snapshot.val()
-  };
+  const snapshot = await get(ref(database, `${PLAYERS_PATH}/${playerId}`));
+  return snapshot.exists() ? parsePlayer(playerId, snapshot.val()) : null;
 }
 
 export async function getPlayerByGoogleUserID(googleUserID: string): Promise<Player | null> {
   const playersQuery = query(ref(database, PLAYERS_PATH), orderByChild('googleUserID'), equalTo(googleUserID));
   const snapshot = await get(playersQuery);
-  const [player] = snapshotToList<Player>(snapshot);
+  const [player] = snapshotToList(snapshot, parsePlayer);
   return player ?? null;
 }
 
@@ -152,9 +119,11 @@ export async function updatePlayer(playerId: string, player: FieldUpdates<Player
 // Strip personal data but keep the record so other players' matches still resolve
 export async function anonymizePlayer(playerId: string): Promise<void> {
   const playerRef = ref(database, `${PLAYERS_PATH}/${playerId}`);
-  const updates: FieldUpdates<Player> = {
+  // `email` is a legacy field no longer in the model but may still exist on old records
+  const updates: FieldUpdates<Player> & { email: null } = {
     name: 'Deleted player',
     photoData: null,
+    photoURL: null,
     email: null,
     googleUserID: null,
     ownerID: null,
@@ -218,22 +187,12 @@ export function subscribeToMatchesForSession(
 ): Unsubscribe {
   return onValue(
     sessionMatchesQuery(sessionCode),
-    (snapshot) => onChange(snapshotToList<Match>(snapshot).sort((a, b) => b.date - a.date)),
+    (snapshot) => onChange(snapshotToList(snapshot, parseMatch).sort((a, b) => b.date - a.date)),
     onError
   );
 }
 
 // ==================== Sessions ====================
-
-const SESSION_EXPIRY_HOURS = 24;
-
-/**
- * Check if a session is expired (24 hours since lastActivityAt)
- */
-export function isSessionExpired(session: Session): boolean {
-  const expiryTime = SESSION_EXPIRY_HOURS * 60 * 60 * 1000; // 24 hours in milliseconds
-  return Date.now() - session.lastActivityAt > expiryTime;
-}
 
 /**
  * Generate a unique 6-character alphanumeric code (uppercase)
@@ -312,10 +271,7 @@ export async function getSessionByCode(code: string): Promise<Session | null> {
     return null;
   }
 
-  const session: Session = {
-    id: sessionId,
-    ...sessionSnapshot.val(),
-  };
+  const session = parseSession(sessionId, sessionSnapshot.val());
 
   // Filter out expired sessions
   if (isSessionExpired(session)) {
@@ -331,17 +287,8 @@ export async function getSessionByCode(code: string): Promise<Session | null> {
  * Get session by ID
  */
 export async function getSession(sessionId: string): Promise<Session | null> {
-  const sessionRef = ref(database, `${SESSIONS_PATH}/${sessionId}`);
-  const snapshot = await get(sessionRef);
-
-  if (!snapshot.exists()) {
-    return null;
-  }
-
-  return {
-    id: sessionId,
-    ...snapshot.val(),
-  };
+  const snapshot = await get(ref(database, `${SESSIONS_PATH}/${sessionId}`));
+  return snapshot.exists() ? parseSession(sessionId, snapshot.val()) : null;
 }
 
 /**
@@ -415,7 +362,7 @@ export function subscribeToSession(
   onChange: (session: Session | null) => void
 ): Unsubscribe {
   return onValue(ref(database, `${SESSIONS_PATH}/${sessionId}`), (snapshot) => {
-    onChange(snapshot.exists() ? { ...snapshot.val(), id: sessionId } : null);
+    onChange(snapshot.exists() ? parseSession(sessionId, snapshot.val()) : null);
   });
 }
 
@@ -430,7 +377,7 @@ export function subscribeToSessionsForPlayer(
   return onValue(
     ref(database, SESSIONS_PATH),
     (snapshot) => {
-      const sessions = snapshotToList<Session>(snapshot)
+      const sessions = snapshotToList(snapshot, parseSession)
         .filter((session) => !isSessionExpired(session) && session.participantIDs?.includes(playerId))
         .sort((a, b) => b.lastActivityAt - a.lastActivityAt);
       onChange(sessions);

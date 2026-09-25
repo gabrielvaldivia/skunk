@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import type { Match } from "../models/Match";
 import "./PlayerDetailPage.css";
-import { getPlayerColor, getInitials } from "@/lib/player";
+import { getPlayerColor, getInitials, getPlayerPhotoSrc } from "@/lib/player";
 
 export function PlayerDetailPage() {
   const navigate = useNavigate();
@@ -71,9 +71,9 @@ export function PlayerDetailPage() {
             className="player-avatar-large"
             style={{ backgroundColor: getPlayerColor(player) }}
           >
-            {player.photoData ? (
+            {getPlayerPhotoSrc(player) ? (
               <img
-                src={`data:image/jpeg;base64,${player.photoData}`}
+                src={getPlayerPhotoSrc(player)}
                 alt={player.name}
               />
             ) : (

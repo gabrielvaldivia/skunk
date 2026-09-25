@@ -1,21 +1,22 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
-import { getGames, getPlayers } from '../services/databaseService';
+import { subscribeToGames, subscribeToPlayers } from '../services/databaseService';
 
 interface DataCacheContextType {
   games: Game[];
   players: Player[];
+  gamesById: Map<string, Game>;
+  playersById: Map<string, Player>;
   gamesLoading: boolean;
   playersLoading: boolean;
   gamesError: Error | null;
   playersError: Error | null;
-  refreshGames: () => Promise<void>;
-  refreshPlayers: () => Promise<void>;
 }
 
 const DataCacheContext = createContext<DataCacheContextType | undefined>(undefined);
 
+// Live listeners so games/players added or edited elsewhere show up without a reload
 export function DataCacheProvider({ children }: { children: ReactNode }) {
   const [games, setGames] = useState<Game[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -24,51 +25,49 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
   const [gamesError, setGamesError] = useState<Error | null>(null);
   const [playersError, setPlayersError] = useState<Error | null>(null);
 
-  const refreshGames = useCallback(async () => {
-    try {
-      setGamesLoading(true);
-      setGamesError(null);
-      const fetchedGames = await getGames();
-      setGames(fetchedGames);
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch games');
-      setGamesError(error);
-      console.error('Error fetching games:', error);
-    } finally {
-      setGamesLoading(false);
-    }
-  }, []);
-
-  const refreshPlayers = useCallback(async () => {
-    try {
-      setPlayersLoading(true);
-      setPlayersError(null);
-      const fetchedPlayers = await getPlayers();
-      setPlayers(fetchedPlayers);
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch players');
-      setPlayersError(error);
-      console.error('Error fetching players:', error);
-    } finally {
-      setPlayersLoading(false);
-    }
-  }, []);
-
-  // Load data once on mount
   useEffect(() => {
-    refreshGames();
-    refreshPlayers();
-  }, [refreshGames, refreshPlayers]);
+    return subscribeToGames(
+      (fetchedGames) => {
+        setGames(fetchedGames);
+        setGamesError(null);
+        setGamesLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching games:', error);
+        setGamesError(error);
+        setGamesLoading(false);
+      }
+    );
+  }, []);
+
+  useEffect(() => {
+    return subscribeToPlayers(
+      (fetchedPlayers) => {
+        setPlayers(fetchedPlayers);
+        setPlayersError(null);
+        setPlayersLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching players:', error);
+        setPlayersError(error);
+        setPlayersLoading(false);
+      }
+    );
+  }, []);
+
+  // O(1) lookups for list rows instead of games.find/players.find per row
+  const gamesById = useMemo(() => new Map(games.map((g) => [g.id, g])), [games]);
+  const playersById = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
 
   const value: DataCacheContextType = {
     games,
     players,
+    gamesById,
+    playersById,
     gamesLoading,
     playersLoading,
     gamesError,
     playersError,
-    refreshGames,
-    refreshPlayers,
   };
 
   return <DataCacheContext.Provider value={value}>{children}</DataCacheContext.Provider>;
@@ -81,4 +80,3 @@ export function useDataCache() {
   }
   return context;
 }
-

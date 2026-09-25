@@ -25,8 +25,9 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import './MatchRow.css';
-import { getPlayerColor, getInitials } from "@/lib/player";
+import { getPlayerColor, getInitials, getPlayerPhotoSrc } from "@/lib/player";
 import { isAdminEmail } from "@/lib/admin";
+import { toast } from "sonner";
 
 interface MatchRowProps {
   match: Match;
@@ -35,18 +36,18 @@ interface MatchRowProps {
 }
 
 export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowProps) {
-  const { players } = usePlayers();
-  const { games } = useGames();
+  const { playersById } = usePlayers();
+  const { gamesById } = useGames();
   const { user, player: currentPlayer } = useAuth();
   const { removeMatch } = useMatches();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const longPressTimerRef = useRef<number | null>(null);
   const isLongPressRef = useRef(false);
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const [dialogMounted, setDialogMounted] = useState(false);
 
   const getGame = () => {
     if (match.game) return match.game;
-    return games.find(g => g.id === match.gameID);
+    return gamesById.get(match.gameID);
   };
 
   const formatDate = (timestamp: number) => {
@@ -64,7 +65,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
   };
 
   const getPlayer = (playerID: string) => {
-    return players.find(p => p.id === playerID);
+    return playersById.get(playerID);
   };
 
   const canDelete = () => {
@@ -88,7 +89,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
       }
     } catch (err) {
       console.error('Error deleting match:', err);
-      alert('Failed to delete match');
+      toast.error('Failed to delete match');
     }
   };
 
@@ -96,8 +97,9 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     if (!canDelete()) return;
     
     isLongPressRef.current = false;
-    longPressTimerRef.current = setTimeout(() => {
+    longPressTimerRef.current = window.setTimeout(() => {
       isLongPressRef.current = true;
+      setDialogMounted(true);
       setShowDeleteDialog(true);
       // Prevent default touch behaviors when long press triggers
       if ('touches' in e) {
@@ -141,8 +143,8 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
               className="match-winner-avatar" 
               style={{ backgroundColor }}
             >
-              {firstPlayer.photoData ? (
-                <img src={`data:image/jpeg;base64,${firstPlayer.photoData}`} alt={firstPlayer.name} />
+              {getPlayerPhotoSrc(firstPlayer) ? (
+                <img src={getPlayerPhotoSrc(firstPlayer)} alt={firstPlayer.name} />
               ) : (
                 <span className="match-winner-initials">{getInitials(firstPlayer.name)}</span>
               )}
@@ -164,8 +166,8 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
         className="match-winner-avatar" 
         style={{ backgroundColor }}
       >
-        {winner.photoData ? (
-          <img src={`data:image/jpeg;base64,${winner.photoData}`} alt={winner.name} />
+        {getPlayerPhotoSrc(winner) ? (
+          <img src={getPlayerPhotoSrc(winner)} alt={winner.name} />
         ) : (
           <span className="match-winner-initials">{getInitials(winner.name)}</span>
         )}
@@ -323,60 +325,76 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
         </div>
       </div>
 
-      {isDesktop ? (
-        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Delete Match</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this match? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowDeleteDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-              >
-                Delete
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      ) : (
-        <Drawer open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DrawerContent>
-            <DrawerHeader className="text-left">
-              <DrawerTitle>Delete Match</DrawerTitle>
-              <DrawerDescription>
-                Are you sure you want to delete this match? This action cannot be undone.
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="px-4 pb-4">
-              <DrawerFooter className="px-0">
-                <Button
-                  variant="destructive"
-                  onClick={handleDelete}
-                  className="w-full"
-                >
-                  Delete
-                </Button>
-                <DrawerClose asChild>
-                  <Button variant="outline" className="w-full">
-                    Cancel
-                  </Button>
-                </DrawerClose>
-              </DrawerFooter>
-            </div>
-          </DrawerContent>
-        </Drawer>
+      {/* Mounted on first open so each row doesn't hold its own media-query listener */}
+      {dialogMounted && (
+        <DeleteMatchDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog} onConfirm={handleDelete} />
       )}
     </>
   );
 }
 
+function DeleteMatchDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+
+  return isDesktop ? (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Delete Match</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this match? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={onConfirm}
+          >
+            Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  ) : (
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent>
+        <DrawerHeader className="text-left">
+          <DrawerTitle>Delete Match</DrawerTitle>
+          <DrawerDescription>
+            Are you sure you want to delete this match? This action cannot be undone.
+          </DrawerDescription>
+        </DrawerHeader>
+        <div className="px-4 pb-4">
+          <DrawerFooter className="px-0">
+            <Button
+              variant="destructive"
+              onClick={onConfirm}
+              className="w-full"
+            >
+              Delete
+            </Button>
+            <DrawerClose asChild>
+              <Button variant="outline" className="w-full">
+                Cancel
+              </Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}

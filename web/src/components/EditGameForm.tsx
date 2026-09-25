@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/drawer";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { GameFormContent } from "./AddGameForm";
+import { toast } from "sonner";
+import { storeImage, COVER_ART_MAX_SIZE } from "../services/storageService";
 
 type ScoreCalculation = "all" | "winnerOnly" | "losersSum";
 
@@ -159,7 +161,7 @@ export function EditGameForm({
       setShowDeleteDialog(false);
     } catch (err) {
       console.error("Error deleting game:", err);
-      alert("Failed to delete game");
+      toast.error("Failed to delete game");
     } finally {
       setIsDeleting(false);
     }
@@ -212,7 +214,7 @@ export function EditGameForm({
         highestRoundScoreWins: roundConditionValue === "highest",
         winningConditions,
         ...(coverArt && coverArt.trim()
-          ? { coverArt: coverArt.trim() }
+          ? { coverArt: await storeImage(coverArt.trim(), `games/${game.id}`, COVER_ART_MAX_SIZE) }
           : coverArt === ""
           ? { coverArt: null }
           : {}),
@@ -222,7 +224,7 @@ export function EditGameForm({
       onOpenChange(false);
     } catch (err) {
       console.error("Error updating game:", err);
-      alert("Failed to update game");
+      toast.error("Failed to update game");
     } finally {
       setIsSubmitting(false);
     }

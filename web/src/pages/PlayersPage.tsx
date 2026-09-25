@@ -28,6 +28,7 @@ import {
 import type { Player } from "../models/Player";
 import "./PlayersPage.css";
 import { isAdminEmail } from "@/lib/admin";
+import { toast } from "sonner";
 
 interface PlayerItemProps {
   player: Player;
@@ -44,7 +45,7 @@ function PlayerItem({ player, canDelete, onNavigate, onLongPress, subtitle }: Pl
   const handlePressStart = (e: React.MouseEvent | React.TouchEvent) => {
     if (!canDelete) return;
     isLongPressRef.current = false;
-    longPressTimerRef.current = setTimeout(() => {
+    longPressTimerRef.current = window.setTimeout(() => {
       isLongPressRef.current = true;
       onLongPress(player.id, player.ownerID);
       // Prevent default touch behaviors when long press triggers
@@ -177,7 +178,7 @@ export function PlayersPage() {
     if (!isAdmin) {
       // Permission check: only allow deletion if user owns the player and it's not their own profile
       if (ownerID !== user.uid) {
-        alert("You can only delete players that you created.");
+        toast.error("You can only delete players that you created.");
         setShowDeleteDialog(null);
         setPlayerToDelete(null);
         return;
@@ -185,7 +186,7 @@ export function PlayersPage() {
 
       const playerToDeleteCheck = players.find((p) => p.id === playerId);
       if (playerToDeleteCheck?.googleUserID === user.uid) {
-        alert("To remove your profile, you need to delete your account.");
+        toast.error("To remove your profile, you need to delete your account.");
         setShowDeleteDialog(null);
         setPlayerToDelete(null);
         return;
@@ -197,7 +198,7 @@ export function PlayersPage() {
       await removePlayer(playerId);
     } catch (err) {
       console.error("Error deleting player:", err);
-      alert("Failed to delete player");
+      toast.error("Failed to delete player");
     } finally {
       setPlayerToDelete(null);
     }

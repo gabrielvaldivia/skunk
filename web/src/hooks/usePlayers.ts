@@ -1,44 +1,42 @@
 import { useCallback } from 'react';
 import type { Player } from '../models/Player';
+import type { FieldUpdates } from '../services/databaseService';
 import { createPlayer, updatePlayer, deletePlayer } from '../services/databaseService';
 import { useDataCache } from '../context/DataCacheContext';
 
 export function usePlayers() {
-  const { players, playersLoading: isLoading, playersError: error, refreshPlayers } = useDataCache();
+  const { players, playersById, playersLoading: isLoading, playersError: error } = useDataCache();
 
   const addPlayer = useCallback(async (player: Omit<Player, 'id'>) => {
     try {
       const newPlayer = await createPlayer(player);
-      await refreshPlayers();
       return newPlayer;
     } catch (err) {
       throw err instanceof Error ? err : new Error('Failed to create player');
     }
-  }, [refreshPlayers]);
+  }, []);
 
-  const editPlayer = useCallback(async (playerId: string, updates: Partial<Player>) => {
+  const editPlayer = useCallback(async (playerId: string, updates: FieldUpdates<Player>) => {
     try {
       await updatePlayer(playerId, updates);
-      await refreshPlayers();
     } catch (err) {
       throw err instanceof Error ? err : new Error('Failed to update player');
     }
-  }, [refreshPlayers]);
+  }, []);
 
   const removePlayer = useCallback(async (playerId: string) => {
     try {
       await deletePlayer(playerId);
-      await refreshPlayers();
     } catch (err) {
       throw err instanceof Error ? err : new Error('Failed to delete player');
     }
-  }, [refreshPlayers]);
+  }, []);
 
   return {
     players,
+    playersById,
     isLoading,
     error,
-    fetchPlayers: refreshPlayers,
     addPlayer,
     editPlayer,
     removePlayer

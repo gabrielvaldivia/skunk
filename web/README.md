@@ -20,6 +20,9 @@ Web version of the Skunk game tracking app built with React, TypeScript, and Fir
 
 ### 1. Install Dependencies
 
+For a guided `.env` setup, run `node setup-firebase.cjs`. See `FIREBASE_SETUP.md` for the full Firebase walkthrough.
+
+
 ```bash
 npm install
 ```
@@ -42,34 +45,15 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
 VITE_FIREBASE_APP_ID=your-app-id
 ```
 
-### 3. Firebase Security Rules
+### 3. Firebase Security Rules and Storage
 
-Set up your Firebase Realtime Database security rules:
+Rules live in `database.rules.json` (Realtime Database) and `storage.rules` (Firebase Storage). Enable Storage in the Firebase console, then deploy both from `web/`:
 
-```json
-{
-  "rules": {
-    "games": {
-      ".read": true,
-      ".write": "auth != null",
-      "$gameId": {
-        ".write": "!data.exists() || data.child('createdByID').val() == auth.uid"
-      }
-    },
-    "players": {
-      ".read": true,
-      ".write": "auth != null",
-      "$playerId": {
-        ".write": "!data.exists() || data.child('ownerID').val() == auth.uid"
-      }
-    },
-    "matches": {
-      ".read": true,
-      ".write": "auth != null"
-    }
-  }
-}
+```bash
+firebase deploy --only database,storage --project <your-project-id>
 ```
+
+The rules allow public reads, and restrict writes to the record's creator/owner or the admin. Match participants may also edit or delete a match.
 
 ### 4. Run Development Server
 
@@ -82,6 +66,16 @@ npm run dev
 ```bash
 npm run build
 ```
+
+### 6. Checks
+
+```bash
+npm run typecheck
+npm run lint
+npm test
+```
+
+CI runs all three plus the build on every PR that touches `web/`.
 
 ## Deployment to Vercel
 

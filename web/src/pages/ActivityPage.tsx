@@ -5,7 +5,7 @@ import { useSession } from '../context/SessionContext';
 import { MiniSessionSheet } from '../components/MiniSessionSheet';
 import { MatchRow } from '../components/MatchRow';
 import './ActivityPage.css';
-import { getInitials } from "@/lib/player";
+import { getInitials, getPlayerPhotoSrc } from "@/lib/player";
 
 export function ActivityPage() {
   const navigate = useNavigate();
@@ -33,10 +33,10 @@ export function ActivityPage() {
             onClick={() => navigate('/profile')}
             aria-label="Account"
           >
-            {player.photoData ? (
+            {getPlayerPhotoSrc(player) ? (
               <img
                 className="profile-avatar"
-                src={`data:image/jpeg;base64,${player.photoData}`}
+                src={getPlayerPhotoSrc(player)}
                 alt={player.name}
               />
             ) : (

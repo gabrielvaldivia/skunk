@@ -17,6 +17,8 @@ import { ThemeToggle } from "../components/theme-toggle";
 import { toast } from "sonner";
 import "./ProfilePage.css";
 import { isAdminEmail } from "@/lib/admin";
+import { getPlayerPhotoSrc } from "@/lib/player";
+import { storeImage, AVATAR_MAX_SIZE } from "../services/storageService";
 
 export function ProfilePage() {
   const navigate = useNavigate();
@@ -26,14 +28,14 @@ export function ProfilePage() {
   const [location, setLocation] = useState(player?.location || "");
   const [bio, setBio] = useState(player?.bio || "");
   const [photoPreview, setPhotoPreview] = useState<string | null>(
-    player?.photoData ? `data:image/jpeg;base64,${player.photoData}` : null
+    getPlayerPhotoSrc(player) ?? null
   );
   const [isSaving, setIsSaving] = useState(false);
   const [originalPhotoData, setOriginalPhotoData] = useState<string | null>(
     null
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // undefined = unchanged, null = remove, string = new base64 photo (no data: prefix)
+  // undefined = unchanged, null = remove, string = new photo as a data: URL
   const [pendingPhotoData, setPendingPhotoData] = useState<string | null | undefined>(undefined);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,13 +44,13 @@ export function ProfilePage() {
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+      toast.error("Please select an image file");
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert("Image size must be less than 5MB");
+      toast.error("Image size must be less than 5MB");
       return;
     }
 
@@ -56,10 +58,8 @@ export function ProfilePage() {
     const reader = new FileReader();
     reader.onloadend = () => {
       const result = reader.result as string;
-      // Remove data:image/...;base64, prefix
-      const base64String = result.split(",")[1];
       setPhotoPreview(result);
-      setPendingPhotoData(base64String);
+      setPendingPhotoData(result);
     };
     reader.readAsDataURL(file);
   };
@@ -90,7 +90,10 @@ export function ProfilePage() {
         bio: bio.trim() || null,
       };
       if (pendingPhotoData !== undefined) {
-        updates.photoData = pendingPhotoData;
+        updates.photoURL = pendingPhotoData
+          ? await storeImage(pendingPhotoData, `players/${player.id}`, AVATAR_MAX_SIZE)
+          : null;
+        updates.photoData = null; // Drop the legacy inline copy
       }
 
       await updatePlayer(player.id, updates);
@@ -101,7 +104,7 @@ export function ProfilePage() {
         fileInputRef.current.value = "";
       }
       if (pendingPhotoData !== undefined) {
-        setOriginalPhotoData(pendingPhotoData);
+        setOriginalPhotoData(updates.photoURL ?? null);
         setPendingPhotoData(undefined);
       }
 
@@ -146,13 +149,9 @@ export function ProfilePage() {
       setName(player.name || "");
       setLocation(player.location || "");
       setBio(player.bio || "");
-      if (player.photoData) {
-        setPhotoPreview(`data:image/jpeg;base64,${player.photoData}`);
-        setOriginalPhotoData(player.photoData);
-      } else {
-        setPhotoPreview(null);
-        setOriginalPhotoData(null);
-      }
+      const photoSrc = getPlayerPhotoSrc(player) ?? null;
+      setPhotoPreview(photoSrc);
+      setOriginalPhotoData(photoSrc);
     }
   }, [player]);
 
@@ -216,7 +215,7 @@ export function ProfilePage() {
       navigate("/signin");
     } catch (error) {
       console.error("Error deleting account:", error);
-      alert("Failed to delete account. Please try again.");
+      toast.error("Failed to delete account. Please try again.");
     }
   };
 

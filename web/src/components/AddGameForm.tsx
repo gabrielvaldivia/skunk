@@ -20,6 +20,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { storeImage, COVER_ART_MAX_SIZE } from "../services/storageService";
 
 interface AddGameFormProps {
   open: boolean;
@@ -96,12 +98,12 @@ export function GameFormContent({
 }: GameFormContentProps) {
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+      toast.error("Please select an image file");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert("Image size must be less than 5MB");
+      toast.error("Image size must be less than 5MB");
       return;
     }
 
@@ -488,7 +490,9 @@ export function AddGameForm({
         highestRoundScoreWins: roundConditionValue === "highest",
         winningConditions,
         creationDate: Date.now(),
-        ...(coverArt && coverArt.trim() ? { coverArt: coverArt.trim() } : {}),
+        ...(coverArt && coverArt.trim()
+          ? { coverArt: await storeImage(coverArt.trim(), "games", COVER_ART_MAX_SIZE) }
+          : {}),
       };
 
       await onSubmit(newGame);
@@ -508,7 +512,7 @@ export function AddGameForm({
       setCoverArtPreview(null);
     } catch (err) {
       console.error("Error creating game:", err);
-      alert("Failed to create game");
+      toast.error("Failed to create game");
     } finally {
       setIsSubmitting(false);
     }

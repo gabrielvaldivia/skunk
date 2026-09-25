@@ -50,3 +50,15 @@ To populate the database with 300 classic games that are accessible to all users
 ## Admin Game Creation
 
 Only admins can create new games through the UI. The "Add Game" button is only visible to admins on the Games page.
+
+## Migrating Legacy Data (One-Time)
+
+`migrate-legacy-data.ts` moves inline base64 player photos and game cover art to Firebase Storage, and removes player emails from the public `/players` node.
+
+1. Enable Firebase Storage for the project and deploy the rules: `firebase deploy --only database,storage` from `web/`
+2. Sign in as admin, open the browser console, and preview the changes:
+   ```javascript
+   const { migrateLegacyData } = await import('./src/scripts/migrate-legacy-data');
+   await migrateLegacyData({ dryRun: true });
+   ```
+3. Run it for real with `await migrateLegacyData();`
