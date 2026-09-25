@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BackIcon, CloseIcon, ImageIcon, SearchIcon, SpinnerIcon } from "./icons";
 import {
+  identifyCover,
   loadImageFile,
   matchCovers,
   matchGames,
@@ -12,7 +13,6 @@ import {
   readCover,
   toCanvas,
   warpQuad,
-  type OcrResult,
   type Point,
   type Quad,
 } from "@/lib/coverScan";
@@ -32,7 +32,7 @@ const LOUPE = 104;
 // How alike a cover has to look to the scan to count as a match (0..1)
 const COVER_MATCH = 0.4;
 
-type Found = { ocr: OcrResult; lookalikes: Game[] };
+type Found = { title: string; matches: Game[] };
 
 // Full-screen box scanner: camera → drag the corners onto the cover →
 // flattened cover, matched to a game by reading its text on the device
@@ -69,20 +69,27 @@ export function CoverScanner({ games, onClose, onPickGame, onNewGame }: CoverSca
     setFound(null);
     setStage("result");
     const id = ++scanId.current;
-    // Read the box's text and compare its art to the covers we have, side by side
-    Promise.all([
-      readCover(warped).catch((err): OcrResult => {
-        console.error("Cover OCR failed:", err);
-        return { words: [], title: "" };
-      }),
-      matchCovers(games, warped).catch((err) => {
+    // Comparing the art to covers we already have is free, so it always runs
+    const lookalikes = matchCovers(games, warped)
+      .then((looks) => looks.filter((l) => l.score >= COVER_MATCH).map((l) => l.game))
+      .catch((err) => {
         console.error("Cover matching failed:", err);
-        return [];
-      }),
-    ]).then(([ocr, looks]) => {
-      if (id !== scanId.current) return;
-      setFound({ ocr, lookalikes: looks.filter((l) => l.score >= COVER_MATCH).map((l) => l.game) });
-    });
+        return [] as Game[];
+      });
+    const unique = (list: (Game | null)[]) =>
+      list.filter((g, i): g is Game => !!g && list.findIndex((o) => o?.id === g.id) === i).slice(0, 3);
+    // The model identifies it; if it can't be reached, read the box on the device instead
+    identifyCover(warped, games)
+      .then(async (ai): Promise<Found> => ({ title: ai.title, matches: unique([ai.match, ...(await lookalikes)]) }))
+      .catch(async (err): Promise<Found> => {
+        console.warn("Identifying with the model failed; reading on the device:", err);
+        const [ocr, looks] = await Promise.all([
+          readCover(warped).catch(() => ({ words: [], title: "" })),
+          lookalikes,
+        ]);
+        return { title: ocr.title, matches: unique([...looks.slice(0, 2), ...matchGames(games, ocr)]) };
+      })
+      .then((result) => id === scanId.current && setFound(result));
   };
 
   useEffect(() => () => void scanId.current++, []);
@@ -419,12 +426,7 @@ function ResultStage({
   onNewGame: (title: string) => void;
 }) {
   const [query, setQuery] = useState("");
-  // A cover that looks alike is the surer sign, so it leads; then titles read off the box
-  const matches = useMemo(() => {
-    if (!found) return [];
-    const all = [...found.lookalikes.slice(0, 2), ...matchGames(games, found.ocr)];
-    return all.filter((g, i) => all.findIndex((o) => o.id === g.id) === i).slice(0, 3);
-  }, [games, found]);
+  const matches = found?.matches ?? [];
   const searched = useMemo(() => {
     const q = normalize(query);
     if (!q) return [];
@@ -493,7 +495,7 @@ function ResultStage({
       <div className="shrink-0 px-5 pb-4 pt-2">
         <Button
           className="h-12 w-full rounded-full bg-white text-black hover:bg-white/90"
-          onClick={() => onNewGame(found?.ocr.title ?? "")}
+          onClick={() => onNewGame(found?.title ?? "")}
         >
           Add as new game
         </Button>

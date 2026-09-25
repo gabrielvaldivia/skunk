@@ -1,4 +1,5 @@
 import type { Game } from "../models/Game";
+import { auth } from "../services/firebase";
 import type { Worker } from "tesseract.js";
 
 export type Point = [number, number];
@@ -331,4 +332,33 @@ export async function matchCovers(games: Game[], scan: HTMLCanvasElement) {
       })
   );
   return scored.sort((a, b) => b.score - a.score);
+}
+
+// --- identifying with a model ----------------------------------------------
+
+/**
+ * Ask Claude Haiku (via /api/identify-cover) which game this is. Reads stylised
+ * logos and knows published games, so it's the first try; throws when it's
+ * unavailable (offline, signed out, not set up) so the caller can fall back.
+ */
+export async function identifyCover(cover: HTMLCanvasElement, games: Game[]) {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Not signed in");
+  // ~768px is plenty to read a box, and keeps the request (and its cost) small
+  const scale = Math.min(1, 768 / Math.max(cover.width, cover.height));
+  const small = document.createElement("canvas");
+  small.width = Math.round(cover.width * scale);
+  small.height = Math.round(cover.height * scale);
+  small.getContext("2d")!.drawImage(cover, 0, 0, small.width, small.height);
+  const image = small.toDataURL("image/jpeg", 0.8).split(",")[1];
+
+  const res = await fetch("/api/identify-cover", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${await user.getIdToken()}` },
+    body: JSON.stringify({ image, titles: [...new Set(games.map((g) => g.title))] }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!res.ok) throw new Error(`identify-cover ${res.status}`);
+  const { title, libraryMatch } = (await res.json()) as { title: string; libraryMatch: string | null };
+  return { title, match: games.find((g) => g.title === libraryMatch) ?? null };
 }
