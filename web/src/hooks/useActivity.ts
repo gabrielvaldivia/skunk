@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, query, orderByChild, limitToLast } from 'firebase/database';
 import { database } from '../services/firebase';
 import type { Match } from '../models/Match';
 
@@ -12,7 +12,8 @@ export function useActivity(limit: number = 500, daysBack: number = 365 * 10) {
   const hasReceivedData = useRef(false);
 
   useEffect(() => {
-    const matchesRef = ref(database, MATCHES_PATH);
+    // Limit server-side; identical (path, limit) queries share one listener across the app
+    const matchesQuery = query(ref(database, MATCHES_PATH), orderByChild('date'), limitToLast(limit));
     const cutoffDate = Date.now() - (daysBack * 24 * 60 * 60 * 1000);
 
     // Only set loading to true on initial mount, not on subsequent updates
@@ -22,7 +23,7 @@ export function useActivity(limit: number = 500, daysBack: number = 365 * 10) {
     setError(null);
 
     const unsubscribe = onValue(
-      matchesRef,
+      matchesQuery,
       (snapshot) => {
         try {
           if (!snapshot.exists()) {

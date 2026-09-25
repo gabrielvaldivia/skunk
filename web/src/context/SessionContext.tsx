@@ -13,6 +13,7 @@ import {
   leaveSession as dbLeaveSession,
   getSession,
   isSessionExpired,
+  subscribeToSession,
 } from "../services/databaseService";
 import type { Session } from "../models/Session";
 import { useAuth } from "./AuthContext";
@@ -59,6 +60,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
     loadSessionFromStorage();
   }, []);
+
+  // Keep the current session live (participants joining/leaving) instead of polling
+  const currentSessionId = currentSession?.id;
+  useEffect(() => {
+    if (!currentSessionId) return;
+    return subscribeToSession(currentSessionId, (session) => {
+      if (session) {
+        setCurrentSession(session);
+      } else {
+        // Session was deleted
+        setCurrentSession(null);
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    });
+  }, [currentSessionId]);
 
   const handleCreateSession = useCallback(async (gameID?: string): Promise<Session> => {
     if (!user || !player) {

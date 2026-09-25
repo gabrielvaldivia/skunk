@@ -13,7 +13,7 @@ export function PlayerDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { players } = usePlayers();
-  const { matches: allMatches } = useActivity(500, 365 * 10);
+  const { matches: allMatches } = useActivity(10000); // Full history for stats; shares the listener with list pages
   const { games } = useGames();
 
   const player = players.find((p) => p.id === id);

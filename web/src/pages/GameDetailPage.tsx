@@ -24,7 +24,7 @@ export function GameDetailPage() {
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const { games, editGame, removeGame } = useGames();
-  const { matches: allMatches } = useActivity(500, 365 * 10);
+  const { matches: allMatches } = useActivity(10000); // Full history for stats; shares the listener with list pages
   const { players } = useDataCache();
   const { createSession, currentSession } = useSession();
   const { user, isAuthenticated } = useAuth();

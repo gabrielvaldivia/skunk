@@ -1,45 +1,36 @@
 import { useState, useEffect } from 'react';
-import { getSessionsForPlayer } from '../services/databaseService';
+import { subscribeToSessionsForPlayer } from '../services/databaseService';
 import type { Session } from '../models/Session';
 import { useAuth } from '../context/AuthContext';
 
 export function usePlayerSessions() {
   const { player } = useAuth();
+  const playerId = player?.id;
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!player) {
-      setSessions([]);
-      setIsLoading(false);
-      return;
-    }
+    if (!playerId) return;
 
-    const fetchSessions = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const playerSessions = await getSessionsForPlayer(player.id);
+    // Live listener instead of polling
+    return subscribeToSessionsForPlayer(
+      playerId,
+      (playerSessions) => {
         setSessions(playerSessions);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch sessions'));
-      } finally {
-        setIsLoading(false);
+        setError(null);
+        setLoadedFor(playerId);
+      },
+      (err) => {
+        setError(err);
+        setLoadedFor(playerId);
       }
-    };
-
-    fetchSessions();
-
-    // Refresh sessions every 10 seconds to catch updates
-    const interval = setInterval(fetchSessions, 10000);
-    return () => clearInterval(interval);
-  }, [player]);
+    );
+  }, [playerId]);
 
   return {
-    sessions,
-    isLoading,
+    sessions: playerId ? sessions : [],
+    isLoading: !!playerId && loadedFor !== playerId,
     error
   };
 }
-

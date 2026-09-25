@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { usePlayers } from "../hooks/usePlayers";
 import { useMatches } from "../hooks/useMatches";
 import { useGames } from "../hooks/useGames";
-import { getMatchesForSession } from "../services/databaseService";
+import { subscribeToMatchesForSession } from "../services/databaseService";
 import { PlayerCard } from "../components/PlayerCard";
 import { MatchRow } from "../components/MatchRow";
 import { AddMatchForm } from "../components/AddMatchForm";
@@ -36,7 +36,7 @@ export function SessionPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [sessionParticipants, setSessionParticipants] = useState<Player[]>([]);
   const [sessionMatches, setSessionMatches] = useState<Match[]>([]);
-  const [isLoadingMatches, setIsLoadingMatches] = useState(false);
+  const [matchesLoadedFor, setMatchesLoadedFor] = useState<string | null>(null);
   const [lastSelectedGameId, setLastSelectedGameId] = useState<
     string | undefined
   >(undefined);
@@ -94,41 +94,22 @@ export function SessionPage() {
     }
   }, [currentSession, players]);
 
-  // Fetch matches for this session
+  // Live matches for this session (participants stay live via SessionContext)
   useEffect(() => {
     if (!code) return;
-
-    const fetchMatches = async () => {
-      setIsLoadingMatches(true);
-      try {
-        const matches = await getMatchesForSession(code);
+    return subscribeToMatchesForSession(
+      code,
+      (matches) => {
         setSessionMatches(matches);
-      } catch (error) {
+        setMatchesLoadedFor(code);
+      },
+      (error) => {
         console.error("Error fetching session matches:", error);
-      } finally {
-        setIsLoadingMatches(false);
+        setMatchesLoadedFor(code);
       }
-    };
-
-    fetchMatches();
-
-    // Refresh matches periodically
-    const interval = setInterval(fetchMatches, 5000);
-    return () => clearInterval(interval);
+    );
   }, [code]);
-
-  // Periodic refresh to get updated participants
-  useEffect(() => {
-    if (!currentSession || currentSession.code !== code) {
-      return;
-    }
-
-    const interval = setInterval(() => {
-      refreshSession();
-    }, 5000); // Refresh every 5 seconds
-
-    return () => clearInterval(interval);
-  }, [currentSession, code, refreshSession]);
+  const isLoadingMatches = !!code && matchesLoadedFor !== code;
 
   // Load last selected game for this session from localStorage
   useEffect(() => {
@@ -196,11 +177,6 @@ export function SessionPage() {
       }
     }
     setShowAddForm(false);
-    // Refresh matches after creating a new one
-    if (code) {
-      const matches = await getMatchesForSession(code);
-      setSessionMatches(matches);
-    }
   };
 
   if (!code) {

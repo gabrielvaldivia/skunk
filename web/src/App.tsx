@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { SessionProvider } from "./context/SessionContext";
@@ -7,17 +7,19 @@ import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "./components/ui/sonner";
 import { Layout } from "./components/Layout";
 import { SignInView } from "./components/SignInView";
-import { OnboardingPage } from "./pages/OnboardingPage";
-import { GamesPage } from "./pages/GamesPage";
-import { GameDetailPage } from "./pages/GameDetailPage";
-import { PlayersPage } from "./pages/PlayersPage";
-import { PlayerDetailPage } from "./pages/PlayerDetailPage";
-import { ProfilePage } from "./pages/ProfilePage";
-import { ActivityPage } from "./pages/ActivityPage";
-import { SessionPage } from "./pages/SessionPage";
-import { SessionsListPage } from "./pages/SessionsListPage";
 import "./App.css";
 import { isAdminEmail } from "@/lib/admin";
+
+// Route-level code splitting so the first load doesn't pull in every page
+const OnboardingPage = lazy(() => import("./pages/OnboardingPage").then((m) => ({ default: m.OnboardingPage })));
+const GamesPage = lazy(() => import("./pages/GamesPage").then((m) => ({ default: m.GamesPage })));
+const GameDetailPage = lazy(() => import("./pages/GameDetailPage").then((m) => ({ default: m.GameDetailPage })));
+const PlayersPage = lazy(() => import("./pages/PlayersPage").then((m) => ({ default: m.PlayersPage })));
+const PlayerDetailPage = lazy(() => import("./pages/PlayerDetailPage").then((m) => ({ default: m.PlayerDetailPage })));
+const ProfilePage = lazy(() => import("./pages/ProfilePage").then((m) => ({ default: m.ProfilePage })));
+const ActivityPage = lazy(() => import("./pages/ActivityPage").then((m) => ({ default: m.ActivityPage })));
+const SessionPage = lazy(() => import("./pages/SessionPage").then((m) => ({ default: m.SessionPage })));
+const SessionsListPage = lazy(() => import("./pages/SessionsListPage").then((m) => ({ default: m.SessionsListPage })));
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, needsOnboarding, isLoading } = useAuth();
@@ -50,6 +52,7 @@ function AppRoutes() {
   const isAdmin = isAdminEmail(user?.email);
 
   return (
+    <Suspense fallback={<div className="loading">Loading...</div>}>
     <Routes>
       <Route path="/signin" element={<SignInView />} />
       <Route
@@ -135,6 +138,7 @@ function AppRoutes() {
       <Route path="/matches" element={<Navigate to="/activity" replace />} />
       <Route path="/" element={<Navigate to="/activity" replace />} />
     </Routes>
+    </Suspense>
   );
 }
 
