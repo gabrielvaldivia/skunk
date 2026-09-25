@@ -1,4 +1,4 @@
-import { ref, get, set, push, remove, update } from 'firebase/database';
+import { ref, get, set, push, remove, update, runTransaction } from 'firebase/database';
 import { database } from './firebase';
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
@@ -481,18 +481,15 @@ export async function joinSession(sessionId: string, playerId: string): Promise<
     throw new Error('Session has expired');
   }
 
-  const participantIDs = session.participantIDs || [];
-  
-  // Only add if not already present
-  if (!participantIDs.includes(playerId)) {
-    participantIDs.push(playerId);
-  }
-
-  const sessionRef = ref(database, `${SESSIONS_PATH}/${sessionId}`);
-  await update(sessionRef, {
-    participantIDs,
-    lastActivityAt: Date.now(),
-  });
+  // Transaction so concurrent joins don't overwrite each other's participant list
+  await runTransaction(
+    ref(database, `${SESSIONS_PATH}/${sessionId}/participantIDs`),
+    (current: string[] | null) => {
+      const participantIDs = current || [];
+      return participantIDs.includes(playerId) ? participantIDs : [...participantIDs, playerId];
+    }
+  );
+  await update(ref(database, `${SESSIONS_PATH}/${sessionId}`), { lastActivityAt: Date.now() });
 }
 
 /**
@@ -504,18 +501,17 @@ export async function leaveSession(sessionId: string, playerId: string): Promise
     return; // Session doesn't exist, nothing to do
   }
 
-  const participantIDs = (session.participantIDs || []).filter(id => id !== playerId);
-  const sessionRef = ref(database, `${SESSIONS_PATH}/${sessionId}`);
+  const result = await runTransaction(
+    ref(database, `${SESSIONS_PATH}/${sessionId}/participantIDs`),
+    (current: string[] | null) => (current || []).filter(id => id !== playerId)
+  );
+  const remaining: string[] = result.snapshot.val() || [];
 
-  if (participantIDs.length === 0) {
+  if (remaining.length === 0) {
     // Auto-delete session when all participants leave
     await deleteSession(sessionId);
   } else {
-    // Update participants and lastActivityAt
-    await update(sessionRef, {
-      participantIDs,
-      lastActivityAt: Date.now(),
-    });
+    await update(ref(database, `${SESSIONS_PATH}/${sessionId}`), { lastActivityAt: Date.now() });
   }
 }
 

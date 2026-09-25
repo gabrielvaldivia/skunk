@@ -12,6 +12,7 @@ import {
   joinSession as dbJoinSession,
   leaveSession as dbLeaveSession,
   getSession,
+  isSessionExpired,
 } from "../services/databaseService";
 import type { Session } from "../models/Session";
 import { useAuth } from "./AuthContext";
@@ -41,10 +42,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const storedSessionId = localStorage.getItem(STORAGE_KEY);
         if (storedSessionId) {
           const session = await getSession(storedSessionId);
-          if (session) {
+          if (session && !isSessionExpired(session)) {
             setCurrentSession(session);
           } else {
-            // Session doesn't exist, clear storage
+            // Session doesn't exist or has expired, clear storage
             localStorage.removeItem(STORAGE_KEY);
           }
         }
