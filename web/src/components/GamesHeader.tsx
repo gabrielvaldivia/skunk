@@ -17,6 +17,8 @@ interface GamesHeaderProps {
   onAdd: () => void;
   /** Open Activity in place (desktop panel); otherwise the button links to the page */
   onActivity?: () => void;
+  /** Floats bottom-middle, e.g. your live session: between Activity and search on phones, above search on desktop */
+  bottomCenter?: React.ReactNode;
 }
 
 const SCOPES: { value: GameScope; label: string }[] = [
@@ -28,7 +30,7 @@ const SCOPES: { value: GameScope; label: string }[] = [
 // My Games / All Games top-middle, Add top-right. Desktop: Activity beside
 // Add, search bottom-middle. Phones: Activity bottom-left and search
 // bottom-right, which grows across the bottom when focused.
-export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden, onAdd, onActivity }: GamesHeaderProps) {
+export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden, onAdd, onActivity, bottomCenter }: GamesHeaderProps) {
   const [focused, setFocused] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const open = focused || query !== "";
@@ -101,6 +103,19 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
       >
         <PlusIcon className="size-5" />
       </button>
+
+      {bottomCenter && (
+        <div
+          className={cn(
+            "transition-opacity duration-200",
+            !hidden && "pointer-events-auto",
+            // The open search field takes the bottom row on phones
+            open && "max-md:pointer-events-none max-md:opacity-0"
+          )}
+        >
+          {bottomCenter}
+        </div>
+      )}
 
       {/* Phones: a round button bottom-right that grows leftward to full width.
           Desktop: a small "Search" pill bottom-middle that grows when focused */}

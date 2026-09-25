@@ -206,6 +206,18 @@ export function ShelfPage() {
           setSelectedId(null);
         }}
         hidden={!!selected}
+        bottomCenter={
+          currentSession && (
+            <MiniSessionSheet
+              compact
+              bottom={
+                isDesktop
+                  ? "calc(var(--safe-bottom) + 1.25rem + 3rem + 0.5rem)"
+                  : "calc(var(--safe-bottom) + 1.25rem)"
+              }
+            />
+          )
+        }
         onActivity={panel ? () => panel.open({ type: "activity" }) : undefined}
       />
 
@@ -266,10 +278,7 @@ export function ShelfPage() {
 
       {panelOpen && detailPanel}
 
-      {/* Your live session, just above the search and Activity buttons */}
-      {currentSession && !selected && (
-        <MiniSessionSheet bottom="calc(var(--safe-bottom) + 1.25rem + 3rem + 0.75rem)" />
-      )}
+
 
       {isAuthenticated && (
         <AddGameForm

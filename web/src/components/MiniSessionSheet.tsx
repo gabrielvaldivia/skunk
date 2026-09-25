@@ -20,8 +20,11 @@ function formatRelativeTime(timestamp: number): string {
   return date.toLocaleDateString();
 }
 
-/** `bottom` lifts the sheet, e.g. above a page's own floating buttons */
-export function MiniSessionSheet({ bottom }: { bottom?: string } = {}) {
+/**
+ * `bottom` lifts the sheet, e.g. above a page's own floating buttons.
+ * `compact` is a one-line pill, for sitting between other bottom buttons.
+ */
+export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact?: boolean } = {}) {
   const navigate = useNavigate();
   const { currentSession } = useSession();
   const { players } = useDataCache();
@@ -68,7 +71,7 @@ export function MiniSessionSheet({ bottom }: { bottom?: string } = {}) {
 
   return (
     <div
-      className="mini-session-sheet"
+      className={compact ? "mini-session-sheet mini-session-compact" : "mini-session-sheet"}
       style={{
         bottom,
         transform:
@@ -91,16 +94,24 @@ export function MiniSessionSheet({ bottom }: { bottom?: string } = {}) {
       }}
     >
       <span className="mini-session-live" aria-hidden />
-      <div className="mini-session-content">
-        <div className="mini-session-title">Session {currentSession.code}</div>
-        <div className="mini-session-created">Started {createdLabel}</div>
-      </div>
+      {compact ? (
+        <div className="mini-session-content">
+          <div className="mini-session-title">
+            {currentSession.code} <span className="mini-session-created">· {createdLabel}</span>
+          </div>
+        </div>
+      ) : (
+        <div className="mini-session-content">
+          <div className="mini-session-title">Session {currentSession.code}</div>
+          <div className="mini-session-created">Started {createdLabel}</div>
+        </div>
+      )}
       <div className="mini-session-facepile" aria-label="Participants">
-        {participantList.slice(0, 4).map((p) => (
-          <Avatar key={p.id} player={p} size={32} />
+        {participantList.slice(0, compact ? 3 : 4).map((p) => (
+          <Avatar key={p.id} player={p} size={compact ? 28 : 32} />
         ))}
-        {participantList.length > 4 && (
-          <span className="facepile-more">+{participantList.length - 4}</span>
+        {participantList.length > (compact ? 3 : 4) && (
+          <span className="facepile-more">+{participantList.length - (compact ? 3 : 4)}</span>
         )}
       </div>
     </div>
