@@ -22,6 +22,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",
+    "@samasante/liquid-glass": "^0.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "firebase": "^12.7.0",

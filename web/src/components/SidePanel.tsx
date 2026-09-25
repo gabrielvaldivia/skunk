@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { useDragToDismiss } from "../hooks/useDragToDismiss";
 import { createPortal } from "react-dom";
 import { CloseIcon } from "./icons";
+import { GlassIconButton } from "./Glass";
 
 // Desktop modal: an inset panel on the right over a dimmed page, with the
 // close button in the page's top-left corner (where the account button sits)
@@ -20,14 +21,9 @@ export function SidePanel({ label, onClose, children }: { label: string; onClose
   return createPortal(
     <>
       <div ref={backdropRef} className="fixed inset-0 z-[55] bg-black/35 animate-in fade-in duration-200" onClick={onClose} aria-hidden />
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close"
-        className="fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] flex size-12 items-center justify-center rounded-full liquid-glass animate-in fade-in duration-200 active:scale-95"
-      >
+      <GlassIconButton onClick={onClose} aria-label="Close" className="fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] animate-in fade-in duration-200">
         <CloseIcon className="size-5" />
-      </button>
+      </GlassIconButton>
       {/* The transform keeps the pages' fixed elements (session sheet, buttons) inside the panel */}
       {/* Drag right to dismiss */}
       <aside

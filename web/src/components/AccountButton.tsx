@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { Avatar } from "./Avatar";
 import { AccountIcon } from "./icons";
 import { cn } from "@/lib/utils";
+import { Glass } from "./Glass";
 
 interface AccountButtonProps {
   className?: string;
@@ -29,7 +30,7 @@ export function AccountButton({ className, size = 36, variant = "default", onOpe
         "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full transition-transform duration-150 active:scale-95",
         !showsPhoto &&
           (variant === "pill"
-            ? "liquid-glass text-foreground/80 hover:text-foreground"
+            ? "text-foreground/80 hover:text-foreground"
             : "bg-secondary text-secondary-foreground"),
         variant === "pill" && showsPhoto && "shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)]",
         className
@@ -42,8 +43,12 @@ export function AccountButton({ className, size = 36, variant = "default", onOpe
       style={{ width: size, height: size }}
       aria-label={isAuthenticated ? "Account" : "Sign in"}
     >
-      {!isAuthenticated ? (
-        <AccountIcon className={variant === "pill" ? "size-[18px]" : "size-5"} />
+      {!isAuthenticated && variant === "pill" ? (
+        <Glass className="flex size-full items-center justify-center">
+          <AccountIcon className="size-[18px]" />
+        </Glass>
+      ) : !isAuthenticated ? (
+        <AccountIcon className="size-5" />
       ) : googlePhoto ? (
         <img src={googlePhoto} alt="" referrerPolicy="no-referrer" className="size-full object-cover" />
       ) : player ? (

@@ -15,14 +15,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Liquid glass refraction for floating controls (Chromium only; see .liquid-glass) -->
-    <svg aria-hidden="true" width="0" height="0" style="position: absolute">
-      <filter id="liquid-glass-refract" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
-        <feTurbulence type="fractalNoise" baseFrequency="0.012 0.012" numOctaves="2" seed="4" result="noise" />
-        <feGaussianBlur in="noise" stdDeviation="3" result="map" />
-        <feDisplacementMap in="SourceGraphic" in2="map" scale="22" xChannelSelector="R" yChannelSelector="G" />
-      </filter>
-    </svg>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { usePanelFrame } from "../context/PanelContext";
+import { Glass, GlassIconButton } from "./Glass";
 import { BackIcon, CloseIcon } from "./icons";
 import { Button } from "@/components/ui/button";
 
@@ -35,8 +36,8 @@ export function NavBar({ title, action, onBack, hideBack: hideBackProp, closeInC
     actionInCorner &&
     action &&
     createPortal(
-      <div className="fixed right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] [&>button]:size-12 [&>button]:liquid-glass [&>button]:rounded-full">
-        {action}
+      <div className="fixed right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] size-12">
+        <Glass className="size-full [&_button]:size-full [&_button]:!bg-transparent">{action}</Glass>
       </div>,
       document.body
     );
@@ -66,14 +67,9 @@ export function NavBar({ title, action, onBack, hideBack: hideBackProp, closeInC
       {/* Portalled: the header's backdrop blur would otherwise pin it to the header */}
       {closeInCorner &&
         createPortal(
-          <button
-            type="button"
-            onClick={goBack}
-            aria-label="Close"
-            className="fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-50 flex size-12 items-center justify-center rounded-full liquid-glass active:scale-95"
-          >
+          <GlassIconButton onClick={goBack} aria-label="Close" className="fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-50">
             <CloseIcon className="size-5" />
-          </button>,
+          </GlassIconButton>,
           document.body
         )}
     </div>

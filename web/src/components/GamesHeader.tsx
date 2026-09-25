@@ -2,10 +2,10 @@ import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ActivityIcon, CloseIcon, PlusIcon, SearchIcon } from "./icons";
 import { cn } from "@/lib/utils";
+import { Glass } from "./Glass";
 import type { GameScope } from "../hooks/useGameScope";
 
-// Liquid glass (see .liquid-glass in index.css)
-const PILL = "liquid-glass";
+
 
 interface GamesHeaderProps {
   scope: GameScope;
@@ -34,13 +34,9 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
   const [focused, setFocused] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const open = focused || query !== "";
-  const activityClass = cn(
-    "fixed bottom-[calc(var(--safe-bottom)+1.25rem)] left-[var(--page-gutter)] flex size-12 items-center justify-center rounded-full text-foreground/80 hover:text-foreground active:scale-95 md:absolute md:bottom-auto md:left-auto md:right-[calc(var(--page-gutter)+3.5rem)] md:top-[calc(var(--safe-top)+0.75rem)]",
-    PILL,
-    !hidden && "pointer-events-auto",
-    // On phones the open search field takes the whole bottom row
-    open && "transition-opacity max-md:pointer-events-none max-md:opacity-0"
-  );
+  // Round glass buttons: the wrapper positions, the glass fills it
+  const iconButton =
+    "flex size-full items-center justify-center rounded-full text-foreground/80 transition-transform hover:text-foreground active:scale-95";
 
   return (
     <header
@@ -57,10 +53,10 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
           "absolute inset-x-[calc(var(--page-gutter)+3.5rem)] top-[calc(var(--safe-top)+0.75rem)] flex justify-center md:inset-x-0"
         )}
       >
-        <div
+        <Glass
           role="tablist"
           aria-label="Which games"
-          className={cn("flex h-12 items-center rounded-full p-1", PILL, !hidden && "pointer-events-auto")}
+          className={cn("flex h-12 items-center p-1", !hidden && "pointer-events-auto")}
         >
           {SCOPES.map(({ value, label }) => (
             <button
@@ -78,31 +74,41 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
               {label}
             </button>
           ))}
-        </div>
+        </Glass>
       </div>
 
-      {onActivity ? (
-        <button type="button" onClick={onActivity} aria-label="Activity" tabIndex={hidden ? -1 : undefined} className={activityClass}>
-          <ActivityIcon className="size-5" />
-        </button>
-      ) : (
-        <Link to="/activity" aria-label="Activity" tabIndex={hidden ? -1 : undefined} className={activityClass}>
-          <ActivityIcon className="size-5" />
-        </Link>
-      )}
-      <button
-        type="button"
-        onClick={onAdd}
-        aria-label="Add game"
-        tabIndex={hidden ? -1 : undefined}
+      <div
         className={cn(
-          "absolute right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] flex size-12 items-center justify-center rounded-full text-foreground/80 hover:text-foreground active:scale-95",
-          PILL,
+          "fixed bottom-[calc(var(--safe-bottom)+1.25rem)] left-[var(--page-gutter)] size-12 transition-opacity md:absolute md:bottom-auto md:left-auto md:right-[calc(var(--page-gutter)+3.5rem)] md:top-[calc(var(--safe-top)+0.75rem)]",
+          !hidden && "pointer-events-auto",
+          // On phones the open search field takes the whole bottom row
+          open && "max-md:pointer-events-none max-md:opacity-0"
+        )}
+      >
+        <Glass className="size-full">
+          {onActivity ? (
+            <button type="button" onClick={onActivity} aria-label="Activity" tabIndex={hidden ? -1 : undefined} className={iconButton}>
+              <ActivityIcon className="size-5" />
+            </button>
+          ) : (
+            <Link to="/activity" aria-label="Activity" tabIndex={hidden ? -1 : undefined} className={iconButton}>
+              <ActivityIcon className="size-5" />
+            </Link>
+          )}
+        </Glass>
+      </div>
+      <div
+        className={cn(
+          "absolute right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] size-12",
           !hidden && "pointer-events-auto"
         )}
       >
-        <PlusIcon className="size-5" />
-      </button>
+        <Glass className="size-full">
+          <button type="button" onClick={onAdd} aria-label="Add game" tabIndex={hidden ? -1 : undefined} className={iconButton}>
+            <PlusIcon className="size-5" />
+          </button>
+        </Glass>
+      </div>
 
       {bottomCenter && (
         <div
@@ -119,16 +125,17 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
 
       {/* Phones: a round button bottom-right that grows leftward to full width.
           Desktop: a small "Search" pill bottom-middle that grows when focused */}
-      <label
+      <div
         className={cn(
-          "fixed bottom-[calc(var(--safe-bottom)+1.25rem+var(--kb,0px))] right-[var(--page-gutter)] flex h-12 cursor-text items-center overflow-hidden rounded-full transition-[width] duration-300 ease-out md:left-1/2 md:right-auto md:-translate-x-1/2",
-          PILL,
+          "fixed bottom-[calc(var(--safe-bottom)+1.25rem+var(--kb,0px))] right-[var(--page-gutter)] h-12 transition-[width] duration-300 ease-out md:left-1/2 md:right-auto md:-translate-x-1/2",
           open
             ? "w-[calc(100%-2*var(--page-gutter))] md:w-[min(28rem,calc(100%-2*var(--page-gutter)))]"
             : "w-12 md:w-[8.5rem]",
           !hidden && "pointer-events-auto"
         )}
       >
+        <Glass className="size-full">
+          <label className="flex size-full cursor-text items-center overflow-hidden rounded-full">
         <span className="flex size-12 shrink-0 items-center justify-center text-muted-foreground" aria-hidden>
           <SearchIcon className="size-[18px]" />
         </span>
@@ -167,7 +174,9 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
             <CloseIcon className="size-4" />
           </button>
         )}
-      </label>
+          </label>
+        </Glass>
+      </div>
     </header>
   );
 }
