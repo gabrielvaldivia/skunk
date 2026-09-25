@@ -27,11 +27,7 @@ export function PlayerCard({ player, onClick, rightAction, subtitle }: PlayerCar
       </div>
       <div className="player-info">
         <h3 className="player-name">{player.name}</h3>
-        {subtitle ? (
-          <p className="player-subtitle">{subtitle}</p>
-        ) : (
-          player.email && <p className="player-email">{player.email}</p>
-        )}
+        {subtitle && <p className="player-subtitle">{subtitle}</p>}
       </div>
       {rightAction && <div className="player-actions">{rightAction}</div>}
     </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ref, onValue, query, orderByChild, limitToLast } from 'firebase/database';
 import { database } from '../services/firebase';
-import type { Match } from '../models/Match';
+import { parseMatch, type Match } from '../models/Match';
 
 const MATCHES_PATH = 'matches';
 
@@ -37,13 +37,10 @@ export function useActivity(limit: number = 500, daysBack: number = 365 * 10) {
           const allMatches: Match[] = [];
 
           for (const matchId in matchesData) {
-            const match = matchesData[matchId];
+            const match = parseMatch(matchId, matchesData[matchId]);
             // Filter by date
             if (match.date >= cutoffDate) {
-              allMatches.push({
-                id: matchId,
-                ...match
-              });
+              allMatches.push(match);
             }
           }
 

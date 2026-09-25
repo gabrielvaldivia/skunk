@@ -1,5 +1,6 @@
 import type { Game } from './Game';
 import type { Player } from './Player';
+import { asBoolean, asNumber, asNumberArray, asRecord, asString, asStringArray } from './parse';
 
 export type Team = {
   teamId: string;
@@ -122,4 +123,38 @@ export function computeWinnerID(match: Match, game: Game): string | undefined {
   }
   
   return match.winnerID;
+}
+
+export function parseMatch(id: string, value: unknown): Match {
+  const raw = asRecord(value);
+  const playerIDs = asStringArray(raw.playerIDs);
+  const playerOrder = asStringArray(raw.playerOrder);
+  const date = asNumber(raw.date) ?? 0;
+  const rawRounds = Array.isArray(raw.rounds) ? raw.rounds : [];
+  const match: Match = {
+    id,
+    gameID: asString(raw.gameID) ?? "",
+    date,
+    playerIDs,
+    playerOrder: playerOrder.length > 0 ? playerOrder : playerIDs,
+    isMultiplayer: asBoolean(raw.isMultiplayer) ?? playerIDs.length > 2,
+    status: asString(raw.status) ?? "active",
+    scores: asNumberArray(raw.scores),
+    rounds: rawRounds.map(asNumberArray),
+    lastModified: asNumber(raw.lastModified) ?? date,
+  };
+  for (const key of ["playerIDsString", "winnerID", "winnerTeamId", "createdByID", "sessionCode"] as const) {
+    const v = asString(raw[key]);
+    if (v !== undefined) match[key] = v;
+  }
+  for (const key of ["invitedPlayerIDs", "acceptedPlayerIDs"] as const) {
+    if (raw[key] !== undefined) match[key] = asStringArray(raw[key]);
+  }
+  if (raw.teams !== undefined) {
+    match.teams = (Array.isArray(raw.teams) ? raw.teams : Object.values(asRecord(raw.teams))).map((t) => {
+      const team = asRecord(t);
+      return { teamId: asString(team.teamId) ?? "", playerIDs: asStringArray(team.playerIDs) };
+    });
+  }
+  return match;
 }
