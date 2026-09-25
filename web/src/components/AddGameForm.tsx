@@ -60,6 +60,8 @@ export interface GameFormContentProps {
   submitButtonText?: string;
   showSubmitButton?: boolean;
   formId?: string;
+  /** Focus the title on open (desktop only: on phones it pops the keyboard up over the sheet) */
+  autoFocusTitle?: boolean;
   /** Extra fields shown after the standard ones */
   children?: React.ReactNode;
 }
@@ -95,6 +97,7 @@ export function GameFormContent({
   submitButtonText = "Create Game",
   showSubmitButton = true,
   formId,
+  autoFocusTitle = false,
   children,
 }: GameFormContentProps) {
   const handleFileSelect = (file: File) => {
@@ -199,7 +202,7 @@ export function GameFormContent({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Enter game title"
-            autoFocus
+            autoFocus={autoFocusTitle}
             required
           />
         </div>
@@ -527,6 +530,7 @@ export function AddGameForm({
           </DialogHeader>
           <div className="overflow-y-auto min-h-0">
             <GameFormContent
+              autoFocusTitle
               title={title}
               setTitle={setTitle}
               minPlayers={minPlayers}
@@ -561,7 +565,9 @@ export function AddGameForm({
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    // repositionInputs off: vaul otherwise shrinks the sheet for the keyboard
+    // and leaves it short after the keyboard closes
+    <Drawer open={open} onOpenChange={onOpenChange} repositionInputs={false}>
       {/* Full screen on phones, clear of the status bar; swipe down still closes it */}
       <DrawerContent className="mt-0 flex h-[100dvh] flex-col rounded-none border-t-0 pt-[var(--safe-top)]">
         <DrawerHeader className="shrink-0">
