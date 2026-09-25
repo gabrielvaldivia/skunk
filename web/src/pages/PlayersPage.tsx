@@ -44,7 +44,7 @@ function PlayerItem({ player, canDelete, onNavigate, onLongPress, subtitle }: Pl
   const handlePressStart = (e: React.MouseEvent | React.TouchEvent) => {
     if (!canDelete) return;
     isLongPressRef.current = false;
-    longPressTimerRef.current = setTimeout(() => {
+    longPressTimerRef.current = window.setTimeout(() => {
       isLongPressRef.current = true;
       onLongPress(player.id, player.ownerID);
       // Prevent default touch behaviors when long press triggers

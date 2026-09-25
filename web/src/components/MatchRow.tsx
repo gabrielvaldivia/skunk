@@ -96,7 +96,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     if (!canDelete()) return;
     
     isLongPressRef.current = false;
-    longPressTimerRef.current = setTimeout(() => {
+    longPressTimerRef.current = window.setTimeout(() => {
       isLongPressRef.current = true;
       setShowDeleteDialog(true);
       // Prevent default touch behaviors when long press triggers
