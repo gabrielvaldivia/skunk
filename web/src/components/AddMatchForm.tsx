@@ -24,13 +24,12 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { computeWinnerID } from "../models/Match";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { ChevronsUpDown } from "lucide-react";
 import "./AddGameForm.css";
-import { getPlayerColor, getInitials, getPlayerPhotoSrc } from "@/lib/player";
+import { PlayerPicker } from "./match-form/PlayerPicker";
+import { ScoreInput } from "./match-form/ScoreInput";
+import { GameCombobox } from "./match-form/GameCombobox";
 import { toast } from "sonner";
 
 interface AddMatchFormProps {
@@ -50,8 +49,6 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
   const { matches: recentMatches } = useActivity(100, 90); // Last 100 matches from last 90 days
   const [selectedGameId, setSelectedGameId] = useState<string>(defaultGameId || "");
   const [gameQuery, setGameQuery] = useState<string>("");
-  const [showGameSuggestions, setShowGameSuggestions] = useState<boolean>(false);
-  const [highlightedGameIndex, setHighlightedGameIndex] = useState<number>(-1);
   const [playerInputs, setPlayerInputs] = useState<string[]>([]);
   const [scores, setScores] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -208,6 +205,43 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
       newStates[index] = { value: playerName, showSuggestions: false };
       return newStates;
     });
+  };
+
+  const openPlayerSuggestions = (index: number, value: string) => {
+    setAutocompleteStates((prev) => {
+      const newStates = [...prev];
+      // Show suggestions when focused, even if empty (to show recently used players)
+      newStates[index] = { value, showSuggestions: true };
+      return newStates;
+    });
+  };
+
+  const closePlayerSuggestions = (index: number, blurValue: string) => {
+    // Delay closing to allow click events on suggestions to fire
+    setTimeout(() => {
+      setAutocompleteStates((prev) => {
+        const newStates = [...prev];
+        newStates[index] = { value: blurValue, showSuggestions: false };
+        return newStates;
+      });
+      // Clear invalid input - only allow valid player names
+      setPlayerInputs((prev) => {
+        const currentValue = prev[index];
+        if (currentValue && !findPlayerByName(currentValue)) {
+          const newInputs = [...prev];
+          newInputs[index] = "";
+          return newInputs;
+        }
+        return prev;
+      });
+    }, 200);
+  };
+
+  // Binary games: this player wins, everyone else loses
+  const markWinner = (index: number) => {
+    const newScores = new Array(playerInputs.length).fill(0);
+    newScores[index] = 1;
+    setScores(newScores);
   };
 
   const handleAddPlayer = () => {
@@ -423,82 +457,15 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
         )}
         <div className={isDrawer ? "grid gap-4 py-4 px-4" : "grid gap-4 py-4"}>
           <div className="grid gap-2">
-            <div className="relative">
-              <Input
-                id="game"
-                type="text"
-                value={gameQuery}
-                onChange={(e) => {
-                  setGameQuery(e.target.value);
-                  setShowGameSuggestions(true);
-                  setHighlightedGameIndex(-1);
+              <GameCombobox
+                query={gameQuery}
+                onQueryChange={setGameQuery}
+                suggestions={visibleGameSuggestions}
+                onSelect={(game) => {
+                  setSelectedGameId(game.id);
+                  setGameQuery(game.title);
                 }}
-                onFocus={() => {
-                  setShowGameSuggestions(true);
-                }}
-                onBlur={() => {
-                  // Delay to allow click on suggestion
-                  setTimeout(() => setShowGameSuggestions(false), 150);
-                }}
-                onKeyDown={(e) => {
-                  if (!showGameSuggestions) return;
-                  if (e.key === "ArrowDown") {
-                    e.preventDefault();
-                    setHighlightedGameIndex((prev) =>
-                      Math.min(prev + 1, visibleGameSuggestions.length - 1)
-                    );
-                  } else if (e.key === "ArrowUp") {
-                    e.preventDefault();
-                    setHighlightedGameIndex((prev) =>
-                      Math.max(prev - 1, 0)
-                    );
-                  } else if (e.key === "Enter") {
-                    if (highlightedGameIndex >= 0 && highlightedGameIndex < visibleGameSuggestions.length) {
-                      const game = visibleGameSuggestions[highlightedGameIndex];
-                      setSelectedGameId(game.id);
-                      setGameQuery(game.title);
-                      setShowGameSuggestions(false);
-                      e.preventDefault();
-                    }
-                  } else if (e.key === "Escape") {
-                    setShowGameSuggestions(false);
-                  }
-                }}
-                placeholder="Search games…"
-                className="w-full pr-9"
               />
-              <button
-                type="button"
-                aria-label="Toggle game list"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  setShowGameSuggestions((prev) => !prev);
-                  setHighlightedGameIndex(-1);
-                }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
-              >
-                <ChevronsUpDown size={16} />
-              </button>
-              {showGameSuggestions && visibleGameSuggestions.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
-                  {visibleGameSuggestions.map((game, idx) => (
-                    <button
-                      key={game.id}
-                      type="button"
-                      className={`w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground ${idx === highlightedGameIndex ? "bg-accent text-accent-foreground" : ""}`}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setSelectedGameId(game.id);
-                        setGameQuery(game.title);
-                        setShowGameSuggestions(false);
-                      }}
-                    >
-                      {game.title}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
 
           {selectedGame && (
@@ -519,74 +486,17 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                       return (
                         <div key={index} className="relative grid gap-1">
                           <div className="flex gap-2 items-center">
-                            {/* Player avatar */}
-                            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-medium text-white shrink-0"
-                              style={player ? { backgroundColor: getPlayerColor(player) } : undefined}
-                            >
-                              {player && getPlayerPhotoSrc(player) ? (
-                                <img
-                                  src={getPlayerPhotoSrc(player)}
-                                  alt={player.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : player ? (
-                                <span>{getInitials(player.name)}</span>
-                              ) : (
-                                <span className="text-muted-foreground">?</span>
-                              )}
-                            </div>
-                            <div className="flex-1 relative">
-                              <Input
-                                type="text"
-                                value={inputValue}
-                                onChange={(e) => handlePlayerInputChange(index, e.target.value)}
-                                onFocus={() => {
-                                  setAutocompleteStates((prev) => {
-                                    const newStates = [...prev];
-                                    newStates[index] = { value: inputValue, showSuggestions: true };
-                                    return newStates;
-                                  });
-                                }}
-                                onBlur={(e) => {
-                                  const blurValue = e.target.value;
-                                  setTimeout(() => {
-                                    setAutocompleteStates((prev) => {
-                                      const newStates = [...prev];
-                                      newStates[index] = { value: blurValue, showSuggestions: false };
-                                      return newStates;
-                                    });
-                                    setPlayerInputs((prev) => {
-                                      const currentValue = prev[index];
-                                      if (currentValue && !findPlayerByName(currentValue)) {
-                                        const newInputs = [...prev];
-                                        newInputs[index] = "";
-                                        return newInputs;
-                                      }
-                                      return prev;
-                                    });
-                                  }, 200);
-                                }}
-                                placeholder={`Player ${index + 1}`}
-                                className="w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent px-0"
-                              />
-                              {state.showSuggestions && suggestions.length > 0 && (
-                                <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
-                                  {suggestions.map((player) => (
-                                    <button
-                                      key={player.id}
-                                      type="button"
-                                      className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground"
-                                      onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        handlePlayerSelect(index, player.name);
-                                      }}
-                                    >
-                                      {player.name}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+                            <PlayerPicker
+                              index={index}
+                              value={inputValue}
+                              player={player}
+                              suggestions={suggestions}
+                              showSuggestions={state.showSuggestions}
+                              onChange={(value) => handlePlayerInputChange(index, value)}
+                              onFocus={() => openPlayerSuggestions(index, inputValue)}
+                              onBlur={(value) => closePlayerSuggestions(index, value)}
+                              onSelect={(name) => handlePlayerSelect(index, name)}
+                            />
                             
                             {isValidPlayer && (
                               <select
@@ -682,35 +592,12 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                       return (
                         <div key={index} className="flex items-center gap-2">
                           <span className="text-sm w-32">{player.name}:</span>
-                          {selectedGame.isBinaryScore ? (
-                            <Switch
-                              checked={scores[index] === 1}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setScores(() => {
-                                    const newScores = new Array(playerInputs.length).fill(0);
-                                    newScores[index] = 1;
-                                    return newScores;
-                                  });
-                                } else {
-                                  handleScoreChange(index, 0);
-                                }
-                              }}
-                            />
-                          ) : (
-                            <Input
-                              type="number"
-                              min="0"
-                              value={scores[index] || 0}
-                              onChange={(e) =>
-                                handleScoreChange(
-                                  index,
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
-                              className="w-24"
-                            />
-                          )}
+                          <ScoreInput
+                            isBinary={selectedGame.isBinaryScore}
+                            value={scores[index]}
+                            onChange={(value) => handleScoreChange(index, value)}
+                            onMarkWinner={() => markWinner(index)}
+                          />
                         </div>
                       );
                     })}
@@ -731,116 +618,27 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                     return (
                       <div key={index} className="relative grid gap-1">
                         <div className="flex gap-2 items-center">
-                          {/* Player avatar */}
-                          <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-medium text-white shrink-0"
-                            style={player ? { backgroundColor: getPlayerColor(player) } : undefined}
-                          >
-                            {player && getPlayerPhotoSrc(player) ? (
-                              <img
-                                src={getPlayerPhotoSrc(player)}
-                                alt={player.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : player ? (
-                              <span>{getInitials(player.name)}</span>
-                            ) : (
-                              <span className="text-muted-foreground">?</span>
-                            )}
-                          </div>
-                          <div className="flex-1 relative">
-                            <Input
-                              type="text"
-                              value={inputValue}
-                              onChange={(e) => handlePlayerInputChange(index, e.target.value)}
-                              onFocus={() => {
-                                setAutocompleteStates((prev) => {
-                                  const newStates = [...prev];
-                                  // Show suggestions when focused, even if empty (to show recently used players)
-                                  newStates[index] = { value: inputValue, showSuggestions: true };
-                                  return newStates;
-                                });
-                              }}
-                              onBlur={(e) => {
-                                // Delay closing to allow click events on suggestions to fire
-                                const blurValue = e.target.value;
-                                setTimeout(() => {
-                                  setAutocompleteStates((prev) => {
-                                    const newStates = [...prev];
-                                    newStates[index] = { value: blurValue, showSuggestions: false };
-                                    return newStates;
-                                  });
-                                  
-                                  // Clear invalid input - only allow valid player names
-                                  // Use the value from state at the time of checking, not the blur event
-                                  setPlayerInputs((prev) => {
-                                    const currentValue = prev[index];
-                                    if (currentValue && !findPlayerByName(currentValue)) {
-                                      const newInputs = [...prev];
-                                      newInputs[index] = "";
-                                      return newInputs;
-                                    }
-                                    return prev;
-                                  });
-                                }, 200);
-                              }}
-                              placeholder={`Player ${index + 1}`}
-                              className="w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent px-0"
-                            />
-                            {state.showSuggestions && suggestions.length > 0 && (
-                              <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
-                                {suggestions.map((player) => (
-                                  <button
-                                    key={player.id}
-                                    type="button"
-                                    className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground"
-                                    onMouseDown={(e) => {
-                                      // Prevent input blur when clicking suggestion
-                                      e.preventDefault();
-                                      handlePlayerSelect(index, player.name);
-                                    }}
-                                  >
-                                    {player.name}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                          <PlayerPicker
+                            index={index}
+                            value={inputValue}
+                            player={player}
+                            suggestions={suggestions}
+                            showSuggestions={state.showSuggestions}
+                            onChange={(value) => handlePlayerInputChange(index, value)}
+                            onFocus={() => openPlayerSuggestions(index, inputValue)}
+                            onBlur={(value) => closePlayerSuggestions(index, value)}
+                            onSelect={(name) => handlePlayerSelect(index, name)}
+                          />
                           
                           {isValidPlayer && (
                             <>
-                              {selectedGame.isBinaryScore ? (
-                                <Switch
-                                  checked={scores[index] === 1}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      // Set this player as winner and all others as losers
-                                      setScores(() => {
-                                        // Create array of correct length, all 0s except this index
-                                        const newScores = new Array(playerInputs.length).fill(0);
-                                        newScores[index] = 1;
-                                        return newScores;
-                                      });
-                                    } else {
-                                      handleScoreChange(index, 0);
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <Input
-                                  id={`score-${index}`}
-                                  type="number"
-                                  min="0"
-                                  value={scores[index] || 0}
-                                  onChange={(e) =>
-                                    handleScoreChange(
-                                      index,
-                                      parseInt(e.target.value) || 0
-                                    )
-                                  }
-                                  placeholder="Score"
-                                  className="w-24"
-                                />
-                              )}
+                              <ScoreInput
+                                id={`score-${index}`}
+                                isBinary={selectedGame.isBinaryScore}
+                                value={scores[index]}
+                                onChange={(value) => handleScoreChange(index, value)}
+                                onMarkWinner={() => markWinner(index)}
+                              />
                             </>
                           )}
                           
