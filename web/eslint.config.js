@@ -23,6 +23,11 @@ export default defineConfig([
       // Catch unused variables during dev (not just at `tsc -b` time).
       // Allow intentionally-unused args/vars via leading underscore.
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      // Context hooks and cva variants live next to their providers/components by convention
+      'react-refresh/only-export-components': [
+        'error',
+        { allowConstantExport: true, allowExportNames: ['useAuth', 'useSession', 'useDataCache', 'useTheme', 'buttonVariants'] },
+      ],
     },
   },
 ])

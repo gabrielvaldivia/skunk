@@ -6,7 +6,7 @@ Run the helper script to guide you through creating your `.env` file:
 
 ```bash
 cd web
-node setup-firebase.js
+node setup-firebase.cjs
 ```
 
 This will ask you for each Firebase config value and create the `.env` file automatically.

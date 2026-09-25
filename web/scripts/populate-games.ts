@@ -19,7 +19,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load environment variables from .env file if it exists
-let envVars: Record<string, string> = {};
+const envVars: Record<string, string> = {};
 try {
   const envPath = join(__dirname, '../.env');
   const envFile = readFileSync(envPath, 'utf8');
@@ -29,7 +29,7 @@ try {
       envVars[match[1].trim()] = match[2].trim();
     }
   });
-} catch (e) {
+} catch {
   // .env file doesn't exist, will use process.env
 }
 

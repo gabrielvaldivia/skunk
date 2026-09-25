@@ -175,9 +175,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
       // Reset team assignments when game changes
       setTeamAssignments(new Map());
       // Ensure at least 2 teams
-      if (teams.length < 2) {
-        setTeams(["team1", "team2"]);
-      }
+      setTeams((prev) => (prev.length < 2 ? ["team1", "team2"] : prev));
     } else if (!selectedGame?.isTeamBased) {
       // Clear team assignments when switching to non-team game
       setTeamAssignments(new Map());
