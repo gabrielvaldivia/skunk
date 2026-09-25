@@ -4,8 +4,8 @@ import { ActivityIcon, CloseIcon, PlusIcon, SearchIcon } from "./icons";
 import { cn } from "@/lib/utils";
 import type { GameScope } from "../hooks/useGameScope";
 
-const PILL =
-  "border border-border/60 bg-background/75 shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)] backdrop-blur-xl backdrop-saturate-150";
+// Liquid glass (see .liquid-glass in index.css)
+const PILL = "liquid-glass";
 
 interface GamesHeaderProps {
   scope: GameScope;
@@ -35,7 +35,7 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
   const input = useRef<HTMLInputElement>(null);
   const open = focused || query !== "";
   const activityClass = cn(
-    "fixed bottom-[calc(var(--safe-bottom)+1.25rem)] left-[var(--page-gutter)] flex size-12 items-center justify-center rounded-full text-muted-foreground hover:text-foreground active:scale-95 md:absolute md:bottom-auto md:left-auto md:right-[calc(var(--page-gutter)+3.5rem)] md:top-[calc(var(--safe-top)+0.75rem)]",
+    "fixed bottom-[calc(var(--safe-bottom)+1.25rem)] left-[var(--page-gutter)] flex size-12 items-center justify-center rounded-full text-foreground/80 hover:text-foreground active:scale-95 md:absolute md:bottom-auto md:left-auto md:right-[calc(var(--page-gutter)+3.5rem)] md:top-[calc(var(--safe-top)+0.75rem)]",
     PILL,
     !hidden && "pointer-events-auto",
     // On phones the open search field takes the whole bottom row
@@ -96,7 +96,7 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
         aria-label="Add game"
         tabIndex={hidden ? -1 : undefined}
         className={cn(
-          "absolute right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] flex size-12 items-center justify-center rounded-full text-muted-foreground hover:text-foreground active:scale-95",
+          "absolute right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] flex size-12 items-center justify-center rounded-full text-foreground/80 hover:text-foreground active:scale-95",
           PILL,
           !hidden && "pointer-events-auto"
         )}

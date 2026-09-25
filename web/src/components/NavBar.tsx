@@ -35,7 +35,7 @@ export function NavBar({ title, action, onBack, hideBack: hideBackProp, closeInC
     actionInCorner &&
     action &&
     createPortal(
-      <div className="fixed right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] [&>button]:size-12 [&>button]:rounded-full [&>button]:border [&>button]:border-border/60 [&>button]:bg-background/75 [&>button]:shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)] [&>button]:backdrop-blur-xl">
+      <div className="fixed right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] [&>button]:size-12 [&>button]:liquid-glass [&>button]:rounded-full">
         {action}
       </div>,
       document.body
@@ -70,7 +70,7 @@ export function NavBar({ title, action, onBack, hideBack: hideBackProp, closeInC
             type="button"
             onClick={goBack}
             aria-label="Close"
-            className="fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-50 flex size-12 items-center justify-center rounded-full border border-border/60 bg-background/75 text-foreground shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)] backdrop-blur-xl backdrop-saturate-150 active:scale-95"
+            className="fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-50 flex size-12 items-center justify-center rounded-full liquid-glass active:scale-95"
           >
             <CloseIcon className="size-5" />
           </button>,

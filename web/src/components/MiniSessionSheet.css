@@ -121,3 +121,13 @@
   width: 28px;
   height: 28px;
 }
+
+/* The compact pill uses liquid glass: let those (layered) styles win over the sheet's own */
+.mini-session-sheet.liquid-glass {
+  position: fixed;
+  background: revert-layer;
+  border: revert-layer;
+  box-shadow: revert-layer;
+  -webkit-backdrop-filter: revert-layer;
+  backdrop-filter: revert-layer;
+}

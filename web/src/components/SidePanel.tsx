@@ -24,7 +24,7 @@ export function SidePanel({ label, onClose, children }: { label: string; onClose
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] flex size-12 items-center justify-center rounded-full border border-border/60 bg-background/75 text-foreground shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)] backdrop-blur-xl backdrop-saturate-150 animate-in fade-in duration-200 active:scale-95"
+        className="fixed left-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] z-[70] flex size-12 items-center justify-center rounded-full liquid-glass animate-in fade-in duration-200 active:scale-95"
       >
         <CloseIcon className="size-5" />
       </button>

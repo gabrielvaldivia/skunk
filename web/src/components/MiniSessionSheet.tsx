@@ -71,7 +71,7 @@ export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact
 
   return (
     <div
-      className={compact ? "mini-session-sheet mini-session-compact" : "mini-session-sheet"}
+      className={compact ? "mini-session-sheet mini-session-compact liquid-glass" : "mini-session-sheet"}
       style={{
         bottom,
         transform:
