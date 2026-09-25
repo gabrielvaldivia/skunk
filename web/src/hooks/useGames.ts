@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import type { Game } from '../models/Game';
+import type { FieldUpdates } from '../services/databaseService';
 import { createGame, updateGame, deleteGame } from '../services/databaseService';
 import { useDataCache } from '../context/DataCacheContext';
 
@@ -16,7 +17,7 @@ export function useGames() {
     }
   }, [refreshGames]);
 
-  const editGame = useCallback(async (gameId: string, updates: Partial<Game>) => {
+  const editGame = useCallback(async (gameId: string, updates: FieldUpdates<Game>) => {
     try {
       await updateGame(gameId, updates);
       await refreshGames();

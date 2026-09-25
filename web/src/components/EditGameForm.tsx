@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
 import type { Game } from "../models/Game";
+import type { FieldUpdates } from "../services/databaseService";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +28,7 @@ interface EditGameFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   game: Game;
-  onSubmit: (gameId: string, game: Partial<Game>) => Promise<void>;
+  onSubmit: (gameId: string, game: FieldUpdates<Game>) => Promise<void>;
   onDelete?: (gameId: string) => Promise<void>;
 }
 
@@ -200,7 +201,7 @@ export function EditGameForm({
       const roundCondition = `round:${roundConditionValue}`;
       const winningConditions = `${gameCondition}|${roundCondition}`;
 
-      const updatedGame: Partial<Game> = {
+      const updatedGame: FieldUpdates<Game> = {
         title: title.trim(),
         isBinaryScore: !trackScoreState,
         isTeamBased,

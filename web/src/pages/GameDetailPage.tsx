@@ -14,6 +14,7 @@ import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import type { Match } from "../models/Match";
 import type { Game } from "../models/Game";
+import type { FieldUpdates } from "../services/databaseService";
 import "./GameDetailPage.css";
 
 const ADMIN_EMAIL = "valdivia.gabriel@gmail.com";
@@ -69,7 +70,7 @@ export function GameDetailPage() {
     }
   };
 
-  const handleEditGame = async (gameId: string, updates: Partial<Game>) => {
+  const handleEditGame = async (gameId: string, updates: FieldUpdates<Game>) => {
     try {
       await editGame(gameId, updates);
       toast.success("Game updated!");

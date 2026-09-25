@@ -20,6 +20,7 @@ export function OnboardingPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [photoData, setPhotoData] = useState<string | null>(null); // base64 without data: prefix
 
   // Prefill name from Google account
   useEffect(() => {
@@ -48,16 +49,16 @@ export function OnboardingPage() {
     reader.onloadend = () => {
       const result = reader.result as string;
       setPhotoPreview(result);
-      (fileInputRef.current as any).base64Data = result.split(",")[1];
+      setPhotoData(result.split(",")[1]);
     };
     reader.readAsDataURL(file);
   };
 
   const handleRemovePhoto = () => {
     setPhotoPreview(null);
+    setPhotoData(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
-      (fileInputRef.current as any).base64Data = "";
     }
   };
 
@@ -90,12 +91,8 @@ export function OnboardingPage() {
         updates.bio = trimmedBio;
       }
 
-      const newPhotoData = (fileInputRef.current as any)?.base64Data;
-      if (newPhotoData !== undefined) {
-        // Only include photoData if it has a value (empty string means no change or remove)
-        if (newPhotoData !== "") {
-          updates.photoData = newPhotoData;
-        }
+      if (photoData) {
+        updates.photoData = photoData;
       }
 
       await updatePlayer(player.id, updates);

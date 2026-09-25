@@ -11,5 +11,5 @@ export type Game = {
   highestRoundScoreWins: boolean;
   winningConditions: string;
   creationDate?: number;
-  coverArt?: string | null; // URL to square aspect ratio cover art image; null clears it
+  coverArt?: string; // URL to square aspect ratio cover art image
 };

@@ -5,6 +5,9 @@ import type { Player } from '../models/Player';
 import type { Match } from '../models/Match';
 import type { Session } from '../models/Session';
 
+// Partial update where null deletes the field (RTDB rejects undefined values)
+export type FieldUpdates<T> = { [K in keyof T]?: T[K] | null };
+
 const GAMES_PATH = 'games';
 const PLAYERS_PATH = 'players';
 const MATCHES_PATH = 'matches';
@@ -63,7 +66,7 @@ export async function createGame(game: Omit<Game, 'id'>): Promise<Game> {
   return gameWithId;
 }
 
-export async function updateGame(gameId: string, game: Partial<Game>): Promise<void> {
+export async function updateGame(gameId: string, game: FieldUpdates<Game>): Promise<void> {
   const gameRef = ref(database, `${GAMES_PATH}/${gameId}`);
   await update(gameRef, game);
 }
@@ -146,7 +149,7 @@ export async function createPlayer(player: Omit<Player, 'id'>): Promise<Player> 
   return playerWithId;
 }
 
-export async function updatePlayer(playerId: string, player: Partial<Player>): Promise<void> {
+export async function updatePlayer(playerId: string, player: FieldUpdates<Player>): Promise<void> {
   const playerRef = ref(database, `${PLAYERS_PATH}/${playerId}`);
   await update(playerRef, player);
 }
@@ -154,7 +157,7 @@ export async function updatePlayer(playerId: string, player: Partial<Player>): P
 // Strip personal data but keep the record so other players' matches still resolve
 export async function anonymizePlayer(playerId: string): Promise<void> {
   const playerRef = ref(database, `${PLAYERS_PATH}/${playerId}`);
-  await update(playerRef, {
+  const updates: FieldUpdates<Player> = {
     name: 'Deleted player',
     photoData: null,
     email: null,
@@ -162,7 +165,8 @@ export async function anonymizePlayer(playerId: string): Promise<void> {
     ownerID: null,
     location: null,
     bio: null,
-  });
+  };
+  await update(playerRef, updates);
 }
 
 export async function deletePlayer(playerId: string): Promise<void> {
@@ -282,7 +286,7 @@ export async function createMatch(match: Omit<Match, 'id'>): Promise<Match> {
 
 export async function updateMatch(matchId: string, match: Partial<Match>): Promise<void> {
   const matchRef = ref(database, `${MATCHES_PATH}/${matchId}`);
-  const updates: any = {
+  const updates: FieldUpdates<Match> = {
     ...match,
     lastModified: Date.now()
   };

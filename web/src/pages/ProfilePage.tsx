@@ -5,6 +5,8 @@ import {
   updatePlayer,
   anonymizePlayer,
 } from "../services/databaseService";
+import type { FieldUpdates } from "../services/databaseService";
+import type { Player } from "../models/Player";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
@@ -32,6 +34,8 @@ export function ProfilePage() {
     null
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // undefined = unchanged, null = remove, string = new base64 photo (no data: prefix)
+  const [pendingPhotoData, setPendingPhotoData] = useState<string | null | undefined>(undefined);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,19 +60,16 @@ export function ProfilePage() {
       // Remove data:image/...;base64, prefix
       const base64String = result.split(",")[1];
       setPhotoPreview(result);
-      // Store base64 string (without prefix) in a temporary variable
-      // We'll use it when saving
-      (fileInputRef.current as any).base64Data = base64String;
+      setPendingPhotoData(base64String);
     };
     reader.readAsDataURL(file);
   };
 
   const handleRemovePhoto = () => {
     setPhotoPreview(null);
+    setPendingPhotoData(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
-      // Set to empty string to indicate photo should be removed
-      (fileInputRef.current as any).base64Data = "";
     }
   };
 
@@ -83,27 +84,14 @@ export function ProfilePage() {
     setIsSaving(true);
 
     try {
-      const updates: Partial<typeof player> = {
+      // Empty fields are sent as null so clearing them actually removes them
+      const updates: FieldUpdates<Player> = {
         name: name.trim(),
+        location: location.trim() || null,
+        bio: bio.trim() || null,
       };
-
-      // Only include location if it has a value
-      const trimmedLocation = location.trim();
-      if (trimmedLocation) {
-        updates.location = trimmedLocation;
-      }
-
-      // Only include bio if it has a value
-      const trimmedBio = bio.trim();
-      if (trimmedBio) {
-        updates.bio = trimmedBio;
-      }
-
-      // Include photo data if a new photo was selected
-      const newPhotoData = (fileInputRef.current as any)?.base64Data;
-      if (newPhotoData !== undefined && newPhotoData !== "") {
-        // Only include photoData if it has a value
-        updates.photoData = newPhotoData;
+      if (pendingPhotoData !== undefined) {
+        updates.photoData = pendingPhotoData;
       }
 
       await updatePlayer(player.id, updates);
@@ -112,14 +100,10 @@ export function ProfilePage() {
       // Clear the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
-        (fileInputRef.current as any).base64Data = undefined;
       }
-
-      // Update original photo data to reflect the saved state
-      if (updates.photoData === undefined && !player.photoData) {
-        setOriginalPhotoData(null);
-      } else if (updates.photoData) {
-        setOriginalPhotoData(updates.photoData);
+      if (pendingPhotoData !== undefined) {
+        setOriginalPhotoData(pendingPhotoData);
+        setPendingPhotoData(undefined);
       }
 
       // Refresh player data from AuthContext
@@ -150,11 +134,8 @@ export function ProfilePage() {
     if (currentBio !== originalBio) return true;
 
     // Check photo
-    const newPhotoData = (fileInputRef.current as any)?.base64Data;
-    if (newPhotoData !== undefined) {
-      if (newPhotoData === "" && originalPhotoData) return true; // Photo was removed
-      if (newPhotoData !== "" && newPhotoData !== originalPhotoData)
-        return true; // Photo was changed
+    if (pendingPhotoData !== undefined && pendingPhotoData !== originalPhotoData) {
+      return true; // Photo was changed or removed
     }
 
     return false;
@@ -163,9 +144,9 @@ export function ProfilePage() {
   // Update fields when player changes
   useEffect(() => {
     if (player) {
-      if (player.name) setName(player.name);
-      if (player.location) setLocation(player.location);
-      if (player.bio) setBio(player.bio);
+      setName(player.name || "");
+      setLocation(player.location || "");
+      setBio(player.bio || "");
       if (player.photoData) {
         setPhotoPreview(`data:image/jpeg;base64,${player.photoData}`);
         setOriginalPhotoData(player.photoData);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "../context/SessionContext";
 import { useDataCache } from "../context/DataCacheContext";
@@ -26,12 +26,6 @@ export function MiniSessionSheet() {
   const [isPressing, setIsPressing] = useState(false);
   const startYRef = useRef<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
-
-  useEffect(() => {
-    if (!isPressing) {
-      setDragOffset(0);
-    }
-  }, [isPressing]);
 
   if (!currentSession) return null;
 
