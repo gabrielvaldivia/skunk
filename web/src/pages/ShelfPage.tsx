@@ -18,6 +18,7 @@ import { CloseIcon } from "../components/icons";
 import { MiniSessionSheet } from "../components/MiniSessionSheet";
 import { useSession } from "../context/SessionContext";
 import { CARD_DECK_ID, foldCardGames, isCardGame } from "@/lib/cardDeck";
+import type { BoxTurn } from "../components/shelf/GameShelf";
 
 // Width of the desktop detail panel; the selected box centres in the space left of it
 const PANEL_WIDTH = 440;
@@ -82,6 +83,9 @@ export function ShelfPage() {
   const viewportHeight = useViewportHeight();
   // How far the phone game view has scrolled; read by the 3D box every frame
   const detailScroll = useRef(0);
+  // Phones: swiping sideways over the box turns it; read by the 3D box every frame
+  const turn = useRef<BoxTurn>({ angle: 0, velocity: 0, dragging: false });
+  const swipe = useRef<{ id: number; x: number; y: number; angle: number; lastX: number; lastT: number; turning: boolean } | null>(null);
   // iOS pans the page up when the search field focuses; follow the visible area
   useKeyboardInsets();
   const panelOpen = !!selected;
@@ -100,9 +104,11 @@ export function ShelfPage() {
           solidBackdrop: true,
           // The box scrolls with the page, as its hero
           scroll: detailScroll,
+          turn,
         };
   const select = (id: string | null) => {
     detailScroll.current = 0;
+    turn.current = { angle: 0, velocity: 0, dragging: false };
     setSelectedId(id);
   };
 
@@ -165,7 +171,59 @@ export function ShelfPage() {
         onScroll={isDesktop ? undefined : (e) => (detailScroll.current = e.currentTarget.scrollTop)}
       >
         {/* Phones: room for the 3D box as the hero; the details scroll up over it */}
-        {!isDesktop && <div aria-hidden style={{ height: `${SHEET_TOP * 100}vh` }} />}
+        {/* Sideways swipes here turn the box; up and down still scroll the sheet (pan-y) */}
+        {!isDesktop && (
+          <div
+            aria-hidden
+            style={{ height: `${SHEET_TOP * 100}vh`, touchAction: "pan-y" }}
+            onPointerDown={(e) => {
+              swipe.current = {
+                id: e.pointerId,
+                x: e.clientX,
+                y: e.clientY,
+                angle: turn.current.angle,
+                lastX: e.clientX,
+                lastT: performance.now(),
+                turning: false,
+              };
+            }}
+            onPointerMove={(e) => {
+              const s = swipe.current;
+              if (!s || s.id !== e.pointerId) return;
+              const dx = e.clientX - s.x;
+              if (!s.turning) {
+                if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(e.clientY - s.y)) return;
+                s.turning = true;
+                try {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                } catch {
+                  // Not an active pointer; the swipe still works while it stays on the strip
+                }
+              }
+              // A swipe across the screen turns the box about three-quarters round
+              const perPx = (Math.PI * 1.5) / window.innerWidth;
+              const now = performance.now();
+              turn.current = {
+                angle: s.angle + dx * perPx,
+                velocity: ((e.clientX - s.lastX) * perPx * 1000) / Math.max(1, now - s.lastT),
+                dragging: true,
+              };
+              s.lastX = e.clientX;
+              s.lastT = now;
+            }}
+            onPointerUp={(e) => {
+              if (swipe.current?.id !== e.pointerId) return;
+              // A pause before letting go means no flick
+              if (performance.now() - swipe.current.lastT > 80) turn.current.velocity = 0;
+              turn.current.dragging = false;
+              swipe.current = null;
+            }}
+            onPointerCancel={() => {
+              turn.current.dragging = false;
+              swipe.current = null;
+            }}
+          />
+        )}
         <div
           className={
             isDesktop

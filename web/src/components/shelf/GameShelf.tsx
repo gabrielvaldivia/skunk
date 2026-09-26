@@ -34,7 +34,11 @@ export type FocusArea = {
    * box and page scroll as one. A ref, so scrolling doesn't re-render.
    */
   scroll?: { current: number };
+  /** Extra turn for the selected box from swiping (radians), with its spin and whether a finger is on it */
+  turn?: { current: BoxTurn };
 };
+
+export type BoxTurn = { angle: number; velocity: number; dragging: boolean };
 const NO_FOCUS_INSETS: FocusArea = { top: 0, right: 0, bottom: 0, margin: 1.6 };
 
 type Placed = { game: Game; box: ShelfBox; x: number; y: number };
@@ -102,6 +106,21 @@ function useBoxArt(game: Game, box: ShelfBox, near: boolean) {
     };
   }, [near, game.title, game.coverArt, width, height, depth, invalidate]);
   return art;
+}
+
+// Swiped round and let go: coast on the flick, then settle facing front or
+// back. Advances the page's shared turn state in place; returns the angle.
+function coastTurn(turn: BoxTurn, d: number) {
+  if (!turn.dragging) {
+    turn.angle += turn.velocity * d;
+    turn.velocity *= Math.exp(-d * 3);
+    if (Math.abs(turn.velocity) < 1.5) {
+      const rest = Math.round(turn.angle / Math.PI) * Math.PI;
+      turn.angle += (rest - turn.angle) * (1 - Math.exp(-d * 6));
+      turn.velocity *= Math.exp(-d * 6);
+    }
+  }
+  return turn.angle;
 }
 
 function GameBox({
@@ -197,7 +216,14 @@ function GameBox({
       } else {
         rot.set(0.08 + Math.sin(t * 0.8) * 0.05, Math.sin(t * 0.5) * 0.45, 0);
       }
+      // Plus however far it's been swiped round
+      if (focus.turn) rot.y += coastTurn(focus.turn.current, d);
     } else {
+      // Put back after being swiped round a few times: drop whole turns so it
+      // doesn't unwind them all on the way home
+      if (Math.abs(g.rotation.y) > Math.PI) {
+        g.rotation.y = THREE.MathUtils.euclideanModulo(g.rotation.y + Math.PI, Math.PI * 2) - Math.PI;
+      }
       target.copy(home);
       if (active) target.z += box.depth * S * 0.8 + 0.1;
       rot.set(active ? -0.06 : 0, active ? 0.18 : 0, 0);
@@ -214,7 +240,7 @@ function GameBox({
       // Closing: ease the leftover scroll offset out as the box flies home
       else if (sg.position.y !== 0 && !easing.damp(sg.position, "y", 0, 0.08, d)) sg.position.y = 0;
     }
-    const following = drag.current.active;
+    const following = drag.current.active || !!focus.turn?.current.dragging;
     const moved = easing.damp3(g.position, target, following ? 0.03 : 0.08, d);
     const turned = easing.dampE(g.rotation, rot, following ? 0.06 : 0.1, d);
     // The selected box idles, so keep it rendering; everything else settles
