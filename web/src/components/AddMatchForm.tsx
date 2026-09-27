@@ -219,7 +219,38 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
     const index = pendingPlayerFocus.current;
     if (index === null) return;
     pendingPlayerFocus.current = null;
-    playerInputRefs.current[index]?.focus();
+
+    let firstFrame = 0;
+    let secondFrame = 0;
+    let revealFrame = 0;
+    let keyboardTimer = 0;
+
+    const revealInput = (input: HTMLInputElement) => {
+      input.scrollIntoView({ block: "center" });
+    };
+
+    // Wait until the new row has been painted before opening the keyboard. Using
+    // preventScroll avoids iOS positioning the still-settling drawer incorrectly.
+    firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        const input = playerInputRefs.current[index];
+        if (!input) return;
+
+        input.focus({ preventScroll: true });
+        revealFrame = window.requestAnimationFrame(() => revealInput(input));
+
+        // Re-center once more after the iOS keyboard animation changes the
+        // visual viewport. This keeps first focus consistent with later focus.
+        keyboardTimer = window.setTimeout(() => revealInput(input), 300);
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+      window.cancelAnimationFrame(revealFrame);
+      window.clearTimeout(keyboardTimer);
+    };
   }, [playerInputs.length]);
 
   // Initialize team assignments when game changes or when switching to team-based
@@ -999,7 +1030,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer open={open} onOpenChange={onOpenChange} repositionInputs={false}>
       <DrawerContent>
         {renderContent(true)}
       </DrawerContent>
