@@ -45,7 +45,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
   const { user } = useAuth();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { games, isLoading: gamesLoading } = useGames();
-  const { players, isLoading: playersLoading } = usePlayers();
+  const { players, isLoading: playersLoading, addPlayer } = usePlayers();
   const { matches: recentMatches } = useActivity(100, 90); // Last 100 matches from last 90 days
   const [selectedGameId, setSelectedGameId] = useState<string>(defaultGameId || "");
   const [gameQuery, setGameQuery] = useState<string>("");
@@ -181,6 +181,25 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
     return players.find((p) => p.name.toLowerCase() === name.toLowerCase().trim());
   };
 
+  // A typed name nobody has yet: it becomes a new (signed-out) player
+  const isNewName = (name: string) => name.trim().length > 0 && !findPlayerByName(name);
+
+  // Players who haven't signed up are owned by whoever added them
+  const createNamedPlayer = async (name: string) => {
+    if (!user) throw new Error("Sign in to add players");
+    return addPlayer({ name: name.trim(), ownerID: user.uid });
+  };
+
+  const handleAddNewPlayer = async (index: number, name: string) => {
+    try {
+      const created = await createNamedPlayer(name);
+      handlePlayerSelect(index, created.name);
+    } catch (err) {
+      console.error("Error adding player:", err);
+      alert("Couldn't add that player");
+    }
+  };
+
   const handlePlayerInputChange = (index: number, value: string) => {
     setPlayerInputs((prev) => {
       const newInputs = [...prev];
@@ -235,30 +254,16 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
     });
   };
 
-  const getSelectedPlayerIds = (): string[] => {
-    return playerInputs
-      .map((input) => findPlayerByName(input))
-      .filter((player): player is Player => player !== undefined)
-      .map((player) => player.id);
-  };
-
   const canSubmit = () => {
     if (!selectedGame || !user) return false;
     
-    const selectedPlayerIds = getSelectedPlayerIds();
-    
-    // Check if we have valid player count
-    if (!selectedGame.supportedPlayerCounts.includes(selectedPlayerIds.length)) {
-      return false;
-    }
-    
-    // Check if all player inputs are valid (all filled with valid player names)
-    if (playerInputs.length !== selectedPlayerIds.length) {
-      return false;
-    }
+    // Every row needs a name: an existing player, or a new one we'll add on save
+    const names = playerInputs.map((n) => n.trim().toLowerCase());
+    if (names.some((n) => !n)) return false;
+    if (!selectedGame.supportedPlayerCounts.includes(names.length)) return false;
     
     // Check for duplicate players
-    if (new Set(selectedPlayerIds).size !== selectedPlayerIds.length) {
+    if (new Set(names).size !== names.length) {
       return false;
     }
     
@@ -277,7 +282,12 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
 
     setIsSubmitting(true);
     try {
-      const selectedPlayerIds = getSelectedPlayerIds();
+      // Add anyone typed in who isn't a player yet
+      const selectedPlayerIds: string[] = [];
+      for (const name of playerInputs) {
+        const player = findPlayerByName(name) ?? (await createNamedPlayer(name));
+        selectedPlayerIds.push(player.id);
+      }
       const now = Date.now();
       const match: Omit<Match, "id"> = {
         gameID: selectedGame.id,
@@ -554,21 +564,12 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                                       newStates[index] = { value: blurValue, showSuggestions: false };
                                       return newStates;
                                     });
-                                    setPlayerInputs((prev) => {
-                                      const currentValue = prev[index];
-                                      if (currentValue && !findPlayerByName(currentValue)) {
-                                        const newInputs = [...prev];
-                                        newInputs[index] = "";
-                                        return newInputs;
-                                      }
-                                      return prev;
-                                    });
                                   }, 200);
                                 }}
                                 placeholder={`Player ${index + 1}`}
                                 className="w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent px-0"
                               />
-                              {state.showSuggestions && suggestions.length > 0 && (
+                              {state.showSuggestions && (suggestions.length > 0 || isNewName(inputValue)) && (
                                 <div className="absolute z-50 w-full mt-1 bg-popover border rounded-xl shadow-xl max-h-60 overflow-auto">
                                   {suggestions.map((player) => (
                                     <button
@@ -583,6 +584,18 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                                       {player.name}
                                     </button>
                                   ))}
+                                  {isNewName(inputValue) && (
+                                    <button
+                                      type="button"
+                                      className="w-full text-left px-3 py-2 font-medium text-primary hover:bg-accent"
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        handleAddNewPlayer(index, inputValue);
+                                      }}
+                                    >
+                                      Add “{inputValue.trim()}” as a new player
+                                    </button>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -725,7 +738,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                     const canRemove = playerInputs.length > gameMinPlayers;
                     
                     const player = findPlayerByName(inputValue);
-                    const isValidPlayer = player !== undefined;
+                    const isValidPlayer = player !== undefined || isNewName(inputValue); // new names get added on save
                     
                     return (
                       <div key={index} className="relative grid gap-1">
@@ -768,24 +781,12 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                                     newStates[index] = { value: blurValue, showSuggestions: false };
                                     return newStates;
                                   });
-                                  
-                                  // Clear invalid input - only allow valid player names
-                                  // Use the value from state at the time of checking, not the blur event
-                                  setPlayerInputs((prev) => {
-                                    const currentValue = prev[index];
-                                    if (currentValue && !findPlayerByName(currentValue)) {
-                                      const newInputs = [...prev];
-                                      newInputs[index] = "";
-                                      return newInputs;
-                                    }
-                                    return prev;
-                                  });
                                 }, 200);
                               }}
                               placeholder={`Player ${index + 1}`}
                               className="w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent px-0"
                             />
-                            {state.showSuggestions && suggestions.length > 0 && (
+                            {state.showSuggestions && (suggestions.length > 0 || isNewName(inputValue)) && (
                               <div className="absolute z-50 w-full mt-1 bg-popover border rounded-xl shadow-xl max-h-60 overflow-auto">
                                 {suggestions.map((player) => (
                                   <button
@@ -801,6 +802,18 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                                     {player.name}
                                   </button>
                                 ))}
+                                {isNewName(inputValue) && (
+                                  <button
+                                    type="button"
+                                    className="w-full text-left px-3 py-2 font-medium text-primary hover:bg-accent"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      handleAddNewPlayer(index, inputValue);
+                                    }}
+                                  >
+                                    Add “{inputValue.trim()}” as a new player
+                                  </button>
+                                )}
                               </div>
                             )}
                           </div>
