@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { AppLink } from './AppLink';
 import type { Match } from '../models/Match';
 import { usePlayers } from '../hooks/usePlayers';
@@ -29,6 +29,7 @@ import {
 import './MatchRow.css';
 import { Avatar } from "./Avatar";
 import { isAdminEmail } from "@/lib/admin";
+import { MoreIcon } from "./icons";
 
 interface MatchRowProps {
   match: Match;
@@ -41,11 +42,9 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
   const { games } = useGames();
   const { user, player: currentPlayer } = useAuth();
   const { removeMatch, editMatch } = useMatches();
-  // Long press opens a menu (Edit / Delete); Delete asks to confirm
+  // The row's options button opens a menu (Edit / Delete); Delete asks to confirm
   const [sheet, setSheet] = useState<'actions' | 'confirmDelete' | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const longPressTimerRef = useRef<number | null>(null);
-  const isLongPressRef = useRef(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
 
   const getGame = () => {
@@ -122,40 +121,6 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     } catch (err) {
       console.error('Error deleting match:', err);
       alert('Failed to delete match');
-    }
-  };
-
-  const handleLongPressStart = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!canDelete()) return;
-    
-    isLongPressRef.current = false;
-    longPressTimerRef.current = setTimeout(() => {
-      isLongPressRef.current = true;
-      setSheet('actions');
-      // Prevent default touch behaviors when long press triggers
-      if ('touches' in e) {
-        e.preventDefault();
-      }
-    }, 500);
-  };
-
-  const handleLongPressEnd = (e: React.MouseEvent | React.TouchEvent) => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-    // Prevent click action if long press was triggered
-    if (isLongPressRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      isLongPressRef.current = false;
-    }
-  };
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (isLongPressRef.current) {
-      e.preventDefault();
-      e.stopPropagation();
     }
   };
 
@@ -305,21 +270,23 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
 
   return (
     <>
-      <div 
-        className={`match-row ${canDelete() ? 'match-row-deletable' : ''}`}
-        onMouseDown={canDelete() ? handleLongPressStart : undefined}
-        onMouseUp={canDelete() ? handleLongPressEnd : undefined}
-        onMouseLeave={canDelete() ? handleLongPressEnd : undefined}
-        onTouchStart={canDelete() ? handleLongPressStart : undefined}
-        onTouchEnd={canDelete() ? handleLongPressEnd : undefined}
-        onClick={canDelete() ? handleClick : undefined}
-      >
+      <div className="match-row">
         <div className="match-main-content">
           {renderWinnerAvatar()}
           <div className="match-content">
             <div className="match-text">{renderMatchText()}</div>
             <div className="match-date">{formatDate(match.date)}</div>
           </div>
+          {canDelete() && (
+            <button
+              type="button"
+              className="match-options-button"
+              aria-label="Match options"
+              onClick={() => setSheet('actions')}
+            >
+              <MoreIcon className="match-options-icon" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -411,4 +378,3 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     </>
   );
 }
-

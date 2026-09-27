@@ -17,6 +17,7 @@ import {
   ComputerIcon,
   DicesIcon,
   Location01Icon,
+  MoreVerticalIcon,
   Moon02Icon,
   Edit03Icon,
   Image01Icon,
@@ -60,6 +61,7 @@ export const TrophyIcon = makeIcon(ChampionIcon, "TrophyIcon");
 export const CameraIcon = makeIcon(Camera01Icon, "CameraIcon");
 export const ImageIcon = makeIcon(Image01Icon, "ImageIcon");
 export const LocationIcon = makeIcon(Location01Icon, "LocationIcon");
+export const MoreIcon = makeIcon(MoreVerticalIcon, "MoreIcon");
 export const ShareIcon = makeIcon(Share03Icon, "ShareIcon");
 export const SunIcon = makeIcon(Sun03Icon, "SunIcon");
 export const MoonIcon = makeIcon(Moon02Icon, "MoonIcon");
