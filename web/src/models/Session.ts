@@ -5,6 +5,6 @@ export type Session = {
   createdAt: number; // Timestamp
   createdByID: string; // User ID of creator
   lastActivityAt: number; // Timestamp, updated when participants join/leave
-  gameID?: string; // The game last played (or the one it was started for); names the session
+  gameID?: string; // The game last played (or the one it was started for)
+  title?: string; // A manually chosen title; when present, it overrides the latest game's name
 };
-

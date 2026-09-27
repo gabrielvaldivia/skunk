@@ -66,7 +66,9 @@ export function SessionsListPage() {
                 onClick={() => navigate(`/session/${session.code}`)}
               >
                 <div className="session-row-main">
-                  <div className="session-code">{getGameTitle(session.gameID) ?? `Session ${session.code}`}</div>
+                  <div className="session-code">
+                    {session.title?.trim() || getGameTitle(session.gameID) || `Session ${session.code}`}
+                  </div>
                   <div className="session-meta">
                     {getGameTitle(session.gameID) && `${session.code} · `}
                     {session.participantIDs.length} player{session.participantIDs.length !== 1 ? 's' : ''}
@@ -82,4 +84,3 @@ export function SessionsListPage() {
     </div>
   );
 }
-

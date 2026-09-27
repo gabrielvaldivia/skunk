@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { lazy, Suspense, useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSession } from "../context/SessionContext";
 import { useAuth } from "../context/AuthContext";
@@ -6,7 +6,7 @@ import { usePlayers } from "../hooks/usePlayers";
 import { useMatches } from "../hooks/useMatches";
 import { useGames } from "../hooks/useGames";
 import { heartGame } from "../hooks/useGameScope";
-import { setSessionGame, subscribeToMatchesForSession } from "../services/databaseService";
+import { setSessionGame, setSessionTitle, subscribeToMatchesForSession } from "../services/databaseService";
 import { PlayerCard } from "../components/PlayerCard";
 import { MatchRow } from "../components/MatchRow";
 import { AddMatchForm } from "../components/AddMatchForm";
@@ -17,6 +17,10 @@ import { toast } from "sonner";
 import { getMatchWinnerID, type Match } from "../models/Match";
 import type { Player } from "../models/Player";
 import "./SessionPage.css";
+
+const GameBoxPreview = lazy(() =>
+  import("../components/shelf/GameBoxPreview").then((module) => ({ default: module.GameBoxPreview }))
+);
 
 export function SessionPage() {
   const { code } = useParams<{ code: string }>();
@@ -39,6 +43,11 @@ export function SessionPage() {
   const [sessionParticipants, setSessionParticipants] = useState<Player[]>([]);
   const [sessionMatches, setSessionMatches] = useState<Match[]>([]);
   const [matchesLoadedFor, setMatchesLoadedFor] = useState<string | null>(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isSavingTitle, setIsSavingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const cancelTitleEdit = useRef(false);
   const [lastSelectedGameId, setLastSelectedGameId] = useState<
     string | undefined
   >(undefined);
@@ -157,11 +166,15 @@ export function SessionPage() {
       matchCounts.set(match.gameID, (matchCounts.get(match.gameID) ?? 0) + 1);
     });
 
-    return Array.from(matchCounts, ([gameId, matchCount]) => ({
-      gameId,
-      matchCount,
-      title: games.find((game) => game.id === gameId)?.title ?? "Unknown game",
-    })).sort((a, b) => b.matchCount - a.matchCount || a.title.localeCompare(b.title));
+    return Array.from(matchCounts, ([gameId, matchCount]) => {
+      const game = games.find((candidate) => candidate.id === gameId);
+      return {
+        game,
+        gameId,
+        matchCount,
+        title: game?.title ?? "Unknown game",
+      };
+    }).sort((a, b) => b.matchCount - a.matchCount || a.title.localeCompare(b.title));
   }, [games, sessionMatches]);
 
   // Load last selected game for this session from localStorage
@@ -177,14 +190,24 @@ export function SessionPage() {
     }
   }, [code]);
 
-  // Named after the last game played: the newest match, else the session's game
+  // A manual title always wins; otherwise use the newest match's game.
   const latestMatch = sessionMatches.reduce<Match | undefined>((a, m) => (!a || m.date > a.date ? m : a), undefined);
   const sessionGameId = latestMatch?.gameID ?? currentSession?.gameID;
-  const sessionTitle = games.find((g) => g.id === sessionGameId)?.title ?? `Session ${code}`;
+  const automaticSessionTitle = games.find((g) => g.id === sessionGameId)?.title ?? `Session ${code}`;
+  const sessionTitle = currentSession?.title?.trim() || automaticSessionTitle;
 
-  // Keep the session's game in step with its newest match, so the session pill
-  // and My Sessions (which only read the session) show the same name. Covers
-  // matches saved before sessions were named, and edits that change the game.
+  useEffect(() => {
+    if (!isEditingTitle) setTitleDraft(sessionTitle);
+  }, [isEditingTitle, sessionTitle]);
+
+  useEffect(() => {
+    if (!isEditingTitle) return;
+    titleInputRef.current?.focus();
+    titleInputRef.current?.select();
+  }, [isEditingTitle]);
+
+  // Keep the session's latest-game pointer in step for automatic titles and
+  // default game selection. A manual title remains untouched.
   useEffect(() => {
     if (!currentSession || currentSession.code !== code || matchesLoadedFor !== code) return;
     const latest = latestMatch?.gameID;
@@ -192,6 +215,46 @@ export function SessionPage() {
       setSessionGame(currentSession.id, latest).catch((err) => console.error("Error naming session:", err));
     }
   }, [currentSession, code, matchesLoadedFor, latestMatch?.gameID]);
+
+  const startEditingTitle = () => {
+    cancelTitleEdit.current = false;
+    setTitleDraft(sessionTitle);
+    setIsEditingTitle(true);
+  };
+
+  const finishEditingTitle = async () => {
+    if (cancelTitleEdit.current) {
+      cancelTitleEdit.current = false;
+      setTitleDraft(sessionTitle);
+      setIsEditingTitle(false);
+      return;
+    }
+
+    const nextTitle = titleDraft.trim();
+    if (!nextTitle) {
+      toast.error("Session title can't be empty");
+      setTitleDraft(sessionTitle);
+      setIsEditingTitle(false);
+      return;
+    }
+    if (!currentSession || nextTitle === currentSession.title?.trim()) {
+      setIsEditingTitle(false);
+      return;
+    }
+
+    setIsSavingTitle(true);
+    try {
+      await setSessionTitle(currentSession.id, nextTitle);
+      setIsEditingTitle(false);
+    } catch (err) {
+      console.error("Error naming session:", err);
+      toast.error("Couldn't rename session");
+      setTitleDraft(sessionTitle);
+      setIsEditingTitle(false);
+    } finally {
+      setIsSavingTitle(false);
+    }
+  };
 
   const handleShare = async () => {
     if (!code) return;
@@ -237,7 +300,7 @@ export function SessionPage() {
 
   const handleSubmitMatch = async (match: Omit<Match, "id">) => {
     await addMatch(match);
-    // The session takes the name of the game just played
+    // Track the latest game; a manual session title continues to take precedence.
     if (currentSession && match.gameID && currentSession.gameID !== match.gameID) {
       setSessionGame(currentSession.id, match.gameID).catch((err) => console.error("Error naming session:", err));
     }
@@ -303,7 +366,39 @@ export function SessionPage() {
   return (
     <div className="session-page">
       <NavBar
-        title={sessionTitle}
+        title={
+          isEditingTitle ? (
+            <input
+              ref={titleInputRef}
+              className="session-title-input"
+              value={titleDraft}
+              maxLength={60}
+              disabled={isSavingTitle}
+              aria-label="Session title"
+              onChange={(event) => setTitleDraft(event.target.value)}
+              onBlur={finishEditingTitle}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  event.currentTarget.blur();
+                } else if (event.key === "Escape") {
+                  event.preventDefault();
+                  cancelTitleEdit.current = true;
+                  event.currentTarget.blur();
+                }
+              }}
+            />
+          ) : (
+            <button
+              type="button"
+              className="session-title-button"
+              onClick={startEditingTitle}
+              aria-label={`Rename ${sessionTitle}`}
+            >
+              {sessionTitle}
+            </button>
+          )
+        }
         action={
           <Button
             variant="secondary"
@@ -362,14 +457,28 @@ export function SessionPage() {
           ) : gamesPlayed.length === 0 ? (
             <div className="empty-state">No games played yet</div>
           ) : (
-            <div className="session-games-list list">
-              {gamesPlayed.map(({ gameId, matchCount, title }) => (
-                <div className="session-game-row" key={gameId}>
+            <div className="session-games-scroll">
+              {gamesPlayed.map(({ game, gameId, matchCount, title }) => (
+                <button
+                  type="button"
+                  className="session-game-card"
+                  key={gameId}
+                  onClick={() => navigate(`/games/${gameId}`)}
+                >
+                  <span className="session-game-box">
+                    {game ? (
+                      <Suspense fallback={<span className="session-game-box-placeholder" />}>
+                        <GameBoxPreview game={game} size={132} />
+                      </Suspense>
+                    ) : (
+                      <span className="session-game-box-placeholder">{title.charAt(0)}</span>
+                    )}
+                  </span>
                   <span className="session-game-title">{title}</span>
                   <span className="session-game-count">
                     {matchCount} {matchCount === 1 ? "match" : "matches"}
                   </span>
-                </div>
+                </button>
               ))}
             </div>
           )}

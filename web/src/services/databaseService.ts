@@ -389,9 +389,17 @@ export async function joinSession(sessionId: string, playerId: string): Promise<
 /**
  * Remove a player from session participants, update lastActivityAt, and delete session if empty
  */
-/** A session is named after its game: set it to the one just played */
+/** Track the most recently played game for a session. */
 export async function setSessionGame(sessionId: string, gameID: string): Promise<void> {
   await update(ref(database, `${SESSIONS_PATH}/${sessionId}`), { gameID, lastActivityAt: Date.now() });
+}
+
+/** Set a persistent manual title, which takes precedence over the latest game. */
+export async function setSessionTitle(sessionId: string, title: string): Promise<void> {
+  await update(ref(database, `${SESSIONS_PATH}/${sessionId}`), {
+    title: title.trim(),
+    lastActivityAt: Date.now(),
+  });
 }
 
 export async function leaveSession(sessionId: string, playerId: string): Promise<void> {

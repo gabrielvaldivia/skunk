@@ -38,9 +38,9 @@ export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact
     .map((id) => players.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);
   const createdLabel = formatRelativeTime(currentSession.createdAt);
-  // Named after the game being played; the code only when there isn't one yet
+  // A manual title takes precedence over the game-derived name.
   const gameTitle = games.find((g) => g.id === currentSession.gameID)?.title;
-  const title = gameTitle ?? `Session ${currentSession.code}`;
+  const title = currentSession.title?.trim() || gameTitle || `Session ${currentSession.code}`;
 
   const navigateToSession = () => {
     navigate(`/session/${currentSession.code}`);
@@ -120,4 +120,3 @@ export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact
     </div>
   );
 }
-

@@ -23,25 +23,118 @@
   color: hsl(var(--destructive));
 }
 
-.session-game-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 0;
-}
-
-.session-game-title {
+.session-title-button {
+  display: block;
+  width: 100%;
   min-width: 0;
   overflow: hidden;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: text;
+  font: inherit;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.session-title-button:hover {
+  opacity: 0.75;
+}
+
+.session-title-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.25rem 0.375rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  outline: none;
+  background: hsl(var(--background));
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  text-align: center;
+}
+
+.session-title-input:focus {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+}
+
+.session-games-scroll {
+  display: flex;
+  gap: 0.875rem;
+  margin-inline: -0.125rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 0.25rem 0.125rem 0.75rem;
+  scroll-snap-type: inline proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.session-games-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.session-game-card {
+  display: flex;
+  width: 8.25rem;
+  flex: 0 0 8.25rem;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  scroll-snap-align: start;
+  text-align: center;
+}
+
+.session-game-card:active {
+  opacity: 0.72;
+}
+
+.session-game-card:focus-visible {
+  border-radius: 0.75rem;
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.session-game-box,
+.session-game-box-placeholder {
+  display: flex;
+  width: 8.25rem;
+  height: 8.25rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.session-game-box-placeholder {
+  border-radius: 0.875rem;
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.session-game-title {
+  display: -webkit-box;
+  width: 100%;
+  min-height: 2.4em;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .session-game-count {
-  flex-shrink: 0;
+  margin-top: 0.125rem;
   color: hsl(var(--muted-foreground));
   font-size: 0.8125rem;
 }
