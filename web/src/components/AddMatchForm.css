@@ -1,0 +1,141 @@
+.remove-player-button,
+.winner-button {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+
+.remove-player-button {
+  width: 2rem;
+  height: 2rem;
+  color: hsl(var(--destructive));
+}
+
+.remove-player-button:hover {
+  background: hsl(var(--destructive) / 0.1);
+}
+
+.remove-player-button:active,
+.winner-button:active {
+  transform: scale(0.9);
+}
+
+.remove-player-button:focus-visible,
+.winner-button:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.remove-player-icon {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.winner-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: hsl(var(--muted-foreground) / 0.55);
+}
+
+.winner-button:hover {
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+}
+
+.winner-button-selected {
+  background: hsl(43 96% 89%);
+  color: hsl(38 92% 43%);
+  animation: winner-crown-pop 420ms cubic-bezier(0.2, 0.9, 0.25, 1.35);
+}
+
+.dark .winner-button-selected {
+  background: hsl(40 70% 20%);
+  color: hsl(45 95% 62%);
+}
+
+.winner-button-selected:hover {
+  background: hsl(43 96% 85%);
+  color: hsl(38 92% 38%);
+}
+
+.dark .winner-button-selected:hover {
+  background: hsl(40 70% 24%);
+  color: hsl(45 95% 68%);
+}
+
+.winner-crown {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.winner-button-selected .winner-crown path {
+  fill: currentColor;
+  fill-opacity: 0.16;
+}
+
+.winner-confetti {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.winner-confetti-piece {
+  --confetti-x: 0px;
+  --confetti-y: -32px;
+  --confetti-rotation: 180deg;
+  position: absolute;
+  left: -2px;
+  top: -4px;
+  width: 5px;
+  height: 8px;
+  border-radius: 1px;
+  background: hsl(43 95% 55%);
+  opacity: 0;
+  animation: winner-confetti-burst 720ms cubic-bezier(0.15, 0.75, 0.25, 1) forwards;
+}
+
+.winner-confetti-piece:nth-child(2) { --confetti-x: 18px; --confetti-y: -30px; --confetti-rotation: 250deg; background: hsl(347 85% 62%); }
+.winner-confetti-piece:nth-child(3) { --confetti-x: 31px; --confetti-y: -15px; --confetti-rotation: 320deg; background: hsl(199 88% 56%); }
+.winner-confetti-piece:nth-child(4) { --confetti-x: 34px; --confetti-y: 8px; --confetti-rotation: 410deg; background: hsl(151 68% 48%); }
+.winner-confetti-piece:nth-child(5) { --confetti-x: 20px; --confetti-y: 27px; --confetti-rotation: 500deg; background: hsl(272 78% 65%); }
+.winner-confetti-piece:nth-child(6) { --confetti-x: 5px; --confetti-y: 34px; --confetti-rotation: 580deg; background: hsl(28 94% 58%); }
+.winner-confetti-piece:nth-child(7) { --confetti-x: -14px; --confetti-y: 31px; --confetti-rotation: -240deg; background: hsl(199 88% 56%); }
+.winner-confetti-piece:nth-child(8) { --confetti-x: -30px; --confetti-y: 17px; --confetti-rotation: -320deg; background: hsl(347 85% 62%); }
+.winner-confetti-piece:nth-child(9) { --confetti-x: -34px; --confetti-y: -4px; --confetti-rotation: -400deg; background: hsl(43 95% 55%); }
+.winner-confetti-piece:nth-child(10) { --confetti-x: -27px; --confetti-y: -25px; --confetti-rotation: -480deg; background: hsl(151 68% 48%); }
+.winner-confetti-piece:nth-child(11) { --confetti-x: -10px; --confetti-y: -36px; --confetti-rotation: -560deg; background: hsl(272 78% 65%); }
+.winner-confetti-piece:nth-child(12) { --confetti-x: 8px; --confetti-y: -39px; --confetti-rotation: 620deg; background: hsl(28 94% 58%); }
+
+@keyframes winner-crown-pop {
+  0% { transform: scale(0.72) rotate(-8deg); }
+  55% { transform: scale(1.16) rotate(5deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes winner-confetti-burst {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0) scale(0.4); }
+  15% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--confetti-x), var(--confetti-y)) rotate(var(--confetti-rotation)) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .winner-button-selected {
+    animation: none;
+  }
+
+  .winner-confetti {
+    display: none;
+  }
+}

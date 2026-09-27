@@ -25,12 +25,47 @@ import {
 } from "@/components/ui/drawer";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { computeWinnerID } from "../models/Match";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { SelectorIcon } from "./icons";
+import { CrownIcon, RemovePersonIcon, SelectorIcon } from "./icons";
 import "./AddGameForm.css";
+import "./AddMatchForm.css";
 import { getPlayerColor, getInitials } from "@/lib/player";
+
+function WinnerConfetti() {
+  return (
+    <span className="winner-confetti" aria-hidden>
+      {Array.from({ length: 12 }, (_, index) => (
+        <span key={index} className="winner-confetti-piece" />
+      ))}
+    </span>
+  );
+}
+
+function WinnerButton({
+  selected,
+  playerName,
+  onClick,
+  celebrationKey,
+}: {
+  selected: boolean;
+  playerName: string;
+  onClick: () => void;
+  celebrationKey?: number;
+}) {
+  return (
+    <button
+      type="button"
+      className={`winner-button ${selected ? "winner-button-selected" : ""}`}
+      aria-label={selected ? `Unset ${playerName} as winner` : `Choose ${playerName} as winner`}
+      aria-pressed={selected}
+      onClick={onClick}
+    >
+      <CrownIcon className="winner-crown" />
+      {celebrationKey !== undefined && <WinnerConfetti key={celebrationKey} />}
+    </button>
+  );
+}
 
 interface AddMatchFormProps {
   open: boolean;
@@ -59,6 +94,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
   const [autocompleteStates, setAutocompleteStates] = useState<Array<{ value: string; showSuggestions: boolean }>>([]);
   const [teamAssignments, setTeamAssignments] = useState<Map<string, string>>(new Map()); // playerId -> teamId
   const [teams, setTeams] = useState<string[]>(["team1", "team2"]); // Array of team IDs
+  const [winnerCelebration, setWinnerCelebration] = useState<{ index: number; nonce: number } | null>(null);
 
   const selectedGame = games.find((g) => g.id === selectedGameId);
 
@@ -120,6 +156,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
   // Initialize player inputs when game changes or when session participants are provided
   useEffect(() => {
     if (selectedGame && open) {
+      setWinnerCelebration(null);
       const gameMinPlayers = Math.min(...selectedGame.supportedPlayerCounts);
       
       if (editing && editingThisGame) {
@@ -261,6 +298,8 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
     if (playerInputs.length > gameMinPlayers) {
       setPlayerInputs((prev) => prev.filter((_, i) => i !== index));
       setAutocompleteStates((prev) => prev.filter((_, i) => i !== index));
+      setScores((prev) => prev.filter((_, i) => i !== index));
+      setWinnerCelebration(null);
     }
   };
 
@@ -270,6 +309,21 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
       newScores[index] = value;
       return newScores;
     });
+  };
+
+  const handleWinnerChange = (index: number) => {
+    if (scores[index] === 1) {
+      handleScoreChange(index, 0);
+      setWinnerCelebration(null);
+      return;
+    }
+
+    setScores(() => {
+      const next = new Array(playerInputs.length).fill(0);
+      next[index] = 1;
+      return next;
+    });
+    setWinnerCelebration((previous) => ({ index, nonce: (previous?.nonce ?? 0) + 1 }));
   };
 
   const canSubmit = () => {
@@ -546,6 +600,25 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                       return (
                         <div key={index} className="relative grid gap-1">
                           <div className="flex gap-2 items-center">
+                            {canRemove && (
+                              <button
+                                type="button"
+                                className="remove-player-button"
+                                aria-label={`Remove ${inputValue || `Player ${index + 1}`}`}
+                                onClick={() => {
+                                  if (player) {
+                                    setTeamAssignments(prev => {
+                                      const newMap = new Map(prev);
+                                      newMap.delete(player.id);
+                                      return newMap;
+                                    });
+                                  }
+                                  handleRemovePlayer(index);
+                                }}
+                              >
+                                <RemovePersonIcon className="remove-player-icon" />
+                              </button>
+                            )}
                             {/* Player avatar */}
                             <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-medium text-white shrink-0"
                               style={player ? { backgroundColor: getPlayerColor(player) } : undefined}
@@ -640,25 +713,6 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                               </select>
                             )}
                             
-                            {canRemove && (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  if (player) {
-                                    setTeamAssignments(prev => {
-                                      const newMap = new Map(prev);
-                                      newMap.delete(player.id);
-                                      return newMap;
-                                    });
-                                  }
-                                  handleRemovePlayer(index);
-                                }}
-                              >
-                                Remove
-                              </Button>
-                            )}
                           </div>
                         </div>
                       );
@@ -713,19 +767,11 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                         <div key={index} className="flex items-center gap-2">
                           <span className="text-sm w-32">{player.name}:</span>
                           {selectedGame.isBinaryScore ? (
-                            <Switch
-                              checked={scores[index] === 1}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setScores(() => {
-                                    const newScores = new Array(playerInputs.length).fill(0);
-                                    newScores[index] = 1;
-                                    return newScores;
-                                  });
-                                } else {
-                                  handleScoreChange(index, 0);
-                                }
-                              }}
+                            <WinnerButton
+                              selected={scores[index] === 1}
+                              playerName={player.name}
+                              onClick={() => handleWinnerChange(index)}
+                              celebrationKey={winnerCelebration?.index === index ? winnerCelebration.nonce : undefined}
                             />
                           ) : (
                             <Input
@@ -761,6 +807,16 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                     return (
                       <div key={index} className="relative grid gap-1">
                         <div className="flex gap-2 items-center">
+                          {canRemove && (
+                            <button
+                              type="button"
+                              className="remove-player-button"
+                              aria-label={`Remove ${inputValue || `Player ${index + 1}`}`}
+                              onClick={() => handleRemovePlayer(index)}
+                            >
+                              <RemovePersonIcon className="remove-player-icon" />
+                            </button>
+                          )}
                           {/* Player avatar */}
                           <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-medium text-white shrink-0"
                             style={player ? { backgroundColor: getPlayerColor(player) } : undefined}
@@ -839,21 +895,11 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                           {isValidPlayer && (
                             <>
                               {selectedGame.isBinaryScore ? (
-                                <Switch
-                                  checked={scores[index] === 1}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      // Set this player as winner and all others as losers
-                                      setScores(() => {
-                                        // Create array of correct length, all 0s except this index
-                                        const newScores = new Array(playerInputs.length).fill(0);
-                                        newScores[index] = 1;
-                                        return newScores;
-                                      });
-                                    } else {
-                                      handleScoreChange(index, 0);
-                                    }
-                                  }}
+                                <WinnerButton
+                                  selected={scores[index] === 1}
+                                  playerName={inputValue.trim() || `Player ${index + 1}`}
+                                  onClick={() => handleWinnerChange(index)}
+                                  celebrationKey={winnerCelebration?.index === index ? winnerCelebration.nonce : undefined}
                                 />
                               ) : (
                                 <Input
@@ -874,16 +920,6 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                             </>
                           )}
                           
-                          {canRemove && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => handleRemovePlayer(index)}
-                              className="px-3"
-                            >
-                              Remove
-                            </Button>
-                          )}
                         </div>
                       </div>
                     );
@@ -945,4 +981,3 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
     </Drawer>
   );
 }
-

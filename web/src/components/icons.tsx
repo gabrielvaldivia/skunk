@@ -15,9 +15,11 @@ import {
   ChampionIcon,
   CircleIcon,
   ComputerIcon,
+  CrownIcon as CrownGlyph,
   DicesIcon,
   Location01Icon,
   MoreVerticalIcon,
+  MinusSignCircleIcon,
   Moon02Icon,
   Edit03Icon,
   Image01Icon,
@@ -48,6 +50,7 @@ function makeIcon(icon: IconSvgElement, displayName: string) {
 
 export const ActivityIcon = makeIcon(Activity01Icon, "ActivityIcon");
 export const GamesIcon = makeIcon(DicesIcon, "GamesIcon");
+export const CrownIcon = makeIcon(CrownGlyph, "CrownIcon");
 export const ChevronDownIcon = makeIcon(ArrowDown01Icon, "ChevronDownIcon");
 export const PlayersIcon = makeIcon(UserMultiple02Icon, "PlayersIcon");
 export const AccountIcon = makeIcon(UserCircleIcon, "AccountIcon");
@@ -62,6 +65,7 @@ export const CameraIcon = makeIcon(Camera01Icon, "CameraIcon");
 export const ImageIcon = makeIcon(Image01Icon, "ImageIcon");
 export const LocationIcon = makeIcon(Location01Icon, "LocationIcon");
 export const MoreIcon = makeIcon(MoreVerticalIcon, "MoreIcon");
+export const RemovePersonIcon = makeIcon(MinusSignCircleIcon, "RemovePersonIcon");
 export const ShareIcon = makeIcon(Share03Icon, "ShareIcon");
 export const SunIcon = makeIcon(Sun03Icon, "SunIcon");
 export const MoonIcon = makeIcon(Moon02Icon, "MoonIcon");
