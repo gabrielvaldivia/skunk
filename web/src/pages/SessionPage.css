@@ -134,7 +134,7 @@
 }
 
 .session-game-count {
-  margin-top: 0.125rem;
+  margin-top: 4px;
   color: hsl(var(--muted-foreground));
   font-size: 0.8125rem;
 }
