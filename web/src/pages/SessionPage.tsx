@@ -126,6 +126,22 @@ export function SessionPage() {
     }
   }, [code]);
 
+  // Named after the last game played: the newest match, else the session's game
+  const latestMatch = sessionMatches.reduce<Match | undefined>((a, m) => (!a || m.date > a.date ? m : a), undefined);
+  const sessionGameId = latestMatch?.gameID ?? currentSession?.gameID;
+  const sessionTitle = games.find((g) => g.id === sessionGameId)?.title ?? `Session ${code}`;
+
+  // Keep the session's game in step with its newest match, so the session pill
+  // and My Sessions (which only read the session) show the same name. Covers
+  // matches saved before sessions were named, and edits that change the game.
+  useEffect(() => {
+    if (!currentSession || currentSession.code !== code || matchesLoadedFor !== code) return;
+    const latest = latestMatch?.gameID;
+    if (latest && latest !== currentSession.gameID) {
+      setSessionGame(currentSession.id, latest).catch((err) => console.error("Error naming session:", err));
+    }
+  }, [currentSession, code, matchesLoadedFor, latestMatch?.gameID]);
+
   const handleShare = async () => {
     if (!code) return;
 
@@ -133,7 +149,7 @@ export function SessionPage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Session ${code}`,
+          title: sessionTitle,
           text: "Join my session on Skunk",
           url,
         });
@@ -189,11 +205,6 @@ export function SessionPage() {
     }
     setShowAddForm(false);
   };
-
-  // Named after the last game played: the newest match, else the session's game
-  const latestMatch = sessionMatches.reduce<Match | undefined>((a, m) => (!a || m.date > a.date ? m : a), undefined);
-  const sessionGameId = latestMatch?.gameID ?? currentSession?.gameID;
-  const sessionTitle = games.find((g) => g.id === sessionGameId)?.title ?? `Session ${code}`;
 
   if (!code) {
     return (
