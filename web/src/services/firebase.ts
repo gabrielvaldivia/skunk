@@ -11,6 +11,9 @@ const envProjectId = import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefi
 const envStorageBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET;
 const envMessagingSenderId = import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID;
 const envAppId = import.meta.env.VITE_FIREBASE_APP_ID;
+const authDomain = window.location.hostname === 'www.skunk.games'
+  ? window.location.host
+  : envAuthDomain;
 
 function normalizeDatabaseUrl(url: string | undefined, projectId: string | undefined): string | undefined {
   // If provided and looks like an https URL, ensure trailing slash
@@ -27,7 +30,7 @@ function normalizeDatabaseUrl(url: string | undefined, projectId: string | undef
 
 const firebaseConfig = {
   apiKey: envApiKey,
-  authDomain: envAuthDomain,
+  authDomain,
   databaseURL: normalizeDatabaseUrl(envDatabaseURL, envProjectId),
   projectId: envProjectId,
   storageBucket: envStorageBucket,
@@ -48,4 +51,3 @@ export const googleProvider = new GoogleAuthProvider();
 export const database = getDatabase(app);
 
 export default app;
-
