@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSession } from "../context/SessionContext";
 import { useAuth } from "../context/AuthContext";
@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { PlusIcon, ShareIcon } from "../components/icons";
 import { NavBar } from "../components/NavBar";
 import { toast } from "sonner";
-import type { Match } from "../models/Match";
+import { getMatchWinnerID, type Match } from "../models/Match";
 import type { Player } from "../models/Player";
 import "./SessionPage.css";
 
@@ -112,6 +112,57 @@ export function SessionPage() {
     );
   }, [code]);
   const isLoadingMatches = !!code && matchesLoadedFor !== code;
+
+  const participantWinCounts = useMemo(() => {
+    const counts = new Map(sessionParticipants.map((participant) => [participant.id, 0]));
+    const gamesById = new Map(games.map((game) => [game.id, game]));
+
+    sessionMatches.forEach((match) => {
+      const game = gamesById.get(match.gameID);
+      if (!game) return;
+
+      const winnerOrTeamId = getMatchWinnerID(match, game);
+      if (!winnerOrTeamId) return;
+
+      if (game.isTeamBased) {
+        const winningTeam = match.teams?.find((team) => team.teamId === winnerOrTeamId);
+        winningTeam?.playerIDs.forEach((playerId) => {
+          if (counts.has(playerId)) counts.set(playerId, (counts.get(playerId) ?? 0) + 1);
+        });
+      } else if (counts.has(winnerOrTeamId)) {
+        counts.set(winnerOrTeamId, (counts.get(winnerOrTeamId) ?? 0) + 1);
+      }
+    });
+
+    return counts;
+  }, [games, sessionMatches, sessionParticipants]);
+
+  const rankedParticipants = useMemo(
+    () =>
+      sessionParticipants
+        .map((participant, sessionOrder) => ({ participant, sessionOrder }))
+        .sort((a, b) => {
+          const winsDifference =
+            (participantWinCounts.get(b.participant.id) ?? 0) -
+            (participantWinCounts.get(a.participant.id) ?? 0);
+          return winsDifference || a.sessionOrder - b.sessionOrder;
+        })
+        .map(({ participant }) => participant),
+    [participantWinCounts, sessionParticipants]
+  );
+
+  const gamesPlayed = useMemo(() => {
+    const matchCounts = new Map<string, number>();
+    sessionMatches.forEach((match) => {
+      matchCounts.set(match.gameID, (matchCounts.get(match.gameID) ?? 0) + 1);
+    });
+
+    return Array.from(matchCounts, ([gameId, matchCount]) => ({
+      gameId,
+      matchCount,
+      title: games.find((game) => game.id === gameId)?.title ?? "Unknown game",
+    })).sort((a, b) => b.matchCount - a.matchCount || a.title.localeCompare(b.title));
+  }, [games, sessionMatches]);
 
   // Load last selected game for this session from localStorage
   useEffect(() => {
@@ -274,27 +325,51 @@ export function SessionPage() {
             <div className="empty-state">No participants yet</div>
           ) : (
             <div className="participants-grid list">
-              {sessionParticipants.map((participant) => (
-                <PlayerCard
-                  key={participant.id}
-                  player={participant}
-                  rightAction={
-                    player && participant.id === player.id ? (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="button-leave"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleLeave();
-                        }}
-                        disabled={isLeaving}
-                      >
-                        {isLeaving ? "Leaving..." : "Leave"}
-                      </Button>
-                    ) : undefined
-                  }
-                />
+              {rankedParticipants.map((participant) => {
+                const wins = participantWinCounts.get(participant.id) ?? 0;
+                return (
+                  <PlayerCard
+                    key={participant.id}
+                    player={participant}
+                    subtitle={`${wins} ${wins === 1 ? "win" : "wins"}`}
+                    rightAction={
+                      player && participant.id === player.id ? (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="button-leave"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLeave();
+                          }}
+                          disabled={isLeaving}
+                        >
+                          {isLeaving ? "Leaving..." : "Leave"}
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className="session-games-section">
+          <h2 className="section-title">Games Played · {gamesPlayed.length}</h2>
+          {isLoadingMatches ? (
+            <div className="loading">Loading games...</div>
+          ) : gamesPlayed.length === 0 ? (
+            <div className="empty-state">No games played yet</div>
+          ) : (
+            <div className="session-games-list list">
+              {gamesPlayed.map(({ gameId, matchCount, title }) => (
+                <div className="session-game-row" key={gameId}>
+                  <span className="session-game-title">{title}</span>
+                  <span className="session-game-count">
+                    {matchCount} {matchCount === 1 ? "match" : "matches"}
+                  </span>
+                </div>
               ))}
             </div>
           )}

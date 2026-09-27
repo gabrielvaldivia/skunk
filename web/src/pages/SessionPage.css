@@ -22,3 +22,26 @@
 .session-page .button-leave {
   color: hsl(var(--destructive));
 }
+
+.session-game-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+}
+
+.session-game-title {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-game-count {
+  flex-shrink: 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.8125rem;
+}
