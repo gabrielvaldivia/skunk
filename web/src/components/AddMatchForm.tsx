@@ -27,7 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { computeWinnerID } from "../models/Match";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { CrownIcon, PlusIcon, RemovePersonIcon, SelectorIcon } from "./icons";
+import { AddPlayerIcon, CrownIcon, RemovePersonIcon, SelectorIcon } from "./icons";
 import "./AddGameForm.css";
 import "./AddMatchForm.css";
 import { getPlayerColor, getInitials } from "@/lib/player";
@@ -70,9 +70,7 @@ function WinnerButton({
 function AddPlayerRow({ onClick }: { onClick: () => void }) {
   return (
     <button type="button" className="add-player-row" onClick={onClick}>
-      <span className="add-player-icon-circle" aria-hidden>
-        <PlusIcon className="add-player-icon" />
-      </span>
+      <AddPlayerIcon className="add-player-icon" aria-hidden />
       <span>Add player</span>
     </button>
   );

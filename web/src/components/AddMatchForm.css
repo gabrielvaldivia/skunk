@@ -39,36 +39,21 @@
   outline-offset: 2px;
 }
 
-.add-player-icon-circle {
-  display: inline-flex;
+.add-player-icon,
+.remove-player-icon {
   width: 2rem;
   height: 2rem;
   flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid hsl(var(--border));
-  border-radius: 9999px;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  transition: background-color 150ms ease;
-}
-
-.add-player-icon {
-  width: 1rem;
-  height: 1rem;
 }
 
 .remove-player-button {
   width: 2rem;
   height: 2rem;
-  border: 1px solid hsl(var(--border));
-  background: hsl(var(--background));
   color: hsl(var(--destructive));
 }
 
-.add-player-row:hover .add-player-icon-circle,
 .remove-player-button:hover {
-  background: hsl(var(--muted));
+  opacity: 0.72;
 }
 
 .remove-player-button:active,
@@ -80,11 +65,6 @@
 .winner-button:focus-visible {
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
-}
-
-.remove-player-icon {
-  width: 1rem;
-  height: 1rem;
 }
 
 .winner-button {

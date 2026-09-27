@@ -20,6 +20,7 @@ import {
   Location01Icon,
   MoreVerticalIcon,
   MinusSignCircleIcon,
+  PlusSignCircleIcon,
   Moon02Icon,
   Edit03Icon,
   Image01Icon,
@@ -58,6 +59,7 @@ export const BackIcon = makeIcon(ArrowLeft01Icon, "BackIcon");
 export const ChevronRightIcon = makeIcon(ArrowRight01Icon, "ChevronRightIcon");
 export const CloseIcon = makeIcon(Cancel01Icon, "CloseIcon");
 export const PlusIcon = makeIcon(Add01Icon, "PlusIcon");
+export const AddPlayerIcon = makeIcon(PlusSignCircleIcon, "AddPlayerIcon");
 export const EditIcon = makeIcon(Edit03Icon, "EditIcon");
 export const SearchIcon = makeIcon(Search01Icon, "SearchIcon");
 export const TrophyIcon = makeIcon(ChampionIcon, "TrophyIcon");
