@@ -82,6 +82,16 @@
   box-shadow: 0 0 0 3px hsl(var(--background));
 }
 
+.leader-avatar-link {
+  display: block;
+  border-radius: 9999px;
+}
+
+.leader-avatar-link:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 3px;
+}
+
 .leader-avatar .pile-a {
   position: absolute;
   top: 0;
@@ -113,6 +123,7 @@
   font-size: 0.75rem;
   font-weight: 700;
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.15);
+  pointer-events: none;
 }
 
 .rank-badge.gold {
@@ -128,6 +139,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.leader-name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.leader-name a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .leader-wins {

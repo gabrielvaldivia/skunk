@@ -111,7 +111,20 @@ export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact
       )}
       <div className="mini-session-facepile" aria-label="Participants">
         {participantList.slice(0, compact ? 3 : 4).map((p) => (
-          <Avatar key={p.id} player={p} size={compact ? 28 : 32} />
+          <button
+            type="button"
+            key={p.id}
+            className="mini-session-avatar-link"
+            aria-label={`View ${p.name}'s profile`}
+            onTouchStart={(event) => event.stopPropagation()}
+            onTouchEnd={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              navigate(`/players/${p.id}`);
+            }}
+          >
+            <Avatar player={p} size={compact ? 28 : 32} />
+          </button>
         ))}
         {participantList.length > (compact ? 3 : 4) && (
           <span className="facepile-more">+{participantList.length - (compact ? 3 : 4)}</span>

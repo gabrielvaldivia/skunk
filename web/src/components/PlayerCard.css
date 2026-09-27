@@ -5,6 +5,16 @@
   padding: 0.75rem 0;
 }
 
+.player-card-clickable {
+  cursor: pointer;
+}
+
+.player-card-clickable:focus-visible {
+  border-radius: 0.75rem;
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
 .player-info {
   flex: 1;
   min-width: 0;

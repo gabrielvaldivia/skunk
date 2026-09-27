@@ -427,6 +427,7 @@ export function SessionPage() {
                     key={participant.id}
                     player={participant}
                     subtitle={`${wins} ${wins === 1 ? "win" : "wins"}`}
+                    onClick={() => navigate(`/players/${participant.id}`)}
                     rightAction={
                       player && participant.id === player.id ? (
                         <Button

@@ -75,6 +75,22 @@
   align-items: center;
 }
 
+.mini-session-avatar-link {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.mini-session-avatar-link:focus-visible {
+  z-index: 1;
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
 .mini-session-facepile .avatar,
 .facepile-more {
   box-shadow: 0 0 0 2px hsl(var(--background));

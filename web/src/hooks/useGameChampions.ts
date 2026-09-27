@@ -72,14 +72,18 @@ export function useGameChampions(games: Game[], matches: Match[] = []) {
           championIds.push(playerId);
         }
       });
-      const championPlayers = championIds.map(id => playerMap.get(id)).filter(Boolean) as Player[];
-      const championNames = championPlayers.map(p => p.name).sort((a, b) => a.localeCompare(b));
+      const championPlayers = championIds
+        .map(id => playerMap.get(id))
+        .filter(Boolean) as Player[];
+      championPlayers.sort((a, b) => a.name.localeCompare(b.name));
+      const orderedChampionIds = championPlayers.map((player) => player.id);
+      const championNames = championPlayers.map((player) => player.name);
 
       championsMap.set(game.id, {
         gameId: game.id,
-        playerId: championIds[0],
+        playerId: orderedChampionIds[0],
         playerName: championNames.length > 1 ? championNames.join(" & ") : championNames[0],
-        playerIds: championIds,
+        playerIds: orderedChampionIds,
         playerNames: championNames,
         winCount: maxWins
       });
@@ -90,4 +94,3 @@ export function useGameChampions(games: Game[], matches: Match[] = []) {
 
   return { champions, isLoading: false };
 }
-

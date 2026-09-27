@@ -125,7 +125,15 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     }
     const winner = winnerId ? getPlayer(winnerId) : undefined;
     if (!winner) return <span className="match-winner-avatar-empty" />;
-    return <Avatar player={winner} size={40} />;
+    return (
+      <AppLink
+        to={`/players/${winner.id}`}
+        className="match-winner-avatar-link"
+        aria-label={`View ${winner.name}'s profile`}
+      >
+        <Avatar player={winner} size={40} />
+      </AppLink>
+    );
   };
 
   const renderMatchText = () => {

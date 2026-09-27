@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { Fragment, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGames } from "../hooks/useGames";
 import { useAuth } from "../context/AuthContext";
@@ -118,11 +118,19 @@ export function GamesPage() {
             {filteredGames.map((game) => {
               const champion = champions.get(game.id);
               return (
-                <button
-                  type="button"
+                <div
                   key={game.id}
                   className="game-list-item row-press"
+                  role="link"
+                  tabIndex={0}
                   onClick={() => navigate(`/games/${game.id}`)}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      navigate(`/games/${game.id}`);
+                    }
+                  }}
                 >
                   <div className="game-cover-art-container">
                     <div className="game-cover-art-placeholder">
@@ -146,8 +154,23 @@ export function GamesPage() {
                     {champion && champion.playerName ? (
                       <div className="game-list-champion">
                         <TrophyIcon className="game-list-trophy" aria-hidden />
-                        <span>
-                          {champion.playerName}
+                        <span className="game-list-champion-names">
+                          {champion.playerNames?.map((name, index) => (
+                            <Fragment key={champion.playerIds?.[index] ?? name}>
+                              {index > 0 && " & "}
+                              <button
+                                type="button"
+                                className="game-list-champion-link"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  const playerId = champion.playerIds?.[index];
+                                  if (playerId) navigate(`/players/${playerId}`);
+                                }}
+                              >
+                                {name}
+                              </button>
+                            </Fragment>
+                          ))}
                           {champion.winCount > 1 && ` · ${champion.winCount} wins`}
                         </span>
                       </div>
@@ -156,7 +179,7 @@ export function GamesPage() {
                     )}
                   </div>
                   <ChevronRightIcon className="game-list-chevron" aria-hidden />
-                </button>
+                </div>
               );
             })}
           </div>

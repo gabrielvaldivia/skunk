@@ -5,8 +5,9 @@ import { useGames } from "../hooks/useGames";
 import { MatchRow } from "../components/MatchRow";
 import { NavBar } from "../components/NavBar";
 import { Avatar } from "../components/Avatar";
-import { LocationIcon } from "../components/icons";
-import type { Match } from "../models/Match";
+import { ChevronRightIcon, LocationIcon } from "../components/icons";
+import { AppLink } from "../components/AppLink";
+import { getMatchWinnerID, type Match } from "../models/Match";
 import "./PlayerDetailPage.css";
 
 /** `playerId` shows that player instead of the one in the URL, e.g. in a panel */
@@ -33,23 +34,41 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
     );
   }
 
-  const wins = playerMatches.filter((m) => m.winnerID === id).length;
+  const resolvedPlayerId = player.id;
+  const didWinMatch = (match: Match) => {
+    const matchGame = games.find((game) => game.id === match.gameID);
+    const winnerOrTeamId = matchGame
+      ? getMatchWinnerID(match, matchGame)
+      : match.winnerID ?? match.winnerTeamId;
+    if (!winnerOrTeamId) return false;
+
+    if (matchGame?.isTeamBased || match.winnerTeamId) {
+      return !!match.teams
+        ?.find((team) => team.teamId === winnerOrTeamId)
+        ?.playerIDs.includes(resolvedPlayerId);
+    }
+    return winnerOrTeamId === resolvedPlayerId;
+  };
+
+  const wins = playerMatches.filter(didWinMatch).length;
+  const topGames = games
+    .map((game) => {
+      const matches = playerMatches.filter((match) => match.gameID === game.id);
+      return {
+        game,
+        matches: matches.length,
+        wins: matches.filter(didWinMatch).length,
+      };
+    })
+    .filter(({ matches }) => matches > 0)
+    .sort((a, b) => b.wins - a.wins || b.matches - a.matches || a.game.title.localeCompare(b.game.title))
+    .slice(0, 5);
   const bestWinStreak = (() => {
     const sortedMatches = [...playerMatches].sort((a, b) => a.date - b.date);
     let current = 0;
     let best = 0;
     for (const m of sortedMatches) {
-      const playerId = id || "";
-      const didWin =
-        (m.winnerID && m.winnerID === playerId) ||
-        (!!m.winnerTeamId &&
-          !!m.teams &&
-          m.teams.some(
-            (team) =>
-              team.teamId === m.winnerTeamId &&
-              team.playerIDs.includes(playerId)
-          ));
-      if (didWin) {
+      if (didWinMatch(m)) {
         current += 1;
         if (current > best) best = current;
       } else {
@@ -89,6 +108,45 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
             <span className="stat-label">Best Streak</span>
           </div>
         </div>
+
+        {topGames.length > 0 && (
+          <section className="player-top-games">
+            <h2 className="section-title">Top Games</h2>
+            <div className="player-top-games-list list">
+              {topGames.map(({ game, matches, wins: gameWins }) => (
+                <AppLink
+                  key={game.id}
+                  to={`/games/${game.id}`}
+                  className="player-top-game row-press"
+                >
+                  <span className="player-top-game-art">
+                    <span className="player-top-game-placeholder">
+                      {game.title.charAt(0).toUpperCase()}
+                    </span>
+                    {game.coverArt && (
+                      <img
+                        src={game.coverArt}
+                        alt=""
+                        loading="lazy"
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
+                      />
+                    )}
+                  </span>
+                  <span className="player-top-game-info">
+                    <span className="player-top-game-name">{game.title}</span>
+                    <span className="player-top-game-stats">
+                      {gameWins} {gameWins === 1 ? "win" : "wins"} · {matches}{" "}
+                      {matches === 1 ? "match" : "matches"}
+                    </span>
+                  </span>
+                  <ChevronRightIcon className="player-top-game-chevron" aria-hidden />
+                </AppLink>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="matches-section">
           <h2 className="section-title">Match History</h2>

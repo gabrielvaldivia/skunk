@@ -22,6 +22,7 @@ import type { FieldUpdates } from "../services/databaseService";
 import "./GameDetailPage.css";
 import { isAdminEmail } from "@/lib/admin";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { AppLink } from "../components/AppLink";
 
 interface GameDetailPageProps {
   /** Show this game instead of the one in the URL, e.g. in the shelf's side panel */
@@ -125,14 +126,6 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
       </div>
     );
   }
-
-  const getFirstName = (name: string): string =>
-    name.trim().split(" ")[0] || name;
-  const getPlacementLabel = (ps: { name: string }[]) =>
-    ps
-      .slice(0, 2)
-      .map((p) => getFirstName(p.name))
-      .join(" & ");
 
   // Compute top 3 players by wins for this game
   const winCounts = new Map<string, number>();
@@ -249,7 +242,6 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
                 rank={idx + 1}
                 wins={placement.wins}
                 players={placement.players}
-                label={getPlacementLabel(placement.players)}
               />
             ))}
           </div>
@@ -305,12 +297,10 @@ function PodiumSpot({
   rank,
   wins,
   players,
-  label,
 }: {
   rank: 1 | 2 | 3 | number;
   wins: number;
   players: Player[];
-  label: string;
 }) {
   const size = rank === 1 ? 84 : 60;
   const pile = players.slice(0, 2);
@@ -322,15 +312,44 @@ function PodiumSpot({
       <div className="leader-avatar" style={{ width: size, height: size }}>
         {pile.length > 1 ? (
           <>
-            <Avatar player={pile[0]} size={size * 0.68} className="pile-a" />
-            <Avatar player={pile[1]} size={size * 0.68} className="pile-b" />
+            <AppLink
+              to={`/players/${pile[0].id}`}
+              className="leader-avatar-link pile-a"
+              aria-label={`View ${pile[0].name}'s profile`}
+            >
+              <Avatar player={pile[0]} size={size * 0.68} />
+            </AppLink>
+            <AppLink
+              to={`/players/${pile[1].id}`}
+              className="leader-avatar-link pile-b"
+              aria-label={`View ${pile[1].name}'s profile`}
+            >
+              <Avatar player={pile[1]} size={size * 0.68} />
+            </AppLink>
           </>
         ) : (
-          pile[0] && <Avatar player={pile[0]} size={size} />
+          pile[0] && (
+            <AppLink
+              to={`/players/${pile[0].id}`}
+              className="leader-avatar-link"
+              aria-label={`View ${pile[0].name}'s profile`}
+            >
+              <Avatar player={pile[0]} size={size} />
+            </AppLink>
+          )
         )}
         <span className={`rank-badge ${rank === 1 ? "gold" : ""}`}>{rank}</span>
       </div>
-      <div className="leader-name">{label}</div>
+      <div className="leader-name">
+        {players.slice(0, 2).map((player, index) => (
+          <span key={player.id}>
+            {index > 0 && " & "}
+            <AppLink to={`/players/${player.id}`}>
+              {player.name.trim().split(" ")[0] || player.name}
+            </AppLink>
+          </span>
+        ))}
+      </div>
       <div className="leader-wins">
         {wins} {wins === 1 ? "win" : "wins"}
       </div>
