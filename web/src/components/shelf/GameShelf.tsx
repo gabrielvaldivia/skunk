@@ -638,6 +638,7 @@ function ShelfScene({
 }) {
   const size = useThree((s) => s.size);
   const cam = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const invalidate = useThree((s) => s.invalidate);
   const aspect = size.width / size.height;
   // About three square boxes across on a phone, more on wider screens
   const shelfWidth = THREE.MathUtils.clamp(aspect * 50, 38, 120);
@@ -651,6 +652,10 @@ function ShelfScene({
   // Distance at which the whole shelf width fits the viewport
   const fitDist = ((shelfWidth + 6) * S) / 2 / halfFov / aspect;
   const viewH = 2 * fitDist * halfFov;
+
+  // The canvas renders on demand. Make sure removing the final game paints an
+  // empty shelf instead of leaving the previous frame's boxes on screen.
+  useEffect(() => invalidate(), [games, invalidate]);
 
   return (
     <>

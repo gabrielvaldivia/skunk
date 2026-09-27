@@ -69,12 +69,12 @@ export function ShelfPage() {
   const dark = useIsDark();
   const [query, setQuery] = useSearchQuery();
   const sorted = useMemo(() => [...games].sort((a, b) => a.title.localeCompare(b.title)), [games]);
-  // Card games fold into a single deck on the shelf
-  // Searching always covers every game, whichever tab you're on
+  // Card games fold into a single deck on the shelf. Search only filters the
+  // active collection, so an empty My Games shelf stays empty.
   const searching = query.trim() !== "";
   const scoped = useMemo(
-    () => (searching ? sorted : needsSignIn ? [] : mine ? sorted.filter((g) => myIds.has(g.id)) : sorted),
-    [sorted, mine, myIds, needsSignIn, searching]
+    () => (needsSignIn ? [] : mine ? sorted.filter((g) => myIds.has(g.id)) : sorted),
+    [sorted, mine, myIds, needsSignIn]
   );
   const { shelf: shown, inDeck } = useMemo(() => foldCardGames(scoped, query), [scoped, query]);
   const allCardGames = useMemo(() => sorted.filter(isCardGame), [sorted]);
