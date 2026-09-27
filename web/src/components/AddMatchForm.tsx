@@ -870,7 +870,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                       </div>
                     );
                   })}
-                  {selectedGame && playerInputs.length < Math.max(...selectedGame.supportedPlayerCounts) && (
+                  {selectedGame && playerInputs.length < Math.max(...selectedGame.supportedPlayerCounts) ? (
                     <Button
                       type="button"
                       variant="outline"
@@ -879,6 +879,12 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                     >
                       Add Player
                     </Button>
+                  ) : (
+                    // Full: say why there's no Add Player, rather than just hiding it
+                    <p className="text-center text-sm text-muted-foreground">
+                      {selectedGame.title} is for up to {Math.max(...selectedGame.supportedPlayerCounts)} players. Remove
+                      someone to add a different player.
+                    </p>
                   )}
                   </div>
                 </div>
