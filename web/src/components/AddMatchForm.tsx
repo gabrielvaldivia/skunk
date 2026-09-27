@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { FormEvent } from "react";
 import type { Match, Team } from "../models/Match";
 import type { Player } from "../models/Player";
@@ -104,6 +104,8 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
   const [teamAssignments, setTeamAssignments] = useState<Map<string, string>>(new Map()); // playerId -> teamId
   const [teams, setTeams] = useState<string[]>(["team1", "team2"]); // Array of team IDs
   const [winnerCelebration, setWinnerCelebration] = useState<{ index: number; nonce: number } | null>(null);
+  const playerInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const pendingPlayerFocus = useRef<number | null>(null);
 
   const selectedGame = games.find((g) => g.id === selectedGameId);
 
@@ -212,6 +214,14 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
     });
   }, [playerInputs.length]);
 
+  // Adding a row should move straight into naming the new player.
+  useEffect(() => {
+    const index = pendingPlayerFocus.current;
+    if (index === null) return;
+    pendingPlayerFocus.current = null;
+    playerInputRefs.current[index]?.focus();
+  }, [playerInputs.length]);
+
   // Initialize team assignments when game changes or when switching to team-based
   useEffect(() => {
     if (selectedGame?.isTeamBased && open && editing?.teams?.length && editingThisGame) {
@@ -296,6 +306,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
     if (!selectedGame) return;
     const gameMaxPlayers = Math.max(...selectedGame.supportedPlayerCounts);
     if (playerInputs.length < gameMaxPlayers) {
+      pendingPlayerFocus.current = playerInputs.length;
       setPlayerInputs((prev) => [...prev, ""]);
       setAutocompleteStates((prev) => [...prev, { value: "", showSuggestions: false }]);
     }
@@ -630,24 +641,27 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                                 <RemovePersonIcon className="remove-player-icon" />
                               </button>
                             )}
-                            {/* Player avatar */}
-                            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-medium text-white shrink-0"
-                              style={player ? { backgroundColor: getPlayerColor(player) } : undefined}
-                            >
-                              {player?.photoData ? (
+                            {player && (
+                              <div
+                                className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-medium text-white shrink-0"
+                                style={{ backgroundColor: getPlayerColor(player) }}
+                              >
+                              {player.photoData ? (
                                 <img
                                   src={`data:image/jpeg;base64,${player.photoData}`}
                                   alt={player.name}
                                   className="w-full h-full object-cover"
                                 />
-                              ) : player ? (
-                                <span>{getInitials(player.name)}</span>
                               ) : (
-                                <span className="text-muted-foreground">?</span>
+                                <span>{getInitials(player.name)}</span>
                               )}
-                            </div>
+                              </div>
+                            )}
                             <div className="flex-1 relative">
                               <Input
+                                ref={(element) => {
+                                  playerInputRefs.current[index] = element;
+                                }}
                                 type="text"
                                 value={inputValue}
                                 onChange={(e) => handlePlayerInputChange(index, e.target.value)}
@@ -669,7 +683,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                                   }, 200);
                                 }}
                                 placeholder={`Player ${index + 1}`}
-                                className="w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent px-0"
+                                className="player-name-input w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent px-0"
                               />
                               {state.showSuggestions && (suggestions.length > 0 || isNewName(inputValue)) && (
                                 <div className="absolute z-50 w-full mt-1 bg-popover border rounded-xl shadow-xl max-h-60 overflow-auto">
@@ -832,24 +846,27 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                               <RemovePersonIcon className="remove-player-icon" />
                             </button>
                           )}
-                          {/* Player avatar */}
-                          <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-medium text-white shrink-0"
-                            style={player ? { backgroundColor: getPlayerColor(player) } : undefined}
-                          >
-                            {player?.photoData ? (
+                          {player && (
+                            <div
+                              className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-medium text-white shrink-0"
+                              style={{ backgroundColor: getPlayerColor(player) }}
+                            >
+                            {player.photoData ? (
                               <img
                                 src={`data:image/jpeg;base64,${player.photoData}`}
                                 alt={player.name}
                                 className="w-full h-full object-cover"
                               />
-                            ) : player ? (
-                              <span>{getInitials(player.name)}</span>
                             ) : (
-                              <span className="text-muted-foreground">?</span>
+                              <span>{getInitials(player.name)}</span>
                             )}
-                          </div>
+                            </div>
+                          )}
                           <div className="flex-1 relative">
                             <Input
+                              ref={(element) => {
+                                playerInputRefs.current[index] = element;
+                              }}
                               type="text"
                               value={inputValue}
                               onChange={(e) => handlePlayerInputChange(index, e.target.value)}
@@ -873,7 +890,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                                 }, 200);
                               }}
                               placeholder={`Player ${index + 1}`}
-                              className="w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent px-0"
+                              className="player-name-input w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent px-0"
                             />
                             {state.showSuggestions && (suggestions.length > 0 || isNewName(inputValue)) && (
                               <div className="absolute z-50 w-full mt-1 bg-popover border rounded-xl shadow-xl max-h-60 overflow-auto">

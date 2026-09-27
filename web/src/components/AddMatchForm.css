@@ -29,6 +29,17 @@
   transition: color 150ms ease, background-color 150ms ease;
 }
 
+/* iOS zooms focused fields below 16px; keep player entry at the safe size. */
+.player-name-input {
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  .player-name-input {
+    font-size: 15px;
+  }
+}
+
 .add-player-row:hover {
   background: hsl(var(--muted) / 0.7);
   color: hsl(var(--foreground));
@@ -41,8 +52,8 @@
 
 .add-player-icon,
 .remove-player-icon {
-  width: 2rem;
-  height: 2rem;
+  width: 1.5rem;
+  height: 1.5rem;
   flex-shrink: 0;
 }
 
