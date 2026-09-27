@@ -57,6 +57,10 @@
   flex-shrink: 0;
 }
 
+.add-player-icon {
+  margin-inline: 0.25rem;
+}
+
 .remove-player-button {
   width: 2rem;
   height: 2rem;
