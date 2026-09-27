@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSession } from "../context/SessionContext";
 import { useAuth } from "../context/AuthContext";
@@ -16,11 +16,8 @@ import { NavBar } from "../components/NavBar";
 import { toast } from "sonner";
 import { getMatchWinnerID, type Match } from "../models/Match";
 import type { Player } from "../models/Player";
+import { GameStatsCarousel } from "../components/GameStatsCarousel";
 import "./SessionPage.css";
-
-const GameBoxPreview = lazy(() =>
-  import("../components/shelf/GameBoxPreview").then((module) => ({ default: module.GameBoxPreview }))
-);
 
 export function SessionPage() {
   const { code } = useParams<{ code: string }>();
@@ -458,30 +455,14 @@ export function SessionPage() {
           ) : gamesPlayed.length === 0 ? (
             <div className="empty-state">No games played yet</div>
           ) : (
-            <div className="session-games-scroll">
-              {gamesPlayed.map(({ game, gameId, matchCount, title }) => (
-                <button
-                  type="button"
-                  className="session-game-card"
-                  key={gameId}
-                  onClick={() => navigate(`/games/${gameId}`)}
-                >
-                  <span className="session-game-box">
-                    {game ? (
-                      <Suspense fallback={<span className="session-game-box-placeholder" />}>
-                        <GameBoxPreview game={game} size={132} />
-                      </Suspense>
-                    ) : (
-                      <span className="session-game-box-placeholder">{title.charAt(0)}</span>
-                    )}
-                  </span>
-                  <span className="session-game-title">{title}</span>
-                  <span className="session-game-count">
-                    {matchCount} {matchCount === 1 ? "match" : "matches"}
-                  </span>
-                </button>
-              ))}
-            </div>
+            <GameStatsCarousel
+              items={gamesPlayed.map(({ game, gameId, matchCount, title }) => ({
+                game,
+                gameId,
+                title,
+                subtitle: `${matchCount} ${matchCount === 1 ? "match" : "matches"}`,
+              }))}
+            />
           )}
         </section>
 

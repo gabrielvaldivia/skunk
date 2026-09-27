@@ -5,8 +5,8 @@ import { useGames } from "../hooks/useGames";
 import { MatchRow } from "../components/MatchRow";
 import { NavBar } from "../components/NavBar";
 import { Avatar } from "../components/Avatar";
-import { ChevronRightIcon, LocationIcon } from "../components/icons";
-import { AppLink } from "../components/AppLink";
+import { LocationIcon } from "../components/icons";
+import { GameStatsCarousel } from "../components/GameStatsCarousel";
 import { getMatchWinnerID, type Match } from "../models/Match";
 import "./PlayerDetailPage.css";
 
@@ -112,39 +112,16 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
         {topGames.length > 0 && (
           <section className="player-top-games">
             <h2 className="section-title">Top Games</h2>
-            <div className="player-top-games-list list">
-              {topGames.map(({ game, matches, wins: gameWins }) => (
-                <AppLink
-                  key={game.id}
-                  to={`/games/${game.id}`}
-                  className="player-top-game row-press"
-                >
-                  <span className="player-top-game-art">
-                    <span className="player-top-game-placeholder">
-                      {game.title.charAt(0).toUpperCase()}
-                    </span>
-                    {game.coverArt && (
-                      <img
-                        src={game.coverArt}
-                        alt=""
-                        loading="lazy"
-                        onError={(event) => {
-                          event.currentTarget.style.display = "none";
-                        }}
-                      />
-                    )}
-                  </span>
-                  <span className="player-top-game-info">
-                    <span className="player-top-game-name">{game.title}</span>
-                    <span className="player-top-game-stats">
-                      {gameWins} {gameWins === 1 ? "win" : "wins"} · {matches}{" "}
-                      {matches === 1 ? "match" : "matches"}
-                    </span>
-                  </span>
-                  <ChevronRightIcon className="player-top-game-chevron" aria-hidden />
-                </AppLink>
-              ))}
-            </div>
+            <GameStatsCarousel
+              items={topGames.map(({ game, matches, wins: gameWins }) => ({
+                game,
+                gameId: game.id,
+                title: game.title,
+                subtitle: `${gameWins} ${gameWins === 1 ? "win" : "wins"} · ${matches} ${
+                  matches === 1 ? "match" : "matches"
+                }`,
+              }))}
+            />
           </section>
         )}
 
