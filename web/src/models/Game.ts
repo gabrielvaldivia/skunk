@@ -20,6 +20,8 @@ export type Game = {
   winningConditions: string;
   creationDate?: number;
   coverArt?: string; // URL to square aspect ratio cover art image
+  // Embedded covers at or above this version have had scan lighting corrected.
+  coverArtEnhancementVersion?: number;
   bggId?: number;
   // Physical box size in inches (BGG version data: width × length × depth)
   boxDims?: BoxDims;

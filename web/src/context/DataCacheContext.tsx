@@ -1,7 +1,10 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
-import { getGames, getPlayers, subscribeToPlayers } from '../services/databaseService';
+import { getGames, getPlayers, subscribeToPlayers, updateGame } from '../services/databaseService';
+import { useAuth } from './AuthContext';
+import { isAdminEmail } from '../lib/admin';
+import { COVER_ENHANCEMENT_VERSION, enhanceCoverDataUrl } from '../lib/coverScan';
 
 interface DataCacheContextType {
   games: Game[];
@@ -17,12 +20,14 @@ interface DataCacheContextType {
 const DataCacheContext = createContext<DataCacheContextType | undefined>(undefined);
 
 export function DataCacheProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [games, setGames] = useState<Game[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [gamesLoading, setGamesLoading] = useState(true);
   const [playersLoading, setPlayersLoading] = useState(true);
   const [gamesError, setGamesError] = useState<Error | null>(null);
   const [playersError, setPlayersError] = useState<Error | null>(null);
+  const migratedCoversForUser = useRef<string | null>(null);
 
   const refreshGames = useCallback(async () => {
     try {
@@ -59,6 +64,38 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refreshGames();
   }, [refreshGames]);
+
+  useEffect(() => {
+    if (!user || gamesLoading || gamesError || migratedCoversForUser.current === user.uid) return;
+    const isAdmin = isAdminEmail(user.email);
+    const oldEmbeddedCovers = games.filter(
+      (game) =>
+        game.coverArt?.startsWith('data:image/') &&
+        (game.coverArtEnhancementVersion ?? 0) < COVER_ENHANCEMENT_VERSION &&
+        (game.createdByID === user.uid || isAdmin)
+    );
+    migratedCoversForUser.current = user.uid;
+    if (!oldEmbeddedCovers.length) return;
+
+    // Older records did not distinguish camera scans from uploaded cover photos.
+    // Both are embedded images, and the conservative correction is safe for either.
+    void (async () => {
+      let changed = false;
+      for (const game of oldEmbeddedCovers) {
+        try {
+          const coverArt = await enhanceCoverDataUrl(game.coverArt!);
+          await updateGame(game.id, {
+            coverArt,
+            coverArtEnhancementVersion: COVER_ENHANCEMENT_VERSION,
+          });
+          changed = true;
+        } catch (error) {
+          console.warn(`Couldn't enhance the existing cover for ${game.title}:`, error);
+        }
+      }
+      if (changed) await refreshGames();
+    })();
+  }, [games, gamesError, gamesLoading, refreshGames, user]);
 
   useEffect(
     () =>
@@ -98,4 +135,3 @@ export function useDataCache() {
   }
   return context;
 }
-

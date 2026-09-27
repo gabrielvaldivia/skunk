@@ -8,6 +8,9 @@ export type Quad = [Point, Point, Point, Point];
 
 const MAX_SOURCE = 2000;
 const MAX_COVER = 1000;
+export const COVER_ENHANCEMENT_VERSION = 1;
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 /** Draw an image into a canvas, capped so warping and OCR stay quick on phones */
 export function toCanvas(source: CanvasImageSource, width: number, height: number): HTMLCanvasElement {
@@ -32,6 +35,15 @@ export function loadImageFile(file: File): Promise<HTMLCanvasElement> {
       reject(new Error("Couldn't read that image"));
     };
     img.src = url;
+  });
+}
+
+export function loadImageUrl(url: string): Promise<HTMLCanvasElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(toCanvas(image, image.naturalWidth, image.naturalHeight));
+    image.onerror = () => reject(new Error("Couldn't read that image"));
+    image.src = url;
   });
 }
 
@@ -89,6 +101,111 @@ export function warpQuad(source: HTMLCanvasElement, quad: Quad): HTMLCanvasEleme
   }
   ctx.putImageData(img, 0, 0);
   return out;
+}
+
+function histogramPercentile(histogram: Uint32Array, samples: number, percentile: number) {
+  const target = samples * percentile;
+  let seen = 0;
+  for (let value = 0; value < histogram.length; value++) {
+    seen += histogram[value];
+    if (seen >= target) return value;
+  }
+  return 255;
+}
+
+/**
+ * Correct a photographed cover after it has been cropped. Camera auto-exposure
+ * sees the whole frame (often including a bright table), so a dim box can still
+ * come out badly underexposed. Measuring only the flattened cover lets us lift
+ * shadows and midtones without clipping its brightest print.
+ */
+export function enhanceCover(source: HTMLCanvasElement): HTMLCanvasElement {
+  const out = document.createElement("canvas");
+  out.width = source.width;
+  out.height = source.height;
+  const ctx = out.getContext("2d", { willReadFrequently: true })!;
+  ctx.drawImage(source, 0, 0);
+  const image = ctx.getImageData(0, 0, out.width, out.height);
+  const pixels = image.data;
+
+  // Sample at most about 60k pixels while estimating the correction. Processing
+  // every pixel below is still cheap at MAX_COVER, but statistics need not be.
+  const pixelCount = out.width * out.height;
+  const step = Math.max(1, Math.floor(Math.sqrt(pixelCount / 60_000)));
+  let sampled = 0;
+  let neutralCount = 0;
+  let red = 0, green = 0, blue = 0;
+  for (let y = 0; y < out.height; y += step) {
+    for (let x = 0; x < out.width; x += step) {
+      const i = (y * out.width + x) * 4;
+      const r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
+      const lightness = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
+      const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+      sampled++;
+      // Use only plausibly grey pixels for white balance. Averaging all artwork
+      // would incorrectly neutralise covers whose design is intentionally one colour.
+      if (lightness > 28 && lightness < 235 && chroma < Math.max(12, lightness * 0.12)) {
+        red += r;
+        green += g;
+        blue += b;
+        neutralCount++;
+      }
+    }
+  }
+
+  let redGain = 1, greenGain = 1, blueGain = 1;
+  if (neutralCount >= sampled * 0.025) {
+    const average = (red + green + blue) / 3;
+    // Correct obvious warm/cool casts while retaining the character of the artwork.
+    redGain = clamp(average / red, 0.9, 1.1);
+    greenGain = clamp(average / green, 0.9, 1.1);
+    blueGain = clamp(average / blue, 0.9, 1.1);
+  }
+
+  const histogram = new Uint32Array(256);
+  let histogramSamples = 0;
+  for (let y = 0; y < out.height; y += step) {
+    for (let x = 0; x < out.width; x += step) {
+      const i = (y * out.width + x) * 4;
+      const r = clamp(pixels[i] * redGain, 0, 255);
+      const g = clamp(pixels[i + 1] * greenGain, 0, 255);
+      const b = clamp(pixels[i + 2] * blueGain, 0, 255);
+      histogram[Math.round(0.2126 * r + 0.7152 * g + 0.0722 * b)]++;
+      histogramSamples++;
+    }
+  }
+
+  const dark = histogramPercentile(histogram, histogramSamples, 0.02);
+  const middle = histogramPercentile(histogram, histogramSamples, 0.5);
+  const bright = histogramPercentile(histogram, histogramSamples, 0.98);
+  // Stretch only when the highlights themselves are dim. On a deliberately dark
+  // cover, a bright logo or type remains bright and prevents an excessive lift.
+  const blackPoint = Math.min(12, dark * 0.55);
+  const whitePoint = bright < 205 ? Math.max(110, bright / 0.92) : 255;
+  const linearMiddle = clamp((middle - blackPoint) / (whitePoint - blackPoint), 1 / 255, 1);
+  const highlightNeed = clamp((205 - bright) / 105, 0, 1);
+  const shadowNeed = clamp((90 - middle) / 70, 0, 1) * 0.4;
+  const lift = Math.max(highlightNeed, shadowNeed);
+  const idealGamma = clamp(Math.log(0.42) / Math.log(linearMiddle), 0.68, 1);
+  const gamma = 1 + (idealGamma - 1) * lift;
+
+  const tone = (value: number, gain: number) => {
+    const levelled = clamp((value * gain - blackPoint) / (whitePoint - blackPoint), 0, 1);
+    return 255 * levelled ** gamma;
+  };
+  for (let i = 0; i < pixels.length; i += 4) {
+    pixels[i] = tone(pixels[i], redGain);
+    pixels[i + 1] = tone(pixels[i + 1], greenGain);
+    pixels[i + 2] = tone(pixels[i + 2], blueGain);
+  }
+  ctx.putImageData(image, 0, 0);
+  return out;
+}
+
+/** Enhance an existing embedded cover so older scans can use the same pipeline. */
+export async function enhanceCoverDataUrl(url: string) {
+  const source = await loadImageUrl(url);
+  return enhanceCover(source).toDataURL("image/jpeg", 0.88);
 }
 
 // --- reading the cover -----------------------------------------------------

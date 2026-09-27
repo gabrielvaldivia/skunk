@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BackIcon, CloseIcon, ImageIcon, SearchIcon, SpinnerIcon } from "./icons";
 import {
+  enhanceCover,
   identifyCover,
   loadImageFile,
   matchCovers,
@@ -33,6 +34,37 @@ const LOUPE = 104;
 const COVER_MATCH = 0.4;
 
 type Found = { title: string; matches: Game[] };
+
+type CameraCapabilities = MediaTrackCapabilities & {
+  exposureMode?: string[];
+  focusMode?: string[];
+  whiteBalanceMode?: string[];
+};
+
+type CameraConstraintSet = MediaTrackConstraintSet & {
+  exposureMode?: string;
+  focusMode?: string;
+  whiteBalanceMode?: string;
+};
+
+function keepCameraAdjusted(track: MediaStreamTrack) {
+  try {
+    const capabilities = track.getCapabilities() as CameraCapabilities;
+    const continuous = (modes?: string[]) => modes?.includes("continuous") ? "continuous" : undefined;
+    const settings: CameraConstraintSet = {
+      exposureMode: continuous(capabilities.exposureMode),
+      focusMode: continuous(capabilities.focusMode),
+      whiteBalanceMode: continuous(capabilities.whiteBalanceMode),
+    };
+    if (Object.values(settings).some(Boolean)) {
+      track.applyConstraints({ advanced: [settings] }).catch(() => {});
+    }
+    track.contentHint = "detail";
+  } catch {
+    // These controls are progressive enhancement; Safari currently relies on
+    // the camera's defaults while Chromium exposes some or all of them.
+  }
+}
 
 // Full-screen box scanner: camera → drag the corners onto the cover →
 // flattened cover, matched to a game by reading its text on the device
@@ -64,13 +96,13 @@ export function CoverScanner({ games, onClose, onPickGame, onNewGame }: CoverSca
   const scanId = useRef(0);
   const finish = () => {
     if (!source || !quad) return;
-    const warped = warpQuad(source, quad);
-    setCover(warped.toDataURL("image/jpeg", 0.85));
+    const corrected = enhanceCover(warpQuad(source, quad));
+    setCover(corrected.toDataURL("image/jpeg", 0.88));
     setFound(null);
     setStage("result");
     const id = ++scanId.current;
     // Comparing the art to covers we already have is free, so it always runs
-    const lookalikes = matchCovers(games, warped)
+    const lookalikes = matchCovers(games, corrected)
       .then((looks) => looks.filter((l) => l.score >= COVER_MATCH).map((l) => l.game))
       .catch((err) => {
         console.error("Cover matching failed:", err);
@@ -79,12 +111,12 @@ export function CoverScanner({ games, onClose, onPickGame, onNewGame }: CoverSca
     const unique = (list: (Game | null)[]) =>
       list.filter((g, i): g is Game => !!g && list.findIndex((o) => o?.id === g.id) === i).slice(0, 3);
     // The model identifies it; if it can't be reached, read the box on the device instead
-    identifyCover(warped, games)
+    identifyCover(corrected, games)
       .then(async (ai): Promise<Found> => ({ title: ai.title, matches: unique([ai.match, ...(await lookalikes)]) }))
       .catch(async (err): Promise<Found> => {
         console.warn("Identifying with the model failed; reading on the device:", err);
         const [ocr, looks] = await Promise.all([
-          readCover(warped).catch(() => ({ words: [], title: "" })),
+          readCover(corrected).catch(() => ({ words: [], title: "" })),
           lookalikes,
         ]);
         return { title: ocr.title, matches: unique([...looks.slice(0, 2), ...matchGames(games, ocr)]) };
@@ -181,6 +213,8 @@ function CameraStage({
       .then((s) => {
         if (cancelled) return s.getTracks().forEach((t) => t.stop());
         stream = s;
+        const track = s.getVideoTracks()[0];
+        if (track) keepCameraAdjusted(track);
         const video = videoRef.current;
         if (video) {
           video.srcObject = s;

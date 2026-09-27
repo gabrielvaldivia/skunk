@@ -219,6 +219,9 @@ export function EditGameForm({
           : coverArt === ""
           ? { coverArt: null }
           : {}),
+        // A manually replaced image has not gone through the scan enhancer.
+        coverArtEnhancementVersion:
+          coverArt === game.coverArt ? game.coverArtEnhancementVersion ?? null : null,
         boxDims,
       };
 

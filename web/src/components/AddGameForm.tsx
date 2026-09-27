@@ -6,6 +6,7 @@ import type { Game } from "../models/Game";
 import { useAuth } from "../context/AuthContext";
 import { useGames } from "../hooks/useGames";
 import { isAdminEmail } from "@/lib/admin";
+import { COVER_ENHANCEMENT_VERSION } from "@/lib/coverScan";
 import { heartGame } from "../hooks/useGameScope";
 import { CoverScanner } from "./CoverScanner";
 import { Button } from "@/components/ui/button";
@@ -470,6 +471,7 @@ export function AddGameForm({
     useState<ScoreCalculation>("all");
   const [coverArt, setCoverArt] = useState("");
   const [coverArtPreview, setCoverArtPreview] = useState<string | null>(null);
+  const [coverArtEnhancementVersion, setCoverArtEnhancementVersion] = useState<number>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -528,6 +530,7 @@ export function AddGameForm({
         winningConditions,
         creationDate: Date.now(),
         ...(coverArt && coverArt.trim() ? { coverArt: coverArt.trim() } : {}),
+        ...(coverArtEnhancementVersion ? { coverArtEnhancementVersion } : {}),
       };
 
       await onSubmit(newGame);
@@ -545,6 +548,7 @@ export function AddGameForm({
       setScoreCalculation("all");
       setCoverArt("");
       setCoverArtPreview(null);
+      setCoverArtEnhancementVersion(undefined);
     } catch (err) {
       console.error("Error creating game:", err);
       alert("Failed to create game");
@@ -561,7 +565,10 @@ export function AddGameForm({
     try {
       await heartGame(player, game.id, refreshPlayer);
       if (user && (game.createdByID === user.uid || isAdminEmail(user.email))) {
-        await editGame(game.id, { coverArt: cover });
+        await editGame(game.id, {
+          coverArt: cover,
+          coverArtEnhancementVersion: COVER_ENHANCEMENT_VERSION,
+        });
       }
       toast.success(`Added ${game.title} to My Games`);
     } catch (err) {
@@ -575,6 +582,7 @@ export function AddGameForm({
     setScanning(false);
     setCoverArt(cover);
     setCoverArtPreview(cover);
+    setCoverArtEnhancementVersion(COVER_ENHANCEMENT_VERSION);
     if (scannedTitle && !title.trim()) setTitle(scannedTitle);
   };
 
@@ -609,7 +617,10 @@ export function AddGameForm({
               scoreCalculation={scoreCalculation}
               setScoreCalculation={setScoreCalculation}
               coverArt={coverArt}
-              setCoverArt={setCoverArt}
+              setCoverArt={(value) => {
+                setCoverArt(value);
+                setCoverArtEnhancementVersion(undefined);
+              }}
               coverArtPreview={coverArtPreview || undefined}
               setCoverArtPreview={setCoverArtPreview}
               isSubmitting={isSubmitting}
@@ -653,7 +664,10 @@ export function AddGameForm({
             scoreCalculation={scoreCalculation}
             setScoreCalculation={setScoreCalculation}
             coverArt={coverArt}
-            setCoverArt={setCoverArt}
+            setCoverArt={(value) => {
+              setCoverArt(value);
+              setCoverArtEnhancementVersion(undefined);
+            }}
             coverArtPreview={coverArtPreview || undefined}
             setCoverArtPreview={setCoverArtPreview}
             isSubmitting={isSubmitting}
