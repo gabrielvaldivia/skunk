@@ -389,6 +389,11 @@ export async function joinSession(sessionId: string, playerId: string): Promise<
 /**
  * Remove a player from session participants, update lastActivityAt, and delete session if empty
  */
+/** A session is named after its game: set it to the one just played */
+export async function setSessionGame(sessionId: string, gameID: string): Promise<void> {
+  await update(ref(database, `${SESSIONS_PATH}/${sessionId}`), { gameID, lastActivityAt: Date.now() });
+}
+
 export async function leaveSession(sessionId: string, playerId: string): Promise<void> {
   const session = await getSession(sessionId);
   if (!session) {

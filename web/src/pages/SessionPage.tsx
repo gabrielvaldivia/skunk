@@ -6,7 +6,7 @@ import { usePlayers } from "../hooks/usePlayers";
 import { useMatches } from "../hooks/useMatches";
 import { useGames } from "../hooks/useGames";
 import { heartGame } from "../hooks/useGameScope";
-import { subscribeToMatchesForSession } from "../services/databaseService";
+import { setSessionGame, subscribeToMatchesForSession } from "../services/databaseService";
 import { PlayerCard } from "../components/PlayerCard";
 import { MatchRow } from "../components/MatchRow";
 import { AddMatchForm } from "../components/AddMatchForm";
@@ -170,6 +170,10 @@ export function SessionPage() {
 
   const handleSubmitMatch = async (match: Omit<Match, "id">) => {
     await addMatch(match);
+    // The session takes the name of the game just played
+    if (currentSession && match.gameID && currentSession.gameID !== match.gameID) {
+      setSessionGame(currentSession.id, match.gameID).catch((err) => console.error("Error naming session:", err));
+    }
     // Playing a game hearts it into My Games, even if you'd un-hearted it before
     if (player && match.gameID && match.playerIDs.includes(player.id)) {
       heartGame(player, match.gameID, refreshPlayer).catch((err) => console.error("Error hearting game:", err));
@@ -185,6 +189,11 @@ export function SessionPage() {
     }
     setShowAddForm(false);
   };
+
+  // Named after the last game played: the newest match, else the session's game
+  const latestMatch = sessionMatches.reduce<Match | undefined>((a, m) => (!a || m.date > a.date ? m : a), undefined);
+  const sessionGameId = latestMatch?.gameID ?? currentSession?.gameID;
+  const sessionTitle = games.find((g) => g.id === sessionGameId)?.title ?? `Session ${code}`;
 
   if (!code) {
     return (
@@ -232,7 +241,7 @@ export function SessionPage() {
   return (
     <div className="session-page">
       <NavBar
-        title={`Session ${code}`}
+        title={sessionTitle}
         action={
           <Button
             variant="secondary"

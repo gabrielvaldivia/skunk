@@ -66,9 +66,9 @@ export function SessionsListPage() {
                 onClick={() => navigate(`/session/${session.code}`)}
               >
                 <div className="session-row-main">
-                  <div className="session-code">Session {session.code}</div>
+                  <div className="session-code">{getGameTitle(session.gameID) ?? `Session ${session.code}`}</div>
                   <div className="session-meta">
-                    {session.gameID && `${getGameTitle(session.gameID) || "Unknown Game"} · `}
+                    {getGameTitle(session.gameID) && `${session.code} · `}
                     {session.participantIDs.length} player{session.participantIDs.length !== 1 ? 's' : ''}
                     {` · ${formatDate(session.lastActivityAt)}`}
                   </div>
