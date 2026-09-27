@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
-import { getGames, getPlayers } from '../services/databaseService';
+import { getGames, getPlayers, subscribeToPlayers } from '../services/databaseService';
 
 interface DataCacheContextType {
   games: Game[];
@@ -54,11 +54,28 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Load data once on mount
+  // Games load once; players stay live, since other people add them mid-session
+  // (a player added on someone else's phone would otherwise show as a raw id)
   useEffect(() => {
     refreshGames();
-    refreshPlayers();
-  }, [refreshGames, refreshPlayers]);
+  }, [refreshGames]);
+
+  useEffect(
+    () =>
+      subscribeToPlayers(
+        (list) => {
+          setPlayers(list);
+          setPlayersError(null);
+          setPlayersLoading(false);
+        },
+        (error) => {
+          setPlayersError(error);
+          setPlayersLoading(false);
+          console.error('Error watching players:', error);
+        }
+      ),
+    []
+  );
 
   const value: DataCacheContextType = {
     games,

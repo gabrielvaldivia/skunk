@@ -170,7 +170,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
                   {player.name}
                 </AppLink>
               ) : (
-                <span>{winningTeam.playerIDs[index]}</span>
+                <span>Unknown player</span>
               )}
               {index < winningTeamPlayers.length - 1 && <span>, </span>}
             </span>
@@ -189,7 +189,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
                         {player.name}
                       </AppLink>
                     ) : (
-                      <span>{playerId}</span>
+                      <span>Unknown player</span>
                     )}
                     {playerIndex < team.playerIDs.length - 1 && <span>, </span>}
                   </span>
@@ -225,7 +225,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
               {winner.name}
             </AppLink>
           ) : (
-            <span>{match.winnerID}</span>
+            <span>Unknown player</span>
           )}
           <span> won</span>
         </>
@@ -241,7 +241,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
             {winner.name}
           </AppLink>
         ) : (
-          <span>{match.winnerID}</span>
+          <span>Unknown player</span>
         )}
         <span> beat </span>
         {otherPlayers.map((player, index) => (
@@ -251,7 +251,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
                 {player.name}
               </AppLink>
             ) : (
-              <span>{otherPlayerIDs[index]}</span>
+              <span>Unknown player</span>
             )}
             {index < otherPlayers.length - 1 && (
               <>

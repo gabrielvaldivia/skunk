@@ -109,6 +109,11 @@ export async function getPlayers(): Promise<Player[]> {
   return players;
 }
 
+/** Live list of every player, so ones added on another phone (e.g. mid-session) show up by name */
+export function subscribeToPlayers(onChange: (players: Player[]) => void, onError?: (error: Error) => void): Unsubscribe {
+  return onValue(ref(database, PLAYERS_PATH), (snapshot) => onChange(snapshotToList<Player>(snapshot)), onError);
+}
+
 export async function getPlayer(playerId: string): Promise<Player | null> {
   const playerRef = ref(database, `${PLAYERS_PATH}/${playerId}`);
   const snapshot = await get(playerRef);
