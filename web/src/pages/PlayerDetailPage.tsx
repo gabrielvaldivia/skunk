@@ -60,7 +60,7 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
         wins: matches.filter(didWinMatch).length,
       };
     })
-    .filter(({ matches }) => matches > 0)
+    .filter(({ wins }) => wins > 0)
     .sort((a, b) => b.wins - a.wins || b.matches - a.matches || a.game.title.localeCompare(b.game.title))
     .slice(0, 5);
   const bestWinStreak = (() => {
@@ -113,13 +113,11 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
           <section className="player-top-games">
             <h2 className="section-title">Top Games</h2>
             <GameStatsCarousel
-              items={topGames.map(({ game, matches, wins: gameWins }) => ({
+              items={topGames.map(({ game, wins: gameWins }) => ({
                 game,
                 gameId: game.id,
                 title: game.title,
-                subtitle: `${gameWins} ${gameWins === 1 ? "win" : "wins"} · ${matches} ${
-                  matches === 1 ? "match" : "matches"
-                }`,
+                subtitle: `${gameWins} ${gameWins === 1 ? "win" : "wins"}`,
               }))}
             />
           </section>
