@@ -74,6 +74,37 @@ export interface GameFormContentProps {
   children?: React.ReactNode;
 }
 
+// A player count box you can clear while typing a new number: valid numbers
+// apply as you type, and leaving it empty (or too low) snaps back to the last one
+function CountInput({
+  value,
+  min,
+  onCommit,
+  className,
+}: {
+  value: number;
+  min: number;
+  onCommit: (value: number) => void;
+  className?: string;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <Input
+      type="number"
+      inputMode="numeric"
+      min={min}
+      value={draft ?? String(value)}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const n = parseInt(e.target.value);
+        if (!isNaN(n) && n >= min) onCommit(n);
+      }}
+      onBlur={() => setDraft(null)}
+      className={className}
+    />
+  );
+}
+
 export function GameFormContent({
   title,
   setTitle,
@@ -227,33 +258,21 @@ export function GameFormContent({
             <div className="flex gap-2 items-center">
               {hasMax ? (
                 <>
-                  <Input
-                    type="number"
-                    min={2}
+                  <CountInput
                     value={minPlayers}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (!isNaN(value) && value >= 2) {
-                        setMinPlayers(value);
-                        if (value > maxPlayers) {
-                          setMaxPlayers(value);
-                        }
-                      }
+                    min={2}
+                    onCommit={(value) => {
+                      setMinPlayers(value);
+                      if (value > maxPlayers) setMaxPlayers(value);
                     }}
                     className="w-16 h-8 text-sm text-center"
                   />
                   <span className="text-sm text-muted-foreground">-</span>
                   <div className="relative group">
-                    <Input
-                      type="number"
-                      min={minPlayers}
+                    <CountInput
                       value={maxPlayers}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value);
-                        if (!isNaN(value) && value >= minPlayers) {
-                          setMaxPlayers(value);
-                        }
-                      }}
+                      min={minPlayers}
+                      onCommit={setMaxPlayers}
                       className="pr-6 w-16 h-8 text-sm text-center"
                     />
                     <button
@@ -284,16 +303,12 @@ export function GameFormContent({
                 </>
               ) : (
                 <>
-                  <Input
-                    type="number"
-                    min={2}
+                  <CountInput
                     value={minPlayers}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value);
-                      if (!isNaN(value) && value >= 2) {
-                        setMinPlayers(value);
-                        setMaxPlayers(value);
-                      }
+                    min={2}
+                    onCommit={(value) => {
+                      setMinPlayers(value);
+                      setMaxPlayers(value);
                     }}
                     className="w-16 h-8 text-sm text-center"
                   />
