@@ -80,3 +80,13 @@
   width: 1.25rem;
   height: 1.25rem;
 }
+
+/* Keep the action visibly pinned inside desktop lists and detail panels. */
+@media (min-width: 768px) {
+  .match-options-button {
+    margin-right: 0;
+    background: hsl(var(--muted) / 0.7);
+    color: hsl(var(--foreground));
+    opacity: 1;
+  }
+}

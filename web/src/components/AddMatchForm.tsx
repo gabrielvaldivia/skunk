@@ -27,7 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { computeWinnerID } from "../models/Match";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { CrownIcon, RemovePersonIcon, SelectorIcon } from "./icons";
+import { CrownIcon, PlusIcon, RemovePersonIcon, SelectorIcon } from "./icons";
 import "./AddGameForm.css";
 import "./AddMatchForm.css";
 import { getPlayerColor, getInitials } from "@/lib/player";
@@ -63,6 +63,17 @@ function WinnerButton({
     >
       <CrownIcon className="winner-crown" />
       {celebrationKey !== undefined && <WinnerConfetti key={celebrationKey} />}
+    </button>
+  );
+}
+
+function AddPlayerRow({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" className="add-player-row" onClick={onClick}>
+      <span className="add-player-icon-circle" aria-hidden>
+        <PlusIcon className="add-player-icon" />
+      </span>
+      <span>Add player</span>
     </button>
   );
 }
@@ -504,6 +515,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
         )}
         <div className={isDrawer ? "grid gap-4 py-4 px-4" : "grid gap-4 py-4"}>
           <div className="grid gap-2">
+            <Label htmlFor="game">Game</Label>
             <div className="relative">
               <Input
                 id="game"
@@ -587,6 +599,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
               {selectedGame.isTeamBased ? (
                 <div className="grid gap-4">
                   <div className="grid gap-2">
+                    <Label>Players</Label>
                     {playerInputs.map((inputValue, index) => {
                       const suggestions = getPlayerSuggestions(inputValue);
                       const state = autocompleteStates[index] || { value: "", showSuggestions: false };
@@ -717,6 +730,9 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                         </div>
                       );
                     })}
+                    {playerInputs.length < Math.max(...selectedGame.supportedPlayerCounts) && (
+                      <AddPlayerRow onClick={handleAddPlayer} />
+                    )}
                   </div>
                   
                   <div className="flex gap-2 items-center">
@@ -795,6 +811,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
               ) : (
                 <div className="grid gap-2">
                   <div className="grid gap-2">
+                  <Label>Players</Label>
                   {playerInputs.map((inputValue, index) => {
                     const suggestions = getPlayerSuggestions(inputValue);
                     const state = autocompleteStates[index] || { value: "", showSuggestions: false };
@@ -925,14 +942,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
                     );
                   })}
                   {selectedGame && playerInputs.length < Math.max(...selectedGame.supportedPlayerCounts) ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleAddPlayer}
-                      className="w-full"
-                    >
-                      Add Player
-                    </Button>
+                    <AddPlayerRow onClick={handleAddPlayer} />
                   ) : (
                     // Full: say why there's no Add Player, rather than just hiding it
                     <p className="text-center text-sm text-muted-foreground">

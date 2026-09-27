@@ -28,7 +28,6 @@ import {
 } from '@/components/ui/drawer';
 import './MatchRow.css';
 import { Avatar } from "./Avatar";
-import { isAdminEmail } from "@/lib/admin";
 import { MoreIcon } from "./icons";
 
 interface MatchRowProps {
@@ -40,7 +39,7 @@ interface MatchRowProps {
 export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowProps) {
   const { players } = usePlayers();
   const { games } = useGames();
-  const { user, player: currentPlayer } = useAuth();
+  const { player: currentPlayer } = useAuth();
   const { removeMatch, editMatch } = useMatches();
   // The row's options button opens a menu (Edit / Delete); Delete asks to confirm
   const [sheet, setSheet] = useState<'actions' | 'confirmDelete' | null>(null);
@@ -76,17 +75,8 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     return players.find(p => p.id === playerID);
   };
 
-  const canDelete = () => {
-    if (!user) return false;
-    
-    // Admins can delete any match
-    const isAdmin = isAdminEmail(user.email);
-    if (isAdmin) return true;
-    
-    // Can delete if user created the match or if current player is part of the match
-    if (!currentPlayer) return false;
-    return match.createdByID === user.uid || match.playerIDs.includes(currentPlayer.id);
-  };
+  // Match history is shared, but only participants can alter its result.
+  const canManageMatch = !!currentPlayer && match.playerIDs.includes(currentPlayer.id);
 
   const startEditing = () => {
     setSheet(null);
@@ -277,7 +267,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
             <div className="match-text">{renderMatchText()}</div>
             <div className="match-date">{formatDate(match.date)}</div>
           </div>
-          {canDelete() && (
+          {canManageMatch && (
             <button
               type="button"
               className="match-options-button"

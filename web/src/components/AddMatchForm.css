@@ -12,6 +12,51 @@
   transition: color 150ms ease, background-color 150ms ease, transform 150ms ease;
 }
 
+.add-player-row {
+  display: flex;
+  width: 100%;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.75rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.add-player-row:hover {
+  background: hsl(var(--muted) / 0.7);
+  color: hsl(var(--foreground));
+}
+
+.add-player-row:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.add-player-icon-circle {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(var(--border));
+  border-radius: 9999px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.add-player-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
 .remove-player-button {
   width: 2rem;
   height: 2rem;
@@ -52,7 +97,7 @@
 .winner-button-selected {
   background: hsl(43 96% 89%);
   color: hsl(38 92% 43%);
-  animation: winner-crown-pop 420ms cubic-bezier(0.2, 0.9, 0.25, 1.35);
+  animation: winner-crown-pop 320ms cubic-bezier(0.2, 0.9, 0.25, 1.25);
 }
 
 .dark .winner-button-selected {
@@ -102,7 +147,7 @@
   border-radius: 1px;
   background: hsl(43 95% 55%);
   opacity: 0;
-  animation: winner-confetti-burst 720ms cubic-bezier(0.15, 0.75, 0.25, 1) forwards;
+  animation: winner-confetti-burst 500ms cubic-bezier(0.12, 0.72, 0.2, 1) forwards;
 }
 
 .winner-confetti-piece:nth-child(2) { --confetti-x: 18px; --confetti-y: -30px; --confetti-rotation: 250deg; background: hsl(347 85% 62%); }
@@ -125,9 +170,9 @@
 
 @keyframes winner-confetti-burst {
   0% { opacity: 0; transform: translate(0, 0) rotate(0) scale(0.4); }
-  15% { opacity: 1; }
-  75% { opacity: 1; }
-  100% { opacity: 0; transform: translate(var(--confetti-x), var(--confetti-y)) rotate(var(--confetti-rotation)) scale(1); }
+  10% { opacity: 1; }
+  48% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(var(--confetti-x), var(--confetti-y)) rotate(var(--confetti-rotation)) scale(0.8); }
 }
 
 @media (prefers-reduced-motion: reduce) {
