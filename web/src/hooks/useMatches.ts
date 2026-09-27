@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Match } from '../models/Match';
-import { createMatch, updateMatch, deleteMatch } from '../services/databaseService';
+import { createMatch, updateMatch, deleteMatch, type FieldUpdates } from '../services/databaseService';
 
 export function useMatches() {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +21,7 @@ export function useMatches() {
     }
   };
 
-  const editMatch = async (matchId: string, updates: Partial<Match>) => {
+  const editMatch = async (matchId: string, updates: FieldUpdates<Match>) => {
     try {
       setIsLoading(true);
       setError(null);

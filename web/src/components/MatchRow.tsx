@@ -5,6 +5,8 @@ import { usePlayers } from '../hooks/usePlayers';
 import { useGames } from '../hooks/useGames';
 import { useAuth } from '../context/AuthContext';
 import { useMatches } from '../hooks/useMatches';
+import type { FieldUpdates } from '../services/databaseService';
+import { AddMatchForm } from './AddMatchForm';
 import { useMediaQuery } from '../hooks/use-media-query';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,8 +40,10 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
   const { players } = usePlayers();
   const { games } = useGames();
   const { user, player: currentPlayer } = useAuth();
-  const { removeMatch } = useMatches();
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { removeMatch, editMatch } = useMatches();
+  // Long press opens a menu (Edit / Delete); Delete asks to confirm
+  const [sheet, setSheet] = useState<'actions' | 'confirmDelete' | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const longPressTimerRef = useRef<number | null>(null);
   const isLongPressRef = useRef(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -85,8 +89,31 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     return match.createdByID === user.uid || match.playerIDs.includes(currentPlayer.id);
   };
 
+  const startEditing = () => {
+    setSheet(null);
+    // Let the menu's sheet finish closing before the form's opens
+    setTimeout(() => setIsEditing(true), 250);
+  };
+
+  // Save over the original, keeping its date, creator and session. Winner and
+  // team fields are cleared (null) when the edit no longer has them.
+  const handleSaveEdit = async (edited: Omit<Match, 'id'>) => {
+    const updates: FieldUpdates<Match> = {
+      gameID: edited.gameID,
+      playerIDs: edited.playerIDs,
+      playerOrder: edited.playerOrder,
+      scores: edited.scores,
+      rounds: edited.rounds,
+      isMultiplayer: edited.isMultiplayer,
+      winnerID: edited.winnerID ?? null,
+      winnerTeamId: edited.winnerTeamId ?? null,
+      teams: edited.teams ?? null,
+    };
+    await editMatch(match.id, updates);
+  };
+
   const handleDelete = async () => {
-    setShowDeleteDialog(false);
+    setSheet(null);
     try {
       await removeMatch(match.id);
       if (onDelete) {
@@ -104,7 +131,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
     isLongPressRef.current = false;
     longPressTimerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
-      setShowDeleteDialog(true);
+      setSheet('actions');
       // Prevent default touch behaviors when long press triggers
       if ('touches' in e) {
         e.preventDefault();
@@ -297,57 +324,89 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
       </div>
 
       {isDesktop ? (
-        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <Dialog open={sheet !== null} onOpenChange={(open) => !open && setSheet(null)}>
           <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Delete Match</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this match? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowDeleteDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-              >
-                Delete
-              </Button>
-            </DialogFooter>
+            {sheet === 'confirmDelete' ? (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Delete Match</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete this match? This action cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setSheet(null)}>
+                    Cancel
+                  </Button>
+                  <Button variant="destructive" onClick={handleDelete}>
+                    Delete
+                  </Button>
+                </DialogFooter>
+              </>
+            ) : (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Match</DialogTitle>
+                  <DialogDescription>Fix who played, the scores or the winner, or remove it.</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="destructive" onClick={() => setSheet('confirmDelete')}>
+                    Delete
+                  </Button>
+                  <Button onClick={startEditing}>Edit Match</Button>
+                </DialogFooter>
+              </>
+            )}
           </DialogContent>
         </Dialog>
       ) : (
-        <Drawer open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <Drawer open={sheet !== null} onOpenChange={(open) => !open && setSheet(null)}>
           <DrawerContent>
-            <DrawerHeader className="text-left">
-              <DrawerTitle>Delete Match</DrawerTitle>
-              <DrawerDescription>
-                Are you sure you want to delete this match? This action cannot be undone.
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="px-4 pb-4">
-              <DrawerFooter className="px-0">
-                <Button
-                  variant="destructive"
-                  onClick={handleDelete}
-                  className="w-full"
-                >
-                  Delete
-                </Button>
-                <DrawerClose asChild>
-                  <Button variant="outline" className="w-full">
-                    Cancel
-                  </Button>
-                </DrawerClose>
-              </DrawerFooter>
-            </div>
+            {sheet === 'confirmDelete' ? (
+              <>
+                <DrawerHeader className="text-left">
+                  <DrawerTitle>Delete Match</DrawerTitle>
+                  <DrawerDescription>
+                    Are you sure you want to delete this match? This action cannot be undone.
+                  </DrawerDescription>
+                </DrawerHeader>
+                <div className="px-4 pb-4">
+                  <DrawerFooter className="px-0">
+                    <Button variant="destructive" onClick={handleDelete} className="w-full">
+                      Delete
+                    </Button>
+                    <DrawerClose asChild>
+                      <Button variant="outline" className="w-full">
+                        Cancel
+                      </Button>
+                    </DrawerClose>
+                  </DrawerFooter>
+                </div>
+              </>
+            ) : (
+              <>
+                <DrawerHeader className="text-left">
+                  <DrawerTitle>Match</DrawerTitle>
+                  <DrawerDescription>Fix who played, the scores or the winner, or remove it.</DrawerDescription>
+                </DrawerHeader>
+                <div className="px-4 pb-4">
+                  <DrawerFooter className="px-0">
+                    <Button onClick={startEditing} className="w-full">
+                      Edit Match
+                    </Button>
+                    <Button variant="destructive" onClick={() => setSheet('confirmDelete')} className="w-full">
+                      Delete
+                    </Button>
+                  </DrawerFooter>
+                </div>
+              </>
+            )}
           </DrawerContent>
         </Drawer>
+      )}
+
+      {isEditing && (
+        <AddMatchForm open={isEditing} onOpenChange={setIsEditing} onSubmit={handleSaveEdit} editing={match} />
       )}
     </>
   );

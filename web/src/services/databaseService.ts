@@ -206,7 +206,7 @@ export async function createMatch(match: Omit<Match, 'id'>): Promise<Match> {
   return matchWithId;
 }
 
-export async function updateMatch(matchId: string, match: Partial<Match>): Promise<void> {
+export async function updateMatch(matchId: string, match: FieldUpdates<Match>): Promise<void> {
   const matchRef = ref(database, `${MATCHES_PATH}/${matchId}`);
   const updates: FieldUpdates<Match> = {
     ...match,

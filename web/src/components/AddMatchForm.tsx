@@ -39,9 +39,11 @@ interface AddMatchFormProps {
   defaultGameId?: string;
   sessionParticipants?: Player[]; // Optional session participants to prefill
   sessionCode?: string; // Optional session code to associate match with session
+  /** Edit this match instead of creating one: the form opens filled in with it */
+  editing?: Match;
 }
 
-export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sessionParticipants, sessionCode }: AddMatchFormProps) {
+export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sessionParticipants, sessionCode, editing }: AddMatchFormProps) {
   const { user } = useAuth();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { games, isLoading: gamesLoading } = useGames();
@@ -94,10 +96,13 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
 
   // Set default game ID when dialog opens or defaultGameId changes
   useEffect(() => {
-    if (open && defaultGameId && games.length > 0) {
-      setSelectedGameId(defaultGameId);
+    if (open && (editing?.gameID ?? defaultGameId) && games.length > 0) {
+      setSelectedGameId(editing?.gameID ?? defaultGameId!);
     }
-  }, [open, defaultGameId, games]);
+  }, [open, defaultGameId, editing?.gameID, games]);
+
+  // Editing and still on the match's own game: start from what was recorded
+  const editingThisGame = !!editing && editing.gameID === selectedGameId;
 
   const getGameSuggestions = (query: string) => {
     const lower = query.trim().toLowerCase();
@@ -117,8 +122,15 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
     if (selectedGame && open) {
       const gameMinPlayers = Math.min(...selectedGame.supportedPlayerCounts);
       
-      // If session participants are provided, prefill with their names
-      if (sessionParticipants && sessionParticipants.length > 0) {
+      if (editing && editingThisGame) {
+        // Players in the order their scores were recorded
+        const order = editing.playerOrder?.length ? editing.playerOrder : editing.playerIDs;
+        const names = order.map((id) => players.find((p) => p.id === id)?.name ?? "");
+        setPlayerInputs(names);
+        setAutocompleteStates(names.map((value) => ({ value, showSuggestions: false })));
+        setScores(order.map((_, i) => editing.scores?.[i] ?? 0));
+      } else if (sessionParticipants && sessionParticipants.length > 0) {
+        // If session participants are provided, prefill with their names
         const participantNames = sessionParticipants.map(p => p.name);
         // Use at least gameMinPlayers, but fill with session participants if available
         const initialInputs = participantNames.slice(0, Math.max(gameMinPlayers, participantNames.length));
@@ -136,7 +148,9 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
         setScores(new Array(gameMinPlayers).fill(0));
       }
     }
-  }, [selectedGameId, open, selectedGame, sessionParticipants]);
+    // Players arriving later shouldn't reset a form that's being filled in
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGameId, open, selectedGame, sessionParticipants, editing, editingThisGame]);
 
   // Adjust scores array when player inputs change
   useEffect(() => {
@@ -154,7 +168,11 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
 
   // Initialize team assignments when game changes or when switching to team-based
   useEffect(() => {
-    if (selectedGame?.isTeamBased && open) {
+    if (selectedGame?.isTeamBased && open && editing?.teams?.length && editingThisGame) {
+      // Editing: the teams as recorded
+      setTeams(editing.teams.map((t) => t.teamId));
+      setTeamAssignments(new Map(editing.teams.flatMap((t) => t.playerIDs.map((id) => [id, t.teamId] as const))));
+    } else if (selectedGame?.isTeamBased && open) {
       // Reset team assignments when game changes
       setTeamAssignments(new Map());
       // Ensure at least 2 teams
@@ -163,7 +181,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
       // Clear team assignments when switching to non-team game
       setTeamAssignments(new Map());
     }
-  }, [selectedGameId, selectedGame?.isTeamBased, open]);
+  }, [selectedGameId, selectedGame?.isTeamBased, open, editing, editingThisGame]);
 
   const getPlayerSuggestions = (query: string): Player[] => {
     if (!query.trim()) {
@@ -349,8 +367,8 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
       await onSubmit(match);
       onOpenChange(false);
     } catch (err) {
-      console.error("Error creating match:", err);
-      alert("Failed to create match");
+      console.error(editing ? "Error saving match:" : "Error creating match:", err);
+      alert(editing ? "Failed to save match" : "Failed to create match");
     } finally {
       setIsSubmitting(false);
     }
@@ -366,14 +384,14 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
         <>
           {isDrawer ? (
             <DrawerHeader>
-              <DrawerTitle>New Match</DrawerTitle>
+              <DrawerTitle>{editing ? "Edit Match" : "New Match"}</DrawerTitle>
               <DrawerDescription>
                 You need to create at least one game before creating a match.
               </DrawerDescription>
             </DrawerHeader>
           ) : (
             <DialogHeader>
-              <DialogTitle>New Match</DialogTitle>
+              <DialogTitle>{editing ? "Edit Match" : "New Match"}</DialogTitle>
               <DialogDescription>
                 You need to create at least one game before creating a match.
               </DialogDescription>
@@ -395,14 +413,14 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
         <>
           {isDrawer ? (
             <DrawerHeader>
-              <DrawerTitle>New Match</DrawerTitle>
+              <DrawerTitle>{editing ? "Edit Match" : "New Match"}</DrawerTitle>
               <DrawerDescription>
                 You need to create at least one player before creating a match.
               </DrawerDescription>
             </DrawerHeader>
           ) : (
             <DialogHeader>
-              <DialogTitle>New Match</DialogTitle>
+              <DialogTitle>{editing ? "Edit Match" : "New Match"}</DialogTitle>
               <DialogDescription>
                 You need to create at least one player before creating a match.
               </DialogDescription>
@@ -423,11 +441,11 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
       <form onSubmit={handleSubmit}>
         {isDrawer ? (
           <DrawerHeader>
-            <DrawerTitle>New Match</DrawerTitle>
+            <DrawerTitle>{editing ? "Edit Match" : "New Match"}</DrawerTitle>
           </DrawerHeader>
         ) : (
           <DialogHeader>
-            <DialogTitle>New Match</DialogTitle>
+            <DialogTitle>{editing ? "Edit Match" : "New Match"}</DialogTitle>
           </DialogHeader>
         )}
         <div className={isDrawer ? "grid gap-4 py-4 px-4" : "grid gap-4 py-4"}>
@@ -895,13 +913,13 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
         {isDrawer ? (
           <DrawerFooter>
             <Button type="submit" disabled={isSubmitting || !canSubmit()}>
-              {isSubmitting ? "Creating..." : "Create Match"}
+              {editing ? (isSubmitting ? "Saving..." : "Save Changes") : isSubmitting ? "Creating..." : "Create Match"}
             </Button>
           </DrawerFooter>
         ) : (
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting || !canSubmit()}>
-              {isSubmitting ? "Creating..." : "Create Match"}
+              {editing ? (isSubmitting ? "Saving..." : "Save Changes") : isSubmitting ? "Creating..." : "Create Match"}
             </Button>
           </DialogFooter>
         )}
