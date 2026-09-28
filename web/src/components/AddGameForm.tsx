@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { useGames } from "../hooks/useGames";
 import { isAdminEmail } from "@/lib/admin";
 import { COVER_ENHANCEMENT_VERSION } from "@/lib/coverVersion";
+import { fitImageDataUrl } from "@/lib/photo";
 import { heartGame } from "../hooks/useGameScope";
 import { Button } from "@/components/ui/button";
 import {
@@ -154,12 +155,18 @@ export function GameFormContent({
       return;
     }
 
+    // Store as a data URL: the original, or the size the cover clean-up would
+    // leave it (≤2000px JPEG) if that's smaller, e.g. a large camera photo
     const reader = new FileReader();
     reader.onloadend = () => {
-      const result = reader.result as string;
-      setCoverArtPreview(result);
-      // Store as data URL for saving
-      setCoverArt(result);
+      const original = reader.result as string;
+      fitImageDataUrl(original, 2000)
+        .catch(() => original)
+        .then((fitted) => {
+          const result = fitted.length < original.length ? fitted : original;
+          setCoverArtPreview(result);
+          setCoverArt(result);
+        });
     };
     reader.readAsDataURL(file);
   };
