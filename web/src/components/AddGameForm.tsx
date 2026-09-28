@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -8,7 +8,6 @@ import { useGames } from "../hooks/useGames";
 import { isAdminEmail } from "@/lib/admin";
 import { COVER_ENHANCEMENT_VERSION } from "@/lib/coverVersion";
 import { heartGame } from "../hooks/useGameScope";
-import { CoverScanner } from "./CoverScanner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,6 +26,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
+
+// The camera scanner is phone-only and opened on demand, so its code loads then
+const CoverScanner = lazy(() => import("./CoverScanner").then((m) => ({ default: m.CoverScanner })));
 
 interface AddGameFormProps {
   open: boolean;
@@ -677,12 +679,14 @@ export function AddGameForm({
           />
         </div>
         {scanning && (
-          <CoverScanner
-            games={games}
-            onClose={() => setScanning(false)}
-            onPickGame={handleScannedGame}
-            onNewGame={handleScannedNewGame}
-          />
+          <Suspense fallback={null}>
+            <CoverScanner
+              games={games}
+              onClose={() => setScanning(false)}
+              onPickGame={handleScannedGame}
+              onNewGame={handleScannedNewGame}
+            />
+          </Suspense>
         )}
       </DrawerContent>
     </Drawer>

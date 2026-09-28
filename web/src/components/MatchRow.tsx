@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { AppLink } from './AppLink';
 import type { Match } from '../models/Match';
 import { usePlayers } from '../hooks/usePlayers';
@@ -6,7 +6,6 @@ import { useGames } from '../hooks/useGames';
 import { useAuth } from '../context/AuthContext';
 import { useMatches } from '../hooks/useMatches';
 import type { FieldUpdates } from '../services/databaseService';
-import { AddMatchForm } from './AddMatchForm';
 import { useMediaQuery } from '../hooks/use-media-query';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,6 +30,9 @@ import { Avatar } from "./Avatar";
 import { MoreIcon } from "./icons";
 import { getFirstName } from '../lib/player';
 import { useBoxSnapshot } from './shelf/boxSnapshot';
+
+// Only needed once someone edits a match
+const AddMatchForm = lazy(() => import('./AddMatchForm').then((m) => ({ default: m.AddMatchForm })));
 
 interface MatchRowProps {
   match: Match;
@@ -394,7 +396,9 @@ export function MatchRow({ match, hideGameTitle = false, shortNames = false, sho
       )}
 
       {isEditing && (
-        <AddMatchForm open={isEditing} onOpenChange={setIsEditing} onSubmit={handleSaveEdit} editing={match} />
+        <Suspense fallback={null}>
+          <AddMatchForm open={isEditing} onOpenChange={setIsEditing} onSubmit={handleSaveEdit} editing={match} />
+        </Suspense>
       )}
     </>
   );
