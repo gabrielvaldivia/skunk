@@ -289,9 +289,7 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
             <div className="empty-state">
               <p>{audience === "friends" && player ? "No friend matches yet" : "No matches yet"}</p>
               <p className="empty-hint">
-                {audience === "friends" && player
-                  ? "Follow players or share a session to see their matches here."
-                  : "Start a session to invite others to play."}
+                Start a session to invite others to play.
               </p>
             </div>
           ) : (
