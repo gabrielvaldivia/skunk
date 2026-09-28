@@ -59,7 +59,7 @@ export function SignInView({ onDone }: { onDone?: () => void } = {}) {
     <div className={`sign-in-container${onDone ? " in-panel" : ""}`}>
       {/* In the panel, pinned to the panel's corner (it's the containing block) */}
       <button className="sign-in-close-button" onClick={onDone ?? handleClose} aria-label="Close">
-        <CloseIcon size={18} />
+        <CloseIcon size={20} />
       </button>
       <div className="sign-in-content">
         <div className="sign-in-mark" aria-hidden>🦨</div>

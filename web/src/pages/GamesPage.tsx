@@ -87,6 +87,7 @@ export function GamesPage() {
         onScopeChange={setScope}
         query={searchQuery}
         onQueryChange={setSearchQuery}
+        cornerHidden={showAddForm}
         onAdd={() => (isAuthenticated ? setShowAddForm(true) : navigate("/signin"))}
       />
       {isAuthenticated && (

@@ -14,6 +14,8 @@ interface GamesHeaderProps {
   onQueryChange: (query: string) => void;
   /** Fades the header out, e.g. while a game is open on the shelf */
   hidden?: boolean;
+  /** Fades the top-right buttons (Activity, Add) out, e.g. while a dialog covers that corner */
+  cornerHidden?: boolean;
   onAdd: () => void;
   /** Open Activity in place (desktop panel); otherwise the button links to the page */
   onActivity?: () => void;
@@ -30,16 +32,30 @@ const SCOPES: { value: GameScope; label: string }[] = [
 // My Games / All Games top-middle, Add top-right. Desktop: Activity beside
 // Add, search bottom-middle. Phones: Activity bottom-left and search
 // bottom-right, which grows across the bottom when focused.
-export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden, onAdd, onActivity, bottomCenter }: GamesHeaderProps) {
+export function GamesHeader({
+  scope,
+  onScopeChange,
+  query,
+  onQueryChange,
+  hidden,
+  cornerHidden,
+  onAdd,
+  onActivity,
+  bottomCenter,
+}: GamesHeaderProps) {
+  const cornerOff = hidden || cornerHidden;
   const [focused, setFocused] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const open = focused || query !== "";
   const activityClass = cn(
     "fixed bottom-[calc(var(--safe-bottom)+1.25rem)] left-[var(--page-gutter)] flex size-12 items-center justify-center rounded-full text-muted-foreground hover:text-foreground active:scale-95 md:absolute md:bottom-auto md:left-auto md:right-[calc(var(--page-gutter)+3.5rem)] md:top-[calc(var(--safe-top)+0.75rem)]",
     PILL,
+    "transition-opacity duration-200",
     !hidden && "pointer-events-auto",
+    // Desktop: sits top-right, so it steps aside for a dialog there
+    cornerHidden && "md:pointer-events-none md:opacity-0",
     // On phones the open search field takes the whole bottom row
-    open && "transition-opacity max-md:pointer-events-none max-md:opacity-0"
+    open && "max-md:pointer-events-none max-md:opacity-0"
   );
 
   return (
@@ -82,11 +98,11 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
       </div>
 
       {onActivity ? (
-        <button type="button" onClick={onActivity} aria-label="Activity" tabIndex={hidden ? -1 : undefined} className={activityClass}>
+        <button type="button" onClick={onActivity} aria-label="Activity" tabIndex={cornerOff ? -1 : undefined} className={activityClass}>
           <ActivityIcon className="size-5" />
         </button>
       ) : (
-        <Link to="/activity" aria-label="Activity" tabIndex={hidden ? -1 : undefined} className={activityClass}>
+        <Link to="/activity" aria-label="Activity" tabIndex={cornerOff ? -1 : undefined} className={activityClass}>
           <ActivityIcon className="size-5" />
         </Link>
       )}
@@ -94,11 +110,11 @@ export function GamesHeader({ scope, onScopeChange, query, onQueryChange, hidden
         type="button"
         onClick={onAdd}
         aria-label="Add game"
-        tabIndex={hidden ? -1 : undefined}
+        tabIndex={cornerOff ? -1 : undefined}
         className={cn(
-          "absolute right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] flex size-12 items-center justify-center rounded-full text-muted-foreground hover:text-foreground active:scale-95",
+          "absolute right-[var(--page-gutter)] top-[calc(var(--safe-top)+0.75rem)] flex size-12 items-center justify-center rounded-full text-muted-foreground transition-opacity duration-200 hover:text-foreground active:scale-95",
           PILL,
-          !hidden && "pointer-events-auto"
+          cornerOff ? "opacity-0" : "pointer-events-auto"
         )}
       >
         <PlusIcon className="size-5" />

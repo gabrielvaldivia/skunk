@@ -279,6 +279,7 @@ export function ShelfPage() {
           setSelectedId(null);
         }}
         hidden={!!selected}
+        cornerHidden={showAddForm || !!panel?.stack.length}
         bottomCenter={
           currentSession && (
             <MiniSessionSheet
