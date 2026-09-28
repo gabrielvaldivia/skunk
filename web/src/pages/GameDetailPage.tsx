@@ -153,25 +153,41 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
       winCounts.set(winnerOrTeamId, (winCounts.get(winnerOrTeamId) || 0) + 1);
     }
   }
-  const sortedEntries = Array.from(winCounts.entries()).sort(
-    (a, b) => b[1] - a[1]
-  );
-  const groups: Array<{ wins: number; playerIds: string[] }> = [];
-  for (let i = 0; i < sortedEntries.length && groups.length < 3; ) {
-    const wins = sortedEntries[i][1];
-    const tied: string[] = [];
-    while (i < sortedEntries.length && sortedEntries[i][1] === wins) {
-      tied.push(sortedEntries[i][0]);
-      i++;
+  // Rank everyone who has won; players tied on wins share one row and rank
+  // (1, 2, 2, 4). Rows fill until 10 people are shown, then your row joins
+  // at the bottom when you're further down.
+  const playedCounts = new Map<string, number>();
+  for (const match of gameMatches) {
+    for (const pid of match.playerIDs) {
+      playedCounts.set(pid, (playedCounts.get(pid) || 0) + 1);
     }
-    groups.push({ wins, playerIds: tied });
   }
-  const placements = groups.map((g) => ({
-    wins: g.wins,
-    players: g.playerIds
-      .map((id) => players.find((p) => p.id === id))
-      .filter((p): p is NonNullable<typeof p> => !!p),
-  }));
+  const ranked: LeaderboardEntry[] = [];
+  let rankedPeople = 0;
+  for (const [id, wins] of Array.from(winCounts.entries()).sort((a, b) => b[1] - a[1])) {
+    const found = players.find((p) => p.id === id);
+    if (!found) continue;
+    const played = playedCounts.get(id) || wins;
+    const previous = ranked[ranked.length - 1];
+    if (previous?.wins === wins) {
+      previous.players.push(found);
+      previous.played += played;
+    } else {
+      ranked.push({ players: [found], rank: rankedPeople + 1, wins, played });
+    }
+    rankedPeople++;
+  }
+  const leaders: LeaderboardEntry[] = [];
+  let shownPeople = 0;
+  for (const entry of ranked) {
+    if (shownPeople >= 10) break;
+    leaders.push(entry);
+    shownPeople += entry.players.length;
+  }
+  const myEntry = player
+    ? ranked.find((entry) => entry.players.some((p) => p.id === player.id))
+    : undefined;
+  if (myEntry && !leaders.includes(myEntry)) leaders.push(myEntry);
 
   const totalPlayers = new Set(gameMatches.flatMap((m) => m.playerIDs)).size;
 
@@ -249,17 +265,17 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
           )}
         </div>
 
-        {placements.length > 0 && (
-          <div className="game-leaderboard">
-            {placements.map((placement, idx) => (
-              <PodiumSpot
-                key={idx}
-                rank={idx + 1}
-                wins={placement.wins}
-                players={placement.players}
+        {leaders.length > 0 && (
+          <ol className="game-leaderboard">
+            {leaders.map((entry) => (
+              <LeaderRow
+                key={entry.rank}
+                entry={entry}
+                share={entry.wins / leaders[0].wins}
+                youId={player?.id}
               />
             ))}
-          </div>
+          </ol>
         )}
 
         {!currentSession && (
@@ -308,68 +324,72 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
   );
 }
 
-const PODIUM_COLUMN = { 1: 2, 2: 1, 3: 3 } as const;
-
-function PodiumSpot({
-  rank,
-  wins,
-  players,
-}: {
-  rank: 1 | 2 | 3 | number;
-  wins: number;
+interface LeaderboardEntry {
+  /** More than one when tied on wins */
   players: Player[];
+  rank: number;
+  wins: number;
+  /** Matches of this game the tied players played, together */
+  played: number;
+}
+
+const MEDALS = { 1: "gold", 2: "silver", 3: "bronze" } as const;
+const PILE_MAX = 3;
+
+// The pill grows with wins relative to the leader, so where the avatars sit
+// shows how far behind that row is. Ties stack their avatars in a facepile.
+function LeaderRow({
+  entry,
+  share,
+  youId,
+}: {
+  entry: LeaderboardEntry;
+  share: number;
+  youId?: string;
 }) {
-  const size = rank === 1 ? 84 : 60;
-  const pile = players.slice(0, 2);
+  const { players, rank, wins, played } = entry;
+  const medal = MEDALS[rank as 1 | 2 | 3] ?? "plain";
+  const winRate = Math.round((wins / Math.max(played, 1)) * 100);
+  const nameOf = (p: Player) =>
+    p.id === youId ? "You" : players.length > 1 ? p.name.trim().split(" ")[0] || p.name : p.name;
+  const pile = players.slice(0, PILE_MAX);
+  const extra = players.length - pile.length;
   return (
-    <div
-      className={`leader ${rank === 1 ? "first" : ""}`}
-      style={{ gridColumn: PODIUM_COLUMN[rank as 1 | 2 | 3], gridRow: 1 }}
-    >
-      <div className="leader-avatar" style={{ width: size, height: size }}>
-        {pile.length > 1 ? (
-          <>
-            <AppLink
-              to={`/players/${pile[0].id}`}
-              className="leader-avatar-link pile-a"
-              aria-label={`View ${pile[0].name}'s profile`}
-            >
-              <Avatar player={pile[0]} size={size * 0.68} />
-            </AppLink>
-            <AppLink
-              to={`/players/${pile[1].id}`}
-              className="leader-avatar-link pile-b"
-              aria-label={`View ${pile[1].name}'s profile`}
-            >
-              <Avatar player={pile[1]} size={size * 0.68} />
-            </AppLink>
-          </>
-        ) : (
-          pile[0] && (
-            <AppLink
-              to={`/players/${pile[0].id}`}
-              className="leader-avatar-link"
-              aria-label={`View ${pile[0].name}'s profile`}
-            >
-              <Avatar player={pile[0]} size={size} />
-            </AppLink>
-          )
-        )}
-        <span className={`rank-badge ${rank === 1 ? "gold" : ""}`}>{rank}</span>
-      </div>
-      <div className="leader-name">
-        {players.slice(0, 2).map((player, index) => (
-          <span key={player.id}>
-            {index > 0 && " & "}
-            <AppLink to={`/players/${player.id}`}>
-              {player.name.trim().split(" ")[0] || player.name}
-            </AppLink>
+    <li className="leader-row">
+      <span className={`leader-rank ${medal}`} aria-label={`Rank ${rank}`}>
+        <span>{rank}</span>
+      </span>
+      <div className="leader-track">
+        <div className="leader-card" style={{ "--share": share, "--faces": pile.length + (extra > 0 ? 1 : 0) } as React.CSSProperties}>
+          <span className="leader-text">
+            <span className="leader-name">
+              {players.map((p, index) => (
+                <span key={p.id}>
+                  {index > 0 && (index === players.length - 1 ? " & " : ", ")}
+                  <AppLink to={`/players/${p.id}`}>{nameOf(p)}</AppLink>
+                </span>
+              ))}
+            </span>
+            <span className="leader-stats">
+              {wins} {wins === 1 ? "win" : "wins"}
+              <span className="leader-rate">{winRate}%</span>
+            </span>
           </span>
-        ))}
+          <span className="leader-pile">
+            {pile.map((p) => (
+              <AppLink
+                key={p.id}
+                to={`/players/${p.id}`}
+                className="leader-pile-face"
+                aria-label={`View ${p.name}'s profile`}
+              >
+                <Avatar player={p} size={44} />
+              </AppLink>
+            ))}
+            {extra > 0 && <span className="leader-pile-face leader-pile-more">+{extra}</span>}
+          </span>
+        </div>
       </div>
-      <div className="leader-wins">
-        {wins} {wins === 1 ? "win" : "wins"}
-      </div>
-    </div>
+    </li>
   );
 }
