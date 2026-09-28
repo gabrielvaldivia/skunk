@@ -20,6 +20,7 @@ import {
   updatePlayer,
 } from "../services/databaseService";
 import type { Player } from "../models/Player";
+import { squarePhotoBase64 } from "../lib/photo";
 
 interface AuthContextType {
   user: User | null;
@@ -35,25 +36,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // A Google profile photo as base64 JPEG (no data: prefix), like uploaded photos
-async function importGooglePhoto(photoURL: string): Promise<string> {
-  // Google serves any size; ask for one big enough for the profile page
-  const url = photoURL.replace(/=s\d+-c$/, "=s256-c");
-  const bitmap = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous"; // Google allows it, so the canvas stays readable
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Couldn't load Google photo"));
-    img.src = url;
-  });
-  const size = Math.min(256, bitmap.width, bitmap.height);
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = size;
-  // Centre-crop to a square
-  const side = Math.min(bitmap.width, bitmap.height);
-  canvas
-    .getContext("2d")!
-    .drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, size, size);
-  return canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
+function importGooglePhoto(photoURL: string): Promise<string> {
+  // Google serves any size; ask for one big enough for the profile page.
+  // Google allows cross-origin reads, so the canvas stays readable.
+  return squarePhotoBase64(photoURL.replace(/=s\d+-c$/, "=s256-c"), "anonymous");
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

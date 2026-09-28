@@ -17,6 +17,7 @@ import { ThemeToggle } from "../components/theme-toggle";
 import { toast } from "sonner";
 import "./ProfilePage.css";
 import { isAdminEmail } from "@/lib/admin";
+import { squarePhotoBase64 } from "@/lib/photo";
 
 export function ProfilePage() {
   const navigate = useNavigate();
@@ -52,16 +53,15 @@ export function ProfilePage() {
       return;
     }
 
-    // Read file and convert to base64
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      // Remove data:image/...;base64, prefix
-      const base64String = result.split(",")[1];
-      setPhotoPreview(result);
-      setPendingPhotoData(base64String);
-    };
-    reader.readAsDataURL(file);
+    // Shrink to the stored avatar size, so the player record stays small
+    const url = URL.createObjectURL(file);
+    squarePhotoBase64(url)
+      .then((base64String) => {
+        setPhotoPreview(`data:image/jpeg;base64,${base64String}`);
+        setPendingPhotoData(base64String);
+      })
+      .catch(() => alert("Couldn't read that image"))
+      .finally(() => URL.revokeObjectURL(url));
   };
 
   const handleRemovePhoto = () => {
