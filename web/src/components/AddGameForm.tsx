@@ -6,7 +6,7 @@ import type { Game } from "../models/Game";
 import { useAuth } from "../context/AuthContext";
 import { useGames } from "../hooks/useGames";
 import { isAdminEmail } from "@/lib/admin";
-import { COVER_ENHANCEMENT_VERSION } from "@/lib/coverScan";
+import { COVER_ENHANCEMENT_VERSION } from "@/lib/coverVersion";
 import { heartGame } from "../hooks/useGameScope";
 import { CoverScanner } from "./CoverScanner";
 import { Button } from "@/components/ui/button";

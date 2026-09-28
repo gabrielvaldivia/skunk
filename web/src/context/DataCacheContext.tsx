@@ -4,7 +4,7 @@ import type { Player } from '../models/Player';
 import { getGames, getPlayers, subscribeToPlayers, updateGame } from '../services/databaseService';
 import { useAuth } from './AuthContext';
 import { isAdminEmail } from '../lib/admin';
-import { COVER_ENHANCEMENT_VERSION, enhanceCoverDataUrl } from '../lib/coverScan';
+import { COVER_ENHANCEMENT_VERSION } from '../lib/coverVersion';
 
 interface DataCacheContextType {
   games: Game[];
@@ -80,6 +80,7 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
     // Older records did not distinguish camera scans from uploaded cover photos.
     // Both are embedded images, and the conservative correction is safe for either.
     void (async () => {
+      const { enhanceCoverDataUrl } = await import('../lib/coverScan');
       let changed = false;
       for (const game of oldEmbeddedCovers) {
         try {

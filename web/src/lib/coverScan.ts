@@ -8,7 +8,7 @@ export type Quad = [Point, Point, Point, Point];
 
 const MAX_SOURCE = 2000;
 const MAX_COVER = 1000;
-export const COVER_ENHANCEMENT_VERSION = 1;
+export { COVER_ENHANCEMENT_VERSION } from "./coverVersion";
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
