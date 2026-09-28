@@ -44,6 +44,11 @@
   line-height: 1.5;
 }
 
+.player-follow-button {
+  min-width: 6.5rem;
+  margin-top: 0.875rem;
+}
+
 .player-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

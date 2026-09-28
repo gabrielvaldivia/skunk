@@ -167,6 +167,22 @@ export async function setGameHeart(playerId: string, gameId: string, hearted: bo
   await update(ref(database, `${PLAYERS_PATH}/${playerId}/gameHearts`), { [gameId]: hearted });
 }
 
+// Follow (or unfollow) one player; false is kept as an explicit opt-out.
+export async function setPlayerFollow(playerId: string, followedPlayerId: string, followed: boolean): Promise<void> {
+  await update(ref(database, `${PLAYERS_PATH}/${playerId}/followedPlayerIDs`), {
+    [followedPlayerId]: followed,
+  });
+}
+
+// Add several session participants without overwriting any explicit unfollows.
+export async function addPlayerFollows(playerId: string, followedPlayerIds: string[]): Promise<void> {
+  if (!followedPlayerIds.length) return;
+  await update(
+    ref(database, `${PLAYERS_PATH}/${playerId}/followedPlayerIDs`),
+    Object.fromEntries(followedPlayerIds.map((followedPlayerId) => [followedPlayerId, true]))
+  );
+}
+
 // Strip personal data but keep the record so other players' matches still resolve
 export async function anonymizePlayer(playerId: string): Promise<void> {
   const playerRef = ref(database, `${PLAYERS_PATH}/${playerId}`);
@@ -178,6 +194,7 @@ export async function anonymizePlayer(playerId: string): Promise<void> {
     ownerID: null,
     location: null,
     bio: null,
+    followedPlayerIDs: null,
   };
   await update(playerRef, updates);
 }

@@ -55,6 +55,14 @@
   color: hsl(var(--muted-foreground));
 }
 
+.game-hero-audience {
+  margin-top: 1rem;
+}
+
+.game-hero-audience .audience-control {
+  margin-bottom: 0;
+}
+
 /* Podium: 2nd | 1st | 3rd */
 .game-leaderboard {
   display: grid;

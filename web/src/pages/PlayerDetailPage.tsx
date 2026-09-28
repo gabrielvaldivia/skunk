@@ -7,7 +7,10 @@ import { NavBar } from "../components/NavBar";
 import { Avatar } from "../components/Avatar";
 import { LocationIcon } from "../components/icons";
 import { GameStatsCarousel } from "../components/GameStatsCarousel";
+import { Button } from "@/components/ui/button";
+import { usePlayerFollow } from "../hooks/useFriends";
 import { getMatchWinnerID, type Match } from "../models/Match";
+import { toast } from "sonner";
 import "./PlayerDetailPage.css";
 
 /** `playerId` shows that player instead of the one in the URL, e.g. in a panel */
@@ -17,6 +20,7 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
   const { players } = usePlayers();
   const { matches: allMatches } = useActivity(10000); // Full history for stats; shares the listener with list pages
   const { games } = useGames();
+  const follow = usePlayerFollow(id);
 
   const player = players.find((p) => p.id === id);
   const playerMatches: Match[] = allMatches
@@ -78,6 +82,15 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
     return best;
   })();
 
+  const handleFollowToggle = async () => {
+    try {
+      await follow.toggle();
+    } catch (error) {
+      console.error("Error updating follow:", error);
+      toast.error("Couldn't update this friend.");
+    }
+  };
+
   return (
     <div className="player-detail-page">
       <NavBar />
@@ -91,6 +104,18 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
           </div>
         )}
         {player.bio && <p className="player-bio">{player.bio}</p>}
+        {follow.canFollow && (
+          <Button
+            type="button"
+            size="sm"
+            variant={follow.following ? "secondary" : "default"}
+            className="player-follow-button"
+            disabled={follow.isSaving}
+            onClick={handleFollowToggle}
+          >
+            {follow.isSaving ? "Saving..." : follow.following ? "Unfollow" : "Follow"}
+          </Button>
+        )}
       </div>
 
       <div className="page-content">

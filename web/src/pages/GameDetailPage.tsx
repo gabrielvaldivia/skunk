@@ -23,6 +23,8 @@ import "./GameDetailPage.css";
 import { isAdminEmail } from "@/lib/admin";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { AppLink } from "../components/AppLink";
+import { AudienceControl } from "../components/AudienceControl";
+import { useFriendIds, type ActivityAudience } from "../hooks/useFriends";
 
 interface GameDetailPageProps {
   /** Show this game instead of the one in the URL, e.g. in the shelf's side panel */
@@ -47,21 +49,29 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
   const { matches: allMatches } = useActivity(10000); // Full history for stats; shares the listener with list pages
   const { players } = useDataCache();
   const { createSession, currentSession } = useSession();
-  const { user, isAuthenticated } = useAuth();
+  const { user, player, isAuthenticated } = useAuth();
+  const friendIds = useFriendIds();
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [audience, setAudience] = useState<ActivityAudience>("friends");
 
   const isAdmin = isAdminEmail(user?.email);
   const heart = useGameHeart(id, games);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const game = games.find((g) => g.id === id);
-  const gameMatches: Match[] = allMatches
+  const allGameMatches: Match[] = allMatches
     .filter((m) => m.gameID === id)
     .map((match) => ({
       ...match,
       game: game || undefined,
     }));
+  const gameMatches =
+    !player || audience === "global"
+      ? allGameMatches
+      : allGameMatches.filter((match) =>
+          match.playerIDs.some((playerId) => friendIds.has(playerId))
+        );
 
   const handleCreateSession = async () => {
     if (!id) return;
@@ -232,6 +242,11 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
             {totalPlayers > 0 &&
               ` · ${totalPlayers} ${totalPlayers === 1 ? "player" : "players"}`}
           </p>
+          {player && (
+            <div className="game-hero-audience">
+              <AudienceControl value={audience} onChange={setAudience} />
+            </div>
+          )}
         </div>
 
         {placements.length > 0 && (
@@ -263,9 +278,11 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
           {gameMatches.length > 0 && <h2 className="section-title">Matches</h2>}
           {gameMatches.length === 0 ? (
             <div className="empty-state">
-              <p>No matches yet</p>
+              <p>{audience === "friends" && player ? "No friend matches yet" : "No matches yet"}</p>
               <p className="empty-hint">
-                Start a session to invite others to play.
+                {audience === "friends" && player
+                  ? "Follow players or share a session to see their matches here."
+                  : "Start a session to invite others to play."}
               </p>
             </div>
           ) : (

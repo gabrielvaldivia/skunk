@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from "react";
 import type { ReactNode } from "react";
 import {
@@ -14,6 +15,7 @@ import {
   getSession,
   isSessionExpired,
   subscribeToSession,
+  addPlayerFollows,
 } from "../services/databaseService";
 import type { Session } from "../models/Session";
 import { useAuth } from "./AuthContext";
@@ -32,9 +34,10 @@ interface SessionContextType {
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const { user, player } = useAuth();
+  const { user, player, refreshPlayer } = useAuth();
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const pendingAutoFollows = useRef(new Set<string>());
 
   // Load session from localStorage on mount
   useEffect(() => {
@@ -75,6 +78,27 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
     });
   }, [currentSessionId]);
+
+  // Sharing a session introduces its participants as friends. Only add people
+  // without a stored preference so an explicit unfollow remains respected.
+  useEffect(() => {
+    if (!currentSession || !player) return;
+    const newFriendIds = currentSession.participantIDs.filter(
+      (participantId) =>
+        participantId !== player.id &&
+        player.followedPlayerIDs?.[participantId] === undefined &&
+        !pendingAutoFollows.current.has(participantId)
+    );
+    if (!newFriendIds.length) return;
+
+    newFriendIds.forEach((participantId) => pendingAutoFollows.current.add(participantId));
+    void addPlayerFollows(player.id, newFriendIds)
+      .then(refreshPlayer)
+      .catch((error) => {
+        newFriendIds.forEach((participantId) => pendingAutoFollows.current.delete(participantId));
+        console.error("Error following session participants:", error);
+      });
+  }, [currentSession, player, refreshPlayer]);
 
   const handleCreateSession = useCallback(async (gameID?: string): Promise<Session> => {
     if (!user || !player) {
@@ -185,4 +209,3 @@ export function useSession() {
   }
   return context;
 }
-

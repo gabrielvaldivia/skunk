@@ -1,7 +1,11 @@
+import { useMemo, useState } from 'react';
 import { useActivity } from '../hooks/useActivity';
 import { useSession } from '../context/SessionContext';
+import { useAuth } from '../context/AuthContext';
+import { useFriendIds, type ActivityAudience } from '../hooks/useFriends';
 import { MiniSessionSheet } from '../components/MiniSessionSheet';
 import { MatchRow } from '../components/MatchRow';
+import { AudienceControl } from '../components/AudienceControl';
 import './ActivityPage.css';
 import { useAppNavigate } from "../components/AppLink";
 import { NavBar } from "../components/NavBar";
@@ -12,6 +16,16 @@ export function ActivityPage() {
   const navigate = useAppNavigate();
   const { matches, isLoading, error } = useActivity();
   const { currentSession } = useSession();
+  const { player } = useAuth();
+  const friendIds = useFriendIds();
+  const [audience, setAudience] = useState<ActivityAudience>('friends');
+  const visibleMatches = useMemo(
+    () =>
+      !player || audience === 'global'
+        ? matches
+        : matches.filter((match) => match.playerIDs.some((playerId) => friendIds.has(playerId))),
+    [audience, friendIds, matches, player]
+  );
 
   if (isLoading) {
     return <div className="loading">Loading activity...</div>;
@@ -36,14 +50,19 @@ export function ActivityPage() {
       {currentSession && <MiniSessionSheet />}
 
       <div className="page-content">
-        {matches.length === 0 ? (
+        {player && <AudienceControl value={audience} onChange={setAudience} />}
+        {visibleMatches.length === 0 ? (
           <div className="empty-state">
-            <p>No matches yet</p>
-            <p className="empty-hint">Start a session from any game to record one.</p>
+            <p>{audience === 'friends' && player ? 'No friend activity yet' : 'No matches yet'}</p>
+            <p className="empty-hint">
+              {audience === 'friends' && player
+                ? 'Follow players or share a session to see their matches here.'
+                : 'Start a session from any game to record one.'}
+            </p>
           </div>
         ) : (
           <div className="matches-list">
-            {matches.map(match => (
+            {visibleMatches.map(match => (
               <MatchRow key={match.id} match={match} hideGameTitle={false} />
             ))}
           </div>
@@ -52,4 +71,3 @@ export function ActivityPage() {
     </div>
   );
 }
-

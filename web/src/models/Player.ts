@@ -15,6 +15,11 @@ export type Player = {
    * whether you added or played them.
    */
   gameHearts?: Record<string, boolean>;
+  /**
+   * People this player follows. True includes them in Friends activity; false
+   * records an explicit unfollow so session auto-follow does not add them back.
+   */
+  followedPlayerIDs?: Record<string, boolean>;
   /** @deprecated Scanned games from before hearts; read as hearted */
   ownedGameIDs?: Record<string, number>;
   ownerID?: string;
