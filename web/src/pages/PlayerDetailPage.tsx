@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { usePlayers } from "../hooks/usePlayers";
 import { useActivity } from "../hooks/useActivity";
@@ -23,12 +24,54 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
   const follow = usePlayerFollow(id);
 
   const player = players.find((p) => p.id === id);
-  const playerMatches: Match[] = allMatches
-    .filter((m) => m.playerIDs.includes(id || ""))
-    .map((match) => ({
-      ...match,
-      game: games.find((g) => g.id === match.gameID) || undefined,
-    }));
+  const resolvedPlayerId = player?.id;
+
+  // Stats over the full match history, recomputed only when the data changes
+  const { playerMatches, wins, topGames, bestWinStreak } = useMemo(() => {
+    const gamesById = new Map(games.map((g) => [g.id, g]));
+    const playerMatches: Match[] = allMatches
+      .filter((m) => m.playerIDs.includes(id || ""))
+      .map((match) => ({ ...match, game: gamesById.get(match.gameID) }));
+
+    const didWinMatch = (match: Match) => {
+      if (!resolvedPlayerId) return false;
+      const matchGame = gamesById.get(match.gameID);
+      const winnerOrTeamId = matchGame
+        ? getMatchWinnerID(match, matchGame)
+        : match.winnerID ?? match.winnerTeamId;
+      if (!winnerOrTeamId) return false;
+      // A winning team credits each of its players (as the game leaderboard
+      // does); otherwise the winner is a player
+      const team = match.teams?.find((t) => t.teamId === winnerOrTeamId);
+      return team ? team.playerIDs.includes(resolvedPlayerId) : winnerOrTeamId === resolvedPlayerId;
+    };
+    const won = new Set(playerMatches.filter(didWinMatch).map((m) => m.id));
+
+    const byGame = new Map<string, { matches: number; wins: number }>();
+    for (const m of playerMatches) {
+      const entry = byGame.get(m.gameID) ?? { matches: 0, wins: 0 };
+      entry.matches++;
+      if (won.has(m.id)) entry.wins++;
+      byGame.set(m.gameID, entry);
+    }
+    const topGames = games
+      .map((game) => ({ game, ...(byGame.get(game.id) ?? { matches: 0, wins: 0 }) }))
+      .filter(({ wins }) => wins > 0)
+      .sort((a, b) => b.wins - a.wins || b.matches - a.matches || a.game.title.localeCompare(b.game.title))
+      .slice(0, 5);
+
+    let current = 0;
+    let bestWinStreak = 0;
+    for (const m of [...playerMatches].sort((a, b) => a.date - b.date)) {
+      if (won.has(m.id)) {
+        current += 1;
+        if (current > bestWinStreak) bestWinStreak = current;
+      } else {
+        current = 0;
+      }
+    }
+    return { playerMatches, wins: won.size, topGames, bestWinStreak };
+  }, [allMatches, games, id, resolvedPlayerId]);
 
   if (!player) {
     return (
@@ -37,50 +80,6 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
       </div>
     );
   }
-
-  const resolvedPlayerId = player.id;
-  const didWinMatch = (match: Match) => {
-    const matchGame = games.find((game) => game.id === match.gameID);
-    const winnerOrTeamId = matchGame
-      ? getMatchWinnerID(match, matchGame)
-      : match.winnerID ?? match.winnerTeamId;
-    if (!winnerOrTeamId) return false;
-
-    if (matchGame?.isTeamBased || match.winnerTeamId) {
-      return !!match.teams
-        ?.find((team) => team.teamId === winnerOrTeamId)
-        ?.playerIDs.includes(resolvedPlayerId);
-    }
-    return winnerOrTeamId === resolvedPlayerId;
-  };
-
-  const wins = playerMatches.filter(didWinMatch).length;
-  const topGames = games
-    .map((game) => {
-      const matches = playerMatches.filter((match) => match.gameID === game.id);
-      return {
-        game,
-        matches: matches.length,
-        wins: matches.filter(didWinMatch).length,
-      };
-    })
-    .filter(({ wins }) => wins > 0)
-    .sort((a, b) => b.wins - a.wins || b.matches - a.matches || a.game.title.localeCompare(b.game.title))
-    .slice(0, 5);
-  const bestWinStreak = (() => {
-    const sortedMatches = [...playerMatches].sort((a, b) => a.date - b.date);
-    let current = 0;
-    let best = 0;
-    for (const m of sortedMatches) {
-      if (didWinMatch(m)) {
-        current += 1;
-        if (current > best) best = current;
-      } else {
-        current = 0;
-      }
-    }
-    return best;
-  })();
 
   const handleFollowToggle = async () => {
     try {
