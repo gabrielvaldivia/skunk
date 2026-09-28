@@ -1,22 +1,29 @@
+/* A 48px pill: 32px faces with 8px all round, and the live dot 8px from
+   the left edge to match */
 .mini-session-sheet {
+  --face: 32px;
+  --pad: 8px;
   position: fixed;
   left: 50%;
   bottom: calc(var(--safe-bottom) + var(--tabbar-gap));
   transform: translateX(-50%);
   width: calc(100% - 2 * var(--page-gutter));
   max-width: calc(var(--page-max-width) - 2 * var(--page-gutter));
+  /* + the 1px border top and bottom */
+  height: calc(var(--face) + 2 * var(--pad) + 2px);
   z-index: 45;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.625rem 0.625rem 0.625rem 1rem;
+  gap: 0.625rem;
+  padding: var(--pad);
   border: 1px solid hsl(var(--border) / 0.7);
-  border-radius: 1.25rem;
+  border-radius: 9999px;
   background: hsl(var(--background) / 0.8);
   color: hsl(var(--foreground));
   box-shadow: 0 10px 32px -10px rgb(0 0 0 / 0.3);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
+  white-space: nowrap;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
@@ -31,9 +38,10 @@
   box-shadow: 0 10px 32px -8px rgb(0 0 0 / 0.6);
 }
 
-.dark .mini-session-facepile .avatar,
-.dark .facepile-more {
-  box-shadow: 0 0 0 2px hsl(var(--accent));
+/* Sized to its content, between other floating buttons */
+.mini-session-compact {
+  width: auto;
+  max-width: calc(100% - 2 * var(--page-gutter) - 7rem);
 }
 
 .mini-session-live {
@@ -64,13 +72,10 @@
   .mini-session-live::after { animation: none; }
 }
 
-.mini-session-content {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
 .mini-session-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-weight: 600;
   font-size: 0.9375rem;
   line-height: 1.25;
@@ -78,17 +83,39 @@
 
 .mini-session-created {
   color: hsl(var(--muted-foreground));
-  font-size: 0.8125rem;
+  font-weight: 400;
 }
 
 .mini-session-facepile {
+  --overlap: 8px;
+  --gap: 2px;
   margin-left: auto;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
 }
 
+.mini-session-facepile > * + * {
+  margin-left: calc(-1 * var(--overlap));
+}
+
+/* Each face but the last is notched where the next one overlaps it, leaving
+   a gap that shows whatever is behind the pill instead of a painted ring */
+.mini-session-facepile > :not(:last-child) {
+  -webkit-mask: radial-gradient(
+    circle at calc(100% + var(--face) / 2 - var(--overlap)) 50%,
+    transparent calc(var(--face) / 2 + var(--gap) - 0.5px),
+    #000 calc(var(--face) / 2 + var(--gap))
+  );
+  mask: radial-gradient(
+    circle at calc(100% + var(--face) / 2 - var(--overlap)) 50%,
+    transparent calc(var(--face) / 2 + var(--gap) - 0.5px),
+    #000 calc(var(--face) / 2 + var(--gap))
+  );
+}
+
 .mini-session-avatar-link {
-  display: block;
+  display: flex;
   padding: 0;
   border: 0;
   border-radius: 9999px;
@@ -103,50 +130,15 @@
   outline-offset: 2px;
 }
 
-.mini-session-facepile .avatar,
 .facepile-more {
-  box-shadow: 0 0 0 2px hsl(var(--background));
-}
-
-.mini-session-facepile > * + * {
-  margin-left: -8px;
-}
-
-.facepile-more {
-  width: 32px;
-  height: 32px;
+  display: inline-flex;
+  width: var(--face);
+  height: var(--face);
+  align-items: center;
+  justify-content: center;
   border-radius: 9999px;
   background: hsl(var(--muted));
   color: hsl(var(--muted-foreground));
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   font-size: 0.75rem;
   font-weight: 600;
-}
-
-/* One-line pill that sits between other floating buttons */
-.mini-session-compact {
-  width: auto;
-  max-width: calc(100% - 2 * var(--page-gutter) - 7rem);
-  height: 3rem;
-  gap: 0.625rem;
-  /* The faces are 28px in a 48px pill: 10px all round keeps the padding even */
-  padding: 0 10px;
-  border-radius: 9999px;
-  white-space: nowrap;
-}
-
-.mini-session-compact .mini-session-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.mini-session-compact .mini-session-created {
-  font-weight: 400;
-}
-
-.mini-session-compact .facepile-more {
-  width: 28px;
-  height: 28px;
 }

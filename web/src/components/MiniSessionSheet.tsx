@@ -20,9 +20,12 @@ function formatRelativeTime(timestamp: number): string {
   return date.toLocaleDateString();
 }
 
+const MAX_FACES = 3;
+
 /**
  * `bottom` lifts the sheet, e.g. above a page's own floating buttons.
- * `compact` is a one-line pill, for sitting between other bottom buttons.
+ * `compact` sizes the pill to its content, for sitting between other bottom
+ * buttons; otherwise it spans the page. Both look the same.
  */
 export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact?: boolean } = {}) {
   const navigate = useNavigate();
@@ -97,20 +100,11 @@ export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact
       }}
     >
       <span className="mini-session-live" aria-hidden />
-      {compact ? (
-        <div className="mini-session-content">
-          <div className="mini-session-title">
-            {title} <span className="mini-session-created">· {createdLabel}</span>
-          </div>
-        </div>
-      ) : (
-        <div className="mini-session-content">
-          <div className="mini-session-title">{title}</div>
-          <div className="mini-session-created">Started {createdLabel}</div>
-        </div>
-      )}
+      <div className="mini-session-title">
+        {title} <span className="mini-session-created">· {createdLabel}</span>
+      </div>
       <div className="mini-session-facepile" aria-label="Participants">
-        {participantList.slice(0, compact ? 3 : 4).map((p) => (
+        {participantList.slice(0, MAX_FACES).map((p) => (
           <button
             type="button"
             key={p.id}
@@ -123,11 +117,11 @@ export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact
               navigate(`/players/${p.id}`);
             }}
           >
-            <Avatar player={p} size={compact ? 28 : 32} />
+            <Avatar player={p} size={32} />
           </button>
         ))}
-        {participantList.length > (compact ? 3 : 4) && (
-          <span className="facepile-more">+{participantList.length - (compact ? 3 : 4)}</span>
+        {participantList.length > MAX_FACES && (
+          <span className="facepile-more">+{participantList.length - MAX_FACES}</span>
         )}
       </div>
     </div>
