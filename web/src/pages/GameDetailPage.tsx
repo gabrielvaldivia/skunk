@@ -153,11 +153,10 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
       winCounts.set(winnerOrTeamId, (winCounts.get(winnerOrTeamId) || 0) + 1);
     }
   }
-  // Rank everyone who has won; players tied on wins share one row and rank
-  // (1, 2, 2, 4). Rows fill until 10 people are shown, then your row joins
-  // at the bottom when you're further down.
+  // Rank everyone who has won. Players tied on wins share one row, and each
+  // row takes the next rank (ties don't skip one). Rows fill until 10 people
+  // are shown, then your row joins at the bottom when you're further down.
   const ranked: LeaderboardEntry[] = [];
-  let rankedPeople = 0;
   for (const [id, wins] of Array.from(winCounts.entries()).sort((a, b) => b[1] - a[1])) {
     const found = players.find((p) => p.id === id);
     if (!found) continue;
@@ -165,9 +164,8 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
     if (previous?.wins === wins) {
       previous.players.push(found);
     } else {
-      ranked.push({ players: [found], rank: rankedPeople + 1, wins });
+      ranked.push({ players: [found], rank: ranked.length + 1, wins });
     }
-    rankedPeople++;
   }
   const leaders: LeaderboardEntry[] = [];
   let shownPeople = 0;
