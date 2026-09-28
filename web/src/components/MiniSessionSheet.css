@@ -24,6 +24,18 @@
   transition: transform 0.15s ease;
 }
 
+/* Dark mode: a lighter surface so the toast reads as floating above the page */
+.dark .mini-session-sheet {
+  border-color: hsl(0 0% 100% / 0.08);
+  background: hsl(var(--accent) / 0.85);
+  box-shadow: 0 10px 32px -8px rgb(0 0 0 / 0.6);
+}
+
+.dark .mini-session-facepile .avatar,
+.dark .facepile-more {
+  box-shadow: 0 0 0 2px hsl(var(--accent));
+}
+
 .mini-session-live {
   position: relative;
   width: 8px;

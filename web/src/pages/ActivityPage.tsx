@@ -63,7 +63,7 @@ export function ActivityPage() {
         ) : (
           <div className="matches-list">
             {visibleMatches.map(match => (
-              <MatchRow key={match.id} match={match} hideGameTitle={false} shortNames />
+              <MatchRow key={match.id} match={match} hideGameTitle={false} shortNames showGameBox />
             ))}
           </div>
         )}

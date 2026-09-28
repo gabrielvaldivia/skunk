@@ -27,6 +27,41 @@
   outline-offset: 2px;
 }
 
+/* The game's box tucked into the avatar's bottom-right corner */
+.match-winner-avatar-stack {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.match-game-box {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  display: flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 5px;
+  background: hsl(var(--muted));
+  box-shadow: 0 0 0 2px hsl(var(--background));
+  color: hsl(var(--muted-foreground));
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
+.match-game-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.match-game-box:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
 .match-content {
   flex: 1;
   min-width: 0;

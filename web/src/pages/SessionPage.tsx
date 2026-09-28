@@ -477,7 +477,7 @@ export function SessionPage() {
           ) : (
             <div className="matches-list">
               {sessionMatches.map((match) => (
-                <MatchRow key={match.id} match={match} hideGameTitle={false} />
+                <MatchRow key={match.id} match={match} hideGameTitle={false} showGameBox />
               ))}
             </div>
           )}

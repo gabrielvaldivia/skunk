@@ -36,10 +36,12 @@ interface MatchRowProps {
   hideGameTitle?: boolean;
   /** Show players by first name only, e.g. "Brian" */
   shortNames?: boolean;
+  /** Pin the game's box to the corner of the winner's avatar */
+  showGameBox?: boolean;
   onDelete?: () => void;
 }
 
-export function MatchRow({ match, hideGameTitle = false, shortNames = false, onDelete }: MatchRowProps) {
+export function MatchRow({ match, hideGameTitle = false, shortNames = false, showGameBox = false, onDelete }: MatchRowProps) {
   const { players } = usePlayers();
   const nameOf = (player: { name: string }) =>
     shortNames ? getFirstName(player.name) : player.name;
@@ -129,15 +131,33 @@ export function MatchRow({ match, hideGameTitle = false, shortNames = false, onD
       winnerId = match.winnerID;
     }
     const winner = winnerId ? getPlayer(winnerId) : undefined;
-    if (!winner) return <span className="match-winner-avatar-empty" />;
-    return (
+    const avatar = winner ? (
       <AppLink
         to={`/players/${winner.id}`}
         className="match-winner-avatar-link"
-        aria-label={`View ${nameOf(winner)}'s profile`}
+        aria-label={`View ${winner.name}'s profile`}
       >
         <Avatar player={winner} size={40} />
       </AppLink>
+    ) : (
+      <span className="match-winner-avatar-empty" />
+    );
+    if (!showGameBox || !game) return avatar;
+    return (
+      <span className="match-winner-avatar-stack">
+        {avatar}
+        <AppLink
+          to={`/games/${game.id}`}
+          className="match-game-box"
+          aria-label={`View ${game.title}`}
+        >
+          {game.coverArt ? (
+            <img src={game.coverArt} alt="" />
+          ) : (
+            <span>{game.title.charAt(0).toUpperCase()}</span>
+          )}
+        </AppLink>
+      </span>
     );
   };
 
