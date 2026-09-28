@@ -1,9 +1,10 @@
 /* Tabs, Instagram-style: two equal halves over a hairline, the selected one
    underlined by its own segment of the line */
+/* Bleeds through the page gutter so the hairline runs edge to edge */
 .audience-control {
   display: flex;
-  width: 100%;
-  margin: 0 0 1.25rem;
+  width: calc(100% + 2 * var(--page-gutter));
+  margin: 0 calc(-1 * var(--page-gutter)) 1.25rem;
   border-bottom: 1px solid hsl(var(--border));
 }
 
