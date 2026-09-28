@@ -299,6 +299,16 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
             </div>
           )}
         </div>
+
+        {/* BGG's API terms require this credit in public apps; covers and box sizes come from there */}
+        <a
+          className="bgg-credit"
+          href="https://boardgamegeek.com"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img src={POWERED_BY_BGG} alt="Powered by BGG" width={120} height={35} />
+        </a>
       </div>
 
       {isAdmin && game && (
@@ -321,6 +331,9 @@ interface LeaderboardEntry {
   rank: number;
   wins: number;
 }
+
+const POWERED_BY_BGG =
+  "https://cf.geekdo-images.com/HZy35cmzmmyV9BarSuk6ug__small/img/gbE7sulIurZE_Tx8EQJXnZSKI6w=/fit-in/200x150/filters:strip_icc()/pic7779581.png";
 
 const MEDALS = { 1: "gold", 2: "silver", 3: "bronze" } as const;
 const PILE_MAX = 3;
