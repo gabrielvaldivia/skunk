@@ -42,7 +42,8 @@ export function PanelHost() {
   if (!panel || !top || !frame) return null;
 
   return (
-    <SidePanel label={LABELS[top.type]} onClose={panel.close}>
+    // The account panel opens from the top-left account button, so it slides in from the left
+    <SidePanel label={LABELS[top.type]} side={panel.stack[0].type === "profile" ? "left" : "right"} onClose={panel.close}>
       <PanelFrameProvider value={frame}>
         <Suspense fallback={<div className="loading">Loading...</div>}>
           {/* Keyed so each step starts fresh (scroll, local state) */}

@@ -422,6 +422,7 @@ export function SessionPage() {
                   <PlayerCard
                     key={participant.id}
                     player={participant}
+                    shortName
                     subtitle={`${wins} ${wins === 1 ? "win" : "wins"}`}
                     onClick={() => navigate(`/players/${participant.id}`)}
                     rightAction={

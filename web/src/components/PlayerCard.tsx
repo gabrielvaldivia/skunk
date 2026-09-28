@@ -2,15 +2,18 @@ import type { Player } from '../models/Player';
 import type { ReactNode } from 'react';
 import './PlayerCard.css';
 import { Avatar } from "./Avatar";
+import { getFirstName } from '../lib/player';
 
 interface PlayerCardProps {
   player: Player;
   onClick?: () => void;
   rightAction?: ReactNode;
   subtitle?: string;
+  /** Show the player by first name only, e.g. "Brian" */
+  shortName?: boolean;
 }
 
-export function PlayerCard({ player, onClick, rightAction, subtitle }: PlayerCardProps) {
+export function PlayerCard({ player, onClick, rightAction, subtitle, shortName }: PlayerCardProps) {
   return (
     <div
       className={`player-card${onClick ? " player-card-clickable" : ""}`}
@@ -31,7 +34,7 @@ export function PlayerCard({ player, onClick, rightAction, subtitle }: PlayerCar
     >
       <Avatar player={player} size={44} />
       <div className="player-info">
-        <div className="player-name">{player.name}</div>
+        <div className="player-name">{shortName ? getFirstName(player.name) : player.name}</div>
         {subtitle ? (
           <p className="player-subtitle">{subtitle}</p>
         ) : (
