@@ -24,6 +24,13 @@ const ActivityPage = lazy(() => import("./pages/ActivityPage").then((m) => ({ de
 const SessionPage = lazy(() => import("./pages/SessionPage").then((m) => ({ default: m.SessionPage })));
 const SessionsListPage = lazy(() => import("./pages/SessionsListPage").then((m) => ({ default: m.SessionsListPage })));
 
+// The shelf is the home page: opening the app there, fetch its code (and the
+// 3D shelf's) while sign-in resolves, instead of after
+if (window.location.pathname === "/" || window.location.pathname === "/games") {
+  void import("./pages/ShelfPage");
+  void import("./components/shelf/GameShelf");
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, needsOnboarding, isLoading } = useAuth();
   const location = useLocation();
