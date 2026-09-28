@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { squarePhotoBase64 } from "@/lib/photo";
 import "./OnboardingPage.css";
 
 export function OnboardingPage() {
@@ -45,13 +46,15 @@ export function OnboardingPage() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const result = reader.result as string;
-      setPhotoPreview(result);
-      setPhotoData(result.split(",")[1]);
-    };
-    reader.readAsDataURL(file);
+    // Shrink to the stored avatar size, so the player record stays small
+    const url = URL.createObjectURL(file);
+    squarePhotoBase64(url)
+      .then((base64) => {
+        setPhotoPreview(`data:image/jpeg;base64,${base64}`);
+        setPhotoData(base64);
+      })
+      .catch(() => setError("Couldn't read that image"))
+      .finally(() => URL.revokeObjectURL(url));
   };
 
   const handleRemovePhoto = () => {
