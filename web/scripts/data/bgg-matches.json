@@ -1,0 +1,4115 @@
+[
+  {
+    "gameId": "-OgyUPlw9sqRgJmam7h_",
+    "title": "Sequence",
+    "bggId": 2375,
+    "bggName": "Sequence",
+    "year": 1982,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2375,
+        "name": "Sequence",
+        "year": 1982,
+        "ratings": 12621
+      },
+      {
+        "id": 118561,
+        "name": "Sequence",
+        "ratings": 108
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxjiqMiMy13KWA2Ts",
+    "title": "Othello (Reversi)",
+    "bggId": 2389,
+    "bggName": "Othello",
+    "year": 1883,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 2389,
+        "name": "Othello",
+        "year": 1883,
+        "ratings": 9417
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkMduMXFUoKNanwG",
+    "title": "Monopoly",
+    "bggId": 1406,
+    "bggName": "Monopoly",
+    "year": 1935,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 1406,
+        "name": "Monopoly",
+        "year": 1935,
+        "ratings": 40416
+      },
+      {
+        "id": 36611,
+        "name": "Monopoly: The Portable Property Trading Game",
+        "year": 1994,
+        "ratings": 456
+      },
+      {
+        "id": 17250,
+        "name": "Monopoly: London",
+        "year": 1972,
+        "ratings": 454
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkO-lItA_iH8AQXt",
+    "title": "Scrabble",
+    "bggId": 320,
+    "bggName": "Scrabble",
+    "year": 1948,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 320,
+        "name": "Scrabble",
+        "year": 1948,
+        "ratings": 35779
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkPOZkkt2r4ASHEP",
+    "title": "Risk",
+    "bggId": 181,
+    "bggName": "Risk",
+    "year": 1959,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 181,
+        "name": "Risk",
+        "year": 1959,
+        "ratings": 39091
+      },
+      {
+        "id": 2331,
+        "name": "Spill and Spell",
+        "year": 1956,
+        "ratings": 162
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkQiQVsuX0PkVyXP",
+    "title": "Clue (Cluedo)",
+    "bggId": 1294,
+    "bggName": "Clue",
+    "year": 1949,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 1294,
+        "name": "Clue",
+        "year": 1949,
+        "ratings": 22807
+      },
+      {
+        "id": 130592,
+        "name": "Clue",
+        "year": 2012,
+        "ratings": 3979
+      },
+      {
+        "id": 154633,
+        "name": "Clue",
+        "year": 2013,
+        "ratings": 837
+      },
+      {
+        "id": 374342,
+        "name": "Clue",
+        "year": 2019,
+        "ratings": 496
+      },
+      {
+        "id": 13682,
+        "name": "Travel Clue",
+        "year": 1990,
+        "ratings": 188
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkS4czaTrq5Ez7at",
+    "title": "Battleship",
+    "bggId": 2425,
+    "bggName": "Battleship",
+    "year": 1931,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2425,
+        "name": "Battleship",
+        "year": 1931,
+        "ratings": 12417
+      },
+      {
+        "id": 165283,
+        "name": "Battleship",
+        "year": 2014,
+        "ratings": 311
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkTR0JMhrzbIAP6P",
+    "title": "Stratego",
+    "bggId": 1917,
+    "bggName": "Stratego",
+    "year": 1946,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 1917,
+        "name": "Stratego",
+        "year": 1946,
+        "ratings": 17754
+      },
+      {
+        "id": 232822,
+        "name": "Stratego",
+        "year": 2011,
+        "ratings": 469
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkVLBKCXy6yOsxG4",
+    "title": "Mastermind",
+    "bggId": 2392,
+    "bggName": "Mastermind",
+    "year": 1971,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2392,
+        "name": "Mastermind",
+        "year": 1971,
+        "ratings": 8691
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkWgNbZD7zQH4k-s",
+    "title": "Connect Four",
+    "bggId": 2719,
+    "bggName": "Connect Four",
+    "year": 1974,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2719,
+        "name": "Connect Four",
+        "year": 1974,
+        "ratings": 10719
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkY3SZIHLQX6Rbpv",
+    "title": "Sorry!",
+    "bggId": 2407,
+    "bggName": "Sorry!",
+    "year": 1929,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2407,
+        "name": "Sorry!",
+        "year": 1929,
+        "ratings": 7566
+      },
+      {
+        "id": 313121,
+        "name": "Sorry!",
+        "year": 2016,
+        "ratings": 448
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkZPcF-ibZh5odxz",
+    "title": "Parcheesi",
+    "bggId": 2136,
+    "bggName": "Pachisi",
+    "year": 400,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 2136,
+        "name": "Pachisi",
+        "year": 400,
+        "ratings": 6273
+      },
+      {
+        "id": 159081,
+        "name": "Clue / Parcheesi",
+        "year": 2001,
+        "ratings": 12
+      },
+      {
+        "id": 312454,
+        "name": "Modular Parcheesi",
+        "year": 1994,
+        "ratings": 3
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkejzWSv0KTwNZhN",
+    "title": "Chutes and Ladders",
+    "bggId": 5432,
+    "bggName": "Chutes and Ladders",
+    "year": -200,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 5432,
+        "name": "Chutes and Ladders",
+        "year": -200,
+        "ratings": 5352
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkg9smueF2B75Klw",
+    "title": "Candy Land",
+    "bggId": 5048,
+    "bggName": "Candy Land",
+    "year": 1949,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 5048,
+        "name": "Candy Land",
+        "year": 1949,
+        "ratings": 5447
+      },
+      {
+        "id": 451375,
+        "name": "Candy Land",
+        "year": 2025,
+        "ratings": 16
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkhX2ITGi9j2iQVX",
+    "title": "The Game of Life",
+    "bggId": 2921,
+    "bggName": "The Game of Life",
+    "year": 1960,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2921,
+        "name": "The Game of Life",
+        "year": 1960,
+        "ratings": 14413
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkkCKveJ_7AlSTkY",
+    "title": "Payday",
+    "bggId": 1797,
+    "bggName": "Pay Day",
+    "year": 1974,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 1797,
+        "name": "Pay Day",
+        "year": 1974,
+        "ratings": 3374
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxklZ3ujPL81kA05h",
+    "title": "Careers",
+    "bggId": 1475,
+    "bggName": "Careers",
+    "year": 1955,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 1475,
+        "name": "Careers",
+        "year": 1955,
+        "ratings": 2629
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkmuH4GOp3sfM4vZ",
+    "title": "Acquire",
+    "bggId": 5,
+    "bggName": "Acquire",
+    "year": 1963,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 5,
+        "name": "Acquire",
+        "year": 1963,
+        "ratings": 22418
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkoGn4ImLiTSAO3A",
+    "title": "Diplomacy",
+    "bggId": 483,
+    "bggName": "Diplomacy",
+    "year": 1959,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 483,
+        "name": "Diplomacy",
+        "year": 1959,
+        "ratings": 14012
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxktl6uDFmCy0P9gm",
+    "title": "Rummikub",
+    "bggId": 811,
+    "bggName": "Rummikub",
+    "year": 1950,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 811,
+        "name": "Rummikub",
+        "year": 1950,
+        "ratings": 22502
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkv7W485L-w1YcC7",
+    "title": "Qwirkle",
+    "bggId": 25669,
+    "bggName": "Qwirkle",
+    "year": 2006,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 25669,
+        "name": "Qwirkle",
+        "year": 2006,
+        "ratings": 22525
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxkxpmpCXHCcS7iMc",
+    "title": "Yahtzee",
+    "bggId": 2243,
+    "bggName": "Yahtzee",
+    "year": 1956,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2243,
+        "name": "Yahtzee",
+        "year": 1956,
+        "ratings": 17966
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxl99gW3m_iBx-bTi",
+    "title": "Boggle",
+    "bggId": 1293,
+    "bggName": "Boggle",
+    "year": 1972,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 1293,
+        "name": "Boggle",
+        "year": 1972,
+        "ratings": 9040
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlAuEUfbvuhW2tkV",
+    "title": "Bananagrams",
+    "bggId": 27225,
+    "bggName": "Bananagrams",
+    "year": 2006,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 27225,
+        "name": "Bananagrams",
+        "year": 2006,
+        "ratings": 13825
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlCF5hfbs74CfI9o",
+    "title": "Upwords",
+    "bggId": 1515,
+    "bggName": "Upwords",
+    "year": 1982,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 1515,
+        "name": "Upwords",
+        "year": 1982,
+        "ratings": 3649
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlG23s5xn9n8oCdC",
+    "title": "Balderdash",
+    "bggId": 163,
+    "bggName": "Balderdash",
+    "year": 1984,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 163,
+        "name": "Balderdash",
+        "year": 1984,
+        "ratings": 6679
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlHPiHRMXBzWJNM8",
+    "title": "Scattergories",
+    "bggId": 2381,
+    "bggName": "Scattergories",
+    "year": 1988,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2381,
+        "name": "Scattergories",
+        "year": 1988,
+        "ratings": 11665
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlKSPhAk_4v8ISLE",
+    "title": "Pictionary",
+    "bggId": 2281,
+    "bggName": "Pictionary",
+    "year": 1985,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2281,
+        "name": "Pictionary",
+        "year": 1985,
+        "ratings": 8709
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlOf3IyzS-LGzuhH",
+    "title": "Taboo",
+    "bggId": 1111,
+    "bggName": "Taboo",
+    "year": 1989,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 1111,
+        "name": "Taboo",
+        "year": 1989,
+        "ratings": 14298
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlQ0gZCQwGPXrTXx",
+    "title": "Trivial Pursuit",
+    "bggId": 472010,
+    "bggName": "Trivial Pursuit",
+    "year": 2026,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 472010,
+        "name": "Trivial Pursuit",
+        "year": 2026,
+        "ratings": 6
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlRQ3DKMzjekeAjv",
+    "title": "Cranium",
+    "bggId": 891,
+    "bggName": "Cranium",
+    "year": 1998,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 891,
+        "name": "Cranium",
+        "year": 1998,
+        "ratings": 10104
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlSmGqg06f-kFw0V",
+    "title": "Catan",
+    "bggId": 13,
+    "bggName": "Catan",
+    "year": 1995,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 13,
+        "name": "Catan",
+        "year": 1995,
+        "ratings": 144582
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlWPwj0wsqpAHeNs",
+    "title": "Ticket to Ride",
+    "bggId": 9209,
+    "bggName": "Ticket to Ride",
+    "year": 2004,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 9209,
+        "name": "Ticket to Ride",
+        "year": 2004,
+        "ratings": 99596
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlXkP_OhN0ZOKndz",
+    "title": "Carcassonne",
+    "bggId": 822,
+    "bggName": "Carcassonne",
+    "year": 2000,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 822,
+        "name": "Carcassonne",
+        "year": 2000,
+        "ratings": 141713
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlZ4ZfzMCnqgjqO4",
+    "title": "Dominion",
+    "bggId": 36218,
+    "bggName": "Dominion",
+    "year": 2008,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 36218,
+        "name": "Dominion",
+        "year": 2008,
+        "ratings": 97465
+      },
+      {
+        "id": 64777,
+        "name": "Dominion",
+        "year": 2004,
+        "ratings": 78
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxl_Uh_lH9O51wHit",
+    "title": "7 Wonders",
+    "bggId": 68448,
+    "bggName": "7 Wonders",
+    "year": 2010,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 68448,
+        "name": "7 Wonders",
+        "year": 2010,
+        "ratings": 113810
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlbTY0sKRg_Pw589",
+    "title": "Splendor",
+    "bggId": 148228,
+    "bggName": "Splendor",
+    "year": 2014,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 148228,
+        "name": "Splendor",
+        "year": 2014,
+        "ratings": 91680
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxle3Zy8RiFPuziVw",
+    "title": "Azul",
+    "bggId": 230802,
+    "bggName": "Azul",
+    "year": 2017,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 230802,
+        "name": "Azul",
+        "year": 2017,
+        "ratings": 111112
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlgkgHUk8XZyRa6F",
+    "title": "Sushi Go!",
+    "bggId": 133473,
+    "bggName": "Sushi Go!",
+    "year": 2013,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 133473,
+        "name": "Sushi Go!",
+        "year": 2013,
+        "ratings": 53210
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxli6b6KigKIpujUR",
+    "title": "Love Letter",
+    "bggId": 129622,
+    "bggName": "Love Letter",
+    "year": 2012,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 129622,
+        "name": "Love Letter",
+        "year": 2012,
+        "ratings": 72420
+      },
+      {
+        "id": 277085,
+        "name": "Love Letter",
+        "year": 2019,
+        "ratings": 16839
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxljT5jKoG_MPj8zQ",
+    "title": "Hive",
+    "bggId": 2655,
+    "bggName": "Hive",
+    "year": 2001,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2655,
+        "name": "Hive",
+        "year": 2001,
+        "ratings": 40833
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlljZHZ3szTkWLbo",
+    "title": "Onitama",
+    "bggId": 160477,
+    "bggName": "Onitama",
+    "year": 2014,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 160477,
+        "name": "Onitama",
+        "year": 2014,
+        "ratings": 25309
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxln6mGTM3CR77ipk",
+    "title": "Santorini",
+    "bggId": 194655,
+    "bggName": "Santorini",
+    "year": 2016,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 194655,
+        "name": "Santorini",
+        "year": 2016,
+        "ratings": 42692
+      },
+      {
+        "id": 9963,
+        "name": "Santorini",
+        "year": 2004,
+        "ratings": 398
+      },
+      {
+        "id": 146645,
+        "name": "Santorini",
+        "ratings": 22
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxloTD_x7Fj-tjgEc",
+    "title": "Patchwork",
+    "bggId": 163412,
+    "bggName": "Patchwork",
+    "year": 2014,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 163412,
+        "name": "Patchwork",
+        "year": 2014,
+        "ratings": 75128
+      },
+      {
+        "id": 41585,
+        "name": "FlipOut",
+        "year": 2009,
+        "ratings": 204
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlpprJy81O5Rsptm",
+    "title": "Jaipur",
+    "bggId": 54043,
+    "bggName": "Jaipur",
+    "year": 2009,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 54043,
+        "name": "Jaipur",
+        "year": 2009,
+        "ratings": 59096
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlrAlyzB9PnvdfUD",
+    "title": "Lost Cities",
+    "bggId": 50,
+    "bggName": "Lost Cities",
+    "year": 1999,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 50,
+        "name": "Lost Cities",
+        "year": 1999,
+        "ratings": 51590
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlsX8JN57fJ7Qx93",
+    "title": "Battle Line",
+    "bggId": 760,
+    "bggName": "Battle Line",
+    "year": 2000,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 760,
+        "name": "Battle Line",
+        "year": 2000,
+        "ratings": 18402
+      },
+      {
+        "id": 27135,
+        "name": "Battle Line",
+        "year": 1964,
+        "ratings": 3
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxlzsHlRNFTbyFxP-",
+    "title": "Crokinole",
+    "bggId": 521,
+    "bggName": "Crokinole",
+    "year": 1876,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 521,
+        "name": "Crokinole",
+        "year": 1876,
+        "ratings": 21559
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxm177N2MHxsSs4Fz",
+    "title": "Pente",
+    "bggId": 1295,
+    "bggName": "Pente",
+    "year": 1977,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 1295,
+        "name": "Pente",
+        "year": 1977,
+        "ratings": 3267
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxm2VWb5DNmhMZa6N",
+    "title": "Tiddlywinks",
+    "bggId": 4792,
+    "bggName": "Tiddledy Winks",
+    "year": 1888,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 4792,
+        "name": "Tiddledy Winks",
+        "year": 1888,
+        "ratings": 749
+      },
+      {
+        "id": 16263,
+        "name": "Golf Tiddlywinks",
+        "year": 1993,
+        "ratings": 9
+      },
+      {
+        "id": 259312,
+        "name": "Tiddlywinks Golf Game",
+        "year": 2009,
+        "ratings": 1
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxm3rMw5s8F3EqXFG",
+    "title": "Jenga",
+    "bggId": 2452,
+    "bggName": "Jenga",
+    "year": 1983,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2452,
+        "name": "Jenga",
+        "year": 1983,
+        "ratings": 17680
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxm5Da-QzCI_Wefl8",
+    "title": "Uno",
+    "bggId": 2223,
+    "bggName": "UNO",
+    "year": 1971,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2223,
+        "name": "UNO",
+        "year": 1971,
+        "ratings": 34659
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxm6ZtmFKPvcE1ZlZ",
+    "title": "Phase 10",
+    "bggId": 1258,
+    "bggName": "Phase 10",
+    "year": 1982,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 1258,
+        "name": "Phase 10",
+        "year": 1982,
+        "ratings": 12356
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxm7wZxekS4E9_eJ4",
+    "title": "Skip-Bo",
+    "bggId": 1269,
+    "bggName": "Skip-Bo",
+    "year": 1967,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 1269,
+        "name": "Skip-Bo",
+        "year": 1967,
+        "ratings": 10268
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxm9sRu56HpLnFYWc",
+    "title": "Set",
+    "bggId": 1198,
+    "bggName": "SET",
+    "year": 1988,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 4550,
+        "name": "1000 Blank White Cards",
+        "year": 1996,
+        "ratings": 561
+      },
+      {
+        "id": 96628,
+        "name": "Miscellaneous Game Compilation",
+        "ratings": 365
+      },
+      {
+        "id": 190024,
+        "name": "100 Swords: The Chroma Dragon&#039;s Dungeon Builder Set",
+        "year": 2016,
+        "ratings": 64
+      },
+      {
+        "id": 190026,
+        "name": "100 Swords: The Darkness Dungeon Builder Set",
+        "year": 2016,
+        "ratings": 54
+      },
+      {
+        "id": 190020,
+        "name": "100 Swords: The Glowing Plasmapede&#039;s Dungeon Builder Set",
+        "year": 2016,
+        "ratings": 52
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmBGYbl483oNTuou",
+    "title": "Spot It!",
+    "bggId": 63268,
+    "bggName": "Spot it!",
+    "year": 2009,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 63268,
+        "name": "Spot it!",
+        "year": 2009,
+        "ratings": 22726
+      },
+      {
+        "id": 119008,
+        "name": "Spot It!",
+        "year": 1985,
+        "ratings": 6
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmI0uzvCJb5oDBdk",
+    "title": "Pentago",
+    "bggId": 19841,
+    "bggName": "Pentago",
+    "year": 2005,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 19841,
+        "name": "Pentago",
+        "year": 2005,
+        "ratings": 3894
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmJOeQGZ03_VlOCF",
+    "title": "Quarto",
+    "bggId": 681,
+    "bggName": "Quarto",
+    "year": 1991,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 681,
+        "name": "Quarto",
+        "year": 1991,
+        "ratings": 9028
+      },
+      {
+        "id": 101859,
+        "name": "Quarto",
+        "year": 1950,
+        "ratings": 20
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmKklciZ1R5cpAne",
+    "title": "Quoridor",
+    "bggId": 624,
+    "bggName": "Quoridor",
+    "year": 1997,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 624,
+        "name": "Quoridor",
+        "year": 1997,
+        "ratings": 9913
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmM6asm0r2CUxzPp",
+    "title": "Blokus",
+    "bggId": 2453,
+    "bggName": "Blokus",
+    "year": 2000,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2453,
+        "name": "Blokus",
+        "year": 2000,
+        "ratings": 29996
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmNTglXpp7wT4ysS",
+    "title": "Blokus Trigon",
+    "bggId": 21550,
+    "bggName": "Blokus Trigon",
+    "year": 2006,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 21550,
+        "name": "Blokus Trigon",
+        "year": 2006,
+        "ratings": 3402
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmPhlOnOLLusfpFR",
+    "title": "Gipf",
+    "bggId": 527,
+    "bggName": "GIPF",
+    "year": 1996,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 527,
+        "name": "GIPF",
+        "year": 1996,
+        "ratings": 3573
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmR4bMsb_89Snyq8",
+    "title": "Dvonn",
+    "bggId": 2346,
+    "bggName": "DVONN",
+    "year": 2001,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2346,
+        "name": "DVONN",
+        "year": 2001,
+        "ratings": 5806
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmSRVPq0gAifU8QZ",
+    "title": "Zertz",
+    "bggId": 528,
+    "bggName": "Z\u00c8RTZ",
+    "year": 1999,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 528,
+        "name": "Z\u00c8RTZ",
+        "year": 1999,
+        "ratings": 4587
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmTov7ol5CBIzlSL",
+    "title": "Yinsh",
+    "bggId": 7854,
+    "bggName": "YINSH",
+    "year": 2003,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 7854,
+        "name": "YINSH",
+        "year": 2003,
+        "ratings": 10160
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmVB4RqL9xXGq9sm",
+    "title": "Punct",
+    "bggId": 19764,
+    "bggName": "P\u00dcNCT",
+    "year": 2005,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 19764,
+        "name": "P\u00dcNCT",
+        "year": 2005,
+        "ratings": 1953
+      },
+      {
+        "id": 58033,
+        "name": "Puncto",
+        "year": 1983,
+        "ratings": 3
+      },
+      {
+        "id": 295563,
+        "name": "Punctuation Pirates and Their Grammar Galleons",
+        "year": 2019,
+        "ratings": 2
+      },
+      {
+        "id": 433082,
+        "name": "Circus Puncta Maximus",
+        "year": 2024,
+        "ratings": 0
+      },
+      {
+        "id": 453504,
+        "name": "Kingdom Death: Monster \u2013 Investment Sniper: Punctual Bride",
+        "year": 2025,
+        "ratings": 0
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmXu9-C-slA3VDlp",
+    "title": "Tzaar",
+    "bggId": 31999,
+    "bggName": "TZAAR",
+    "year": 2007,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 31999,
+        "name": "TZAAR",
+        "year": 2007,
+        "ratings": 4199
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmZGMpyDkZWw85uz",
+    "title": "Tak",
+    "bggId": 197405,
+    "bggName": "Tak",
+    "year": 2017,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 197405,
+        "name": "Tak",
+        "year": 2017,
+        "ratings": 3221
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxm_dJYpglSpndeIf",
+    "title": "Kamisado",
+    "bggId": 38545,
+    "bggName": "Kamisado",
+    "year": 2008,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 38545,
+        "name": "Kamisado",
+        "year": 2008,
+        "ratings": 2784
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmb-ANx7BLrLLnh2",
+    "title": "Abalone",
+    "bggId": 526,
+    "bggName": "Abalone",
+    "year": 1987,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 526,
+        "name": "Abalone",
+        "year": 1987,
+        "ratings": 8448
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmcNievB0dXmEbBu",
+    "title": "Focus",
+    "bggId": 789,
+    "bggName": "Focus",
+    "year": 1963,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 789,
+        "name": "Focus",
+        "year": 1963,
+        "ratings": 892
+      },
+      {
+        "id": 386989,
+        "name": "Focus",
+        "year": 2023,
+        "ratings": 494
+      },
+      {
+        "id": 190330,
+        "name": "In Your Head",
+        "year": 2016,
+        "ratings": 41
+      },
+      {
+        "id": 75917,
+        "name": "Focus",
+        "year": 1997,
+        "ratings": 12
+      },
+      {
+        "id": 248134,
+        "name": "Focus",
+        "year": 2012,
+        "ratings": 5
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmf5mlGV1W2GavfS",
+    "title": "Breakthrough",
+    "bggId": 3825,
+    "bggName": "Breakthrough",
+    "year": 2001,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 3825,
+        "name": "Breakthrough",
+        "year": 2001,
+        "ratings": 92
+      },
+      {
+        "id": 34816,
+        "name": "Breakthrough",
+        "year": 2001,
+        "ratings": 2
+      },
+      {
+        "id": 122079,
+        "name": "Breakthrough",
+        "year": 1988,
+        "ratings": 2
+      },
+      {
+        "id": 147870,
+        "name": "Breakthrough",
+        "year": 1984,
+        "ratings": 2
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmgSZjN_PbcZhKAM",
+    "title": "Amazons",
+    "bggId": 2125,
+    "bggName": "Amazons",
+    "year": 1992,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2125,
+        "name": "Amazons",
+        "year": 1992,
+        "ratings": 360
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmhp4asCklVMjV2t",
+    "title": "Lines of Action",
+    "bggId": 3406,
+    "bggName": "Lines of Action",
+    "year": 1969,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 3406,
+        "name": "Lines of Action",
+        "year": 1969,
+        "ratings": 616
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmjCgAF0UsRrsNUi",
+    "title": "Havannah",
+    "bggId": 2759,
+    "bggName": "Havannah",
+    "year": 1980,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2759,
+        "name": "Havannah",
+        "year": 1980,
+        "ratings": 224
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmkZW266qo36SRaM",
+    "title": "Twixt",
+    "bggId": 949,
+    "bggName": "Twixt",
+    "year": 1962,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 949,
+        "name": "Twixt",
+        "year": 1962,
+        "ratings": 2699
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmnIzSH9cZwIouIn",
+    "title": "Khet",
+    "bggId": 16991,
+    "bggName": "Khet: The Laser Game",
+    "year": 2005,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 16991,
+        "name": "Khet: The Laser Game",
+        "year": 2005,
+        "ratings": 2849
+      },
+      {
+        "id": 91034,
+        "name": "Laser Chess",
+        "year": 2011,
+        "ratings": 966
+      },
+      {
+        "id": 25572,
+        "name": "Khet: Eye of Horus Beam Splitter",
+        "year": 2006,
+        "ratings": 298
+      },
+      {
+        "id": 30580,
+        "name": "Khet 3D: Tower of Kadesh",
+        "year": 2008,
+        "ratings": 110
+      },
+      {
+        "id": 129765,
+        "name": "Khet 2.0: Eye of Horus Beam Splitter",
+        "year": 2011,
+        "ratings": 73
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmoe2bB9dTXbSJg-",
+    "title": "Khet 2.0",
+    "bggId": 91034,
+    "bggName": "Laser Chess",
+    "year": 2011,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 91034,
+        "name": "Laser Chess",
+        "year": 2011,
+        "ratings": 966
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmq2FiRZHTsOIfIc",
+    "title": "Gobblet",
+    "bggId": 2266,
+    "bggName": "Gobblet",
+    "year": 2000,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 2266,
+        "name": "Gobblet",
+        "year": 2000,
+        "ratings": 2035
+      },
+      {
+        "id": 13230,
+        "name": "Gobblers",
+        "year": 2003,
+        "ratings": 1214
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmrPcJSzSO1hllFw",
+    "title": "Gobblet Junior",
+    "bggId": 13230,
+    "bggName": "Gobblers",
+    "year": 2003,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 13230,
+        "name": "Gobblers",
+        "year": 2003,
+        "ratings": 1214
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmsmQLcMW_YFJffr",
+    "title": "Quoridor Kid",
+    "bggId": 13875,
+    "bggName": "Quoridor Junior",
+    "year": 2004,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 13875,
+        "name": "Quoridor Junior",
+        "year": 2004,
+        "ratings": 340
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxmvURglhF0iL3LI_",
+    "title": "Katamino",
+    "bggId": 6931,
+    "bggName": "Katamino",
+    "year": 1992,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 6931,
+        "name": "Katamino",
+        "year": 1992,
+        "ratings": 1284
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxnCHpNuQ00WIxieU",
+    "title": "Tichu",
+    "bggId": 215,
+    "bggName": "Tichu",
+    "year": 1991,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 215,
+        "name": "Tichu",
+        "year": 1991,
+        "ratings": 17057
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxnDgsSckP3SjtX0I",
+    "title": "Chimera",
+    "bggId": 156373,
+    "bggName": "Chimera",
+    "year": 2014,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 156373,
+        "name": "Chimera",
+        "year": 2014,
+        "ratings": 901
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxna_yHm8wkIc3nkj",
+    "title": "Phase 10 Rummy",
+    "bggId": null,
+    "confidence": "none",
+    "candidates": [],
+    "skip": true
+  },
+  {
+    "gameId": "-OhGxnz7yts2AHkFcGuX",
+    "title": "Dutch Blitz",
+    "bggId": 148203,
+    "bggName": "Dutch Blitz",
+    "year": 1960,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 148203,
+        "name": "Dutch Blitz",
+        "year": 1960,
+        "ratings": 5197
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxoSsCE6PW7K2dk2x",
+    "title": "Axis & Allies",
+    "bggId": 98,
+    "bggName": "Axis & Allies",
+    "year": 1981,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 98,
+        "name": "Axis & Allies",
+        "year": 1981,
+        "ratings": 11499
+      },
+      {
+        "id": 10093,
+        "name": "Axis & Allies",
+        "year": 2004,
+        "ratings": 6177
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxoUEo1lS-zkwga38",
+    "title": "Twilight Struggle",
+    "bggId": 12333,
+    "bggName": "Twilight Struggle",
+    "year": 2005,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 12333,
+        "name": "Twilight Struggle",
+        "year": 2005,
+        "ratings": 52483
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxoWQnAlD_giZ5DOO",
+    "title": "Puerto Rico",
+    "bggId": 3076,
+    "bggName": "Puerto Rico",
+    "year": 2002,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 3076,
+        "name": "Puerto Rico",
+        "year": 2002,
+        "ratings": 74792
+      },
+      {
+        "id": 108687,
+        "name": "Puerto Rico",
+        "year": 2011,
+        "ratings": 6178
+      },
+      {
+        "id": 318985,
+        "name": "Puerto Rico",
+        "year": 2020,
+        "ratings": 1639
+      },
+      {
+        "id": 165332,
+        "name": "Puerto Rico",
+        "year": 2007,
+        "ratings": 189
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxoXngCHmZkETVWcK",
+    "title": "Agricola",
+    "bggId": 31260,
+    "bggName": "Agricola",
+    "year": 2007,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 31260,
+        "name": "Agricola",
+        "year": 2007,
+        "ratings": 77327
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxoZ9UAGeHxkZQYeH",
+    "title": "Le Havre",
+    "bggId": 35677,
+    "bggName": "Le Havre",
+    "year": 2008,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 35677,
+        "name": "Le Havre",
+        "year": 2008,
+        "ratings": 34172
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxoaZmmclsdD_Nvz_",
+    "title": "Caylus",
+    "bggId": 18602,
+    "bggName": "Caylus",
+    "year": 2005,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 18602,
+        "name": "Caylus",
+        "year": 2005,
+        "ratings": 30004
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxod5H81kHHtN1Skq",
+    "title": "El Grande",
+    "bggId": 93,
+    "bggName": "El Grande",
+    "year": 1995,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 93,
+        "name": "El Grande",
+        "year": 1995,
+        "ratings": 33660
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxoeSAYtNPDn1MvHK",
+    "title": "Tigris & Euphrates",
+    "bggId": 42,
+    "bggName": "Tigris & Euphrates",
+    "year": 1997,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 42,
+        "name": "Tigris & Euphrates",
+        "year": 1997,
+        "ratings": 30181
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxofo7I0zbJh18EGc",
+    "title": "Ra",
+    "bggId": 12,
+    "bggName": "Ra",
+    "year": 1999,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 324238,
+        "name": "Guess in 10: Animal Planet",
+        "year": 2017,
+        "ratings": 84
+      },
+      {
+        "id": 358022,
+        "name": "02 Hundred Hours: Night Raids in World War II",
+        "year": 2022,
+        "ratings": 43
+      },
+      {
+        "id": 372387,
+        "name": "1 CAR D: Stock Car Racing Game",
+        "year": 2022,
+        "ratings": 30
+      },
+      {
+        "id": 150123,
+        "name": "One, Two Hoparoo!",
+        "year": 2013,
+        "ratings": 30
+      },
+      {
+        "id": 3717,
+        "name": "Rasslefest",
+        "year": 2001,
+        "ratings": 3
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxoiDQzGlPAQEvois",
+    "title": "Modern Art",
+    "bggId": 118,
+    "bggName": "Modern Art",
+    "year": 1992,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 118,
+        "name": "Modern Art",
+        "year": 1992,
+        "ratings": 25843
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxojaalxV_VckWlOi",
+    "title": "Medici",
+    "bggId": 46,
+    "bggName": "Medici",
+    "year": 1995,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 46,
+        "name": "Medici",
+        "year": 1995,
+        "ratings": 9205
+      },
+      {
+        "id": 38726,
+        "name": "Medici",
+        "year": 1981,
+        "ratings": 3
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxoln06rtZbsgWbI-",
+    "title": "Princes of Florence",
+    "bggId": 555,
+    "bggName": "The Princes of Florence",
+    "year": 2000,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 555,
+        "name": "The Princes of Florence",
+        "year": 2000,
+        "ratings": 16136
+      },
+      {
+        "id": 165358,
+        "name": "The Princes of Florence: The Muse and the Princess",
+        "year": 2009,
+        "ratings": 130
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxonAcmelsXimx6Rz",
+    "title": "Power Grid",
+    "bggId": 2651,
+    "bggName": "Power Grid",
+    "year": 2004,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 2651,
+        "name": "Power Grid",
+        "year": 2004,
+        "ratings": 70159
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxooX-7eMfLkgWid-",
+    "title": "The Castles of Burgundy",
+    "bggId": 84876,
+    "bggName": "The Castles of Burgundy",
+    "year": 2011,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 84876,
+        "name": "The Castles of Burgundy",
+        "year": 2011,
+        "ratings": 70637
+      },
+      {
+        "id": 271320,
+        "name": "The Castles of Burgundy",
+        "year": 2019,
+        "ratings": 15637
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxoqvSzg7-hKacQav",
+    "title": "Terra Mystica",
+    "bggId": 120677,
+    "bggName": "Terra Mystica",
+    "year": 2012,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 120677,
+        "name": "Terra Mystica",
+        "year": 2012,
+        "ratings": 51426
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxotTqXGn2_hqlB9B",
+    "title": "Gaia Project",
+    "bggId": 220308,
+    "bggName": "Gaia Project",
+    "year": 2017,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 220308,
+        "name": "Gaia Project",
+        "year": 2017,
+        "ratings": 31870
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxoupCs45qIhAYbQH",
+    "title": "Scythe",
+    "bggId": 169786,
+    "bggName": "Scythe",
+    "year": 2016,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 169786,
+        "name": "Scythe",
+        "year": 2016,
+        "ratings": 94703
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxowBaeAV200sRXV0",
+    "title": "Great Western Trail",
+    "bggId": 193738,
+    "bggName": "Great Western Trail",
+    "year": 2016,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 193738,
+        "name": "Great Western Trail",
+        "year": 2016,
+        "ratings": 44174
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxoybai27ag7WKlV5",
+    "title": "Concordia",
+    "bggId": 124361,
+    "bggName": "Concordia",
+    "year": 2013,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 124361,
+        "name": "Concordia",
+        "year": 2013,
+        "ratings": 46430
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxozyAf3wJCi4alxb",
+    "title": "Orl\u00e9ans",
+    "bggId": 164928,
+    "bggName": "Orl\u00e9ans",
+    "year": 2014,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 164928,
+        "name": "Orl\u00e9ans",
+        "year": 2014,
+        "ratings": 36200
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxp1Bgm2ghZUBNpt7",
+    "title": "Keyflower",
+    "bggId": 122515,
+    "bggName": "Keyflower",
+    "year": 2012,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 122515,
+        "name": "Keyflower",
+        "year": 2012,
+        "ratings": 24850
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxp2_4GOFKXpD1bNK",
+    "title": "Viticulture",
+    "bggId": 128621,
+    "bggName": "Viticulture",
+    "year": 2013,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 128621,
+        "name": "Viticulture",
+        "year": 2013,
+        "ratings": 15779
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxp3xy2mtqosMnEOS",
+    "title": "Everdell",
+    "bggId": 199792,
+    "bggName": "Everdell",
+    "year": 2018,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 199792,
+        "name": "Everdell",
+        "year": 2018,
+        "ratings": 70165
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxp6J4r-hmxfCpzyQ",
+    "title": "Wingspan",
+    "bggId": 266192,
+    "bggName": "Wingspan",
+    "year": 2019,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 266192,
+        "name": "Wingspan",
+        "year": 2019,
+        "ratings": 115710
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxp8s2jZoqmhu2Ul6",
+    "title": "Terraforming Mars",
+    "bggId": 167791,
+    "bggName": "Terraforming Mars",
+    "year": 2016,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 167791,
+        "name": "Terraforming Mars",
+        "year": 2016,
+        "ratings": 115121
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpAFV-Rw187FphkO",
+    "title": "Ark Nova",
+    "bggId": 342942,
+    "bggName": "Ark Nova",
+    "year": 2021,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 342942,
+        "name": "Ark Nova",
+        "year": 2021,
+        "ratings": 63292
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpBblLKp3DcCLwYa",
+    "title": "Brass: Birmingham",
+    "bggId": 224517,
+    "bggName": "Brass: Birmingham",
+    "year": 2018,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 224517,
+        "name": "Brass: Birmingham",
+        "year": 2018,
+        "ratings": 60352
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpDzUJBeatYvB0SY",
+    "title": "Brass: Lancashire",
+    "bggId": 28720,
+    "bggName": "Brass: Lancashire",
+    "year": 2007,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 28720,
+        "name": "Brass: Lancashire",
+        "year": 2007,
+        "ratings": 27764
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpFK7GNZUECG71Td",
+    "title": "Through the Ages",
+    "bggId": 182028,
+    "bggName": "Through the Ages: A New Story of Civilization",
+    "year": 2015,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 37380,
+        "name": "Roll Through the Ages: The Bronze Age",
+        "year": 2008,
+        "ratings": 12407
+      },
+      {
+        "id": 98989,
+        "name": "BGO Extended 2.0 expansion (fan expansion for Through the Ages)",
+        "year": 2010,
+        "ratings": 48
+      },
+      {
+        "id": 293928,
+        "name": "Codenames: Bonus Pack \u2013 Through the Ages",
+        "year": 2019,
+        "ratings": 23
+      },
+      {
+        "id": 127372,
+        "name": "Brink of Battle: Skirmish Gaming Through the Ages",
+        "year": 2012,
+        "ratings": 8
+      },
+      {
+        "id": 330500,
+        "name": "Recollect?: Through the Ages",
+        "year": 2019,
+        "ratings": 3
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpHZG9woRX23Ke2n",
+    "title": "Twilight Imperium",
+    "bggId": 24,
+    "bggName": "Twilight Imperium",
+    "year": 1997,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 24,
+        "name": "Twilight Imperium",
+        "year": 1997,
+        "ratings": 728
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpIvvj-bn9CAv-M2",
+    "title": "Eclipse",
+    "bggId": 72125,
+    "bggName": "Eclipse: New Dawn for the Galaxy",
+    "year": 2011,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 11542,
+        "name": "Eclipse",
+        "year": 1999,
+        "ratings": 190
+      },
+      {
+        "id": 824,
+        "name": "Hijara",
+        "year": 1995,
+        "ratings": 48
+      },
+      {
+        "id": 8148,
+        "name": "Trio",
+        "year": 1972,
+        "ratings": 13
+      },
+      {
+        "id": 23272,
+        "name": "Eclipse",
+        "ratings": 9
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpKGP0AEJBGzu1Ik",
+    "title": "Sid Meier's Civilization",
+    "bggId": 77130,
+    "bggName": "Sid Meier&#039;s Civilization: The Board Game",
+    "year": 2010,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 77130,
+        "name": "Sid Meier&#039;s Civilization: The Board Game",
+        "year": 2010,
+        "ratings": 16413
+      },
+      {
+        "id": 233247,
+        "name": "Civilization: A New Dawn",
+        "year": 2017,
+        "ratings": 7905
+      },
+      {
+        "id": 3633,
+        "name": "Sid Meier&#039;s Civilization: The Boardgame",
+        "year": 2002,
+        "ratings": 2873
+      },
+      {
+        "id": 108415,
+        "name": "Sid Meier&#039;s Civilization: The Board Game \u2013 Fame and Fortune",
+        "year": 2011,
+        "ratings": 2564
+      },
+      {
+        "id": 142708,
+        "name": "Sid Meier&#039;s Civilization: The Board Game \u2013 Wisdom and Warfare",
+        "year": 2013,
+        "ratings": 1690
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpMgq6tjPq42Tl-N",
+    "title": "Clash of Cultures",
+    "bggId": 40765,
+    "bggName": "Clash of Cultures",
+    "year": 2012,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 40765,
+        "name": "Clash of Cultures",
+        "year": 2012,
+        "ratings": 5985
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpPHrzmmLF0koR4-",
+    "title": "Nations",
+    "bggId": 126042,
+    "bggName": "Nations",
+    "year": 2013,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 126042,
+        "name": "Nations",
+        "year": 2013,
+        "ratings": 12718
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpQd80fzwg0P6epS",
+    "title": "7 Wonders: Duel",
+    "bggId": 173346,
+    "bggName": "7 Wonders Duel",
+    "year": 2015,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 173346,
+        "name": "7 Wonders Duel",
+        "year": 2015,
+        "ratings": 110710
+      },
+      {
+        "id": 202976,
+        "name": "7 Wonders Duel: Pantheon",
+        "year": 2016,
+        "ratings": 16583
+      },
+      {
+        "id": 309116,
+        "name": "7 Wonders Duel: Agora",
+        "year": 2020,
+        "ratings": 6083
+      },
+      {
+        "id": 186069,
+        "name": "7 Wonders Duel: The Messe Promo Card",
+        "year": 2015,
+        "ratings": 1619
+      },
+      {
+        "id": 196339,
+        "name": "7 Wonders Duel: Statue of Liberty Promo Card",
+        "year": 2016,
+        "ratings": 833
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpS-tR0WQyQ1a1VI",
+    "title": "Race for the Galaxy",
+    "bggId": 28143,
+    "bggName": "Race for the Galaxy",
+    "year": 2007,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 28143,
+        "name": "Race for the Galaxy",
+        "year": 2007,
+        "ratings": 59468
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpUNmq2wSzwEL6oe",
+    "title": "Roll for the Galaxy",
+    "bggId": 132531,
+    "bggName": "Roll for the Galaxy",
+    "year": 2014,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 132531,
+        "name": "Roll for the Galaxy",
+        "year": 2014,
+        "ratings": 33841
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpVjTEDSj60YpcHj",
+    "title": "San Juan",
+    "bggId": 8217,
+    "bggName": "San Juan",
+    "year": 2004,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 8217,
+        "name": "San Juan",
+        "year": 2004,
+        "ratings": 24450
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpXyh0nJcU7pDZtf",
+    "title": "Glory to Rome",
+    "bggId": 19857,
+    "bggName": "Glory to Rome",
+    "year": 2005,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 19857,
+        "name": "Glory to Rome",
+        "year": 2005,
+        "ratings": 14986
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpZLbHsPCh7U6jcg",
+    "title": "Innovation",
+    "bggId": 63888,
+    "bggName": "Innovation",
+    "year": 2010,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 63888,
+        "name": "Innovation",
+        "year": 2010,
+        "ratings": 20935
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxp_hOw0iePnW6r62",
+    "title": "Mottainai",
+    "bggId": 175199,
+    "bggName": "Mottainai",
+    "year": 2015,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 175199,
+        "name": "Mottainai",
+        "year": 2015,
+        "ratings": 4704
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpc4_XWz8yAcArmh",
+    "title": "Red7",
+    "bggId": 161417,
+    "bggName": "Red7",
+    "year": 2014,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 161417,
+        "name": "Red7",
+        "year": 2014,
+        "ratings": 17552
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpeeFdNudKqxxSTA",
+    "title": "Biblios",
+    "bggId": 34219,
+    "bggName": "Biblios",
+    "year": 2007,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 34219,
+        "name": "Biblios",
+        "year": 2007,
+        "ratings": 18516
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpg-Z0pnBzZM8uOQ",
+    "title": "For Sale",
+    "bggId": 172,
+    "bggName": "For Sale",
+    "year": 1997,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 172,
+        "name": "For Sale",
+        "year": 1997,
+        "ratings": 34838
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxphMvGB4vhRUxslK",
+    "title": "No Thanks!",
+    "bggId": 12942,
+    "bggName": "No Thanks!",
+    "year": 2004,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 12942,
+        "name": "No Thanks!",
+        "year": 2004,
+        "ratings": 31130
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpjlhQ2jN_5CDmZ8",
+    "title": "Coloretto",
+    "bggId": 5782,
+    "bggName": "Coloretto",
+    "year": 2003,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 5782,
+        "name": "Coloretto",
+        "year": 2003,
+        "ratings": 22966
+      },
+      {
+        "id": 15159,
+        "name": "Coloretto",
+        "year": 1993,
+        "ratings": 38
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpl914MH975OSwRF",
+    "title": "Bohnanza",
+    "bggId": 11,
+    "bggName": "Bohnanza",
+    "year": 1997,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 11,
+        "name": "Bohnanza",
+        "year": 1997,
+        "ratings": 52019
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpnK3pFNzkXGrjUD",
+    "title": "The Great Dalmuti",
+    "bggId": 929,
+    "bggName": "The Great Dalmuti",
+    "year": 1995,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 929,
+        "name": "The Great Dalmuti",
+        "year": 1995,
+        "ratings": 8787
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpog-BKRPo05-AEL",
+    "title": "Wizard",
+    "bggId": 1465,
+    "bggName": "Wizard",
+    "year": 1984,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 1465,
+        "name": "Wizard",
+        "year": 1984,
+        "ratings": 13944
+      },
+      {
+        "id": 3463,
+        "name": "Wizard",
+        "year": 1978,
+        "ratings": 532
+      },
+      {
+        "id": 108005,
+        "name": "Wizard",
+        "year": 1979,
+        "ratings": 10
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpq18igSx25IXww5",
+    "title": "Skull King",
+    "bggId": 150145,
+    "bggName": "Skull King",
+    "year": 2013,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 150145,
+        "name": "Skull King",
+        "year": 2013,
+        "ratings": 16418
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpsSqQBaz6rokd32",
+    "title": "Tichu",
+    "bggId": 215,
+    "bggName": "Tichu",
+    "year": 1991,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 215,
+        "name": "Tichu",
+        "year": 1991,
+        "ratings": 17057
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpv0uIjaz0AiwE-q",
+    "title": "Tsuro",
+    "bggId": 16992,
+    "bggName": "Tsuro",
+    "year": 2005,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 16992,
+        "name": "Tsuro",
+        "year": 2005,
+        "ratings": 30981
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpwMC6yJxEy9rdMZ",
+    "title": "Tsuro of the Seas",
+    "bggId": 124172,
+    "bggName": "Tsuro of the Seas",
+    "year": 2012,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 124172,
+        "name": "Tsuro of the Seas",
+        "year": 2012,
+        "ratings": 7036
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxpxhQotrStk6Gbvx",
+    "title": "Indigo",
+    "bggId": 116954,
+    "bggName": "Butterfly Garden",
+    "year": 2012,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 116954,
+        "name": "Butterfly Garden",
+        "year": 2012,
+        "ratings": 3911
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxq-7WkOQfqv3Is5b",
+    "title": "Kingdomino",
+    "bggId": 204583,
+    "bggName": "Kingdomino",
+    "year": 2016,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 204583,
+        "name": "Kingdomino",
+        "year": 2016,
+        "ratings": 53789
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxq0T0xkWtTTEKD65",
+    "title": "Queendomino",
+    "bggId": 232043,
+    "bggName": "Queendomino",
+    "year": 2017,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 232043,
+        "name": "Queendomino",
+        "year": 2017,
+        "ratings": 11947
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxq2iI4Xepe3QD1wl",
+    "title": "Dragomino",
+    "bggId": 300010,
+    "bggName": "Dragomino",
+    "year": 2020,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 300010,
+        "name": "Dragomino",
+        "year": 2020,
+        "ratings": 3273
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxq428SYT12VRl8ps",
+    "title": "Isle of Skye",
+    "bggId": 176494,
+    "bggName": "Isle of Skye: From Chieftain to King",
+    "year": 2015,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 176494,
+        "name": "Isle of Skye: From Chieftain to King",
+        "year": 2015,
+        "ratings": 27507
+      },
+      {
+        "id": 246646,
+        "name": "Isle of Skye: Druids",
+        "year": 2018,
+        "ratings": 1091
+      },
+      {
+        "id": 369258,
+        "name": "Isle of Skye: Big Box",
+        "year": 2022,
+        "ratings": 614
+      },
+      {
+        "id": 211116,
+        "name": "Isle of Skye: From Chieftain to King \u2013 Themed Tiles",
+        "year": 2016,
+        "ratings": 267
+      },
+      {
+        "id": 205159,
+        "name": "Isle of Skye: From Chieftain to King \u2013 Kennerspiel des Jahres Promo Tile",
+        "year": 2016,
+        "ratings": 213
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxq5QXcRYUhi1eDnO",
+    "title": "Alhambra",
+    "bggId": 6249,
+    "bggName": "Alhambra",
+    "year": 2003,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 6249,
+        "name": "Alhambra",
+        "year": 2003,
+        "ratings": 35924
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxq7p6xWiumDkwS7l",
+    "title": "Carcassonne: Hunters and Gatherers",
+    "bggId": 4390,
+    "bggName": "Carcassonne: Hunters and Gatherers",
+    "year": 2002,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 4390,
+        "name": "Carcassonne: Hunters and Gatherers",
+        "year": 2002,
+        "ratings": 13850
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqAQ3aoFQJf4amV4",
+    "title": "Carcassonne: Inns and Cathedrals",
+    "bggId": 2993,
+    "bggName": "Carcassonne: Inns & Cathedrals",
+    "year": 2002,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 2993,
+        "name": "Carcassonne: Inns & Cathedrals",
+        "year": 2002,
+        "ratings": 23210
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqBmraMEmPjqD6OZ",
+    "title": "Carcassonne: Traders and Builders",
+    "bggId": 5405,
+    "bggName": "Carcassonne: Traders & Builders",
+    "year": 2003,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 5405,
+        "name": "Carcassonne: Traders & Builders",
+        "year": 2003,
+        "ratings": 18225
+      },
+      {
+        "id": 196280,
+        "name": "Merchants (fan expansion for Carcassonne: Traders & Builders)",
+        "year": 2016,
+        "ratings": 2
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqD75JA4VayxE5d8",
+    "title": "Carcassonne: The Princess and the Dragon",
+    "bggId": 15158,
+    "bggName": "Carcassonne: Dragon & Fairy",
+    "year": 2005,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 15158,
+        "name": "Carcassonne: Dragon & Fairy",
+        "year": 2005,
+        "ratings": 10722
+      },
+      {
+        "id": 318438,
+        "name": "Dragon Rider Slayer (fan expansion for Carcassonne: The Princess & The Dragon)",
+        "year": 2006,
+        "ratings": 0
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqFcQS7O6k0s3HAy",
+    "title": "Carcassonne: The Tower",
+    "bggId": 21385,
+    "bggName": "Carcassonne: Towers & Thieves",
+    "year": 2006,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 21385,
+        "name": "Carcassonne: Towers & Thieves",
+        "year": 2006,
+        "ratings": 6387
+      },
+      {
+        "id": 355072,
+        "name": "The Towers of the Black Prince (fan expansion for Carcassonne)",
+        "year": 2021,
+        "ratings": 0
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqGzeX7ePcuDtcFI",
+    "title": "Carcassonne: Abbey and Mayor",
+    "bggId": 31784,
+    "bggName": "Carcassonne: Abbey & Mayor",
+    "year": 2007,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 31784,
+        "name": "Carcassonne: Abbey & Mayor",
+        "year": 2007,
+        "ratings": 5692
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqJ9GCUvrlTo2HiA",
+    "title": "Carcassonne: The Catapult",
+    "bggId": 38855,
+    "bggName": "Carcassonne: Catapult",
+    "year": 2008,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 38855,
+        "name": "Carcassonne: Catapult",
+        "year": 2008,
+        "ratings": 1602
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqKVTEOpOCrfzI-T",
+    "title": "King of Tokyo",
+    "bggId": 70323,
+    "bggName": "King of Tokyo",
+    "year": 2011,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 70323,
+        "name": "King of Tokyo",
+        "year": 2011,
+        "ratings": 76640
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqLr3B7NBWKJ8Quu",
+    "title": "King of New York",
+    "bggId": 160499,
+    "bggName": "King of New York",
+    "year": 2014,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 160499,
+        "name": "King of New York",
+        "year": 2014,
+        "ratings": 17440
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqOHCgv0iQ84k_Lp",
+    "title": "Bang! The Dice Game",
+    "bggId": 143741,
+    "bggName": "BANG! The Dice Game",
+    "year": 2013,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 143741,
+        "name": "BANG! The Dice Game",
+        "year": 2013,
+        "ratings": 26700
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqQqcTHkOlrc7CU9",
+    "title": "Las Vegas",
+    "bggId": 117959,
+    "bggName": "Las Vegas",
+    "year": 2012,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 117959,
+        "name": "Las Vegas",
+        "year": 2012,
+        "ratings": 12589
+      },
+      {
+        "id": 463783,
+        "name": "Las Vegas",
+        "year": 2026,
+        "ratings": 341
+      },
+      {
+        "id": 24949,
+        "name": "Vegas",
+        "year": 1985,
+        "ratings": 5
+      },
+      {
+        "id": 40356,
+        "name": "Las Vegas",
+        "ratings": 3
+      },
+      {
+        "id": 24588,
+        "name": "Las Vegas",
+        "year": 1983,
+        "ratings": 2
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqSCKzYBlYG6aaCs",
+    "title": "Las Vegas Boulevard",
+    "bggId": 149975,
+    "bggName": "Las Vegas: Boulevard",
+    "year": 2014,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 149975,
+        "name": "Las Vegas: Boulevard",
+        "year": 2014,
+        "ratings": 1148
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqTZ7uFsyCay9kgm",
+    "title": "Roll Through the Ages",
+    "bggId": 37380,
+    "bggName": "Roll Through the Ages: The Bronze Age",
+    "year": 2008,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 37380,
+        "name": "Roll Through the Ages: The Bronze Age",
+        "year": 2008,
+        "ratings": 12407
+      },
+      {
+        "id": 150926,
+        "name": "Roll Through the Ages: The Iron Age",
+        "year": 2014,
+        "ratings": 1403
+      },
+      {
+        "id": 47389,
+        "name": "Roll Through the Ages: The Late Bronze Age",
+        "year": 2009,
+        "ratings": 1120
+      },
+      {
+        "id": 167828,
+        "name": "Roll Through the Ages: The Iron Age with Mediterranean Expansion",
+        "year": 2014,
+        "ratings": 273
+      },
+      {
+        "id": 150927,
+        "name": "Roll Through the Ages: The Iron Age \u2013 The Mediterranean Expansion",
+        "year": 2014,
+        "ratings": 102
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqVykP7kxIgp9T1P",
+    "title": "Dice Forge",
+    "bggId": 194594,
+    "bggName": "Dice Forge",
+    "year": 2017,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 194594,
+        "name": "Dice Forge",
+        "year": 2017,
+        "ratings": 24887
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqXKi70extMZEc0h",
+    "title": "Roll Player",
+    "bggId": 169426,
+    "bggName": "Roll Player",
+    "year": 2016,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 169426,
+        "name": "Roll Player",
+        "year": 2016,
+        "ratings": 22795
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqZYT1oRz3Oe4jnP",
+    "title": "Sagrada",
+    "bggId": 199561,
+    "bggName": "Sagrada",
+    "year": 2017,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 199561,
+        "name": "Sagrada",
+        "year": 2017,
+        "ratings": 48889
+      },
+      {
+        "id": 107448,
+        "name": "Sagrada",
+        "year": 2007,
+        "ratings": 15
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxq_wKwcfsEm6bARf",
+    "title": "Dice Throne",
+    "bggId": 268201,
+    "bggName": "Dice Throne",
+    "year": 2018,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 268201,
+        "name": "Dice Throne",
+        "year": 2018,
+        "ratings": 3595
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqbIN4GYD2wHCJ8G",
+    "title": "Dice Throne: Season One",
+    "bggId": 216734,
+    "bggName": "Dice Throne: Season One",
+    "year": 2018,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 216734,
+        "name": "Dice Throne: Season One",
+        "year": 2018,
+        "ratings": 6693
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqddDChTOFiY_wCz",
+    "title": "Dice Throne: Season Two",
+    "bggId": 244271,
+    "bggName": "Dice Throne: Season Two \u2013 Battle Chest",
+    "year": 2019,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 244271,
+        "name": "Dice Throne: Season Two \u2013 Battle Chest",
+        "year": 2019,
+        "ratings": 5601
+      },
+      {
+        "id": 266966,
+        "name": "Dice Throne: Season Two \u2013 Gunslinger v. Samurai",
+        "year": 2018,
+        "ratings": 1949
+      },
+      {
+        "id": 266967,
+        "name": "Dice Throne: Season Two \u2013 Cursed Pirate v. Artificer",
+        "year": 2018,
+        "ratings": 1380
+      },
+      {
+        "id": 266965,
+        "name": "Dice Throne: Season Two \u2013 Tactician v. Huntress",
+        "year": 2018,
+        "ratings": 1263
+      },
+      {
+        "id": 266964,
+        "name": "Dice Throne: Season Two \u2013 Seraph v. Vampire Lord",
+        "year": 2018,
+        "ratings": 1251
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqgEE0aiJQT3va0k",
+    "title": "Quarriors!",
+    "bggId": 91536,
+    "bggName": "Quarriors!",
+    "year": 2011,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 91536,
+        "name": "Quarriors!",
+        "year": 2011,
+        "ratings": 14154
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqh_58g4pulT9LJ1",
+    "title": "Dice Masters",
+    "bggId": 295574,
+    "bggName": "Dice Masters",
+    "year": 2014,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 295574,
+        "name": "Dice Masters",
+        "year": 2014,
+        "ratings": 299
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqivfCTlZUjIXiMA",
+    "title": "Elder Sign",
+    "bggId": 100423,
+    "bggName": "Elder Sign",
+    "year": 2011,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 100423,
+        "name": "Elder Sign",
+        "year": 2011,
+        "ratings": 26436
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqlLwkkPUNr08pvy",
+    "title": "Escape: The Curse of the Temple",
+    "bggId": 113294,
+    "bggName": "Escape: The Curse of the Temple",
+    "year": 2012,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 113294,
+        "name": "Escape: The Curse of the Temple",
+        "year": 2012,
+        "ratings": 17675
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqmgCO3ecn_1IfJ0",
+    "title": "Can't Stop",
+    "bggId": 41,
+    "bggName": "Can&#039;t Stop",
+    "year": 1980,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 41,
+        "name": "Can&#039;t Stop",
+        "year": 1980,
+        "ratings": 22229
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqouTnyAx-tntEPN",
+    "title": "Pickomino",
+    "bggId": 15818,
+    "bggName": "Pick-omino",
+    "year": 2005,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 15818,
+        "name": "Pick-omino",
+        "year": 2005,
+        "ratings": 13155
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqqF8h4O0BlOQPPA",
+    "title": "Zombie Dice",
+    "bggId": 62871,
+    "bggName": "Zombie Dice",
+    "year": 2010,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 62871,
+        "name": "Zombie Dice",
+        "year": 2010,
+        "ratings": 19372
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqrcVZpnfLx5-Pqx",
+    "title": "Martian Dice",
+    "bggId": 99875,
+    "bggName": "Martian Dice",
+    "year": 2011,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 99875,
+        "name": "Martian Dice",
+        "year": 2011,
+        "ratings": 4579
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqu1IIrF-pxJFW5w",
+    "title": "Word on the Street",
+    "bggId": 40990,
+    "bggName": "Word on the Street",
+    "year": 2009,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 40990,
+        "name": "Word on the Street",
+        "year": 2009,
+        "ratings": 2815
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqwkNRMr_pa6zBTP",
+    "title": "Letter Tycoon",
+    "bggId": 169147,
+    "bggName": "Letter Tycoon",
+    "year": 2015,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 169147,
+        "name": "Letter Tycoon",
+        "year": 2015,
+        "ratings": 1911
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqyGDtRnyTAu5_Pn",
+    "title": "Paperback",
+    "bggId": 141572,
+    "bggName": "Paperback",
+    "year": 2014,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 141572,
+        "name": "Paperback",
+        "year": 2014,
+        "ratings": 11527
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxqzkcOSWyJ86_-o4",
+    "title": "Hardback",
+    "bggId": 223750,
+    "bggName": "Hardback",
+    "year": 2018,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 223750,
+        "name": "Hardback",
+        "year": 2018,
+        "ratings": 4003
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxr1S_3PgV0ZWKKCf",
+    "title": "Anomia",
+    "bggId": 67877,
+    "bggName": "Anomia",
+    "year": 2010,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 67877,
+        "name": "Anomia",
+        "year": 2010,
+        "ratings": 6081
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxr41_3tY_QRC9OqL",
+    "title": "Anomia X",
+    "bggId": 225062,
+    "bggName": "Anomia X",
+    "year": 2017,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 225062,
+        "name": "Anomia X",
+        "year": 2017,
+        "ratings": 277
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxr5bWVdeqo8NTotj",
+    "title": "Codenames",
+    "bggId": 178900,
+    "bggName": "Codenames",
+    "year": 2015,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 178900,
+        "name": "Codenames",
+        "year": 2015,
+        "ratings": 105792
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxr74M1sPHRdnhKT2",
+    "title": "Codenames: Duet",
+    "bggId": 224037,
+    "bggName": "Codenames: Duet",
+    "year": 2017,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 224037,
+        "name": "Codenames: Duet",
+        "year": 2017,
+        "ratings": 27222
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxr9PJe8JDSR7Zkax",
+    "title": "Codenames: Pictures",
+    "bggId": 198773,
+    "bggName": "Codenames: Pictures",
+    "year": 2016,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 198773,
+        "name": "Codenames: Pictures",
+        "year": 2016,
+        "ratings": 25476
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrC7S-WPwJWN6--r",
+    "title": "Decrypto",
+    "bggId": 225694,
+    "bggName": "Decrypto",
+    "year": 2018,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 225694,
+        "name": "Decrypto",
+        "year": 2018,
+        "ratings": 28179
+      },
+      {
+        "id": 65952,
+        "name": "Decrypto",
+        "year": 1974,
+        "ratings": 5
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrDXW5FCiYKQU5p7",
+    "title": "Word Slam",
+    "bggId": 203411,
+    "bggName": "Word Slam",
+    "year": 2016,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 203411,
+        "name": "Word Slam",
+        "year": 2016,
+        "ratings": 1191
+      },
+      {
+        "id": 35028,
+        "name": "Word Slam",
+        "year": 2003,
+        "ratings": 4
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrEu_GKDaH2DhRcP",
+    "title": "Just One",
+    "bggId": 254640,
+    "bggName": "Just One",
+    "year": 2018,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 254640,
+        "name": "Just One",
+        "year": 2018,
+        "ratings": 35962
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrHcSVJZNju5KNVD",
+    "title": "Wavelength",
+    "bggId": 262543,
+    "bggName": "Wavelength",
+    "year": 2019,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 262543,
+        "name": "Wavelength",
+        "year": 2019,
+        "ratings": 19188
+      },
+      {
+        "id": 23596,
+        "name": "WaveLength",
+        "year": 2004,
+        "ratings": 42
+      },
+      {
+        "id": 2745,
+        "name": "WaveLength",
+        "year": 2001,
+        "ratings": 4
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrJ-OXZryuVqzaJC",
+    "title": "So Clover!",
+    "bggId": 329839,
+    "bggName": "So Clover!",
+    "year": 2021,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 329839,
+        "name": "So Clover!",
+        "year": 2021,
+        "ratings": 12787
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrKMohjJZggY5AQ3",
+    "title": "Crosswords",
+    "bggId": 6134,
+    "bggName": "Crosswords",
+    "year": 1987,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 6134,
+        "name": "Crosswords",
+        "year": 1987,
+        "ratings": 9
+      },
+      {
+        "id": 13170,
+        "name": "Cross Words",
+        "year": 1953,
+        "ratings": 2
+      },
+      {
+        "id": 319934,
+        "name": "Crosswords",
+        "year": 2020,
+        "ratings": 1
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrLhwyoGWHRzslA_",
+    "title": "Telestrations",
+    "bggId": 46213,
+    "bggName": "Telestrations",
+    "year": 2009,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 46213,
+        "name": "Telestrations",
+        "year": 2009,
+        "ratings": 21079
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrN24vFRypCx_iXh",
+    "title": "Telestrations After Dark",
+    "bggId": 173761,
+    "bggName": "Telestrations: After Dark",
+    "year": 2015,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 173761,
+        "name": "Telestrations: After Dark",
+        "year": 2015,
+        "ratings": 2220
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrPJgCBpBPiKcIkP",
+    "title": "A Fake Artist Goes to New York",
+    "bggId": 135779,
+    "bggName": "A Fake Artist Goes to New York",
+    "year": 2011,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 135779,
+        "name": "A Fake Artist Goes to New York",
+        "year": 2011,
+        "ratings": 10913
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrQe1CINN6aXEoJO",
+    "title": "Spyfall",
+    "bggId": 166384,
+    "bggName": "Spyfall",
+    "year": 2014,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 166384,
+        "name": "Spyfall",
+        "year": 2014,
+        "ratings": 22560
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrS1_VF3u0h7p8XF",
+    "title": "Spyfall 2",
+    "bggId": 193308,
+    "bggName": "Spyfall 2",
+    "year": 2016,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 193308,
+        "name": "Spyfall 2",
+        "year": 2016,
+        "ratings": 3567
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrqhvj7OPXoi3JXZ",
+    "title": "The Resistance",
+    "bggId": 41114,
+    "bggName": "The Resistance",
+    "year": 2009,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 41114,
+        "name": "The Resistance",
+        "year": 2009,
+        "ratings": 42950
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrsA3q6Gw3WwNaN1",
+    "title": "The Resistance: Avalon",
+    "bggId": 128882,
+    "bggName": "The Resistance: Avalon",
+    "year": 2012,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 128882,
+        "name": "The Resistance: Avalon",
+        "year": 2012,
+        "ratings": 37083
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrtXh8jk4vkF_7-8",
+    "title": "One Night Ultimate Werewolf",
+    "bggId": 147949,
+    "bggName": "One Night Ultimate Werewolf",
+    "year": 2014,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 147949,
+        "name": "One Night Ultimate Werewolf",
+        "year": 2014,
+        "ratings": 31397
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrv_lccpco8nXaO2",
+    "title": "One Night Ultimate Vampire",
+    "bggId": 180956,
+    "bggName": "One Night Ultimate Vampire",
+    "year": 2016,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 180956,
+        "name": "One Night Ultimate Vampire",
+        "year": 2016,
+        "ratings": 2351
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrwvEItN6spOCLvb",
+    "title": "One Night Ultimate Alien",
+    "bggId": 204431,
+    "bggName": "One Night Ultimate Alien",
+    "year": 2017,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 204431,
+        "name": "One Night Ultimate Alien",
+        "year": 2017,
+        "ratings": 1493
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxryH-yQ-FJ0SpgVn",
+    "title": "Secret Hitler",
+    "bggId": 188834,
+    "bggName": "Secret Hitler",
+    "year": 2016,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 188834,
+        "name": "Secret Hitler",
+        "year": 2016,
+        "ratings": 35475
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxrzd1_zeO2FgJs23",
+    "title": "Deception: Murder in Hong Kong",
+    "bggId": 156129,
+    "bggName": "Deception: Murder in Hong Kong",
+    "year": 2014,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 156129,
+        "name": "Deception: Murder in Hong Kong",
+        "year": 2014,
+        "ratings": 25507
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxs0042_q7W9aQI_S",
+    "title": "Mysterium",
+    "bggId": 181304,
+    "bggName": "Mysterium",
+    "year": 2015,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 181304,
+        "name": "Mysterium",
+        "year": 2015,
+        "ratings": 49881
+      },
+      {
+        "id": 113997,
+        "name": "Tajemnicze Domostwo",
+        "year": 2013,
+        "ratings": 5567
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxs3ds9m9wmSLzpFV",
+    "title": "Werewolf",
+    "bggId": 925,
+    "bggName": "Werewolf",
+    "year": 1986,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 925,
+        "name": "Werewolf",
+        "year": 1986,
+        "ratings": 5000
+      },
+      {
+        "id": 244170,
+        "name": "Loup Garou",
+        "year": 2015,
+        "ratings": 288
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxs4zta0-3COthHWC",
+    "title": "Two Rooms and a Boom",
+    "bggId": 134352,
+    "bggName": "Two Rooms and a Boom",
+    "year": 2013,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 134352,
+        "name": "Two Rooms and a Boom",
+        "year": 2013,
+        "ratings": 6378
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxs6Kqzpp83esRSxQ",
+    "title": "Time's Up!",
+    "bggId": 1353,
+    "bggName": "Time&#039;s Up!",
+    "year": 1999,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 1353,
+        "name": "Time&#039;s Up!",
+        "year": 1999,
+        "ratings": 6319
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxs7faLTk6pvHA6Jq",
+    "title": "Time's Up! Title Recall",
+    "bggId": 36553,
+    "bggName": "Time&#039;s Up! Title Recall!",
+    "year": 2008,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 36553,
+        "name": "Time&#039;s Up! Title Recall!",
+        "year": 2008,
+        "ratings": 3789
+      },
+      {
+        "id": 192228,
+        "name": "Time&#039;s Up: Title Recall \u2013 Expansion 1",
+        "year": 2016,
+        "ratings": 87
+      },
+      {
+        "id": 192229,
+        "name": "Time&#039;s Up: Title Recall \u2013 Expansion 2",
+        "year": 2016,
+        "ratings": 77
+      },
+      {
+        "id": 192230,
+        "name": "Time&#039;s Up: Title Recall \u2013 Expansion 3",
+        "year": 2016,
+        "ratings": 74
+      },
+      {
+        "id": 192231,
+        "name": "Time&#039;s Up: Title Recall \u2013 Expansion 4",
+        "year": 2016,
+        "ratings": 74
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxs92pV16c1U-CYnH",
+    "title": "Time's Up! Party Edition",
+    "bggId": 230262,
+    "bggName": "Time&#039;s Up! Party Edition",
+    "year": 2004,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 230262,
+        "name": "Time&#039;s Up! Party Edition",
+        "year": 2004,
+        "ratings": 724
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxsAy3vDCquwGPSMK",
+    "title": "Monikers",
+    "bggId": 156546,
+    "bggName": "Monikers",
+    "year": 2015,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 156546,
+        "name": "Monikers",
+        "year": 2015,
+        "ratings": 8001
+      }
+    ]
+  },
+  {
+    "gameId": "-OhGxsCLOdItdzqPKoky",
+    "title": "Cards Against Humanity",
+    "bggId": 50381,
+    "bggName": "Cards Against Humanity",
+    "year": 2009,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 50381,
+        "name": "Cards Against Humanity",
+        "year": 2009,
+        "ratings": 31009
+      }
+    ]
+  },
+  {
+    "gameId": "-OhH0VL51I_K8TgNzIOa",
+    "title": "Snakes of Wrath",
+    "bggId": 372197,
+    "bggName": "Snakes of Wrath",
+    "year": 2022,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 372197,
+        "name": "Snakes of Wrath",
+        "year": 2022,
+        "ratings": 207
+      }
+    ]
+  },
+  {
+    "gameId": "-OhIaTFAPPujh1WosOes",
+    "title": "Desperate Oasis",
+    "bggId": 428904,
+    "bggName": "Desperate Oasis",
+    "year": 2024,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 428904,
+        "name": "Desperate Oasis",
+        "year": 2024,
+        "ratings": 286
+      }
+    ]
+  },
+  {
+    "gameId": "-OhIvtQBDuljDALA1tUp",
+    "title": "Fruit Boss",
+    "bggId": 451606,
+    "bggName": "Fruit Boss",
+    "year": 2026,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 451606,
+        "name": "Fruit Boss",
+        "year": 2026,
+        "ratings": 98
+      }
+    ]
+  },
+  {
+    "gameId": "-P2Q4AbxK_GqVs7rmI9e",
+    "title": "Organ attack",
+    "bggId": 201406,
+    "bggName": "OrganATTACK!",
+    "year": 2016,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 201406,
+        "name": "OrganATTACK!",
+        "year": 2016,
+        "ratings": 1381
+      },
+      {
+        "id": 162250,
+        "name": "Star Trek: Attack Wing \u2013 The Collective Month 1 Organized Play Borg Cube and tokens",
+        "year": 2014,
+        "ratings": 9
+      },
+      {
+        "id": 298414,
+        "name": "Village Attacks: Convention Exclusive Organised Play Pack",
+        "year": 2019,
+        "ratings": 9
+      },
+      {
+        "id": 163497,
+        "name": "Star Trek: Attack Wing \u2013 The Collective Month 2 Organized Play Borg Cube and tokens",
+        "year": 2014,
+        "ratings": 8
+      },
+      {
+        "id": 184001,
+        "name": "Star Trek: Attack Wing \u2013 2015-2016 Organized Play Reinforcement Booster Brick",
+        "year": 2015,
+        "ratings": 7
+      }
+    ]
+  },
+  {
+    "gameId": "-P2Q5Gp048bdcVkm7HF7",
+    "title": "Organ attack",
+    "bggId": 201406,
+    "bggName": "OrganATTACK!",
+    "year": 2016,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 201406,
+        "name": "OrganATTACK!",
+        "year": 2016,
+        "ratings": 1381
+      },
+      {
+        "id": 162250,
+        "name": "Star Trek: Attack Wing \u2013 The Collective Month 1 Organized Play Borg Cube and tokens",
+        "year": 2014,
+        "ratings": 9
+      },
+      {
+        "id": 298414,
+        "name": "Village Attacks: Convention Exclusive Organised Play Pack",
+        "year": 2019,
+        "ratings": 9
+      },
+      {
+        "id": 163497,
+        "name": "Star Trek: Attack Wing \u2013 The Collective Month 2 Organized Play Borg Cube and tokens",
+        "year": 2014,
+        "ratings": 8
+      },
+      {
+        "id": 184001,
+        "name": "Star Trek: Attack Wing \u2013 2015-2016 Organized Play Reinforcement Booster Brick",
+        "year": 2015,
+        "ratings": 7
+      }
+    ]
+  },
+  {
+    "gameId": "-P2VAjy4XfjO7nSSiNfF",
+    "title": "Loners",
+    "bggId": 464200,
+    "bggName": "Loners",
+    "year": 2026,
+    "confidence": "exact",
+    "candidates": [
+      {
+        "id": 464200,
+        "name": "Loners",
+        "year": 2026,
+        "ratings": 52
+      }
+    ]
+  },
+  {
+    "gameId": "-P2Veakq7Gevmmfi623M",
+    "title": "Monopoly Deal",
+    "bggId": 40398,
+    "bggName": "Monopoly Deal Card Game",
+    "year": 2008,
+    "confidence": "check",
+    "candidates": [
+      {
+        "id": 40398,
+        "name": "Monopoly Deal Card Game",
+        "year": 2008,
+        "ratings": 13124
+      },
+      {
+        "id": 164840,
+        "name": "Monopoly Deal Pocket",
+        "year": 2014,
+        "ratings": 3313
+      },
+      {
+        "id": 465961,
+        "name": "Monopoly Deal: No Mercy",
+        "year": 2026,
+        "ratings": 43
+      },
+      {
+        "id": 469655,
+        "name": "Monopoly Deal Wizarding World/Harry Potter Card Game",
+        "year": 2025,
+        "ratings": 23
+      },
+      {
+        "id": 265797,
+        "name": "Monopoly Deal London",
+        "year": 2017,
+        "ratings": 8
+      }
+    ]
+  }
+]

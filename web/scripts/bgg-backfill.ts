@@ -4,8 +4,13 @@
  * Usage:
  *   npm run bgg -- match            Find a BGG id for each game; writes scripts/data/bgg-matches.json to review
  *   npm run bgg -- apply --dry-run  Show what apply would change
- *   npm run bgg -- apply            Fetch covers + dimensions for reviewed matches and save them
- *   npm run bgg -- cors             One-time: let browsers load covers from Storage as WebGL textures
+ *   npm run bgg -- apply --files-only  Save covers to public/covers/ without touching the database
+ *   npm run bgg -- apply            Save covers + dimensions for reviewed matches to the database
+ *
+ * Covers ship with the site (public/covers/<gameId>.webp) because the project
+ * has no Storage bucket and BGG's image CDN sends no CORS headers, which the
+ * shelf needs for WebGL textures. Deploy the files before running a plain
+ * apply, or games would point at covers that aren't live yet.
  *
  * Flags for apply:
  *   --replace-covers   Overwrite covers that already exist (default: only fill missing or broken ones)
@@ -13,8 +18,9 @@
  *
  * Requires in web/.env (or the environment):
  *   BGG_TOKEN                        Bearer token from boardgamegeek.com/applications
- *   GOOGLE_APPLICATION_CREDENTIALS   Path to a Firebase service account JSON
- *   VITE_FIREBASE_DATABASE_URL, VITE_FIREBASE_STORAGE_BUCKET
+ *   Google credentials               `gcloud auth application-default login` (with the
+ *                                    firebase.database scope) or GOOGLE_APPLICATION_CREDENTIALS
+ *   VITE_FIREBASE_DATABASE_URL
  *
  * BGG terms: call the API server-side only, cache results, and credit
  * "Powered by BGG" in the app. Requests are spaced ~5s apart as BGG asks.
@@ -24,17 +30,16 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import { randomUUID } from "crypto";
 import { XMLParser } from "fast-xml-parser";
 import sharp from "sharp";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getDatabase } from "firebase-admin/database";
-import { getStorage } from "firebase-admin/storage";
 import { traditionalKind } from "../src/lib/traditionalGames.ts";
 import type { BoxDims, Game } from "../src/models/Game.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MATCHES_PATH = join(__dirname, "data/bgg-matches.json");
+const COVERS_DIR = join(__dirname, "../public/covers");
 const BGG = "https://boardgamegeek.com/xmlapi2";
 const REQUEST_GAP_MS = 5000;
 
@@ -161,9 +166,8 @@ function firebase() {
   const app = initializeApp({
     credential: applicationDefault(),
     databaseURL: requireCfg("VITE_FIREBASE_DATABASE_URL"),
-    storageBucket: requireCfg("VITE_FIREBASE_STORAGE_BUCKET"),
   });
-  return { db: getDatabase(app), bucket: getStorage(app).bucket() };
+  return { db: getDatabase(app) };
 }
 
 async function loadGames(db: ReturnType<typeof getDatabase>): Promise<Game[]> {
@@ -176,6 +180,7 @@ async function loadGames(db: ReturnType<typeof getDatabase>): Promise<Game[]> {
 async function hasWorkingCover(game: Game) {
   if (!game.coverArt) return false;
   if (game.coverArt.startsWith("data:")) return true;
+  if (game.coverArt.startsWith("/covers/")) return existsSync(join(COVERS_DIR, "..", game.coverArt));
   try {
     const res = await fetch(game.coverArt, { method: "HEAD" });
     return res.ok;
@@ -244,8 +249,10 @@ async function match() {
 
 async function apply(flags: Set<string>) {
   const dryRun = flags.has("--dry-run");
+  const filesOnly = flags.has("--files-only");
   requireCfg("BGG_TOKEN");
-  const { db, bucket } = firebase();
+  const { db } = firebase();
+  if (!dryRun) mkdirSync(COVERS_DIR, { recursive: true });
   const games = new Map((await loadGames(db)).map((g) => [g.id, g]));
   const matches = readMatches().filter((m) => m.bggId && !m.skip);
   if (!matches.length) {
@@ -271,29 +278,30 @@ async function apply(flags: Set<string>) {
     const imageUrl: string | undefined = typeof item.image === "string" ? item.image.trim() : undefined;
     let orientation: BoxDims["orientation"];
     if (imageUrl && (flags.has("--replace-covers") || !(await hasWorkingCover(game)))) {
-      const res = await fetch(imageUrl);
-      if (res.ok) {
-        const source = Buffer.from(await res.arrayBuffer());
-        const meta = await sharp(source).metadata();
+      const path = `covers/${game.id}.webp`;
+      const file = join(COVERS_DIR, `${game.id}.webp`);
+      // A cover saved by an earlier --files-only run is reused, not refetched
+      let webp: Buffer | undefined = existsSync(file) && !flags.has("--replace-covers") ? readFileSync(file) : undefined;
+      let size = "";
+      if (!webp) {
+        const res = await fetch(imageUrl);
+        if (res.ok) {
+          const source = Buffer.from(await res.arrayBuffer());
+          const meta = await sharp(source).metadata();
+          size = `${meta.width}×${meta.height} `;
+          // 1024px is plenty for the zoomed-in box; the shelf downsizes further
+          webp = await sharp(source).resize(1024, 1024, { fit: "inside", withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
+          if (!dryRun) writeFileSync(file, webp);
+        } else {
+          notes.push(`cover download failed (${res.status})`);
+        }
+      }
+      if (webp) {
+        const meta = await sharp(webp).metadata();
         const aspect = meta.width && meta.height ? meta.width / meta.height : 1;
         orientation = aspect > 1.1 ? "landscape" : aspect < 0.9 ? "portrait" : undefined;
-        // 1024px is plenty for the zoomed-in box; the shelf downsizes further
-        const webp = await sharp(source).resize(1024, 1024, { fit: "inside", withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
-        const path = `covers/${game.id}.webp`;
-        notes.push(`cover ${meta.width}×${meta.height} → ${path} (${Math.round(webp.length / 1024)} KB)`);
-        if (!dryRun) {
-          const token = randomUUID();
-          await bucket.file(path).save(webp, {
-            contentType: "image/webp",
-            metadata: {
-              cacheControl: "public, max-age=31536000",
-              metadata: { firebaseStorageDownloadTokens: token, source: `bgg:${m.bggId}` },
-            },
-          });
-          updates.coverArt = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(path)}?alt=media&token=${token}`;
-        }
-      } else {
-        notes.push(`cover download failed (${res.status})`);
+        notes.push(`cover ${size}→ public/${path} (${Math.round(webp.length / 1024)} KB)`);
+        updates.coverArt = `/${path}`;
       }
     } else if (!imageUrl) {
       notes.push("no BGG image");
@@ -310,23 +318,22 @@ async function apply(flags: Set<string>) {
     }
 
     console.log(`- ${m.title} (#${m.bggId}): ${notes.join("; ")}`);
-    if (!dryRun) await db.ref(`games/${game.id}`).update(updates);
+    if (!dryRun && !filesOnly) await db.ref(`games/${game.id}`).update(updates);
   }
-  console.log(dryRun ? "\nDry run: nothing was written." : "\nDone.");
-}
-
-// Browsers need CORS headers to use Storage images as WebGL textures
-async function cors() {
-  const { bucket } = firebase();
-  await bucket.setCorsConfiguration([{ origin: ["*"], method: ["GET", "HEAD"], maxAgeSeconds: 3600 }]);
-  console.log(`CORS set on ${bucket.name}: GET/HEAD from any origin.`);
+  console.log(
+    dryRun
+      ? "\nDry run: nothing was written."
+      : filesOnly
+        ? `\nCovers saved to ${COVERS_DIR}. Deploy them, then run apply without --files-only.`
+        : "\nDone."
+  );
 }
 
 const [command, ...rest] = process.argv.slice(2);
 const flags = new Set(rest);
-const commands: Record<string, () => Promise<void>> = { match, apply: () => apply(flags), cors };
+const commands: Record<string, () => Promise<void>> = { match, apply: () => apply(flags) };
 if (!command || !commands[command]) {
-  console.log("Usage: npm run bgg -- <match|apply|cors> [--dry-run] [--replace-covers] [--replace-dims]");
+  console.log("Usage: npm run bgg -- <match|apply> [--dry-run] [--files-only] [--replace-covers] [--replace-dims]");
   process.exit(command ? 1 : 0);
 }
 commands[command]().then(
