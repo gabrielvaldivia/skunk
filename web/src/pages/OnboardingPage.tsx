@@ -23,12 +23,15 @@ export function OnboardingPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoData, setPhotoData] = useState<string | null>(null); // base64 without data: prefix
 
-  // Prefill name from Google account
+  // Prefill name from Google account, once: the player record updates again
+  // (e.g. when the Google photo lands) and mustn't wipe what's been typed
+  const prefilled = useRef(false);
   useEffect(() => {
-    if (user?.displayName) {
-      setName(user.displayName);
-    } else if (player?.name) {
-      setName(player.name);
+    if (prefilled.current) return;
+    const initial = user?.displayName || player?.name;
+    if (initial) {
+      setName(initial);
+      prefilled.current = true;
     }
   }, [user, player]);
 
