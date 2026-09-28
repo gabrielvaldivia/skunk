@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "populate-games": "tsx scripts/populate-games.ts",
     "bgg": "tsx scripts/bgg-backfill.ts",
-    "photos": "tsx scripts/google-photos.ts"
+    "photos": "tsx scripts/google-photos.ts",
+    "shrink-photos": "tsx scripts/shrink-photos.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
