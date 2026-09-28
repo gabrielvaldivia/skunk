@@ -79,6 +79,10 @@
   list-style: none;
 }
 
+.section-title + .game-leaderboard {
+  margin-top: 0.75rem;
+}
+
 .leader-row {
   display: flex;
   align-items: center;
@@ -168,16 +172,9 @@
 }
 
 .leader-stats {
-  display: flex;
-  gap: 0.375rem;
   font-size: 0.8125rem;
   color: hsl(var(--muted-foreground));
   font-variant-numeric: tabular-nums;
-}
-
-.leader-rate::before {
-  content: "·";
-  margin-right: 0.375rem;
 }
 
 .leader-name a {

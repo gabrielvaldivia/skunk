@@ -156,24 +156,16 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
   // Rank everyone who has won; players tied on wins share one row and rank
   // (1, 2, 2, 4). Rows fill until 10 people are shown, then your row joins
   // at the bottom when you're further down.
-  const playedCounts = new Map<string, number>();
-  for (const match of gameMatches) {
-    for (const pid of match.playerIDs) {
-      playedCounts.set(pid, (playedCounts.get(pid) || 0) + 1);
-    }
-  }
   const ranked: LeaderboardEntry[] = [];
   let rankedPeople = 0;
   for (const [id, wins] of Array.from(winCounts.entries()).sort((a, b) => b[1] - a[1])) {
     const found = players.find((p) => p.id === id);
     if (!found) continue;
-    const played = playedCounts.get(id) || wins;
     const previous = ranked[ranked.length - 1];
     if (previous?.wins === wins) {
       previous.players.push(found);
-      previous.played += played;
     } else {
-      ranked.push({ players: [found], rank: rankedPeople + 1, wins, played });
+      ranked.push({ players: [found], rank: rankedPeople + 1, wins });
     }
     rankedPeople++;
   }
@@ -265,6 +257,7 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
           )}
         </div>
 
+        {leaders.length > 0 && <h2 className="section-title">Leaderboard</h2>}
         {leaders.length > 0 && (
           <ol className="game-leaderboard">
             {leaders.map((entry) => (
@@ -329,8 +322,6 @@ interface LeaderboardEntry {
   players: Player[];
   rank: number;
   wins: number;
-  /** Matches of this game the tied players played, together */
-  played: number;
 }
 
 const MEDALS = { 1: "gold", 2: "silver", 3: "bronze" } as const;
@@ -347,9 +338,8 @@ function LeaderRow({
   share: number;
   youId?: string;
 }) {
-  const { players, rank, wins, played } = entry;
+  const { players, rank, wins } = entry;
   const medal = MEDALS[rank as 1 | 2 | 3] ?? "plain";
-  const winRate = Math.round((wins / Math.max(played, 1)) * 100);
   const nameOf = (p: Player) =>
     p.id === youId ? "You" : players.length > 1 ? p.name.trim().split(" ")[0] || p.name : p.name;
   const pile = players.slice(0, PILE_MAX);
@@ -372,7 +362,6 @@ function LeaderRow({
             </span>
             <span className="leader-stats">
               {wins} {wins === 1 ? "win" : "wins"}
-              <span className="leader-rate">{winRate}%</span>
             </span>
           </span>
           <span className="leader-pile">
