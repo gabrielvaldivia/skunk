@@ -15,6 +15,12 @@
   padding: 0;
 }
 
+/* The panel's close sits top-left, like its other pages' */
+.sign-in-container.in-panel .sign-in-close-button {
+  right: auto;
+  left: var(--page-gutter);
+}
+
 /* Pinned to the screen corner (not the narrow column), where other headers put their buttons */
 .sign-in-close-button {
   position: fixed;

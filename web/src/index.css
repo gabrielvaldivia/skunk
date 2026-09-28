@@ -167,6 +167,19 @@
   .nav-bar-no-back:has(.nav-bar-action:empty) {
     grid-template-columns: 1fr;
   }
+  /* In a desktop panel: close (and back) | title | action, title centred
+     between sides of any width */
+  .nav-bar-panel {
+    grid-template-columns: 1fr minmax(0, auto) 1fr;
+  }
+  /* A control for a title (e.g. a game picker) takes the space between, unclipped
+     so its dropdown can open */
+  .nav-bar-panel-wide {
+    grid-template-columns: auto 1fr auto;
+  }
+  .nav-bar-panel-wide .nav-bar-title {
+    overflow: visible;
+  }
   .nav-bar-action {
     min-width: 2.5rem;
     display: flex;
