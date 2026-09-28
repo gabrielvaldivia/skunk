@@ -17,9 +17,7 @@ export function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-// "Brian Lovin" → "Brian L."; single names stay as they are
-export function getShortName(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length < 2) return name.trim();
-  return `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
+// "Brian Lovin" → "Brian"
+export function getFirstName(name: string): string {
+  return name.trim().split(/\s+/)[0] || name;
 }

@@ -29,12 +29,12 @@ import {
 import './MatchRow.css';
 import { Avatar } from "./Avatar";
 import { MoreIcon } from "./icons";
-import { getShortName } from '../lib/player';
+import { getFirstName } from '../lib/player';
 
 interface MatchRowProps {
   match: Match;
   hideGameTitle?: boolean;
-  /** Show players as first name and last initial, e.g. "Brian L." */
+  /** Show players by first name only, e.g. "Brian" */
   shortNames?: boolean;
   onDelete?: () => void;
 }
@@ -42,7 +42,7 @@ interface MatchRowProps {
 export function MatchRow({ match, hideGameTitle = false, shortNames = false, onDelete }: MatchRowProps) {
   const { players } = usePlayers();
   const nameOf = (player: { name: string }) =>
-    shortNames ? getShortName(player.name) : player.name;
+    shortNames ? getFirstName(player.name) : player.name;
   const { games } = useGames();
   const { player: currentPlayer } = useAuth();
   const { removeMatch, editMatch } = useMatches();
