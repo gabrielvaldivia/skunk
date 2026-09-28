@@ -700,7 +700,8 @@ export function GameShelf({
     <DragContext.Provider value={dragged}>
       <Canvas
         frameloop="demand"
-        shadows="soft"
+        // PCF: three.js dropped PCFSoft ("soft") and falls back to this anyway
+        shadows="percentage"
         // Phones have 3× screens; 1.5× looks nearly the same at half the pixels
         dpr={IS_TOUCH ? [1, 1.5] : [1, 1.75]}
         camera={{ fov: 30, near: 0.05, far: 100, position: [0, 0, 10] }}
