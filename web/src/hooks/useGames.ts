@@ -39,7 +39,6 @@ export function useGames() {
     games,
     isLoading,
     error,
-    fetchGames: refreshGames,
     addGame,
     editGame,
     removeGame

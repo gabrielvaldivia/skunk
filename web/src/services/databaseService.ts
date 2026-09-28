@@ -88,27 +88,6 @@ export async function deleteGame(gameId: string): Promise<void> {
 
 // ==================== Players ====================
 
-export async function getPlayers(): Promise<Player[]> {
-  const playersRef = ref(database, PLAYERS_PATH);
-  const snapshot = await get(playersRef);
-  
-  if (!snapshot.exists()) {
-    return [];
-  }
-  
-  const playersData = snapshot.val();
-  const players: Player[] = [];
-  
-  for (const playerId in playersData) {
-    players.push({
-      id: playerId,
-      ...playersData[playerId]
-    });
-  }
-  
-  return players;
-}
-
 /** Live list of every player, so ones added on another phone (e.g. mid-session) show up by name */
 export function subscribeToPlayers(onChange: (players: Player[]) => void, onError?: (error: Error) => void): Unsubscribe {
   return onValue(ref(database, PLAYERS_PATH), (snapshot) => onChange(snapshotToList<Player>(snapshot)), onError);

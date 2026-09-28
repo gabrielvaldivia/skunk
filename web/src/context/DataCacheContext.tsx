@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
-import { getGames, getPlayers, subscribeToPlayers, updateGame } from '../services/databaseService';
+import { getGames, subscribeToPlayers, updateGame } from '../services/databaseService';
 import { useAuth } from './AuthContext';
 import { isAdminEmail } from '../lib/admin';
 import { COVER_ENHANCEMENT_VERSION } from '../lib/coverVersion';
@@ -14,7 +14,6 @@ interface DataCacheContextType {
   gamesError: Error | null;
   playersError: Error | null;
   refreshGames: () => Promise<void>;
-  refreshPlayers: () => Promise<void>;
 }
 
 const DataCacheContext = createContext<DataCacheContextType | undefined>(undefined);
@@ -29,9 +28,10 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
   const [playersError, setPlayersError] = useState<Error | null>(null);
   const migratedCoversForUser = useRef<string | null>(null);
 
+  // Only the first load shows as loading; later refreshes (after an add or
+  // edit) keep the current games on screen until the new list arrives
   const refreshGames = useCallback(async () => {
     try {
-      setGamesLoading(true);
       setGamesError(null);
       const fetchedGames = await getGames();
       setGames(fetchedGames);
@@ -41,21 +41,6 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
       console.error('Error fetching games:', error);
     } finally {
       setGamesLoading(false);
-    }
-  }, []);
-
-  const refreshPlayers = useCallback(async () => {
-    try {
-      setPlayersLoading(true);
-      setPlayersError(null);
-      const fetchedPlayers = await getPlayers();
-      setPlayers(fetchedPlayers);
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch players');
-      setPlayersError(error);
-      console.error('Error fetching players:', error);
-    } finally {
-      setPlayersLoading(false);
     }
   }, []);
 
@@ -123,7 +108,6 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
     gamesError,
     playersError,
     refreshGames,
-    refreshPlayers,
   };
 
   return <DataCacheContext.Provider value={value}>{children}</DataCacheContext.Provider>;

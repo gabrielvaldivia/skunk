@@ -1,47 +1,33 @@
 import { useCallback } from 'react';
 import type { Player } from '../models/Player';
-import { createPlayer, updatePlayer, deletePlayer } from '../services/databaseService';
+import { createPlayer, deletePlayer } from '../services/databaseService';
 import { useDataCache } from '../context/DataCacheContext';
 
+// The players list is live, so adds and deletes show up without a refetch
 export function usePlayers() {
-  const { players, playersLoading: isLoading, playersError: error, refreshPlayers } = useDataCache();
+  const { players, playersLoading: isLoading, playersError: error } = useDataCache();
 
   const addPlayer = useCallback(async (player: Omit<Player, 'id'>) => {
     try {
-      const newPlayer = await createPlayer(player);
-      await refreshPlayers();
-      return newPlayer;
+      return await createPlayer(player);
     } catch (err) {
       throw err instanceof Error ? err : new Error('Failed to create player');
     }
-  }, [refreshPlayers]);
-
-  const editPlayer = useCallback(async (playerId: string, updates: Partial<Player>) => {
-    try {
-      await updatePlayer(playerId, updates);
-      await refreshPlayers();
-    } catch (err) {
-      throw err instanceof Error ? err : new Error('Failed to update player');
-    }
-  }, [refreshPlayers]);
+  }, []);
 
   const removePlayer = useCallback(async (playerId: string) => {
     try {
       await deletePlayer(playerId);
-      await refreshPlayers();
     } catch (err) {
       throw err instanceof Error ? err : new Error('Failed to delete player');
     }
-  }, [refreshPlayers]);
+  }, []);
 
   return {
     players,
     isLoading,
     error,
-    fetchPlayers: refreshPlayers,
     addPlayer,
-    editPlayer,
     removePlayer
   };
 }
-
