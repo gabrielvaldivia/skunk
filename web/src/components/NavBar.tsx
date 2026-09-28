@@ -1,4 +1,4 @@
-import { isValidElement, useEffect, useState, type ReactNode, type RefObject } from "react";
+import { isValidElement, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { usePanelFrame } from "../context/PanelContext";
@@ -19,8 +19,8 @@ interface NavBarProps {
   /** Pin the action to the screen's top-right corner (e.g. over a full-screen hero) */
   actionInCorner?: boolean;
   /**
-   * In a desktop panel: a name shown beside the close/back button once
-   * `scrollAnchor` (the page's own heading) scrolls up under the bar
+   * A name shown beside the close/back button once `scrollAnchor` (the
+   * page's own heading) scrolls up under the bar
    */
   scrollTitle?: string;
   scrollAnchor?: RefObject<HTMLElement | null>;
@@ -43,19 +43,30 @@ export function NavBar({
   const frame = usePanelFrame();
   const hideBack = frame ? !frame.canGoBack : hideBackProp;
   const closeInCorner = !frame && closeInCornerProp;
-  const showsScrollTitle = !!frame && !!scrollTitle && !!scrollAnchor;
+  const showsScrollTitle = !!scrollTitle && !!scrollAnchor;
+  // The bar (or, with no bar, the strip that stands in for it)
+  const bar = useRef<HTMLDivElement>(null);
   const [pastHeading, setPastHeading] = useState(false);
   useEffect(() => {
     const el = scrollAnchor?.current;
     if (!showsScrollTitle || !el) return;
-    // The panel sits 1.25rem down and its bar is about 4rem tall; the heading
-    // counts as gone once it's under the bar
-    const observer = new IntersectionObserver(([entry]) => setPastHeading(!entry.isIntersecting && entry.boundingClientRect.top < 100), {
-      rootMargin: "-84px 0px 0px 0px",
-    });
+    // The heading counts as gone once it's scrolled up under the bar
+    const barBottom = Math.round(bar.current?.getBoundingClientRect().bottom ?? 64);
+    const observer = new IntersectionObserver(
+      ([entry]) => setPastHeading(!entry.isIntersecting && entry.boundingClientRect.top < barBottom + 1),
+      { rootMargin: `-${barBottom}px 0px 0px 0px` }
+    );
     observer.observe(el);
     return () => observer.disconnect();
   }, [showsScrollTitle, scrollAnchor]);
+  const scrollTitleText = showsScrollTitle && (
+    <span
+      className={`min-w-0 truncate text-base font-semibold transition-opacity duration-200 ${pastHeading ? "opacity-100" : "opacity-0"}`}
+      aria-hidden={!pastHeading}
+    >
+      {scrollTitle}
+    </span>
+  );
   // Opened directly (no in-app history to go back to): fall back to the home tab
   const goBack =
     (frame?.back ?? onBack) || (() => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate("/")));
@@ -70,11 +81,44 @@ export function NavBar({
     );
 
   // Nothing left in the bar itself (e.g. a full-screen game on phones): skip
-  // it rather than leave an empty row
-  if (hideBack && !title && (actionInCorner || !action) && !closeInCorner && !frame) return <>{cornerAction}</>;
+  // it rather than leave an empty row. A scroll title then gets a strip of
+  // its own across the top, under the corner buttons, once it's needed
+  if (hideBack && !title && (actionInCorner || !action) && !closeInCorner && !frame) {
+    return (
+      <>
+        {cornerAction}
+        {showsScrollTitle &&
+          createPortal(
+            <div
+              ref={bar}
+              className={`pointer-events-none fixed inset-x-0 top-0 z-[65] flex h-[calc(var(--safe-top)+4.5rem)] items-center bg-background/80 pl-[calc(var(--page-gutter)+3.75rem)] pr-[calc(var(--page-gutter)+7rem)] pt-[var(--safe-top)] backdrop-blur-xl backdrop-saturate-150 transition-opacity duration-200 ${pastHeading ? "opacity-100" : "opacity-0"}`}
+              aria-hidden={!pastHeading}
+            >
+              <span className="min-w-0 truncate text-base font-semibold">{scrollTitle}</span>
+            </div>,
+            document.body
+          )}
+      </>
+    );
+  }
+
+  const backButton = (
+    <Button variant="secondary" size="icon" onClick={goBack} aria-label="Go back">
+      <BackIcon className="!size-5" />
+    </Button>
+  );
 
   return (
-    <div className={frame ? `page-header nav-bar nav-bar-panel${isValidElement(title) ? " nav-bar-panel-wide" : ""}` : hideBack ? "page-header nav-bar nav-bar-no-back" : "page-header nav-bar"}>
+    <div
+      ref={bar}
+      className={
+        frame || (showsScrollTitle && !hideBack && !closeInCorner)
+          ? `page-header nav-bar nav-bar-panel${isValidElement(title) ? " nav-bar-panel-wide" : ""}`
+          : hideBack
+            ? "page-header nav-bar nav-bar-no-back"
+            : "page-header nav-bar"
+      }
+    >
       {frame ? (
         <div className="flex min-w-0 items-center gap-3">
           {hideBack ? (
@@ -82,31 +126,20 @@ export function NavBar({
               <CloseIcon className="!size-5" />
             </Button>
           ) : (
-            <Button variant="secondary" size="icon" onClick={goBack} aria-label="Go back">
-              <BackIcon className="!size-5" />
-            </Button>
+            backButton
           )}
-          {showsScrollTitle && (
-            <span
-              className={`truncate text-base font-semibold transition-opacity duration-200 ${pastHeading ? "opacity-100" : "opacity-0"}`}
-              aria-hidden={!pastHeading}
-            >
-              {scrollTitle}
-            </span>
-          )}
+          {scrollTitleText}
         </div>
       ) : hideBack ? null : closeInCorner ? (
         // Keeps the title centred under the corner close button
         <span className="size-10 shrink-0" aria-hidden />
+      ) : showsScrollTitle ? (
+        <div className="flex min-w-0 items-center gap-3">
+          {backButton}
+          {scrollTitleText}
+        </div>
       ) : (
-        <Button
-          variant="secondary"
-          size="icon"
-          onClick={goBack}
-          aria-label="Go back"
-        >
-          <BackIcon className="!size-5" />
-        </Button>
+        backButton
       )}
       <h1 className="nav-bar-title">{title}</h1>
       <div className="nav-bar-action gap-2">{!actionInCorner && action}</div>

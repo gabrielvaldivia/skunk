@@ -284,11 +284,8 @@ export function ShelfPage() {
           currentSession && (
             <MiniSessionSheet
               compact
-              bottom={
-                isDesktop
-                  ? "calc(var(--safe-bottom) + 1.25rem + 3rem + 0.5rem)"
-                  : "calc(var(--safe-bottom) + 1.25rem)"
-              }
+              // Desktop moves search to the top right, leaving the bottom to the session
+              bottom="calc(var(--safe-bottom) + 1.25rem)"
             />
           )
         }

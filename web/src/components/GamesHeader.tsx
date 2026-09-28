@@ -19,7 +19,7 @@ interface GamesHeaderProps {
   onAdd: () => void;
   /** Open Activity in place (desktop panel); otherwise the button links to the page */
   onActivity?: () => void;
-  /** Floats bottom-middle, e.g. your live session: between Activity and search on phones, above search on desktop */
+  /** Floats bottom-middle, e.g. your live session: between Activity and search on phones; on desktop it takes the bottom and search moves top-right */
   bottomCenter?: React.ReactNode;
 }
 
@@ -134,15 +134,26 @@ export function GamesHeader({
       )}
 
       {/* Phones: a round button bottom-right that grows leftward to full width.
-          Desktop: a small "Search" pill bottom-middle that grows when focused */}
+          Desktop: a small "Search" pill bottom-middle that grows when focused,
+          or, when the live session has the bottom, a round button top-right
+          beside Activity that grows leftward */}
       <label
         className={cn(
-          "fixed bottom-[calc(var(--safe-bottom)+1.25rem+var(--kb,0px))] right-[var(--page-gutter)] flex h-12 cursor-text items-center overflow-hidden rounded-full transition-[width] duration-300 ease-out md:left-1/2 md:right-auto md:-translate-x-1/2",
+          "fixed bottom-[calc(var(--safe-bottom)+1.25rem+var(--kb,0px))] right-[var(--page-gutter)] flex h-12 cursor-text items-center overflow-hidden rounded-full transition-[width,opacity] duration-300 ease-out",
+          bottomCenter
+            ? "md:bottom-auto md:right-[calc(var(--page-gutter)+7rem)] md:top-[calc(var(--safe-top)+0.75rem)]"
+            : "md:left-1/2 md:right-auto md:-translate-x-1/2",
           PILL,
           open
-            ? "w-[calc(100%-2*var(--page-gutter))] md:w-[min(28rem,calc(100%-2*var(--page-gutter)))]"
-            : "w-12 md:w-[8.5rem]",
-          !hidden && "pointer-events-auto"
+            ? bottomCenter
+              ? "w-[calc(100%-2*var(--page-gutter))] md:w-[20rem]"
+              : "w-[calc(100%-2*var(--page-gutter))] md:w-[min(28rem,calc(100%-2*var(--page-gutter)))]"
+            : bottomCenter
+              ? "w-12"
+              : "w-12 md:w-[8.5rem]",
+          !hidden && "pointer-events-auto",
+          // Top-right on desktop, so it steps aside for a dialog there too
+          bottomCenter && cornerHidden && "md:pointer-events-none md:opacity-0"
         )}
       >
         <span className="flex size-12 shrink-0 items-center justify-center text-muted-foreground" aria-hidden>
@@ -166,8 +177,8 @@ export function GamesHeader({
           tabIndex={hidden ? -1 : undefined}
           className={cn(
             "h-full min-w-0 flex-1 bg-transparent pr-2 text-base outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden",
-            // Collapsed on phones it's just the icon
-            !open && "max-md:opacity-0"
+            // Collapsed on phones (or top-right on desktop) it's just the icon
+            !open && (bottomCenter ? "opacity-0" : "max-md:opacity-0")
           )}
         />
         {query && (
