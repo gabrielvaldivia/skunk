@@ -115,6 +115,15 @@
   );
 }
 
+/* Full-width pill only: hints that the pill opens the session */
+.mini-session-chevron {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin: 0 4px 0 -4px;
+  color: hsl(var(--muted-foreground));
+}
+
 .mini-session-avatar-link {
   display: flex;
   padding: 0;

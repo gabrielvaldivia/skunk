@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSession } from "../context/SessionContext";
 import { useDataCache } from "../context/DataCacheContext";
 import { Avatar } from "./Avatar";
+import { ChevronRightIcon } from "./icons";
 import "./MiniSessionSheet.css";
 
 function formatRelativeTime(timestamp: number): string {
@@ -124,6 +125,7 @@ export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact
           <span className="facepile-more">+{participantList.length - MAX_FACES}</span>
         )}
       </div>
+      {!compact && <ChevronRightIcon size={18} className="mini-session-chevron" aria-hidden />}
     </div>
   );
 }

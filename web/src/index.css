@@ -193,13 +193,23 @@
     display: flex;
     flex-direction: column;
   }
-  .matches-list > *,
   .list > * {
     border-bottom: 1px solid hsl(var(--border));
   }
-  .matches-list > *:last-child,
   .list > *:last-child {
     border-bottom: none;
+  }
+  /* Match hairlines start at the text, clear of the 40px avatar and its gap */
+  .matches-list > * {
+    position: relative;
+  }
+  .matches-list > *:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: calc(40px + 0.75rem);
+    right: 0;
+    bottom: 0;
+    border-bottom: 1px solid hsl(var(--border));
   }
 
   /* Tappable row feedback */
