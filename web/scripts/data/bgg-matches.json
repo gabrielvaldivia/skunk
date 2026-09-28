@@ -4017,46 +4017,6 @@
     ]
   },
   {
-    "gameId": "-P2Q5Gp048bdcVkm7HF7",
-    "title": "Organ attack",
-    "bggId": 201406,
-    "bggName": "OrganATTACK!",
-    "year": 2016,
-    "confidence": "check",
-    "candidates": [
-      {
-        "id": 201406,
-        "name": "OrganATTACK!",
-        "year": 2016,
-        "ratings": 1381
-      },
-      {
-        "id": 162250,
-        "name": "Star Trek: Attack Wing \u2013 The Collective Month 1 Organized Play Borg Cube and tokens",
-        "year": 2014,
-        "ratings": 9
-      },
-      {
-        "id": 298414,
-        "name": "Village Attacks: Convention Exclusive Organised Play Pack",
-        "year": 2019,
-        "ratings": 9
-      },
-      {
-        "id": 163497,
-        "name": "Star Trek: Attack Wing \u2013 The Collective Month 2 Organized Play Borg Cube and tokens",
-        "year": 2014,
-        "ratings": 8
-      },
-      {
-        "id": 184001,
-        "name": "Star Trek: Attack Wing \u2013 2015-2016 Organized Play Reinforcement Booster Brick",
-        "year": 2015,
-        "ratings": 7
-      }
-    ]
-  },
-  {
     "gameId": "-P2VAjy4XfjO7nSSiNfF",
     "title": "Loners",
     "bggId": 464200,
