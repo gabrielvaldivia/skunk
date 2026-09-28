@@ -18,7 +18,14 @@ export function useBoxSnapshot(game: Game | undefined) {
     let alive = true;
     let pending = snapshots.get(key);
     if (!pending) {
-      pending = import("./boxSnapshotRender").then((m) => m.renderSnapshot(game));
+      pending = import("./boxSnapshotRender")
+        .then((m) => m.renderSnapshot(game))
+        .catch(() => null)
+        .then((url) => {
+          // Don't remember a failure, so the next mount tries again
+          if (!url) snapshots.delete(key);
+          return url;
+        });
       snapshots.set(key, pending);
     }
     pending.then((url) => {

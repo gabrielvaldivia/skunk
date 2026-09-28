@@ -18,14 +18,28 @@ function hashHue(title: string) {
   return h % 360;
 }
 
+// A request that never finishes would hold its queue slot forever (phones run
+// one at a time), so give up and use the generated cover, as for a broken URL
+const IMAGE_TIMEOUT_MS = 15000;
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    const timer = setTimeout(() => {
+      img.src = "";
+      reject(new Error("Cover timed out"));
+    }, IMAGE_TIMEOUT_MS);
     // Required for remote hosts that send CORS headers; harmless for data URLs
     if (!src.startsWith("data:")) img.crossOrigin = "anonymous";
     img.decoding = "async";
-    img.onload = () => img.decode().then(() => resolve(img), () => resolve(img));
-    img.onerror = reject;
+    img.onload = () => {
+      clearTimeout(timer);
+      img.decode().then(() => resolve(img), () => resolve(img));
+    };
+    img.onerror = (e) => {
+      clearTimeout(timer);
+      reject(e);
+    };
     img.src = src;
   });
 }
@@ -269,13 +283,21 @@ export function requestBoxArt(
   coverUrl: string | undefined,
   box: ShelfBox,
   kind: TraditionalKind | undefined,
-  onReady: (art: BoxArt) => void
+  onReady: (art: BoxArt) => void,
+  onError?: (error: unknown) => void
 ) {
   let art: BoxArt | null = null;
   const job: Job = {
     cancelled: false,
     run: async () => {
-      const built = await buildBoxArt(title, coverUrl, box, kind);
+      let built: BoxArt;
+      try {
+        built = await buildBoxArt(title, coverUrl, box, kind);
+      } catch (error) {
+        // e.g. no 2D canvas under memory pressure; the box keeps its plain body
+        if (!job.cancelled) onError?.(error);
+        return;
+      }
       if (job.cancelled) {
         built.cover.dispose();
         return;

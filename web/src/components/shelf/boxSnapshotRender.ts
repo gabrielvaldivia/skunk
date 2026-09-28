@@ -49,9 +49,12 @@ export async function renderSnapshot(game: Game): Promise<string | null> {
   const aspect = game.coverArt ? await readCoverAspect(game.coverArt) : undefined;
   const box = shelfBoxFor(game, aspect);
   const { width, height, depth } = box;
-  const art = await new Promise<Parameters<typeof boxMaterials>[0]>((resolve) => {
-    requestBoxArt(game.title, game.coverArt, { width, height, depth }, traditionalKind(game.title), resolve);
+  const art = await new Promise<Parameters<typeof boxMaterials>[0] | undefined>((resolve) => {
+    requestBoxArt(game.title, game.coverArt, { width, height, depth }, traditionalKind(game.title), resolve, () =>
+      resolve(undefined)
+    );
   });
+  if (!art) return null;
   try {
     const { renderer, scene, camera, group } = getStage();
     const materials = boxMaterials(art);
