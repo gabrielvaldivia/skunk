@@ -30,6 +30,7 @@ import './MatchRow.css';
 import { Avatar } from "./Avatar";
 import { MoreIcon } from "./icons";
 import { getFirstName } from '../lib/player';
+import { useBoxSnapshot } from './shelf/boxSnapshot';
 
 interface MatchRowProps {
   match: Match;
@@ -57,6 +58,7 @@ export function MatchRow({ match, hideGameTitle = false, shortNames = false, sho
     if (match.game) return match.game;
     return games.find(g => g.id === match.gameID);
   };
+  const boxSnapshot = useBoxSnapshot(showGameBox ? getGame() : undefined);
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -151,11 +153,7 @@ export function MatchRow({ match, hideGameTitle = false, shortNames = false, sho
           className="match-game-box"
           aria-label={`View ${game.title}`}
         >
-          {game.coverArt ? (
-            <img src={game.coverArt} alt="" />
-          ) : (
-            <span>{game.title.charAt(0).toUpperCase()}</span>
-          )}
+          {boxSnapshot && <img src={boxSnapshot} alt="" />}
         </AppLink>
       </span>
     );

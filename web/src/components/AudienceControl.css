@@ -1,7 +1,7 @@
 .audience-control {
   display: flex;
-  width: fit-content;
-  margin: 0 auto 1.25rem;
+  width: 100%;
+  margin: 0 0 1.25rem;
   padding: 0.25rem;
   border: 1px solid hsl(var(--border) / 0.7);
   border-radius: 9999px;
@@ -9,7 +9,7 @@
 }
 
 .audience-control-option {
-  min-width: 5.5rem;
+  flex: 1;
   height: 2.25rem;
   padding: 0 1rem;
   border: 0;

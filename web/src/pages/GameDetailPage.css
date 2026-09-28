@@ -61,12 +61,7 @@
 }
 
 .game-hero-audience .audience-control {
-  width: 100%;
   margin-bottom: 0;
-}
-
-.game-hero-audience .audience-control-option {
-  flex: 1;
 }
 
 /* Leaderboard: a gem with the rank, then a pill with the player */
