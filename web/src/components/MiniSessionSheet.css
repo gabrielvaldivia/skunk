@@ -1,5 +1,5 @@
-/* A 48px pill: 32px faces with 8px all round, and the live dot 8px from
-   the left edge to match */
+/* A pill of 32px faces with 8px all round. The live dot sits where a face
+   would, centred in the pill's rounded end, so it's evenly inset from the curve */
 .mini-session-sheet {
   --face: 32px;
   --pad: 8px;
@@ -48,6 +48,7 @@
   position: relative;
   width: 8px;
   height: 8px;
+  margin-left: calc((var(--face) - 8px) / 2);
   flex-shrink: 0;
   border-radius: 9999px;
   background: #22c55e;
