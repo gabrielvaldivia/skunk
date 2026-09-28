@@ -56,6 +56,12 @@ export async function renderSnapshot(game: Game): Promise<string | null> {
   });
   if (!art) return null;
   try {
+    // A lost context draws blank images; start a fresh renderer next time
+    if (stage?.renderer.getContext().isContextLost()) {
+      stage.renderer.dispose();
+      stage = null;
+      return null;
+    }
     const { renderer, scene, camera, group } = getStage();
     const materials = boxMaterials(art);
     const scale = 1 / Math.max(width, height);
