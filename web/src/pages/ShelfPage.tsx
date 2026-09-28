@@ -37,8 +37,11 @@ function useViewportHeight() {
   return h;
 }
 
-// three.js is ~270 KB gzipped, so it only loads when someone opens the shelf
-const GameShelf = lazy(() => import("../components/shelf/GameShelf").then((m) => ({ default: m.GameShelf })));
+// three.js is ~270 KB gzipped, so it only loads when someone opens the shelf.
+// It starts downloading as soon as this page does, alongside the game data,
+// rather than after the data arrives.
+const loadGameShelf = () => import("../components/shelf/GameShelf");
+const GameShelf = lazy(() => loadGameShelf().then((m) => ({ default: m.GameShelf })));
 
 function useIsDark() {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
@@ -51,6 +54,9 @@ function useIsDark() {
 }
 
 export function ShelfPage() {
+  useEffect(() => {
+    void loadGameShelf();
+  }, []);
   const navigate = useNavigate();
   const location = useLocation();
   const { games, isLoading: gamesLoading, addGame } = useGames();
