@@ -167,7 +167,7 @@
   .nav-bar-no-back:has(.nav-bar-action:empty) {
     grid-template-columns: 1fr;
   }
-  /* In a desktop panel: close (and back) | title | action, title centred
+  /* In a desktop panel: close or back | title | action, title centred
      between sides of any width */
   .nav-bar-panel {
     grid-template-columns: 1fr minmax(0, auto) 1fr;

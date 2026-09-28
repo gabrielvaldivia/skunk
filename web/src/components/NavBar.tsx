@@ -30,8 +30,8 @@ export function NavBar({
   actionInCorner,
 }: NavBarProps) {
   const navigate = useNavigate();
-  // Inside a desktop panel, a close button sits top-left with back (which
-  // walks the panel's own stack) beside it; the first page has no back
+  // Inside a desktop panel, the first page has close top-left; later pages
+  // have back there instead, walking the panel's own stack
   const frame = usePanelFrame();
   const hideBack = frame ? !frame.canGoBack : hideBackProp;
   const closeInCorner = !frame && closeInCornerProp;
@@ -55,11 +55,12 @@ export function NavBar({
   return (
     <div className={frame ? `page-header nav-bar nav-bar-panel${isValidElement(title) ? " nav-bar-panel-wide" : ""}` : hideBack ? "page-header nav-bar nav-bar-no-back" : "page-header nav-bar"}>
       {frame ? (
-        <div className="flex gap-2">
-          <Button variant="secondary" size="icon" onClick={frame.close} aria-label="Close">
-            <CloseIcon className="!size-5" />
-          </Button>
-          {!hideBack && (
+        <div className="flex">
+          {hideBack ? (
+            <Button variant="secondary" size="icon" onClick={frame.close} aria-label="Close">
+              <CloseIcon className="!size-5" />
+            </Button>
+          ) : (
             <Button variant="secondary" size="icon" onClick={goBack} aria-label="Go back">
               <BackIcon className="!size-5" />
             </Button>
