@@ -28,7 +28,6 @@ interface SessionContextType {
   createSession: (gameID?: string) => Promise<Session>;
   joinSession: (code: string) => Promise<void>;
   leaveSession: () => Promise<void>;
-  refreshSession: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -170,32 +169,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [currentSession, player]);
 
-  const handleRefreshSession = useCallback(async (): Promise<void> => {
-    if (!currentSession) {
-      return;
-    }
-
-    try {
-      const session = await getSession(currentSession.id);
-      if (session) {
-        setCurrentSession(session);
-      } else {
-        // Session doesn't exist anymore
-        setCurrentSession(null);
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    } catch (error) {
-      console.error("Error refreshing session:", error);
-    }
-  }, [currentSession]);
-
   const value: SessionContextType = {
     currentSession,
     isLoading,
     createSession: handleCreateSession,
     joinSession: handleJoinSession,
     leaveSession: handleLeaveSession,
-    refreshSession: handleRefreshSession,
   };
 
   return (

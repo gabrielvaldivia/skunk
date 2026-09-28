@@ -16,7 +16,6 @@ import {
   CircleIcon,
   ComputerIcon,
   CrownIcon as CrownGlyph,
-  DicesIcon,
   Location01Icon,
   MoreVerticalIcon,
   MinusSignCircleIcon,
@@ -50,7 +49,6 @@ function makeIcon(icon: IconSvgElement, displayName: string) {
 }
 
 export const ActivityIcon = makeIcon(Activity01Icon, "ActivityIcon");
-export const GamesIcon = makeIcon(DicesIcon, "GamesIcon");
 export const CrownIcon = makeIcon(CrownGlyph, "CrownIcon");
 export const ChevronDownIcon = makeIcon(ArrowDown01Icon, "ChevronDownIcon");
 export const PlayersIcon = makeIcon(UserMultiple02Icon, "PlayersIcon");

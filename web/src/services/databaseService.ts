@@ -47,20 +47,6 @@ export async function getGames(): Promise<Game[]> {
   return games.sort((a, b) => a.title.localeCompare(b.title));
 }
 
-export async function getGame(gameId: string): Promise<Game | null> {
-  const gameRef = ref(database, `${GAMES_PATH}/${gameId}`);
-  const snapshot = await get(gameRef);
-  
-  if (!snapshot.exists()) {
-    return null;
-  }
-  
-  return {
-    id: gameId,
-    ...snapshot.val()
-  };
-}
-
 export async function createGame(game: Omit<Game, 'id'>): Promise<Game> {
   const gamesRef = ref(database, GAMES_PATH);
   const newGameRef = push(gamesRef);
@@ -91,20 +77,6 @@ export async function deleteGame(gameId: string): Promise<void> {
 /** Live list of every player, so ones added on another phone (e.g. mid-session) show up by name */
 export function subscribeToPlayers(onChange: (players: Player[]) => void, onError?: (error: Error) => void): Unsubscribe {
   return onValue(ref(database, PLAYERS_PATH), (snapshot) => onChange(snapshotToList<Player>(snapshot)), onError);
-}
-
-export async function getPlayer(playerId: string): Promise<Player | null> {
-  const playerRef = ref(database, `${PLAYERS_PATH}/${playerId}`);
-  const snapshot = await get(playerRef);
-  
-  if (!snapshot.exists()) {
-    return null;
-  }
-  
-  return {
-    id: playerId,
-    ...snapshot.val()
-  };
 }
 
 export async function getPlayerByGoogleUserID(googleUserID: string): Promise<Player | null> {

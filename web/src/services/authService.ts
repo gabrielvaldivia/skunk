@@ -6,12 +6,6 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
 
-export interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-}
-
 /**
  * Sign in with Google
  */
