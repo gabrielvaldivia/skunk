@@ -193,7 +193,7 @@
 }
 
 .leader-pile-face {
-  display: block;
+  display: flex;
   border-radius: 9999px;
 }
 
