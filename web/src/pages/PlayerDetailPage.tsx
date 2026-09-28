@@ -94,7 +94,21 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
 
   return (
     <div className="player-detail-page">
-      <NavBar />
+      <NavBar
+        action={
+          follow.canFollow && (
+            <Button
+              type="button"
+              variant={follow.following ? "secondary" : "default"}
+              className="player-follow-button rounded-full"
+              disabled={follow.isSaving}
+              onClick={handleFollowToggle}
+            >
+              {follow.isSaving ? "Saving..." : follow.following ? "Unfollow" : "Follow"}
+            </Button>
+          )
+        }
+      />
       <div className="player-hero">
         <Avatar player={player} size={96} />
         <h1 className="player-hero-name">{player.name}</h1>
@@ -105,18 +119,6 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
           </div>
         )}
         {player.bio && <p className="player-bio">{player.bio}</p>}
-        {follow.canFollow && (
-          <Button
-            type="button"
-            size="sm"
-            variant={follow.following ? "secondary" : "default"}
-            className="player-follow-button"
-            disabled={follow.isSaving}
-            onClick={handleFollowToggle}
-          >
-            {follow.isSaving ? "Saving..." : follow.following ? "Unfollow" : "Follow"}
-          </Button>
-        )}
       </div>
 
       <div className="page-content">

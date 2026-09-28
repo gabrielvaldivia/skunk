@@ -140,9 +140,12 @@ export function ShelfPage() {
         canGoBack: false,
         back: () => select(null),
         close: () => select(null),
+        // Opens over the game's own page, so back returns to it
         open: (entry: PanelEntry) => {
+          const gameId = selected?.id;
           select(null);
-          panel.open(entry);
+          panel.open(gameId && gameId !== CARD_DECK_ID ? { type: "game", id: gameId } : entry);
+          if (gameId && gameId !== CARD_DECK_ID) panel.push(entry);
         },
       }
     : null;
