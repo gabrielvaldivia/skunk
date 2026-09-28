@@ -26,7 +26,6 @@ export function SessionPage() {
     currentSession,
     joinSession,
     leaveSession,
-    refreshSession,
     isLoading: sessionContextLoading,
   } = useSession();
   const { player, isAuthenticated, refreshPlayer } = useAuth();
@@ -67,8 +66,9 @@ export function SessionPage() {
       setIsJoining(true);
       setError(null);
       try {
+        // joinSession stores the fresh session and the live listener keeps it
+        // current; refreshing here would re-read the session we just left
         await joinSession(code);
-        await refreshSession();
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to join session";
@@ -87,7 +87,6 @@ export function SessionPage() {
     sessionContextLoading,
     currentSession?.code,
     joinSession,
-    refreshSession,
   ]);
 
   // Update session participants when session or players change
