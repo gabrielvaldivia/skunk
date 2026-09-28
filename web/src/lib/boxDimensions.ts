@@ -98,15 +98,25 @@ export type ShelfBox = {
   depth: number;
 };
 
+// A tall cover on a box with no stored orientation means the box stands
+// portrait. Near-square covers (often photos of the whole box) don't say
+// either way, so those stay landscape.
+function coverLooksPortrait(coverAspect: number, short: number, long: number) {
+  const toPortrait = Math.abs(Math.log(coverAspect / (short / long)));
+  const toLandscape = Math.abs(Math.log(coverAspect / (long / short)));
+  return toLandscape - toPortrait > 0.3;
+}
+
 // BGG's width/length order is inconsistent, so normalize: the smallest side is
-// the thickness, and the cover is landscape unless marked portrait (most
-// rectangular board game boxes are displayed landscape).
+// the thickness, and the cover is landscape unless marked portrait or the
+// cover art is clearly tall (most rectangular boxes are displayed landscape).
 export function shelfBoxFor(game: Game, coverAspect?: number): ShelfBox {
   const dims = resolveBoxDims(game, coverAspect);
   const sides = [dims.width, dims.length, dims.depth].filter((n) => n > 0).sort((x, y) => x - y);
   if (sides.length < 3) return shelfBoxFor({ ...game, boxDims: DEFAULT_BOX });
   const [depth, short, long] = sides;
-  return dims.orientation === "portrait"
-    ? { width: short, height: long, depth }
-    : { width: long, height: short, depth };
+  const portrait = dims.orientation
+    ? dims.orientation === "portrait"
+    : coverAspect !== undefined && coverLooksPortrait(coverAspect, short, long);
+  return portrait ? { width: short, height: long, depth } : { width: long, height: short, depth };
 }

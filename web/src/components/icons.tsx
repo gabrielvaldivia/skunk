@@ -21,6 +21,7 @@ import {
   MinusSignCircleIcon,
   PlusSignCircleIcon,
   Moon02Icon,
+  Rotate01Icon,
   Edit03Icon,
   Image01Icon,
   Search01Icon,
@@ -59,6 +60,7 @@ export const CloseIcon = makeIcon(Cancel01Icon, "CloseIcon");
 export const PlusIcon = makeIcon(Add01Icon, "PlusIcon");
 export const AddPlayerIcon = makeIcon(PlusSignCircleIcon, "AddPlayerIcon");
 export const EditIcon = makeIcon(Edit03Icon, "EditIcon");
+export const RotateIcon = makeIcon(Rotate01Icon, "RotateIcon");
 export const SearchIcon = makeIcon(Search01Icon, "SearchIcon");
 export const TrophyIcon = makeIcon(ChampionIcon, "TrophyIcon");
 export const CameraIcon = makeIcon(Camera01Icon, "CameraIcon");

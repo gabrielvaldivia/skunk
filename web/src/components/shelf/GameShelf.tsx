@@ -1,4 +1,4 @@
-import { createContext, use, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, use, useContext, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import { easing } from "maath";
@@ -123,6 +123,14 @@ function coastTurn(turn: BoxTurn, d: number) {
   return turn.angle;
 }
 
+export type ShelfSlide = {
+  /** The game being stepped to */
+  id: string;
+  /** Which side it enters from: 1 = right (next), -1 = left (previous) */
+  dir: 1 | -1;
+  at: number;
+};
+
 function GameBox({
   placed,
   viewH,
@@ -130,6 +138,7 @@ function GameBox({
   selected,
   anySelected,
   onSelect,
+  slide,
 }: {
   placed: Placed;
   viewH: number;
@@ -137,6 +146,7 @@ function GameBox({
   selected: boolean;
   anySelected: boolean;
   onSelect: (id: string | null) => void;
+  slide?: RefObject<ShelfSlide | null>;
 }) {
   const { game, box } = placed;
   const [near, setNear] = useState(false);
@@ -178,10 +188,30 @@ function GameBox({
     spin: new THREE.Vector2(),
   });
 
+  // Stepping to the next or previous game: the new box glides in from that
+  // side while the old one goes straight back to the shelf behind the scrim
+  const wasSelected = useRef(selected);
+  const enterFrom = useRef(0);
+
   useFrame((state, dt) => {
     const { target, rot } = scratch.current;
     const g = group.current;
     if (!g) return;
+    if (wasSelected.current !== selected) {
+      wasSelected.current = selected;
+      const sw = slide?.current;
+      if (sw && performance.now() - sw.at < 500) {
+        if (selected && sw.id === game.id) {
+          enterFrom.current = sw.dir;
+        } else if (!selected) {
+          g.position.copy(home);
+          g.rotation.set(0, 0, 0);
+          drag.current.spin.set(0, 0);
+          drag.current.offset.set(0, 0, 0);
+          if (scrollGroup.current) scrollGroup.current.position.y = 0;
+        }
+      }
+    }
     // Load when within about a screen of the camera; unload well past that
     const dy = Math.abs(state.camera.position.y - home.y);
     if (!near && dy < viewH * 1.3) setNear(true);
@@ -218,6 +248,13 @@ function GameBox({
       }
       // Plus however far it's been swiped round
       if (focus.turn) rot.y += coastTurn(focus.turn.current, d);
+      if (enterFrom.current) {
+        // Start a short way off to the side, already facing forward, and ease in
+        g.position.copy(target);
+        g.position.x += enterFrom.current * freeWidth * worldPerPx * 0.12;
+        g.rotation.copy(rot);
+        enterFrom.current = 0;
+      }
     } else {
       // Put back after being swiped round a few times: drop whole turns so it
       // doesn't unwind them all on the way home
@@ -652,6 +689,7 @@ function ShelfScene({
   wood,
   resetKey,
   focus,
+  slide,
 }: {
   games: Game[];
   selectedId: string | null;
@@ -660,6 +698,7 @@ function ShelfScene({
   wood: [WoodSet, WoodSet];
   resetKey?: string;
   focus: FocusArea;
+  slide?: RefObject<ShelfSlide | null>;
 }) {
   const size = useThree((s) => s.size);
   const cam = useThree((s) => s.camera) as THREE.PerspectiveCamera;
@@ -697,6 +736,7 @@ function ShelfScene({
           selected={p.game.id === selectedId}
           anySelected={selectedId !== null}
           onSelect={onSelect}
+          slide={slide}
         />
       ))}
     </>
@@ -710,6 +750,7 @@ export function GameShelf({
   dark,
   resetKey,
   focus = NO_FOCUS_INSETS,
+  slide,
 }: {
   games: Game[];
   selectedId: string | null;
@@ -719,6 +760,8 @@ export function GameShelf({
   resetKey?: string;
   /** Screen area covered by a panel or sheet; the selected box floats in the rest */
   focus?: FocusArea;
+  /** Set just before stepping the selection, so the new box slides in from that side */
+  slide?: RefObject<ShelfSlide | null>;
 }) {
   const dragged = useRef(false);
   // Built in a worker from when this module loaded; usually ready by now
@@ -758,6 +801,7 @@ export function GameShelf({
           wood={wood}
           resetKey={resetKey}
           focus={focus}
+          slide={slide}
         />
       </Canvas>
     </DragContext.Provider>

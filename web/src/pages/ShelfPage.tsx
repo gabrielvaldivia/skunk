@@ -18,7 +18,7 @@ import { CloseIcon } from "../components/icons";
 import { MiniSessionSheet } from "../components/MiniSessionSheet";
 import { useSession } from "../context/SessionContext";
 import { CARD_DECK_ID, foldCardGames, isCardGame } from "@/lib/cardDeck";
-import type { BoxTurn } from "../components/shelf/GameShelf";
+import type { BoxTurn, ShelfSlide } from "../components/shelf/GameShelf";
 
 // Width of the desktop detail panel; the selected box centres in the space left of it
 const PANEL_WIDTH = 440;
@@ -124,6 +124,8 @@ export function ShelfPage() {
     return () => document.documentElement.classList.remove("shelf-focus");
   }, [selected]);
 
+  const slide = useRef<ShelfSlide | null>(null);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // Let an open dialog (e.g. Edit Game in the panel) handle its own Escape
@@ -132,6 +134,28 @@ export function ShelfPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  // Left/right arrows step through the shelf while a game is open
+  useEffect(() => {
+    const i = shown.findIndex((g) => g.id === selectedId);
+    if (i < 0 || shown.length < 2) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      if (e.altKey || e.metaKey || e.ctrlKey || document.querySelector('[role="dialog"]')) return;
+      // Arrows move the caret in text fields
+      const el = document.activeElement as HTMLElement | null;
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el?.isContentEditable) return;
+      e.preventDefault();
+      const dir = e.key === "ArrowRight" ? 1 : -1;
+      const next = shown[(i + dir + shown.length) % shown.length];
+      slide.current = { id: next.id, dir, at: performance.now() };
+      detailScroll.current = 0;
+      turn.current = { angle: 0, velocity: 0, dragging: false };
+      setSelectedId(next.id);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [shown, selectedId]);
 
   // A player or game linked from the selected game's panel opens in the
   // desktop panel system, letting go of the box on the shelf
@@ -303,6 +327,7 @@ export function ShelfPage() {
             dark={dark}
             resetKey={query}
             focus={focus}
+            slide={slide}
           />
         </Suspense>
       )}

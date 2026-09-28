@@ -4,14 +4,16 @@ import { BOX_PRESETS, presetFor, resolveBoxDims, shelfBoxFor } from "@/lib/boxDi
 import { useCoverAspect } from "../hooks/useCoverAspects";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { RotateIcon } from "./icons";
 
 const selectClass =
   "flex px-3 py-2 w-full h-10 text-sm rounded-md border border-input bg-background ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 const fmt = (n: number) => Number(n.toFixed(2)).toString();
 
-function describe(dims: BoxDims) {
-  const box = shelfBoxFor({ boxDims: dims } as Game);
+function describe(dims: BoxDims, aspect?: number) {
+  const box = shelfBoxFor({ boxDims: dims } as Game, aspect);
   return `${fmt(box.width)} × ${fmt(box.height)} × ${fmt(box.depth)} in`;
 }
 
@@ -32,7 +34,14 @@ export function BoxSizeField({ game, coverArt, value, onChange }: BoxSizeFieldPr
 
   const mode = value === null ? "auto" : custom ? "custom" : presetFor(value)?.id ?? "custom";
   const shown = value ?? autoDims;
-  const face = shelfBoxFor({ boxDims: shown } as Game);
+  const face = shelfBoxFor({ boxDims: shown } as Game, aspect);
+  const rectangular = Math.abs(face.width - face.height) > 0.05;
+
+  // Stores the flipped orientation explicitly, which overrides the cover's shape
+  const rotate = () => {
+    setCustom(true);
+    onChange({ ...shown, orientation: face.width > face.height ? "portrait" : "landscape" });
+  };
 
   // Custom sizes are entered as the cover's width and height, plus depth
   const setCustomSide = (side: "width" | "height" | "depth", raw: string) => {
@@ -86,9 +95,23 @@ export function BoxSizeField({ game, coverArt, value, onChange }: BoxSizeFieldPr
             }}
           />
         </div>
+        {rectangular && (
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            className="shrink-0"
+            onClick={rotate}
+            aria-label={face.width > face.height ? "Stand the box portrait" : "Lay the box landscape"}
+            title="Switch portrait / landscape"
+          >
+            <RotateIcon />
+          </Button>
+        )}
       </div>
       {mode === "custom" ? (
-        <div className="grid grid-cols-3 gap-2">
+        // Remount on rotate so the uncontrolled inputs show the swapped sides
+        <div key={`${fmt(face.width)}x${fmt(face.height)}`} className="grid grid-cols-3 gap-2">
           {(["width", "height", "depth"] as const).map((side) => (
             <label key={side} className="grid gap-1 text-xs text-muted-foreground">
               <span className="capitalize">{side} (in)</span>
@@ -105,7 +128,7 @@ export function BoxSizeField({ game, coverArt, value, onChange }: BoxSizeFieldPr
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">
-          {describe(shown)}
+          {describe(shown, aspect)}
           {mode === "auto" && (aspect ? " · picked from the cover's shape" : " · add a cover to pick a shape automatically")}
         </p>
       )}

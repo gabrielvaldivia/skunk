@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import type { Game } from "../models/Game";
+import type { BoxDims, Game } from "../models/Game";
+
+const needsOrientation = (d: BoxDims) => {
+  const [, short, long] = [d.width, d.length, d.depth].sort((x, y) => x - y);
+  return !d.orientation && long / short > 1.05;
+};
 
 // Width/height of each cover image, keyed by URL. Only the header needs to be
 // read for this, so it's cheap next to decoding the full image.
@@ -36,7 +41,8 @@ export function useCoverAspects(games: Game[], timeoutMs = 1500) {
   useEffect(() => {
     let alive = true;
     const next = new Map<string, number>();
-    const withCovers = games.filter((g) => g.coverArt && !g.boxDims);
+    // Measured boxes only need the cover when it has to say which way up they stand
+    const withCovers = games.filter((g) => g.coverArt && (!g.boxDims || needsOrientation(g.boxDims)));
     const finish = () => {
       if (alive) setResult({ games, aspects: new Map(next) });
       alive = false;
