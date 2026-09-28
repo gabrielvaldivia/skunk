@@ -28,18 +28,19 @@ export function useGameChampions(games: Game[], matches: Match[] = []) {
       playerMap.set(player.id, player);
     });
 
-    // Create a map of game ID to game
-    const gameMap = new Map<string, Game>();
-    games.forEach(game => {
-      gameMap.set(game.id, game);
-    });
+    // Group matches by game once, rather than scanning them all per game
+    const matchesByGame = new Map<string, Match[]>();
+    for (const match of matches) {
+      const list = matchesByGame.get(match.gameID);
+      if (list) list.push(match);
+      else matchesByGame.set(match.gameID, [match]);
+    }
 
     // Calculate champions for each game
     const championsMap = new Map<string, GameChampion>();
 
     games.forEach(game => {
-      // Get all matches for this game
-      const gameMatches = matches.filter(match => match.gameID === game.id);
+      const gameMatches = matchesByGame.get(game.id) ?? [];
 
       if (gameMatches.length === 0) {
         championsMap.set(game.id, {
@@ -56,8 +57,12 @@ export function useGameChampions(games: Game[], matches: Match[] = []) {
 
       gameMatches.forEach(match => {
         const winnerId = getMatchWinnerID(match, game);
-        if (winnerId) {
-          winCounts.set(winnerId, (winCounts.get(winnerId) || 0) + 1);
+        if (!winnerId) return;
+        // Team games name the winning team; each of its players gets the win,
+        // as on the game's leaderboard
+        const team = game.isTeamBased ? match.teams?.find((t) => t.teamId === winnerId) : undefined;
+        for (const id of team ? team.playerIDs : [winnerId]) {
+          winCounts.set(id, (winCounts.get(id) || 0) + 1);
         }
       });
 
@@ -92,5 +97,5 @@ export function useGameChampions(games: Game[], matches: Match[] = []) {
     return championsMap;
   }, [games, matches, players]);
 
-  return { champions, isLoading: false };
+  return { champions };
 }
