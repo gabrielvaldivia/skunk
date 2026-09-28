@@ -21,6 +21,7 @@ import type { Game } from "../models/Game";
 import type { FieldUpdates } from "../services/databaseService";
 import "./GameDetailPage.css";
 import { isAdminEmail } from "@/lib/admin";
+import { getShortName } from "@/lib/player";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { AppLink } from "../components/AppLink";
 import { AudienceControl } from "../components/AudienceControl";
@@ -293,7 +294,7 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
           ) : (
             <div className="matches-list">
               {gameMatches.map((match) => (
-                <MatchRow key={match.id} match={match} hideGameTitle={true} />
+                <MatchRow key={match.id} match={match} hideGameTitle={true} shortNames />
               ))}
             </div>
           )}
@@ -336,8 +337,7 @@ function LeaderRow({
 }) {
   const { players, rank, wins } = entry;
   const medal = MEDALS[rank as 1 | 2 | 3] ?? "plain";
-  const nameOf = (p: Player) =>
-    p.id === youId ? "You" : players.length > 1 ? p.name.trim().split(" ")[0] || p.name : p.name;
+  const nameOf = (p: Player) => (p.id === youId ? "You" : getShortName(p.name));
   const pile = players.slice(0, PILE_MAX);
   const extra = players.length - pile.length;
   return (

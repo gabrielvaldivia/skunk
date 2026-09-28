@@ -29,15 +29,20 @@ import {
 import './MatchRow.css';
 import { Avatar } from "./Avatar";
 import { MoreIcon } from "./icons";
+import { getShortName } from '../lib/player';
 
 interface MatchRowProps {
   match: Match;
   hideGameTitle?: boolean;
+  /** Show players as first name and last initial, e.g. "Brian L." */
+  shortNames?: boolean;
   onDelete?: () => void;
 }
 
-export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowProps) {
+export function MatchRow({ match, hideGameTitle = false, shortNames = false, onDelete }: MatchRowProps) {
   const { players } = usePlayers();
+  const nameOf = (player: { name: string }) =>
+    shortNames ? getShortName(player.name) : player.name;
   const { games } = useGames();
   const { player: currentPlayer } = useAuth();
   const { removeMatch, editMatch } = useMatches();
@@ -129,7 +134,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
       <AppLink
         to={`/players/${winner.id}`}
         className="match-winner-avatar-link"
-        aria-label={`View ${winner.name}'s profile`}
+        aria-label={`View ${nameOf(winner)}'s profile`}
       >
         <Avatar player={winner} size={40} />
       </AppLink>
@@ -157,7 +162,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
             <span key={player?.id || winningTeam.playerIDs[index]}>
               {player ? (
                 <AppLink to={`/players/${player.id}`} className="match-link">
-                  {player.name}
+                  {nameOf(player)}
                 </AppLink>
               ) : (
                 <span>Unknown player</span>
@@ -176,7 +181,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
                   <span key={playerId}>
                     {player ? (
                       <AppLink to={`/players/${player.id}`} className="match-link">
-                        {player.name}
+                        {nameOf(player)}
                       </AppLink>
                     ) : (
                       <span>Unknown player</span>
@@ -212,7 +217,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
         <>
           {winner ? (
             <AppLink to={`/players/${match.winnerID}`} className="match-link">
-              {winner.name}
+              {nameOf(winner)}
             </AppLink>
           ) : (
             <span>Unknown player</span>
@@ -228,7 +233,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
       <>
         {winner ? (
           <AppLink to={`/players/${match.winnerID}`} className="match-link">
-            {winner.name}
+            {nameOf(winner)}
           </AppLink>
         ) : (
           <span>Unknown player</span>
@@ -238,7 +243,7 @@ export function MatchRow({ match, hideGameTitle = false, onDelete }: MatchRowPro
           <span key={player?.id || otherPlayerIDs[index]}>
             {player ? (
               <AppLink to={`/players/${player.id}`} className="match-link">
-                {player.name}
+                {nameOf(player)}
               </AppLink>
             ) : (
               <span>Unknown player</span>
