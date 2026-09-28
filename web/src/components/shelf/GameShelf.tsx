@@ -7,7 +7,7 @@ import type { Game } from "@/models/Game";
 import { shelfBoxFor, type ShelfBox } from "@/lib/boxDimensions";
 import { requestBoxArt, type BoxArt } from "./boxTextures";
 import { BOX_GEOMETRY, IS_TOUCH, boxMaterials } from "./boxMaterials";
-import { shelfWood, shelfWoodIfReady, tiledWood, type WoodSet } from "./woodTexture";
+import { shelfWood, shelfWoodIfReady, sizeWood, tiledWood, type WoodSet } from "./woodTexture";
 import { useCoverAspects } from "@/hooks/useCoverAspects";
 import { traditionalKind } from "@/lib/traditionalGames";
 
@@ -353,8 +353,8 @@ function GameBox({
   );
 }
 
-function woodMaterial(set: WoodSet, lengthIn: number, acrossIn: number, rotate = false, roughness = 0.62) {
-  const { map, bumpMap } = tiledWood(set, lengthIn, acrossIn, rotate);
+function woodMaterial(set: WoodSet, rotate = false, roughness = 0.62) {
+  const { map, bumpMap } = tiledWood(set, rotate);
   return new THREE.MeshStandardMaterial({ map, bumpMap, bumpScale: 0.6, roughness });
 }
 
@@ -381,24 +381,38 @@ function Shelves({
   const bottom = top - h;
   const outer = width + 4;
 
+  // Built once per theme. A resize (or a phone's toolbar showing/hiding) only
+  // re-tiles them below, instead of re-creating and re-uploading every texture.
   const materials = useMemo(() => {
     const [boards, panel] = wood;
-    // BoxGeometry faces: +x, -x, +y, -y, +z, -z. Each face is tiled for its own
-    // size so the grain keeps real-world scale everywhere.
-    const plankEnd = woodMaterial(boards, SHELF_DEPTH, PLANK);
-    const plankTop = woodMaterial(boards, outer, SHELF_DEPTH);
-    const plankFront = woodMaterial(boards, outer, PLANK * 3);
-    const wallSide = woodMaterial(boards, h, SHELF_DEPTH, true);
-    const wallFront = woodMaterial(boards, h, PLANK * 3, true);
-    const wallEnd = woodMaterial(boards, SHELF_DEPTH, PLANK);
-    const back = woodMaterial(panel, outer, h, false, 0.75);
+    // BoxGeometry faces: +x, -x, +y, -y, +z, -z
+    const plankEnd = woodMaterial(boards);
+    const plankTop = woodMaterial(boards);
+    const plankFront = woodMaterial(boards);
+    const wallSide = woodMaterial(boards, true);
+    const wallFront = woodMaterial(boards, true);
+    const wallEnd = woodMaterial(boards);
+    const back = woodMaterial(panel, false, 0.75);
     return {
       plank: [plankEnd, plankEnd, plankTop, plankTop, plankFront, plankFront],
       wall: [wallSide, wallSide, wallEnd, wallEnd, wallFront, wallFront],
       back,
       all: [plankEnd, plankTop, plankFront, wallSide, wallFront, wallEnd, back],
+      sized: { plankEnd, plankTop, plankFront, wallSide, wallFront, wallEnd, back },
     };
-  }, [wood, outer, h]);
+  }, [wood]);
+
+  // Each face is tiled for its own size so the grain keeps real-world scale
+  useMemo(() => {
+    const m = materials.sized;
+    sizeWood(m.plankEnd, SHELF_DEPTH, PLANK);
+    sizeWood(m.plankTop, outer, SHELF_DEPTH);
+    sizeWood(m.plankFront, outer, PLANK * 3);
+    sizeWood(m.wallSide, h, SHELF_DEPTH);
+    sizeWood(m.wallFront, h, PLANK * 3);
+    sizeWood(m.wallEnd, SHELF_DEPTH, PLANK);
+    sizeWood(m.back, outer, h);
+  }, [materials, outer, h]);
 
   useEffect(
     () => () =>

@@ -99,11 +99,10 @@ if (typeof document !== "undefined") {
   void shelfWood(!dark);
 }
 
-/** A copy of a wood set tiled for a surface `lengthIn` × `acrossIn` inches */
-export function tiledWood(set: WoodSet, lengthIn: number, acrossIn: number, rotate = false): WoodSet {
+/** A copy of a wood set for one surface; size it with sizeWood */
+export function tiledWood(set: WoodSet, rotate = false): WoodSet {
   const tile = (t: THREE.Texture) => {
     const c = t.clone();
-    c.repeat.set(lengthIn / 48, acrossIn / 12);
     if (rotate) {
       c.center.set(0.5, 0.5);
       c.rotation = Math.PI / 2;
@@ -112,4 +111,10 @@ export function tiledWood(set: WoodSet, lengthIn: number, acrossIn: number, rota
     return c;
   };
   return { map: tile(set.map), bumpMap: tile(set.bumpMap) };
+}
+
+/** Tile a surface's wood for `lengthIn` × `acrossIn` inches (no re-upload) */
+export function sizeWood(set: { map?: THREE.Texture | null; bumpMap?: THREE.Texture | null }, lengthIn: number, acrossIn: number) {
+  set.map?.repeat.set(lengthIn / 48, acrossIn / 12);
+  set.bumpMap?.repeat.set(lengthIn / 48, acrossIn / 12);
 }
