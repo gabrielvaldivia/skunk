@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, use, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import { easing } from "maath";
@@ -7,7 +7,7 @@ import type { Game } from "@/models/Game";
 import { shelfBoxFor, type ShelfBox } from "@/lib/boxDimensions";
 import { requestBoxArt, type BoxArt } from "./boxTextures";
 import { BOX_GEOMETRY, IS_TOUCH, boxMaterials } from "./boxMaterials";
-import { tiledWood, woodTextures, type WoodSet } from "./woodTexture";
+import { shelfWood, shelfWoodIfReady, tiledWood, type WoodSet } from "./woodTexture";
 import { useCoverAspects } from "@/hooks/useCoverAspects";
 import { traditionalKind } from "@/lib/traditionalGames";
 
@@ -358,7 +358,17 @@ function woodMaterial(set: WoodSet, lengthIn: number, acrossIn: number, rotate =
   return new THREE.MeshStandardMaterial({ map, bumpMap, bumpScale: 0.6, roughness });
 }
 
-function Shelves({ planks, width, dark, viewH }: { planks: number[]; width: number; dark: boolean; viewH: number }) {
+function Shelves({
+  planks,
+  width,
+  wood,
+  viewH,
+}: {
+  planks: number[];
+  width: number;
+  wood: [WoodSet, WoodSet];
+  viewH: number;
+}) {
   // Run the case well past the top so overscroll never shows the page behind it
   const top = PLANK + CLEARANCE + HEADER_ROOM + 30;
   // …and a full screen past the bottom, so short shelves (a search, a small
@@ -372,8 +382,7 @@ function Shelves({ planks, width, dark, viewH }: { planks: number[]; width: numb
   const outer = width + 4;
 
   const materials = useMemo(() => {
-    const boards = woodTextures(dark ? "walnut" : "oak", 7);
-    const panel = woodTextures(dark ? "walnutPanel" : "oakPanel", 11, 2);
+    const [boards, panel] = wood;
     // BoxGeometry faces: +x, -x, +y, -y, +z, -z. Each face is tiled for its own
     // size so the grain keeps real-world scale everywhere.
     const plankEnd = woodMaterial(boards, SHELF_DEPTH, PLANK);
@@ -389,7 +398,7 @@ function Shelves({ planks, width, dark, viewH }: { planks: number[]; width: numb
       back,
       all: [plankEnd, plankTop, plankFront, wallSide, wallFront, wallEnd, back],
     };
-  }, [dark, outer, h]);
+  }, [wood, outer, h]);
 
   useEffect(
     () => () =>
@@ -626,6 +635,7 @@ function ShelfScene({
   selectedId,
   onSelect,
   dark,
+  wood,
   resetKey,
   focus,
 }: {
@@ -633,6 +643,7 @@ function ShelfScene({
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   dark: boolean;
+  wood: [WoodSet, WoodSet];
   resetKey?: string;
   focus: FocusArea;
 }) {
@@ -661,7 +672,7 @@ function ShelfScene({
     <>
       <CameraRig totalHeight={totalHeight} fitDist={fitDist} viewH={viewH} enabled={!selectedId} resetKey={resetKey} />
       <KeyLight width={shelfWidth + 6} viewH={viewH} dark={dark} />
-      <Shelves planks={planks} width={shelfWidth} dark={dark} viewH={viewH} />
+      <Shelves planks={planks} width={shelfWidth} wood={wood} viewH={viewH} />
       <Scrim active={selectedId !== null} dark={dark} solid={!!focus.solidBackdrop} onDismiss={() => onSelect(null)} />
       {placed.map((p) => (
         <GameBox
@@ -696,6 +707,8 @@ export function GameShelf({
   focus?: FocusArea;
 }) {
   const dragged = useRef(false);
+  // Built in a worker from when this module loaded; usually ready by now
+  const wood = shelfWoodIfReady(dark) ?? use(shelfWood(dark));
   return (
     <DragContext.Provider value={dragged}>
       <Canvas
@@ -723,7 +736,15 @@ export function GameShelf({
           <Lightformer intensity={1} position={[-5, 1, 2]} rotation-y={Math.PI / 2} scale={[6, 3, 1]} />
           <Lightformer intensity={1} position={[5, 1, 2]} rotation-y={-Math.PI / 2} scale={[6, 3, 1]} />
         </Environment>
-        <ShelfScene games={games} selectedId={selectedId} onSelect={onSelect} dark={dark} resetKey={resetKey} focus={focus} />
+        <ShelfScene
+          games={games}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          dark={dark}
+          wood={wood}
+          resetKey={resetKey}
+          focus={focus}
+        />
       </Canvas>
     </DragContext.Provider>
   );
