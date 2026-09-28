@@ -331,6 +331,12 @@ export async function createSession(createdByID: string, gameID?: string): Promi
 /**
  * Get session by code, filtering out expired sessions
  */
+// The database drops empty lists, so a session whose last player just left
+// (before it's deleted) arrives without participantIDs
+function toSession(id: string, val: Omit<Session, 'id'>): Session {
+  return { ...val, id, participantIDs: val.participantIDs ?? [] };
+}
+
 export async function getSessionByCode(code: string): Promise<Session | null> {
   const codeRef = ref(database, `${SESSIONS_BY_CODE_PATH}/${code}`);
   const codeSnapshot = await get(codeRef);
@@ -347,10 +353,7 @@ export async function getSessionByCode(code: string): Promise<Session | null> {
     return null;
   }
 
-  const session: Session = {
-    id: sessionId,
-    ...sessionSnapshot.val(),
-  };
+  const session = toSession(sessionId, sessionSnapshot.val());
 
   // Filter out expired sessions
   if (isSessionExpired(session)) {
@@ -373,10 +376,7 @@ export async function getSession(sessionId: string): Promise<Session | null> {
     return null;
   }
 
-  return {
-    id: sessionId,
-    ...snapshot.val(),
-  };
+  return toSession(sessionId, snapshot.val());
 }
 
 /**
@@ -463,7 +463,7 @@ export function subscribeToSession(
   onChange: (session: Session | null) => void
 ): Unsubscribe {
   return onValue(ref(database, `${SESSIONS_PATH}/${sessionId}`), (snapshot) => {
-    onChange(snapshot.exists() ? { ...snapshot.val(), id: sessionId } : null);
+    onChange(snapshot.exists() ? toSession(sessionId, snapshot.val()) : null);
   });
 }
 
