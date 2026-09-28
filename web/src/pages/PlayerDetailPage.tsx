@@ -18,7 +18,7 @@ import "./PlayerDetailPage.css";
 export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
   const params = useParams<{ id: string }>();
   const id = playerId ?? params.id;
-  const { players } = usePlayers();
+  const { players, isLoading: playersLoading } = usePlayers();
   const { matches: allMatches } = useActivity(10000); // Full history for stats; shares the listener with list pages
   const { games } = useGames();
   const follow = usePlayerFollow(id);
@@ -74,6 +74,8 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
   }, [allMatches, games, id, resolvedPlayerId]);
 
   if (!player) {
+    // Opened by link, the players may still be on their way
+    if (playersLoading) return <div className="loading">Loading...</div>;
     return (
       <div className="player-detail-page">
         <div className="error">Player not found</div>

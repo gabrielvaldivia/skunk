@@ -46,7 +46,7 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
   const location = useLocation();
   const params = useParams<{ id: string }>();
   const id = gameId ?? params.id;
-  const { games, editGame, removeGame } = useGames();
+  const { games, isLoading: gamesLoading, editGame, removeGame } = useGames();
   const { matches: allMatches } = useActivity(10000); // Full history for stats; shares the listener with list pages
   const { players } = useDataCache();
   const { createSession, currentSession } = useSession();
@@ -131,6 +131,8 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
   };
 
   if (!game) {
+    // Opened by link, the games may still be on their way
+    if (gamesLoading) return <div className="loading">Loading...</div>;
     return (
       <div className="game-detail-page">
         <div className="error">Game not found</div>
