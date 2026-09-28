@@ -59,6 +59,23 @@ export function useCoverAspects(games: Game[], timeoutMs = 1500) {
   return result?.aspects ?? null;
 }
 
+/** Aspect of a single cover, and whether the lookup has finished (or failed) */
+export function useSettledCoverAspect(url: string | undefined) {
+  const [result, setResult] = useState<{ url: string; value: number | undefined } | null>(null);
+  useEffect(() => {
+    if (!url) return;
+    let alive = true;
+    readCoverAspect(url).then((value) => {
+      if (alive) setResult({ url, value });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [url]);
+  const settled = !url || result?.url === url;
+  return { aspect: settled ? result?.value : undefined, settled };
+}
+
 /** Aspect of a single cover, for forms */
 export function useCoverAspect(url: string | undefined) {
   const [aspect, setAspect] = useState<{ url: string; value: number } | null>(null);

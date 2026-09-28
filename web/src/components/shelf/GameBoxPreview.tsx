@@ -5,19 +5,22 @@ import * as THREE from "three";
 import type { Game } from "@/models/Game";
 import { shelfBoxFor } from "@/lib/boxDimensions";
 import { traditionalKind } from "@/lib/traditionalGames";
-import { useCoverAspect } from "@/hooks/useCoverAspects";
+import { useSettledCoverAspect } from "@/hooks/useCoverAspects";
 import { requestBoxArt, type BoxArt } from "./boxTextures";
 import { BOX_GEOMETRY, boxMaterials } from "./boxMaterials";
 
 // Box in inches → scene units, fitted to a 1-unit tall frame
 function Box({ game }: { game: Game }) {
-  const aspect = useCoverAspect(game.coverArt);
+  // Wait for the cover's shape before sizing the box and building its art, so
+  // it's built once, at the right size
+  const { aspect, settled } = useSettledCoverAspect(game.coverArt);
   const box = shelfBoxFor(game, aspect);
   const invalidate = useThree((s) => s.invalidate);
   const [art, setArt] = useState<BoxArt | null>(null);
   const { width, height, depth } = box;
 
   useEffect(() => {
+    if (!settled) return;
     const cancel = requestBoxArt(game.title, game.coverArt, { width, height, depth }, traditionalKind(game.title), (a) => {
       setArt(a);
       invalidate();
@@ -26,11 +29,12 @@ function Box({ game }: { game: Game }) {
       cancel();
       setArt(null);
     };
-  }, [game.title, game.coverArt, width, height, depth, invalidate]);
+  }, [settled, game.title, game.coverArt, width, height, depth, invalidate]);
 
   const materials = useMemo(() => boxMaterials(art), [art]);
   useEffect(() => () => materials.forEach((m) => m.dispose()), [materials]);
 
+  if (!settled) return null;
   // Normalise so the box's larger face side is 1 unit, whatever its real size
   const scale = 1 / Math.max(width, height);
   return (
