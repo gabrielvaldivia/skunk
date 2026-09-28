@@ -2,7 +2,7 @@ import { lazy, Suspense, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useGames } from "../hooks/useGames";
 import { useActivity } from "../hooks/useActivity";
-import { useDataCache } from "../context/DataCacheContext";
+import { usePlayersData } from "../context/DataCacheContext";
 import { getMatchWinnerID } from "../models/Match";
 import { useSession } from "../context/SessionContext";
 import { MiniSessionSheet } from "../components/MiniSessionSheet";
@@ -48,7 +48,7 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
   const id = gameId ?? params.id;
   const { games, isLoading: gamesLoading, editGame, removeGame } = useGames();
   const { matches: allMatches } = useActivity(10000); // Full history for stats; shares the listener with list pages
-  const { players } = useDataCache();
+  const { players } = usePlayersData();
   const { createSession, currentSession } = useSession();
   const { user, player, isAuthenticated } = useAuth();
   const friendIds = useFriendIds();

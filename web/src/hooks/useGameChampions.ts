@@ -3,7 +3,7 @@ import { getMatchWinnerID } from '../models/Match';
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
 import type { Match } from '../models/Match';
-import { useDataCache } from '../context/DataCacheContext';
+import { usePlayersData } from '../context/DataCacheContext';
 
 export interface GameChampion {
   gameId: string;
@@ -15,7 +15,7 @@ export interface GameChampion {
 }
 
 export function useGameChampions(games: Game[], matches: Match[] = []) {
-  const { players } = useDataCache();
+  const { players } = usePlayersData();
 
   const champions = useMemo(() => {
     if (games.length === 0) {

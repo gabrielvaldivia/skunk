@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
 import type { Player } from '../models/Player';
 import { createPlayer, deletePlayer } from '../services/databaseService';
-import { useDataCache } from '../context/DataCacheContext';
+import { usePlayersData } from '../context/DataCacheContext';
 
 // The players list is live, so adds and deletes show up without a refetch
 export function usePlayers() {
-  const { players, playersLoading: isLoading, playersError: error } = useDataCache();
+  const { players, playersLoading: isLoading, playersError: error } = usePlayersData();
 
   const addPlayer = useCallback(async (player: Omit<Player, 'id'>) => {
     try {

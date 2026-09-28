@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
 import { getGames, subscribeToPlayers, updateGame } from '../services/databaseService';
@@ -6,17 +6,23 @@ import { useAuth } from './AuthContext';
 import { isAdminEmail } from '../lib/admin';
 import { COVER_ENHANCEMENT_VERSION } from '../lib/coverVersion';
 
-interface DataCacheContextType {
+interface GamesData {
   games: Game[];
-  players: Player[];
   gamesLoading: boolean;
-  playersLoading: boolean;
   gamesError: Error | null;
-  playersError: Error | null;
   refreshGames: () => Promise<void>;
 }
 
-const DataCacheContext = createContext<DataCacheContextType | undefined>(undefined);
+interface PlayersData {
+  players: Player[];
+  playersLoading: boolean;
+  playersError: Error | null;
+}
+
+// Separate contexts, so a player update (a heart, a follow, anyone's) doesn't
+// re-render everything that only shows games, like the 3D shelf
+const GamesContext = createContext<GamesData | undefined>(undefined);
+const PlayersContext = createContext<PlayersData | undefined>(undefined);
 
 export function DataCacheProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -100,23 +106,39 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const value: DataCacheContextType = {
-    games,
-    players,
-    gamesLoading,
-    playersLoading,
-    gamesError,
-    playersError,
-    refreshGames,
-  };
+  const gamesValue = useMemo(
+    () => ({ games, gamesLoading, gamesError, refreshGames }),
+    [games, gamesLoading, gamesError, refreshGames]
+  );
+  const playersValue = useMemo(
+    () => ({ players, playersLoading, playersError }),
+    [players, playersLoading, playersError]
+  );
 
-  return <DataCacheContext.Provider value={value}>{children}</DataCacheContext.Provider>;
+  return (
+    <GamesContext.Provider value={gamesValue}>
+      <PlayersContext.Provider value={playersValue}>{children}</PlayersContext.Provider>
+    </GamesContext.Provider>
+  );
 }
 
-export function useDataCache() {
-  const context = useContext(DataCacheContext);
+export function useGamesData() {
+  const context = useContext(GamesContext);
   if (context === undefined) {
-    throw new Error('useDataCache must be used within a DataCacheProvider');
+    throw new Error('useGamesData must be used within a DataCacheProvider');
   }
   return context;
+}
+
+export function usePlayersData() {
+  const context = useContext(PlayersContext);
+  if (context === undefined) {
+    throw new Error('usePlayersData must be used within a DataCacheProvider');
+  }
+  return context;
+}
+
+/** Games and players together, for components that show both */
+export function useDataCache() {
+  return { ...useGamesData(), ...usePlayersData() };
 }

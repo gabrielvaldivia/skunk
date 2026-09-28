@@ -2,10 +2,10 @@ import { useCallback } from 'react';
 import type { Game } from '../models/Game';
 import type { FieldUpdates } from '../services/databaseService';
 import { createGame, updateGame, deleteGame } from '../services/databaseService';
-import { useDataCache } from '../context/DataCacheContext';
+import { useGamesData } from '../context/DataCacheContext';
 
 export function useGames() {
-  const { games, gamesLoading: isLoading, gamesError: error, refreshGames } = useDataCache();
+  const { games, gamesLoading: isLoading, gamesError: error, refreshGames } = useGamesData();
 
   const addGame = useCallback(async (game: Omit<Game, 'id'>) => {
     try {
