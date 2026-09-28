@@ -98,6 +98,9 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
   const [showGameSuggestions, setShowGameSuggestions] = useState<boolean>(false);
   const [highlightedGameIndex, setHighlightedGameIndex] = useState<number>(-1);
   const [playerInputs, setPlayerInputs] = useState<string[]>([]);
+  // Editing: each row's original player and name. A row whose name is left as
+  // is keeps its player, so two players sharing a name can't be swapped.
+  const [originalRows, setOriginalRows] = useState<{ id: string; name: string }[]>([]);
   const [scores, setScores] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autocompleteStates, setAutocompleteStates] = useState<Array<{ value: string; showSuggestions: boolean }>>([]);
@@ -174,10 +177,12 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
         // Players in the order their scores were recorded
         const order = editing.playerOrder?.length ? editing.playerOrder : editing.playerIDs;
         const names = order.map((id) => players.find((p) => p.id === id)?.name ?? "");
+        setOriginalRows(order.map((id, i) => ({ id, name: names[i] })));
         setPlayerInputs(names);
         setAutocompleteStates(names.map((value) => ({ value, showSuggestions: false })));
         setScores(order.map((_, i) => editing.scores?.[i] ?? 0));
       } else if (sessionParticipants && sessionParticipants.length > 0) {
+        setOriginalRows([]);
         // If session participants are provided, prefill with their names
         const participantNames = sessionParticipants.map(p => p.name);
         // Use at least gameMinPlayers, but fill with session participants if available
@@ -190,6 +195,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
         setAutocompleteStates(initialInputs.map(value => ({ value, showSuggestions: false })));
         setScores(new Array(initialInputs.length).fill(0));
       } else {
+        setOriginalRows([]);
         // No session participants, use default initialization
         setPlayerInputs(new Array(gameMinPlayers).fill(""));
         setAutocompleteStates(new Array(gameMinPlayers).fill({ value: "", showSuggestions: false }));
@@ -286,6 +292,13 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
     return players.find((p) => p.name.toLowerCase() === name.toLowerCase().trim());
   };
 
+  // The player a row stands for: its original one if the name is unchanged
+  const rowPlayerId = (index: number): string | undefined => {
+    const original = originalRows[index];
+    if (original?.name && playerInputs[index] === original.name) return original.id;
+    return findPlayerByName(playerInputs[index] ?? "")?.id;
+  };
+
   // A typed name nobody has yet: it becomes a new (signed-out) player
   const isNewName = (name: string) => name.trim().length > 0 && !findPlayerByName(name);
 
@@ -348,6 +361,7 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
     const gameMinPlayers = Math.min(...selectedGame.supportedPlayerCounts);
     if (playerInputs.length > gameMinPlayers) {
       setPlayerInputs((prev) => prev.filter((_, i) => i !== index));
+      setOriginalRows((prev) => prev.filter((_, i) => i !== index));
       setAutocompleteStates((prev) => prev.filter((_, i) => i !== index));
       setScores((prev) => prev.filter((_, i) => i !== index));
       setWinnerCelebration(null);
@@ -385,8 +399,9 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
     if (names.some((n) => !n)) return false;
     if (!selectedGame.supportedPlayerCounts.includes(names.length)) return false;
     
-    // Check for duplicate players
-    if (new Set(names).size !== names.length) {
+    // Check for duplicate players (by player, so same-named players can both play)
+    const keys = names.map((n, i) => rowPlayerId(i) ?? `new:${n}`);
+    if (new Set(keys).size !== keys.length) {
       return false;
     }
     
@@ -407,9 +422,8 @@ export function AddMatchForm({ open, onOpenChange, onSubmit, defaultGameId, sess
     try {
       // Add anyone typed in who isn't a player yet
       const selectedPlayerIds: string[] = [];
-      for (const name of playerInputs) {
-        const player = findPlayerByName(name) ?? (await createNamedPlayer(name));
-        selectedPlayerIds.push(player.id);
+      for (const [i, name] of playerInputs.entries()) {
+        selectedPlayerIds.push(rowPlayerId(i) ?? (await createNamedPlayer(name)).id);
       }
       const now = Date.now();
       const match: Omit<Match, "id"> = {
