@@ -64,7 +64,7 @@
   margin-bottom: 0;
 }
 
-/* Leaderboard: a gem with the rank, then a pill with the player */
+/* Leaderboard: a pill per rank, the rank in a coloured circle at its start */
 .game-leaderboard {
   display: flex;
   flex-direction: column;
@@ -80,57 +80,38 @@
 
 .leader-row {
   display: flex;
-  align-items: center;
-  gap: 0.875rem;
 }
 
+/* 32px, centred in the 60px pill's rounded end so it's inset 14px all round */
 .leader-rank {
-  position: relative;
   display: flex;
   flex-shrink: 0;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 32px;
+  height: 32px;
   align-items: center;
   justify-content: center;
+  border-radius: 9999px;
+  background: hsl(var(--background));
+  color: hsl(var(--muted-foreground));
   font-size: 0.8125rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-/* The gem: a rounded square turned 45°, number kept upright on top */
-.leader-rank::before {
-  content: "";
-  position: absolute;
-  inset: 0.3125rem;
-  border-radius: 0.5rem;
-  transform: rotate(45deg);
-  background: hsl(var(--muted));
-  box-shadow: inset 0 0 0 1px hsl(var(--border));
-}
-
-.leader-rank > span {
-  position: relative;
-  color: hsl(var(--muted-foreground));
-}
-
-.leader-rank.gold::before {
+.leader-rank.gold {
   background: linear-gradient(135deg, #fde68a, #eab308 55%, #a16207);
-  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.45), 0 2px 6px rgb(161 98 7 / 0.35);
+  color: #422006;
 }
 
-.leader-rank.silver::before {
+.leader-rank.silver {
   background: linear-gradient(135deg, #f1f5f9, #94a3b8 55%, #475569);
-  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.5), 0 2px 6px rgb(71 85 105 / 0.3);
+  color: #1e293b;
 }
 
-.leader-rank.bronze::before {
+.leader-rank.bronze {
   background: linear-gradient(135deg, #fed7aa, #c2410c 60%, #7c2d12);
-  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.4), 0 2px 6px rgb(124 45 18 / 0.3);
+  color: #fff7ed;
 }
-
-.leader-rank.gold > span { color: #422006; }
-.leader-rank.silver > span { color: #1e293b; }
-.leader-rank.bronze > span { color: #fff7ed; }
 
 .leader-track {
   flex: 1;
@@ -139,14 +120,15 @@
 
 /* Shortest pill still fits a name and its faces; the leader's spans the row */
 .leader-card {
-  --leader-min: calc(8rem + var(--faces, 1) * 1.875rem);
+  --leader-min: calc(10rem + var(--faces, 1) * 1.875rem);
   display: flex;
   width: max(var(--leader-min), 100% * var(--share, 1));
   max-width: 100%;
   min-width: 0;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0.5rem 0.5rem 1.125rem;
+  /* 14px + 32px circle + 6px puts names 52px in, in line with match text */
+  gap: 6px;
+  padding: 0.5rem 0.5rem 0.5rem 14px;
   border-radius: 9999px;
   background: hsl(var(--muted) / 0.6);
 }

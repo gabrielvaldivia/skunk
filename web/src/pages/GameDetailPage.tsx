@@ -342,11 +342,11 @@ function LeaderRow({
   const extra = players.length - pile.length;
   return (
     <li className="leader-row">
-      <span className={`leader-rank ${medal}`} aria-label={`Rank ${rank}`}>
-        <span>{rank}</span>
-      </span>
       <div className="leader-track">
         <div className="leader-card" style={{ "--share": share, "--faces": pile.length + (extra > 0 ? 1 : 0) } as React.CSSProperties}>
+          <span className={`leader-rank ${medal}`} aria-label={`Rank ${rank}`}>
+            {rank}
+          </span>
           <span className="leader-text">
             <span className="leader-name">
               {players.map((p, index) => (
