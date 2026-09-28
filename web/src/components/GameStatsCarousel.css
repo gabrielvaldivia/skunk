@@ -1,10 +1,13 @@
 .game-stats-carousel {
   display: flex;
   gap: 0.875rem;
-  margin-inline: -0.125rem;
+  /* Bleeds through the page gutter to the edge, while the first and last
+     cards still line up with the content */
+  margin-inline: calc(-1 * var(--page-gutter));
   overflow-x: auto;
   overscroll-behavior-inline: contain;
-  padding: 0.25rem 0.125rem 0.75rem;
+  padding: 0.25rem var(--page-gutter) 0.75rem;
+  scroll-padding-inline: var(--page-gutter);
   scroll-snap-type: inline proximity;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
