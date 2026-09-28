@@ -47,56 +47,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [player, setPlayer] = useState<Player | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const loadingPlayerIdRef = useRef<string | null>(null);
+  // The load in progress, so a refresh can wait for it rather than be skipped
+  const loadingPromiseRef = useRef<Promise<void> | null>(null);
 
-  const loadPlayer = useCallback(async (firebaseUser: User) => {
+  const loadPlayer = useCallback((firebaseUser: User): Promise<void> => {
     const googleUserID = firebaseUser.uid;
-    
-    // Prevent concurrent calls for the same user
-    if (loadingPlayerIdRef.current === googleUserID) {
-      return;
+
+    // Prevent concurrent loads for the same user (both could create a player)
+    if (loadingPlayerIdRef.current === googleUserID && loadingPromiseRef.current) {
+      return loadingPromiseRef.current;
     }
-    
+
     loadingPlayerIdRef.current = googleUserID;
-    
-    try {
-      let currentPlayer = await getPlayerByGoogleUserID(googleUserID);
+    const load = (async () => {
+      try {
+        let currentPlayer = await getPlayerByGoogleUserID(googleUserID);
 
-      if (!currentPlayer) {
-        // Create a new player for this user (similar to iOS app behavior)
-        const displayName = firebaseUser.displayName || "Player";
-        currentPlayer = await createPlayer({
-          name: displayName,
-          googleUserID: googleUserID,
-          ownerID: googleUserID,
-          email: firebaseUser.email || undefined,
-          needsOnboarding: true,
-        });
-      } else if (currentPlayer.googleUserID && !currentPlayer.email && firebaseUser.email) {
-        // Update existing player with email if missing
-        await updatePlayer(currentPlayer.id, { email: firebaseUser.email });
-        currentPlayer = { ...currentPlayer, email: firebaseUser.email };
-      }
+        if (!currentPlayer) {
+          // Create a new player for this user (similar to iOS app behavior)
+          const displayName = firebaseUser.displayName || "Player";
+          currentPlayer = await createPlayer({
+            name: displayName,
+            googleUserID: googleUserID,
+            ownerID: googleUserID,
+            email: firebaseUser.email || undefined,
+            needsOnboarding: true,
+          });
+        } else if (currentPlayer.googleUserID && !currentPlayer.email && firebaseUser.email) {
+          // Update existing player with email if missing
+          await updatePlayer(currentPlayer.id, { email: firebaseUser.email });
+          currentPlayer = { ...currentPlayer, email: firebaseUser.email };
+        }
 
-      setPlayer(currentPlayer);
+        setPlayer(currentPlayer);
 
-      // No photo of their own yet: use their Google one, so others see it too
-      // (the account button showing the Google photo made it look set)
-      if (!currentPlayer.photoData && firebaseUser.photoURL) {
-        const playerId = currentPlayer.id;
-        importGooglePhoto(firebaseUser.photoURL)
-          .then(async (photoData) => {
-            await updatePlayer(playerId, { photoData });
-            setPlayer((p) => (p && p.id === playerId ? { ...p, photoData } : p));
-          })
-          .catch((err) => console.warn("Couldn't copy Google photo:", err));
+        // No photo of their own yet: use their Google one, so others see it too
+        // (the account button showing the Google photo made it look set)
+        if (!currentPlayer.photoData && firebaseUser.photoURL) {
+          const playerId = currentPlayer.id;
+          importGooglePhoto(firebaseUser.photoURL)
+            .then(async (photoData) => {
+              await updatePlayer(playerId, { photoData });
+              setPlayer((p) => (p && p.id === playerId ? { ...p, photoData } : p));
+            })
+            .catch((err) => console.warn("Couldn't copy Google photo:", err));
+        }
+      } catch (error) {
+        console.error("Error loading player:", error);
+      } finally {
+        if (loadingPlayerIdRef.current === googleUserID) {
+          loadingPlayerIdRef.current = null;
+          loadingPromiseRef.current = null;
+        }
       }
-    } catch (error) {
-      console.error("Error loading player:", error);
-    } finally {
-      if (loadingPlayerIdRef.current === googleUserID) {
-        loadingPlayerIdRef.current = null;
-      }
-    }
+    })();
+    loadingPromiseRef.current = load;
+    return load;
   }, []);
 
   useEffect(() => {
@@ -146,8 +152,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // After a change (heart, follow…): wait out any load already running, which
+  // may have read before the change, then read again
   const refreshPlayer = async () => {
     if (user) {
+      if (loadingPromiseRef.current) await loadingPromiseRef.current;
       await loadPlayer(user);
     }
   };
