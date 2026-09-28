@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useGames } from "../hooks/useGames";
 import { useActivity } from "../hooks/useActivity";
@@ -46,6 +46,8 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
   const location = useLocation();
   const params = useParams<{ id: string }>();
   const id = gameId ?? params.id;
+  // The title, which the panel's header picks up once it scrolls away
+  const heading = useRef<HTMLHeadingElement>(null);
   const { games, isLoading: gamesLoading, editGame, removeGame } = useGames();
   const { matches: allMatches } = useActivity(10000); // Full history for stats; shares the listener with list pages
   const { players } = usePlayersData();
@@ -182,12 +184,13 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
     : undefined;
   if (myEntry && !leaders.includes(myEntry)) leaders.push(myEntry);
 
-  const totalPlayers = new Set(gameMatches.flatMap((m) => m.playerIDs)).size;
 
   return (
     <div className="game-detail-page">
       <NavBar
         title={navTitle}
+        scrollTitle={navTitle ? undefined : game.title}
+        scrollAnchor={heading}
         hideBack={!!onClose}
         // Full-screen on phones, the edit button joins the close button in the corners
         actionInCorner={!!onClose && !isDesktop}
@@ -245,12 +248,7 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
               <GameBoxPreview game={game} />
             </Suspense>
           )}
-          <h1 className="game-hero-title">{game.title}</h1>
-          <p className="game-hero-meta">
-            {gameMatches.length} {gameMatches.length === 1 ? "match" : "matches"}
-            {totalPlayers > 0 &&
-              ` · ${totalPlayers} ${totalPlayers === 1 ? "player" : "players"}`}
-          </p>
+          <h1 ref={heading} className="game-hero-title">{game.title}</h1>
           {player && (
             <div className="game-hero-audience">
               <AudienceControl value={audience} onChange={setAudience} />
@@ -285,7 +283,7 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
         {currentSession && <MiniSessionSheet />}
 
         <div className="matches-section">
-          {gameMatches.length > 0 && <h2 className="section-title">Matches</h2>}
+          {gameMatches.length > 0 && <h2 className="section-title">Matches · {gameMatches.length}</h2>}
           {gameMatches.length === 0 ? (
             <div className="empty-state">
               <p>{audience === "friends" && player ? "No friend matches yet" : "No matches yet"}</p>

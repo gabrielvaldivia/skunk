@@ -1,4 +1,4 @@
-import { isValidElement, type ReactNode } from "react";
+import { isValidElement, useEffect, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { usePanelFrame } from "../context/PanelContext";
@@ -18,6 +18,12 @@ interface NavBarProps {
   closeInCorner?: boolean;
   /** Pin the action to the screen's top-right corner (e.g. over a full-screen hero) */
   actionInCorner?: boolean;
+  /**
+   * In a desktop panel: a name shown beside the close/back button once
+   * `scrollAnchor` (the page's own heading) scrolls up under the bar
+   */
+  scrollTitle?: string;
+  scrollAnchor?: RefObject<HTMLElement | null>;
 }
 
 // Sticky compact header for detail pages: back | centered title | action
@@ -28,6 +34,8 @@ export function NavBar({
   hideBack: hideBackProp,
   closeInCorner: closeInCornerProp,
   actionInCorner,
+  scrollTitle,
+  scrollAnchor,
 }: NavBarProps) {
   const navigate = useNavigate();
   // Inside a desktop panel, the first page has close top-left; later pages
@@ -35,6 +43,19 @@ export function NavBar({
   const frame = usePanelFrame();
   const hideBack = frame ? !frame.canGoBack : hideBackProp;
   const closeInCorner = !frame && closeInCornerProp;
+  const showsScrollTitle = !!frame && !!scrollTitle && !!scrollAnchor;
+  const [pastHeading, setPastHeading] = useState(false);
+  useEffect(() => {
+    const el = scrollAnchor?.current;
+    if (!showsScrollTitle || !el) return;
+    // The panel sits 1.25rem down and its bar is about 4rem tall; the heading
+    // counts as gone once it's under the bar
+    const observer = new IntersectionObserver(([entry]) => setPastHeading(!entry.isIntersecting && entry.boundingClientRect.top < 100), {
+      rootMargin: "-84px 0px 0px 0px",
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [showsScrollTitle, scrollAnchor]);
   // Opened directly (no in-app history to go back to): fall back to the home tab
   const goBack =
     (frame?.back ?? onBack) || (() => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate("/")));
@@ -55,7 +76,7 @@ export function NavBar({
   return (
     <div className={frame ? `page-header nav-bar nav-bar-panel${isValidElement(title) ? " nav-bar-panel-wide" : ""}` : hideBack ? "page-header nav-bar nav-bar-no-back" : "page-header nav-bar"}>
       {frame ? (
-        <div className="flex">
+        <div className="flex min-w-0 items-center gap-3">
           {hideBack ? (
             <Button variant="secondary" size="icon" onClick={frame.close} aria-label="Close">
               <CloseIcon className="!size-5" />
@@ -64,6 +85,14 @@ export function NavBar({
             <Button variant="secondary" size="icon" onClick={goBack} aria-label="Go back">
               <BackIcon className="!size-5" />
             </Button>
+          )}
+          {showsScrollTitle && (
+            <span
+              className={`truncate text-base font-semibold transition-opacity duration-200 ${pastHeading ? "opacity-100" : "opacity-0"}`}
+              aria-hidden={!pastHeading}
+            >
+              {scrollTitle}
+            </span>
           )}
         </div>
       ) : hideBack ? null : closeInCorner ? (

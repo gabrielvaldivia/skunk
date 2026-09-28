@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { usePlayers } from "../hooks/usePlayers";
 import { useActivity } from "../hooks/useActivity";
@@ -17,6 +17,8 @@ import "./PlayerDetailPage.css";
 /** `playerId` shows that player instead of the one in the URL, e.g. in a panel */
 export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
   const params = useParams<{ id: string }>();
+  // The name, which the panel's header picks up once it scrolls away
+  const heading = useRef<HTMLHeadingElement>(null);
   const id = playerId ?? params.id;
   const { players, isLoading: playersLoading } = usePlayers();
   const { matches: allMatches } = useActivity(10000); // Full history for stats; shares the listener with list pages
@@ -95,6 +97,8 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
   return (
     <div className="player-detail-page">
       <NavBar
+        scrollTitle={player.name}
+        scrollAnchor={heading}
         action={
           follow.canFollow && (
             <Button
@@ -111,7 +115,7 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
       />
       <div className="player-hero">
         <Avatar player={player} size={96} />
-        <h1 className="player-hero-name">{player.name}</h1>
+        <h1 ref={heading} className="player-hero-name">{player.name}</h1>
         {player.location && (
           <div className="player-location">
             <LocationIcon aria-hidden />
@@ -160,7 +164,7 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
           ) : (
             <div className="matches-list">
               {playerMatches.map((match) => (
-                <MatchRow key={match.id} match={match} hideGameTitle={false} />
+                <MatchRow key={match.id} match={match} hideGameTitle={false} shortNames showGameBox />
               ))}
             </div>
           )}

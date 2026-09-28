@@ -49,12 +49,6 @@
   letter-spacing: -0.03em;
 }
 
-.game-hero-meta {
-  margin: 0.25rem 0 0;
-  font-size: 0.875rem;
-  color: hsl(var(--muted-foreground));
-}
-
 .game-hero-audience {
   align-self: stretch;
   margin-top: 1rem;
