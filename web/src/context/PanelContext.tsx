@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
 // Desktop dialog system: pages that would otherwise navigate away from the
-// shelf (Activity, Players, a player, a game, your account) open in one side
+// shelf (Activity, Players, a player, a game, your account, sign in) open in one side
 // panel instead, with their own back stack. Phones keep full pages.
 
 export type PanelEntry =
@@ -11,7 +11,8 @@ export type PanelEntry =
   | { type: "players" }
   | { type: "player"; id: string }
   | { type: "game"; id: string }
-  | { type: "profile" };
+  | { type: "profile" }
+  | { type: "signin" };
 
 /** The panel entry for an in-app path, if that page can live in the panel */
 export function entryFromPath(path: string): PanelEntry | null {
@@ -68,9 +69,9 @@ export function usePanel() {
   return useContext(PanelContext);
 }
 
-// Set by whatever hosts a page in a panel: tells NavBar how to go back, and
-// links where to open
-type PanelFrame = { canGoBack: boolean; back: () => void; open: (entry: PanelEntry) => void };
+// Set by whatever hosts a page in a panel: tells NavBar how to go back and
+// close, and links where to open
+type PanelFrame = { canGoBack: boolean; back: () => void; close: () => void; open: (entry: PanelEntry) => void };
 
 const PanelFrameContext = createContext<PanelFrame | null>(null);
 export const PanelFrameProvider = PanelFrameContext.Provider;

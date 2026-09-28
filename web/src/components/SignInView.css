@@ -9,6 +9,12 @@
   background-color: hsl(var(--background));
 }
 
+/* In the desktop panel: fill the panel (less its bottom padding) instead of the screen */
+.sign-in-container.in-panel {
+  min-height: calc(100% - 7rem);
+  padding: 0;
+}
+
 /* Pinned to the screen corner (not the narrow column), where other headers put their buttons */
 .sign-in-close-button {
   position: fixed;

@@ -16,15 +16,25 @@ interface NavBarProps {
    * button sits, for pages opened from it
    */
   closeInCorner?: boolean;
+  /** Shown in the back button's place when there's no back (e.g. the first page in a panel) */
+  leading?: ReactNode;
   /** Pin the action to the screen's top-right corner (e.g. over a full-screen hero) */
   actionInCorner?: boolean;
 }
 
 // Sticky compact header for detail pages: back | centered title | action
-export function NavBar({ title, action, onBack, hideBack: hideBackProp, closeInCorner: closeInCornerProp, actionInCorner }: NavBarProps) {
+export function NavBar({
+  title,
+  action,
+  onBack,
+  hideBack: hideBackProp,
+  closeInCorner: closeInCornerProp,
+  leading,
+  actionInCorner,
+}: NavBarProps) {
   const navigate = useNavigate();
-  // Inside a desktop panel, back walks the panel's own stack; the panel
-  // provides the close button, and its first page has no back
+  // Inside a desktop panel, back walks the panel's own stack, a close button
+  // sits top-right, and the first page has no back
   const frame = usePanelFrame();
   const hideBack = frame ? !frame.canGoBack : hideBackProp;
   const closeInCorner = !frame && closeInCornerProp;
@@ -43,11 +53,13 @@ export function NavBar({ title, action, onBack, hideBack: hideBackProp, closeInC
 
   // Nothing left in the bar itself (e.g. a full-screen game on phones): skip
   // it rather than leave an empty row
-  if (hideBack && !title && (actionInCorner || !action) && !closeInCorner) return <>{cornerAction}</>;
+  if (hideBack && !title && (actionInCorner || !action) && !closeInCorner && !frame && !leading) return <>{cornerAction}</>;
 
   return (
-    <div className={hideBack ? "page-header nav-bar nav-bar-no-back" : "page-header nav-bar"}>
-      {hideBack ? null : closeInCorner ? (
+    <div className={hideBack && !leading ? "page-header nav-bar nav-bar-no-back" : "page-header nav-bar"}>
+      {hideBack ? (
+        leading
+      ) : closeInCorner ? (
         // Keeps the title centred under the corner close button
         <span className="size-10 shrink-0" aria-hidden />
       ) : (
@@ -61,7 +73,14 @@ export function NavBar({ title, action, onBack, hideBack: hideBackProp, closeInC
         </Button>
       )}
       <h1 className="nav-bar-title">{title}</h1>
-      <div className="nav-bar-action gap-2">{!actionInCorner && action}</div>
+      <div className="nav-bar-action gap-2">
+        {!actionInCorner && action}
+        {frame && (
+          <Button variant="secondary" size="icon" onClick={frame.close} aria-label="Close">
+            <CloseIcon className="!size-5" />
+          </Button>
+        )}
+      </div>
       {cornerAction}
       {/* Portalled: the header's backdrop blur would otherwise pin it to the header */}
       {closeInCorner &&

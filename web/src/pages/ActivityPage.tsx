@@ -9,6 +9,7 @@ import { AudienceControl } from '../components/AudienceControl';
 import './ActivityPage.css';
 import { useAppNavigate } from "../components/AppLink";
 import { NavBar } from "../components/NavBar";
+import { usePanelFrame } from "../context/PanelContext";
 import { Button } from "@/components/ui/button";
 import { PlayersIcon } from "../components/icons";
 
@@ -19,6 +20,12 @@ export function ActivityPage() {
   const { player } = useAuth();
   const friendIds = useFriendIds();
   const [audience, setAudience] = useState<ActivityAudience>('friends');
+  const frame = usePanelFrame();
+  const playersButton = (
+    <Button variant="secondary" size="icon" onClick={() => navigate("/players")} aria-label="Players">
+      <PlayersIcon className="!size-5" />
+    </Button>
+  );
   const visibleMatches = useMemo(
     () =>
       !player || audience === 'global'
@@ -41,11 +48,9 @@ export function ActivityPage() {
     <div className="activity-page">
       <NavBar
         title="Activity"
-        action={
-          <Button variant="secondary" size="icon" onClick={() => navigate("/players")} aria-label="Players">
-            <PlayersIcon className="!size-5" />
-          </Button>
-        }
+        // In the desktop panel, Players sits top-left, clear of the close button
+        leading={frame && !frame.canGoBack ? playersButton : undefined}
+        action={frame && !frame.canGoBack ? undefined : playersButton}
       />
       {currentSession && <MiniSessionSheet />}
 

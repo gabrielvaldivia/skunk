@@ -9,7 +9,7 @@ interface AccountButtonProps {
   size?: number;
   /** Floating glass pill, matching the Games header buttons */
   variant?: "default" | "pill";
-  /** Open the account in place (desktop panel) instead of going to the page */
+  /** Open the account or sign in in place (desktop panel) instead of going to the page */
   onOpen?: () => void;
 }
 
@@ -35,8 +35,8 @@ export function AccountButton({ className, size = 36, variant = "default", onOpe
         className
       )}
       onClick={() => {
-        if (!isAuthenticated) navigate("/signin", { state: { from: location } });
-        else if (onOpen) onOpen();
+        if (onOpen) onOpen();
+        else if (!isAuthenticated) navigate("/signin", { state: { from: location } });
         else navigate("/profile");
       }}
       style={{ width: size, height: size }}

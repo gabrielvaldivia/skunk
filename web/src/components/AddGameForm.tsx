@@ -598,7 +598,8 @@ export function AddGameForm({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-hidden !grid grid-rows-[auto_1fr_auto] gap-4">
+        {/* An inset panel on the right, like the desktop side panels */}
+        <DialogContent className="!bottom-5 !left-auto !right-5 !top-5 !grid w-[440px] !max-w-none !translate-x-0 !translate-y-0 grid-rows-[auto_1fr] gap-4 overflow-hidden data-[state=closed]:!slide-out-to-right-8 data-[state=open]:!slide-in-from-right-8 data-[state=closed]:!zoom-out-100 data-[state=open]:!zoom-in-100 data-[state=closed]:!slide-out-to-top-0 data-[state=open]:!slide-in-from-top-0">
           <DialogHeader className="shrink-0">
             <DialogTitle>Add New Game</DialogTitle>
           </DialogHeader>

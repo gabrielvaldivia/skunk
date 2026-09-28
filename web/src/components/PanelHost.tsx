@@ -1,6 +1,7 @@
 import { lazy, Suspense, useMemo } from "react";
 import { PanelFrameProvider, usePanel, type PanelEntry } from "../context/PanelContext";
 import { SidePanel } from "./SidePanel";
+import { SignInView } from "./SignInView";
 
 const ActivityPage = lazy(() => import("../pages/ActivityPage").then((m) => ({ default: m.ActivityPage })));
 const PlayersPage = lazy(() => import("../pages/PlayersPage").then((m) => ({ default: m.PlayersPage })));
@@ -14,9 +15,10 @@ const LABELS: Record<PanelEntry["type"], string> = {
   player: "Player",
   game: "Game",
   profile: "Account",
+  signin: "Sign in",
 };
 
-function PanelPage({ entry }: { entry: PanelEntry }) {
+function PanelPage({ entry, onClose }: { entry: PanelEntry; onClose: () => void }) {
   switch (entry.type) {
     case "activity":
       return <ActivityPage />;
@@ -28,6 +30,8 @@ function PanelPage({ entry }: { entry: PanelEntry }) {
       return <GameDetailPage gameId={entry.id} />;
     case "profile":
       return <ProfilePage />;
+    case "signin":
+      return <SignInView onDone={onClose} />;
   }
 }
 
@@ -36,18 +40,22 @@ export function PanelHost() {
   const panel = usePanel();
   const top = panel?.stack[panel.stack.length - 1];
   const frame = useMemo(
-    () => panel && { canGoBack: panel.stack.length > 1, back: panel.back, open: panel.push },
+    () => panel && { canGoBack: panel.stack.length > 1, back: panel.back, close: panel.close, open: panel.push },
     [panel]
   );
   if (!panel || !top || !frame) return null;
 
   return (
-    // The account panel opens from the top-left account button, so it slides in from the left
-    <SidePanel label={LABELS[top.type]} side={panel.stack[0].type === "profile" ? "left" : "right"} onClose={panel.close}>
+    // Account and sign in open from the top-left account button, so they slide in from the left
+    <SidePanel
+      label={LABELS[top.type]}
+      side={panel.stack[0].type === "profile" || panel.stack[0].type === "signin" ? "left" : "right"}
+      onClose={panel.close}
+    >
       <PanelFrameProvider value={frame}>
         <Suspense fallback={<div className="loading">Loading...</div>}>
           {/* Keyed so each step starts fresh (scroll, local state) */}
-          <PanelPage key={`${panel.stack.length}:${top.type}:${"id" in top ? top.id : ""}`} entry={top} />
+          <PanelPage key={`${panel.stack.length}:${top.type}:${"id" in top ? top.id : ""}`} entry={top} onClose={panel.close} />
         </Suspense>
       </PanelFrameProvider>
     </SidePanel>

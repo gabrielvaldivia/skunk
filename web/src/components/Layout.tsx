@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { AccountButton } from "./AccountButton";
 import { usePanel } from "../context/PanelContext";
+import { useAuth } from "../context/AuthContext";
 import { cn } from "@/lib/utils";
 
 interface LayoutProps {
@@ -15,6 +16,7 @@ export function Layout({ children }: LayoutProps) {
   const isHome = HOME_PATHS.includes(location.pathname);
   // On desktop, your account opens in the side panel over the page
   const panel = usePanel();
+  const { isAuthenticated } = useAuth();
 
   return (
     <div className={cn("min-h-dvh bg-background", isHome && "has-account")}>
@@ -27,7 +29,7 @@ export function Layout({ children }: LayoutProps) {
       {isHome && (
         // Pinned to the screen corner; page headers leave room for it
         <div className="chrome-fade fixed left-[var(--page-gutter)] top-[calc(var(--vv-top,0px)+var(--safe-top)+0.75rem)] z-50">
-          <AccountButton size={48} variant="pill" onOpen={panel ? () => panel.open({ type: "profile" }) : undefined} />
+          <AccountButton size={48} variant="pill" onOpen={panel ? () => panel.open({ type: isAuthenticated ? "profile" : "signin" }) : undefined} />
         </div>
       )}
     </div>

@@ -1,11 +1,9 @@
 import { useEffect, type ReactNode } from "react";
 import { useDragToDismiss } from "../hooks/useDragToDismiss";
 import { createPortal } from "react-dom";
-import { CloseIcon } from "./icons";
 
-// Desktop modal: an inset panel over a dimmed page. A right panel puts the
-// close button in the page's top-left corner (where the account button sits);
-// a left panel covers that corner, so its close button sits top-right
+// Desktop modal: an inset panel over a dimmed page. Its pages' nav bars carry
+// the close button, in the panel's top-right corner
 export function SidePanel({
   label,
   side = "right",
@@ -31,14 +29,6 @@ export function SidePanel({
   return createPortal(
     <>
       <div ref={backdropRef} className="fixed inset-0 z-[55] bg-black/35 animate-in fade-in duration-200" onClick={onClose} aria-hidden />
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close"
-        className={`fixed ${side === "left" ? "right-[var(--page-gutter)]" : "left-[var(--page-gutter)]"} top-[calc(var(--safe-top)+0.75rem)] z-[70] flex size-12 items-center justify-center rounded-full border border-border/60 bg-background/75 text-foreground shadow-[0_8px_32px_-8px_rgb(0_0_0/0.25)] backdrop-blur-xl backdrop-saturate-150 animate-in fade-in duration-200 active:scale-95`}
-      >
-        <CloseIcon className="size-5" />
-      </button>
       {/* The transform keeps the pages' fixed elements (session sheet, buttons) inside the panel */}
       {/* Drag toward the panel's edge to dismiss */}
       <aside

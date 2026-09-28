@@ -6,7 +6,8 @@ import { CloseIcon } from "./icons";
 import "./SignInView.css";
 import { isAdminEmail } from "@/lib/admin";
 
-export function SignInView() {
+/** onDone: shown in the desktop panel, which it closes once you're signed in (instead of navigating) */
+export function SignInView({ onDone }: { onDone?: () => void } = {}) {
   const { signIn, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,9 +27,10 @@ export function SignInView() {
     // Don't redirect if admin is viewing the sign-in screen intentionally
     if (isAuthenticated && !(isAdminView && isAdmin)) {
       // Redirect to the intended destination (or home)
-      navigate(from, { replace: true });
+      if (onDone) onDone();
+      else navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate, from, isAdminView, isAdmin]);
+  }, [isAuthenticated, navigate, from, isAdminView, isAdmin, onDone]);
 
   const handleSignIn = async () => {
     try {
@@ -36,7 +38,8 @@ export function SignInView() {
       setError(null);
       await signIn();
       // Navigate to intended destination or default to home
-      navigate(from, { replace: true });
+      if (onDone) onDone();
+      else navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to sign in");
     } finally {
@@ -53,8 +56,9 @@ export function SignInView() {
   };
 
   return (
-    <div className="sign-in-container">
-      <button className="sign-in-close-button" onClick={handleClose} aria-label="Close">
+    <div className={`sign-in-container${onDone ? " in-panel" : ""}`}>
+      {/* In the panel, pinned to the panel's corner (it's the containing block) */}
+      <button className="sign-in-close-button" onClick={onDone ?? handleClose} aria-label="Close">
         <CloseIcon size={18} />
       </button>
       <div className="sign-in-content">

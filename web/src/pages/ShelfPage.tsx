@@ -139,6 +139,7 @@ export function ShelfPage() {
     ? {
         canGoBack: false,
         back: () => select(null),
+        close: () => select(null),
         open: (entry: PanelEntry) => {
           select(null);
           panel.open(entry);
@@ -263,7 +264,11 @@ export function ShelfPage() {
           select(null);
         }}
         onAdd={() =>
-          isAuthenticated ? setShowAddForm(true) : navigate("/signin", { state: { from: location } })
+          isAuthenticated
+            ? setShowAddForm(true)
+            : panel
+              ? panel.open({ type: "signin" })
+              : navigate("/signin", { state: { from: location } })
         }
         query={query}
         onQueryChange={(q) => {
@@ -313,7 +318,8 @@ export function ShelfPage() {
               <p className="text-sm text-muted-foreground">
                 Sign up to fill your shelf with every game you play or add.
               </p>
-              <Button className="mt-1 w-full rounded-full" onClick={() => navigate("/signin", { state: { from: location } })}>
+              <Button className="mt-1 w-full rounded-full" onClick={() => (panel ? panel.open({ type: "signin" }) : navigate("/signin", { state: { from: location } }))}
+              >
                 Sign up
               </Button>
             </div>
@@ -327,7 +333,8 @@ export function ShelfPage() {
       )}
 
       {selected &&
-        // Page-level close in the corner the account button just vacated; portalled
+        !isDesktop &&
+        // Phones: page-level close in the corner the account button just vacated; portalled
         // so it stays above the phone's full-screen card game sheet
         createPortal(
           <button
