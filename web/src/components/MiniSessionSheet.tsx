@@ -94,6 +94,8 @@ export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact
       aria-label="Open active session"
       tabIndex={0}
       onKeyDown={(e) => {
+        // Keys on a face's own button open that player, not the session
+        if (e.target !== e.currentTarget) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           navigateToSession();
