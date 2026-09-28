@@ -124,19 +124,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         throw new Error("Player must be loaded to join a session");
       }
 
+      // Check the code first, so a bad one doesn't cost you your current session
+      const session = await getSessionByCode(code);
+      if (!session) {
+        throw new Error("Session not found or has expired");
+      }
+
       // Leave current session if in one
-      if (currentSession) {
+      if (currentSession && currentSession.id !== session.id) {
         try {
           await dbLeaveSession(currentSession.id, player.id);
         } catch (err) {
           // Ignore errors when leaving (session might not exist anymore)
           console.warn("Error leaving previous session:", err);
         }
-      }
-
-      const session = await getSessionByCode(code);
-      if (!session) {
-        throw new Error("Session not found or has expired");
       }
 
       // Join the session
