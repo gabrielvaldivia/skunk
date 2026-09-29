@@ -185,6 +185,9 @@
     display: flex;
     justify-content: flex-end;
   }
+  .nav-bar-action > * {
+    flex-shrink: 0;
+  }
 
   .page-content {
     width: 100%;

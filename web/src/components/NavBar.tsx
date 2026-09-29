@@ -103,7 +103,7 @@ export function NavBar({
   }
 
   const backButton = (
-    <Button variant="secondary" size="icon" onClick={goBack} aria-label="Go back">
+    <Button variant="secondary" size="icon" className="shrink-0" onClick={goBack} aria-label="Go back">
       <BackIcon className="!size-5" />
     </Button>
   );
@@ -122,7 +122,7 @@ export function NavBar({
       {frame ? (
         <div className="flex min-w-0 items-center gap-3">
           {hideBack ? (
-            <Button variant="secondary" size="icon" onClick={frame.close} aria-label="Close">
+            <Button variant="secondary" size="icon" className="shrink-0" onClick={frame.close} aria-label="Close">
               <CloseIcon className="!size-5" />
             </Button>
           ) : (

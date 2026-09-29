@@ -180,6 +180,21 @@ function pickDims(item: any): BoxDims | undefined {
   return { width, length, depth };
 }
 
+// The shelf crops a cover that doesn't match the box front, so shape the
+// front to the cover: keep the longest side and the depth, and let the other
+// side follow the cover's aspect. Orientation comes from the cover too.
+function fitToCover(dims: BoxDims, aspect: number | undefined): BoxDims {
+  if (!aspect) return dims;
+  const [depth, , long] = [dims.width, dims.length, dims.depth].sort((a, b) => a - b);
+  const width = aspect >= 1 ? long : long * aspect;
+  const height = aspect >= 1 ? long / aspect : long;
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const fitted: BoxDims = { width: r2(width), length: r2(height), depth: r2(Math.min(depth, width, height)) };
+  if (aspect > 1.05) fitted.orientation = "landscape";
+  else if (aspect < 0.95) fitted.orientation = "portrait";
+  return fitted;
+}
+
 // --- Firebase --------------------------------------------------------------
 
 function firebase() {
@@ -296,7 +311,7 @@ async function apply(flags: Set<string>) {
     const notes: string[] = [];
 
     const imageUrl: string | undefined = typeof item.image === "string" ? item.image.trim() : undefined;
-    let orientation: BoxDims["orientation"];
+    let coverAspect: number | undefined;
     if (imageUrl && (flags.has("--replace-covers") || !(await hasWorkingCover(game)))) {
       const path = `covers/${game.id}.webp`;
       const file = join(COVERS_DIR, `${game.id}.webp`);
@@ -319,7 +334,7 @@ async function apply(flags: Set<string>) {
       if (webp) {
         const meta = await sharp(webp).metadata();
         const aspect = meta.width && meta.height ? meta.width / meta.height : 1;
-        orientation = aspect > 1.1 ? "landscape" : aspect < 0.9 ? "portrait" : undefined;
+        coverAspect = aspect;
         notes.push(`cover ${size}→ public/${path} (${Math.round(webp.length / 1024)} KB)`);
         updates.coverArt = `/${path}`;
       }
@@ -331,8 +346,9 @@ async function apply(flags: Set<string>) {
 
     const dims = pickDims(item);
     if (dims && (flags.has("--replace-dims") || !game.boxDims)) {
-      updates.boxDims = orientation ? { ...dims, orientation } : dims;
-      notes.push(`box ${dims.width}×${dims.length}×${dims.depth} in${orientation ? ` ${orientation}` : ""}`);
+      const fitted = fitToCover(dims, coverAspect);
+      updates.boxDims = fitted;
+      notes.push(`box ${fitted.width}×${fitted.length}×${fitted.depth} in${fitted.orientation ? ` ${fitted.orientation}` : ""}`);
     } else if (!dims) {
       notes.push("no box size on BGG");
     }
@@ -500,7 +516,7 @@ async function importTop(flags: string[]) {
       };
       const notes: string[] = [];
 
-      let orientation: BoxDims["orientation"];
+      let coverAspect: number | undefined;
       const imageUrl: string | undefined = typeof item.image === "string" ? item.image.trim() : undefined;
       if (imageUrl) {
         const res = await fetch(imageUrl);
@@ -511,7 +527,7 @@ async function importTop(flags: string[]) {
           writeFileSync(join(COVERS_DIR, `${gameId}.webp`), webp);
           const meta = await sharp(webp).metadata();
           const aspect = meta.width && meta.height ? meta.width / meta.height : 1;
-          orientation = aspect > 1.1 ? "landscape" : aspect < 0.9 ? "portrait" : undefined;
+          coverAspect = aspect;
           game.coverArt = `/covers/${gameId}.webp`;
           notes.push(`cover ${Math.round(webp.length / 1024)} KB`);
         } else {
@@ -519,7 +535,7 @@ async function importTop(flags: string[]) {
         }
       }
       const dims = pickDims(item);
-      if (dims) game.boxDims = orientation ? { ...dims, orientation } : dims;
+      if (dims) game.boxDims = fitToCover(dims, coverAspect);
       else notes.push("no box size");
 
       plan.push({ gameId, bggId, rank: Number(r.rank), game });
