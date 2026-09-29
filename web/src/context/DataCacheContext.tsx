@@ -1,7 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
-import { getGames, subscribeToPlayers, updateGame } from '../services/databaseService';
+import {
+  getGames, subscribeToPlayers, updateGame, subscribeToMyPendingImages, subscribeToAllPendingImages,
+  type PendingImage,
+} from '../services/databaseService';
 import { useAuth } from './AuthContext';
 import { isAdminEmail } from '../lib/admin';
 import { COVER_ENHANCEMENT_VERSION } from '../lib/coverVersion';
@@ -19,10 +22,18 @@ interface PlayersData {
   playersError: Error | null;
 }
 
+interface ReviewData {
+  /** Your own uploads waiting for review (they show to you already) */
+  myPending: PendingImage[];
+  /** Everything waiting for review; only filled in for the admin */
+  allPending: PendingImage[];
+}
+
 // Separate contexts, so a player update (a heart, a follow, anyone's) doesn't
 // re-render everything that only shows games, like the 3D shelf
 const GamesContext = createContext<GamesData | undefined>(undefined);
 const PlayersContext = createContext<PlayersData | undefined>(undefined);
+const ReviewContext = createContext<ReviewData>({ myPending: [], allPending: [] });
 
 export function DataCacheProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -33,6 +44,25 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
   const [gamesError, setGamesError] = useState<Error | null>(null);
   const [playersError, setPlayersError] = useState<Error | null>(null);
   const migratedCoversForUser = useRef<string | null>(null);
+  const [myPending, setMyPending] = useState<PendingImage[]>([]);
+  const [allPending, setAllPending] = useState<PendingImage[]>([]);
+  const isAdmin = isAdminEmail(user?.email);
+
+  useEffect(() => {
+    if (!user) {
+      setMyPending([]);
+      return;
+    }
+    return subscribeToMyPendingImages(user.uid, setMyPending);
+  }, [user]);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setAllPending([]);
+      return;
+    }
+    return subscribeToAllPendingImages(setAllPending);
+  }, [isAdmin]);
 
   // Only the first load shows as loading; later refreshes (after an add or
   // edit) keep the current games on screen until the new list arrives
@@ -58,12 +88,11 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user || gamesLoading || gamesError || migratedCoversForUser.current === user.uid) return;
-    const isAdmin = isAdminEmail(user.email);
-    const oldEmbeddedCovers = games.filter(
+    // Only the admin can write covers now; everyone else's go through review
+    const oldEmbeddedCovers = !isAdmin ? [] : games.filter(
       (game) =>
         game.coverArt?.startsWith('data:image/') &&
-        (game.coverArtEnhancementVersion ?? 0) < COVER_ENHANCEMENT_VERSION &&
-        (game.createdByID === user.uid || isAdmin)
+        (game.coverArtEnhancementVersion ?? 0) < COVER_ENHANCEMENT_VERSION
     );
     migratedCoversForUser.current = user.uid;
     if (!oldEmbeddedCovers.length) return;
@@ -87,7 +116,7 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
       }
       if (changed) await refreshGames();
     })();
-  }, [games, gamesError, gamesLoading, refreshGames, user]);
+  }, [games, gamesError, gamesLoading, refreshGames, user, isAdmin]);
 
   useEffect(
     () =>
@@ -106,18 +135,31 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  // Your own pending uploads show to you straight away
+  const shownGames = useMemo(() => {
+    const covers = new Map(myPending.filter((p) => p.kind === 'game').map((p) => [p.targetId, p.image]));
+    return covers.size ? games.map((g) => (covers.has(g.id) ? { ...g, coverArt: covers.get(g.id) } : g)) : games;
+  }, [games, myPending]);
+  const shownPlayers = useMemo(() => {
+    const photos = new Map(myPending.filter((p) => p.kind === 'player').map((p) => [p.targetId, p.image]));
+    return photos.size ? players.map((p) => (photos.has(p.id) ? { ...p, photoData: photos.get(p.id) } : p)) : players;
+  }, [players, myPending]);
+
   const gamesValue = useMemo(
-    () => ({ games, gamesLoading, gamesError, refreshGames }),
-    [games, gamesLoading, gamesError, refreshGames]
+    () => ({ games: shownGames, gamesLoading, gamesError, refreshGames }),
+    [shownGames, gamesLoading, gamesError, refreshGames]
   );
   const playersValue = useMemo(
-    () => ({ players, playersLoading, playersError }),
-    [players, playersLoading, playersError]
+    () => ({ players: shownPlayers, playersLoading, playersError }),
+    [shownPlayers, playersLoading, playersError]
   );
+  const reviewValue = useMemo(() => ({ myPending, allPending }), [myPending, allPending]);
 
   return (
     <GamesContext.Provider value={gamesValue}>
-      <PlayersContext.Provider value={playersValue}>{children}</PlayersContext.Provider>
+      <PlayersContext.Provider value={playersValue}>
+        <ReviewContext.Provider value={reviewValue}>{children}</ReviewContext.Provider>
+      </PlayersContext.Provider>
     </GamesContext.Provider>
   );
 }
@@ -141,4 +183,8 @@ export function usePlayersData() {
 /** Games and players together, for components that show both */
 export function useDataCache() {
   return { ...useGamesData(), ...usePlayersData() };
+}
+
+export function useReviewQueue() {
+  return useContext(ReviewContext);
 }

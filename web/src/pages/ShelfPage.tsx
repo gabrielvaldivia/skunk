@@ -1,3 +1,4 @@
+import { isAdminEmail } from "@/lib/admin";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -73,7 +74,7 @@ export function ShelfPage() {
   const { games, isLoading: gamesLoading, addGame } = useGames();
   const [showAddForm, setShowAddForm] = useState(false);
   const panel = usePanel();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { currentSession } = useSession();
   const [scope, setScope] = useGameScope();
   const { ids: myIds, isLoading: myLoading } = useMyGameIds(games);
@@ -85,7 +86,15 @@ export function ShelfPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const dark = useIsDark();
   const [query, setQuery] = useSearchQuery();
-  const sorted = useMemo(() => [...games].sort((a, b) => a.title.localeCompare(b.title)), [games]);
+  // Games waiting for review show only to their creator and the admin
+  const canSeePending = isAdminEmail(user?.email);
+  const sorted = useMemo(
+    () =>
+      games
+        .filter((g) => !g.pending || canSeePending || (!!user && g.createdByID === user.uid))
+        .sort((a, b) => a.title.localeCompare(b.title)),
+    [games, canSeePending, user]
+  );
   // Card games fold into a single deck on the shelf. Search looks through
   // every game, whichever tab is showing.
   const searching = query.trim() !== "";

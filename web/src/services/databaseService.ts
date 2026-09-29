@@ -23,6 +23,7 @@ const PLAYERS_PATH = 'players';
 const MATCHES_PATH = 'matches';
 const SESSIONS_PATH = 'sessions';
 const SESSIONS_BY_CODE_PATH = 'sessionsByCode';
+const PENDING_IMAGES_PATH = 'pendingImages';
 
 // ==================== Games ====================
 
@@ -439,4 +440,72 @@ export function subscribeToSessionsForPlayer(
     },
     onError
   );
+}
+
+// ==================== Review queue ====================
+
+/**
+ * An uploaded image (a game cover or a profile photo) waiting for the admin.
+ * Only the uploader and the admin can read it; approving copies it onto the
+ * game or player.
+ */
+export type PendingImage = {
+  id: string;
+  kind: 'game' | 'player';
+  targetId: string;
+  /** Exactly what goes in games/…/coverArt or players/…/photoData */
+  image: string;
+  uploadedBy: string;
+  createdAt: number;
+  coverArtEnhancementVersion?: number;
+};
+
+export async function submitImage(
+  kind: PendingImage['kind'],
+  targetId: string,
+  image: string,
+  uploadedBy: string,
+  extra: { coverArtEnhancementVersion?: number } = {}
+): Promise<void> {
+  const id = `${kind}_${targetId}`;
+  await set(ref(database, `${PENDING_IMAGES_PATH}/${id}`), {
+    id, kind, targetId, image, uploadedBy, createdAt: Date.now(), ...extra,
+  });
+}
+
+export function subscribeToMyPendingImages(uid: string, onChange: (images: PendingImage[]) => void): Unsubscribe {
+  return onValue(
+    query(ref(database, PENDING_IMAGES_PATH), orderByChild('uploadedBy'), equalTo(uid)),
+    (snapshot) => onChange(snapshotToList<PendingImage>(snapshot)),
+    () => onChange([])
+  );
+}
+
+export function subscribeToAllPendingImages(onChange: (images: PendingImage[]) => void): Unsubscribe {
+  return onValue(
+    ref(database, PENDING_IMAGES_PATH),
+    (snapshot) => onChange(snapshotToList<PendingImage>(snapshot)),
+    () => onChange([])
+  );
+}
+
+export async function approveImage(image: PendingImage): Promise<void> {
+  const updates: Record<string, unknown> = { [`${PENDING_IMAGES_PATH}/${image.id}`]: null };
+  if (image.kind === 'game') {
+    updates[`${GAMES_PATH}/${image.targetId}/coverArt`] = image.image;
+    if (image.coverArtEnhancementVersion) {
+      updates[`${GAMES_PATH}/${image.targetId}/coverArtEnhancementVersion`] = image.coverArtEnhancementVersion;
+    }
+  } else {
+    updates[`${PLAYERS_PATH}/${image.targetId}/photoData`] = image.image;
+  }
+  await update(ref(database), updates);
+}
+
+export async function rejectImage(image: PendingImage): Promise<void> {
+  await remove(ref(database, `${PENDING_IMAGES_PATH}/${image.id}`));
+}
+
+export async function approveGame(gameId: string): Promise<void> {
+  await update(ref(database, `${GAMES_PATH}/${gameId}`), { pending: null });
 }

@@ -1,3 +1,4 @@
+import { isAdminEmail } from "@/lib/admin";
 import { Fragment, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGames } from "../hooks/useGames";
@@ -17,7 +18,7 @@ import { useGameScope, useMyGameIds } from "../hooks/useGameScope";
 export function GamesPage() {
   const navigate = useNavigate();
   const { games, isLoading, error, addGame } = useGames();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { matches } = useActivity(10000); // Get all matches to determine latest match per game
   const { currentSession } = useSession();
   const { champions } = useGameChampions(games, matches);
@@ -46,7 +47,9 @@ export function GamesPage() {
 
   // Sort games by latest match date (most recent first), then alphabetically for games with no matches
   const sortedGames = useMemo(() => {
-    const sorted = [...games].sort((a, b) => {
+    // Games waiting for review show only to their creator and the admin
+    const visible = games.filter((g) => !g.pending || isAdminEmail(user?.email) || (!!user && g.createdByID === user.uid));
+    const sorted = [...visible].sort((a, b) => {
       const aDate = gameLatestMatchDate.get(a.id) || 0;
       const bDate = gameLatestMatchDate.get(b.id) || 0;
       
@@ -62,7 +65,7 @@ export function GamesPage() {
     });
 
     return sorted;
-  }, [games, gameLatestMatchDate]);
+  }, [games, gameLatestMatchDate, user]);
 
   // Filter games based on search query
   const filteredGames = useMemo(() => {

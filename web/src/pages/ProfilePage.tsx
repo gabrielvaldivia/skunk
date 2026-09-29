@@ -4,7 +4,11 @@ import { useAuth } from "../context/AuthContext";
 import {
   updatePlayer,
   anonymizePlayer,
+  submitImage,
+  rejectImage,
 } from "../services/databaseService";
+import { useReviewQueue } from "../context/DataCacheContext";
+import { ReviewQueue } from "../components/ReviewQueue";
 import type { FieldUpdates } from "../services/databaseService";
 import type { Player } from "../models/Player";
 import { CameraIcon } from "../components/icons";
@@ -36,6 +40,11 @@ export function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // undefined = unchanged, null = remove, string = new base64 photo (no data: prefix)
   const [pendingPhotoData, setPendingPhotoData] = useState<string | null | undefined>(undefined);
+  // A new photo waits for the admin before others see it
+  const { myPending } = useReviewQueue();
+  const photoInReview = myPending.find((p) => p.kind === "player" && p.targetId === player?.id);
+  const shownPhoto =
+    pendingPhotoData === undefined && photoInReview ? `data:image/jpeg;base64,${photoInReview.image}` : photoPreview;
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -89,8 +98,11 @@ export function ProfilePage() {
         location: location.trim() || null,
         bio: bio.trim() || null,
       };
-      if (pendingPhotoData !== undefined) {
+      if (typeof pendingPhotoData === "string" && !isAdmin) {
+        await submitImage("player", player.id, pendingPhotoData, user!.uid);
+      } else if (pendingPhotoData !== undefined) {
         updates.photoData = pendingPhotoData;
+        if (pendingPhotoData === null && photoInReview) await rejectImage(photoInReview);
       }
 
       await updatePlayer(player.id, updates);
@@ -238,20 +250,23 @@ export function ProfilePage() {
             type="button"
             className="profile-avatar-button"
             onClick={() => fileInputRef.current?.click()}
-            aria-label={photoPreview ? "Change photo" : "Add photo"}
+            aria-label={shownPhoto ? "Change photo" : "Add photo"}
           >
-            {photoPreview ? (
-              <img src={photoPreview} alt={displayName} />
+            {shownPhoto ? (
+              <img src={shownPhoto} alt={displayName} />
             ) : (
               <span className="profile-avatar-placeholder">
                 <CameraIcon className="profile-plus-icon" />
               </span>
             )}
           </button>
-          {photoPreview && (
+          {shownPhoto && (
             <button type="button" className="text-button" onClick={handleRemovePhoto}>
               Remove photo
             </button>
+          )}
+          {photoInReview && pendingPhotoData === undefined && (
+            <p className="profile-email">Photo waiting for review · others see it once it's approved</p>
           )}
           {user?.email && (
             <p className="profile-email">
@@ -308,6 +323,13 @@ export function ProfilePage() {
           <span className="profile-row-label">Appearance</span>
           <ThemeToggle />
         </section>
+
+        {isAdmin && (
+          <section className="profile-group">
+            <h2 className="profile-group-title">Review</h2>
+            <ReviewQueue />
+          </section>
+        )}
 
         {isAdmin && (
           <section className="profile-group">

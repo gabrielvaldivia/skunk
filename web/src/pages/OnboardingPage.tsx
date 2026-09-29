@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CloseIcon, PlusIcon } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
-import { updatePlayer } from "../services/databaseService";
+import { updatePlayer, submitImage } from "../services/databaseService";
+import { isAdminEmail } from "@/lib/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,8 +98,11 @@ export function OnboardingPage() {
         updates.bio = trimmedBio;
       }
 
-      if (photoData) {
+      // A photo shows to others once the admin has reviewed it
+      if (photoData && isAdminEmail(user?.email)) {
         updates.photoData = photoData;
+      } else if (photoData && user) {
+        await submitImage("player", player.id, photoData, user.uid);
       }
 
       await updatePlayer(player.id, updates);

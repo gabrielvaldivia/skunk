@@ -544,6 +544,11 @@ export function AddGameForm({
 
       await onSubmit(newGame);
       onOpenChange(false);
+      if (!isAdminEmail(user.email)) {
+        toast.success(`Added ${newGame.title}`, {
+          description: "It's in your games now, and shows to everyone once it's reviewed.",
+        });
+      }
       // Reset form
       setTitle("");
       setMinPlayers(2);
