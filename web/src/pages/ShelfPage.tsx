@@ -40,6 +40,17 @@ function useViewportHeight() {
 // three.js is ~270 KB gzipped, so it only loads when someone opens the shelf.
 // It starts downloading as soon as this page does, alongside the game data,
 // rather than after the data arrives.
+// A random position per game, drawn the first time it's seen this page load
+const shelfRanks = new Map<string, number>();
+function shelfRank(id: string) {
+  let rank = shelfRanks.get(id);
+  if (rank === undefined) {
+    rank = Math.random();
+    shelfRanks.set(id, rank);
+  }
+  return rank;
+}
+
 const loadGameShelf = () => import("../components/shelf/GameShelf");
 const GameShelf = lazy(() => loadGameShelf().then((m) => ({ default: m.GameShelf })));
 
@@ -82,7 +93,14 @@ export function ShelfPage() {
     () => (searching ? sorted : needsSignIn ? [] : mine ? sorted.filter((g) => myIds.has(g.id)) : sorted),
     [sorted, searching, mine, myIds, needsSignIn]
   );
-  const { shelf: shown, inDeck } = useMemo(() => foldCardGames(scoped, query), [scoped, query]);
+  const { shelf: folded, inDeck } = useMemo(() => foldCardGames(scoped, query), [scoped, query]);
+  // All Games is shuffled once per page load (stable while you browse, fresh
+  // on reload); My Games and search results stay alphabetical
+  const shuffle = !mine && !searching;
+  const shown = useMemo(
+    () => (shuffle ? [...folded].sort((a, b) => shelfRank(a.id) - shelfRank(b.id)) : folded),
+    [folded, shuffle]
+  );
   const allCardGames = useMemo(() => sorted.filter(isCardGame), [sorted]);
   const selected = shown.find((g) => g.id === selectedId);
   const isDesktop = useMediaQuery("(min-width: 768px)");
