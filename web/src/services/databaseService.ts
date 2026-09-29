@@ -38,6 +38,9 @@ export async function getGames(): Promise<Game[]> {
   const games: Game[] = [];
   
   for (const gameId in gamesData) {
+    // A write to a single field of a deleted game recreates a partial record
+    // with no title; skip those rather than let them break sorting and search
+    if (typeof gamesData[gameId]?.title !== 'string') continue;
     games.push({
       id: gameId,
       ...gamesData[gameId]
