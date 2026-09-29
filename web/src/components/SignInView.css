@@ -97,10 +97,12 @@
   color: hsl(var(--destructive));
 }
 
-.sign-in-legal {
-  margin-top: 0.75rem;
+.sign-in-content .sign-in-legal {
+  max-width: none;
+  margin: 0.25rem 0 0;
   font-size: 0.75rem;
-  color: hsl(var(--muted-foreground));
+  line-height: 1.4;
+  white-space: nowrap;
   text-align: center;
 }
 
