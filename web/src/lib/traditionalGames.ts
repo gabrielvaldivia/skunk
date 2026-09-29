@@ -21,6 +21,8 @@ const BOARD = [
   "shogi (japanese chess)", "nine men's morris", "mancala", "chinese checkers", "ludo", "pachisi",
   "snakes and ladders", "tic-tac-toe", "dots and boxes", "gomoku", "connect 6", "hex", "carrom",
   "dominoes", "mahjong", "mexican train",
+  // Abstracts whose BGG images are photos of a board rather than a box
+  "amazons", "breakthrough", "lines of action", "crosswords",
 ];
 
 const DICE = ["liar's dice", "farkle", "ten thousand", "bunco"];

@@ -7,6 +7,13 @@
  *   npm run bgg -- apply --files-only  Save covers to public/covers/ without touching the database
  *   npm run bgg -- apply            Save covers + dimensions for reviewed matches to the database
  *
+ *   npm run bgg -- import --ranks <boardgames_ranks.csv> [--count 500]
+ *                                   Pick the top-ranked BGG games we don't have yet, save their
+ *                                   covers to public/covers/, and write scripts/data/bgg-import.json
+ *   npm run bgg -- import --write   Add the games in bgg-import.json to the database (deploy first)
+ *
+ * The ranks CSV is BGG's data dump (boardgamegeek.com/data_dumps/bg_ranks, signed in).
+ *
  * Covers ship with the site (public/covers/<gameId>.webp) because the project
  * has no Storage bucket and BGG's image CDN sends no CORS headers, which the
  * shelf needs for WebGL textures. Deploy the files before running a plain
@@ -40,6 +47,7 @@ import type { BoxDims, Game } from "../src/models/Game.ts";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MATCHES_PATH = join(__dirname, "data/bgg-matches.json");
 const COVERS_DIR = join(__dirname, "../public/covers");
+const IMPORT_PATH = join(__dirname, "data/bgg-import.json");
 const BGG = "https://boardgamegeek.com/xmlapi2";
 const REQUEST_GAP_MS = 5000;
 
@@ -329,11 +337,193 @@ async function apply(flags: Set<string>) {
   );
 }
 
+// --- import ------------------------------------------------------------------
+
+// Loose title key for spotting games we already have under a slightly
+// different name ("7 Wonders: Duel" / "7 Wonders Duel", "The Princes of Florence")
+const titleKey = (title: string) =>
+  title
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/&/g, " and ")
+    .replace(/^the\s+/, "")
+    .replace(/[^a-z0-9]+/g, "");
+
+// Minimal CSV reader: BGG quotes names that contain commas
+function parseCsv(text: string) {
+  const rows: string[][] = [];
+  for (const line of text.split(/\r?\n/)) {
+    if (!line) continue;
+    const cells: string[] = [];
+    let cell = "";
+    let quoted = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (quoted) {
+        if (c === '"' && line[i + 1] === '"') {
+          cell += '"';
+          i++;
+        } else if (c === '"') quoted = false;
+        else cell += c;
+      } else if (c === '"') quoted = true;
+      else if (c === ",") {
+        cells.push(cell);
+        cell = "";
+      } else cell += c;
+    }
+    cells.push(cell);
+    rows.push(cells);
+  }
+  const [header, ...body] = rows;
+  return body.map((r) => Object.fromEntries(header.map((h, i) => [h, r[i]])));
+}
+
+// BGG has nothing structured about scoring, so infer it from mechanics and
+// categories; most games are "keep score, highest wins"
+function scoringFor(item: any) {
+  const links: any[] = item.link ?? [];
+  const has = (type: string, value: string) => links.some((l) => l.type === type && l.value === value);
+  const mech = (v: string) => has("boardgamemechanic", v);
+  const cat = (v: string) => has("boardgamecategory", v);
+  const coop = mech("Cooperative Game");
+  const team = coop || mech("Team-Based Game");
+  const noScore =
+    coop ||
+    cat("Party Game") ||
+    cat("Deduction") ||
+    cat("Wargame") ||
+    mech("Hidden Roles") ||
+    mech("Race") ||
+    mech("Player Elimination");
+  return {
+    isBinaryScore: noScore,
+    isTeamBased: team,
+    countAllScores: true,
+    countLosersOnly: false,
+    highestScoreWins: true,
+    highestRoundScoreWins: true,
+    winningConditions: "game:highest|round:highest",
+  };
+}
+
+type Planned = { gameId: string; bggId: number; rank: number; game: Omit<Game, "id"> };
+
+async function importTop(flags: string[]) {
+  const arg = (name: string) => {
+    const i = flags.indexOf(name);
+    return i >= 0 ? flags[i + 1] : undefined;
+  };
+  const { db } = firebase();
+  const existing = await loadGames(db);
+  const plan: Planned[] = existsSync(IMPORT_PATH) ? JSON.parse(readFileSync(IMPORT_PATH, "utf8")) : [];
+
+  if (flags.includes("--write")) {
+    // Re-check against the live list in case a game was added since planning
+    const haveIds = new Set(existing.map((g) => g.bggId).filter(Boolean));
+    const haveTitles = new Set(existing.map((g) => titleKey(g.title)));
+    let added = 0;
+    for (const p of plan) {
+      if (haveIds.has(p.bggId) || haveTitles.has(titleKey(p.game.title))) continue;
+      if (p.game.coverArt && !existsSync(join(COVERS_DIR, "..", p.game.coverArt))) {
+        console.warn(`- ${p.game.title}: cover file missing, skipped`);
+        continue;
+      }
+      await db.ref(`games/${p.gameId}`).set({ ...p.game, id: p.gameId });
+      added++;
+    }
+    console.log(`Added ${added} games.`);
+    return;
+  }
+
+  const ranksPath = arg("--ranks");
+  if (!ranksPath) throw new Error("Pass --ranks <path to boardgames_ranks.csv>");
+  const count = Number(arg("--count") ?? 500);
+  requireCfg("BGG_TOKEN");
+  mkdirSync(COVERS_DIR, { recursive: true });
+
+  const haveIds = new Set<number>(existing.map((g) => g.bggId).filter((id): id is number => !!id));
+  const haveTitles = new Set(existing.map((g) => titleKey(g.title)));
+  for (const p of plan) {
+    haveIds.add(p.bggId);
+    haveTitles.add(titleKey(p.game.title));
+  }
+
+  const ranked = parseCsv(readFileSync(ranksPath, "utf8"))
+    .filter((r) => r.is_expansion === "0" && Number(r.rank) > 0)
+    .sort((a, b) => Number(a.rank) - Number(b.rank));
+
+  // Walk down the rankings until `count` new games are planned
+  let cursor = 0;
+  while (plan.length < count && cursor < ranked.length) {
+    const batch: typeof ranked = [];
+    while (batch.length < 20 && cursor < ranked.length) {
+      const r = ranked[cursor++];
+      if (haveIds.has(Number(r.id)) || haveTitles.has(titleKey(r.name))) continue;
+      batch.push(r);
+    }
+    if (!batch.length) break;
+    const items = await things(batch.map((r) => Number(r.id)), "versions=1");
+    for (const r of batch) {
+      if (plan.length >= count) break;
+      const bggId = Number(r.id);
+      const item = items.get(bggId);
+      if (!item) continue;
+      const title = primaryName(item) ?? r.name;
+      // BGG's primary name can differ from the dump's; check it too
+      if (haveTitles.has(titleKey(title))) continue;
+      const min = Math.max(1, Number(attr(item.minplayers)) || 2);
+      const max = Math.min(20, Math.max(min, Number(attr(item.maxplayers)) || min));
+      const gameId = db.ref("games").push().key!;
+      const game: Omit<Game, "id"> = {
+        title,
+        supportedPlayerCounts: Array.from({ length: max - min + 1 }, (_, i) => min + i),
+        ...scoringFor(item),
+        creationDate: Date.now(),
+        bggId,
+      };
+      const notes: string[] = [];
+
+      let orientation: BoxDims["orientation"];
+      const imageUrl: string | undefined = typeof item.image === "string" ? item.image.trim() : undefined;
+      if (imageUrl) {
+        const res = await fetch(imageUrl);
+        if (res.ok) {
+          const source = Buffer.from(await res.arrayBuffer());
+          // 512px keeps ~500 new covers to a reasonable size in the repo
+          const webp = await sharp(source).resize(512, 512, { fit: "inside", withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+          writeFileSync(join(COVERS_DIR, `${gameId}.webp`), webp);
+          const meta = await sharp(webp).metadata();
+          const aspect = meta.width && meta.height ? meta.width / meta.height : 1;
+          orientation = aspect > 1.1 ? "landscape" : aspect < 0.9 ? "portrait" : undefined;
+          game.coverArt = `/covers/${gameId}.webp`;
+          notes.push(`cover ${Math.round(webp.length / 1024)} KB`);
+        } else {
+          notes.push(`cover failed (${res.status})`);
+        }
+      }
+      const dims = pickDims(item);
+      if (dims) game.boxDims = orientation ? { ...dims, orientation } : dims;
+      else notes.push("no box size");
+
+      plan.push({ gameId, bggId, rank: Number(r.rank), game });
+      haveIds.add(bggId);
+      haveTitles.add(titleKey(title));
+      // Save as we go so an interrupted run picks up where it left off
+      writeFileSync(IMPORT_PATH, JSON.stringify(plan, null, 2) + "\n");
+      const how = game.isBinaryScore ? "win/lose" : "score";
+      console.log(`[${plan.length}/${count}] #${r.rank} ${title}: ${min}-${max} players, ${how}${game.isTeamBased ? ", team" : ""}; ${notes.join("; ")}`);
+    }
+  }
+  console.log(`\nPlanned ${plan.length} games in ${IMPORT_PATH}. Deploy the covers, then run: npm run bgg -- import --write`);
+}
+
 const [command, ...rest] = process.argv.slice(2);
 const flags = new Set(rest);
-const commands: Record<string, () => Promise<void>> = { match, apply: () => apply(flags) };
+const commands: Record<string, () => Promise<void>> = { match, apply: () => apply(flags), import: () => importTop(rest) };
 if (!command || !commands[command]) {
-  console.log("Usage: npm run bgg -- <match|apply> [--dry-run] [--files-only] [--replace-covers] [--replace-dims]");
+  console.log("Usage: npm run bgg -- <match|apply|import> [--dry-run] [--files-only] [--ranks <csv>] [--write] [--replace-covers] [--replace-dims]");
   process.exit(command ? 1 : 0);
 }
 commands[command]().then(
