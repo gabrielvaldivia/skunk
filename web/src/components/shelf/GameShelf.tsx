@@ -47,7 +47,9 @@ type Placed = { game: Game; box: ShelfBox; x: number; y: number };
 const DragContext = createContext<{ current: boolean }>({ current: false });
 
 // Pack face-out boxes left-to-right into shelves of a fixed width. Full rows
-// spread across the whole shelf so they line up; each sits on its own plank.
+// space their boxes evenly, with the same gap at the ends as between boxes,
+// so a shelf of two doesn't push them to opposite walls; each sits on its
+// own plank.
 function layout(games: Game[], shelfWidth: number, aspects: Map<string, number>) {
   type Row = { items: { game: Game; box: ShelfBox }[]; used: number; height: number };
   const rows: Row[] = [];
@@ -72,8 +74,9 @@ function layout(games: Game[], shelfWidth: number, aspects: Map<string, number>)
     y -= row.height + CLEARANCE;
     planks.push(y);
     const isLast = i === rows.length - 1;
-    const gap = isLast || row.items.length < 2 ? GAP : GAP + (shelfWidth - row.used) / (row.items.length - 1);
-    let x = -(isLast ? row.used : shelfWidth) / 2;
+    const boxesWidth = row.used - GAP * (row.items.length - 1);
+    const gap = isLast ? GAP : (shelfWidth - boxesWidth) / (row.items.length + 1);
+    let x = isLast ? -row.used / 2 : -shelfWidth / 2 + gap;
     for (const item of row.items) {
       placed.push({ ...item, x: x + item.box.width / 2, y: y + item.box.height / 2 });
       x += item.box.width + gap;
@@ -83,8 +86,6 @@ function layout(games: Game[], shelfWidth: number, aspects: Map<string, number>)
   return { placed, planks, totalHeight: -y };
 }
 
-// Covers only exist while a box is near the viewport, so memory stays flat
-// no matter how many games there are
 // Covers only exist while a box is near the viewport, so memory stays flat
 // no matter how many games there are
 function useBoxArt(game: Game, box: ShelfBox, near: boolean) {
