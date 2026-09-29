@@ -1,3 +1,4 @@
+import { openSignIn } from "@/lib/signInPrompt";
 import { isAdminEmail } from "@/lib/admin";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -318,11 +319,7 @@ export function ShelfPage() {
           select(null);
         }}
         onAdd={() =>
-          isAuthenticated
-            ? setShowAddForm(true)
-            : panel
-              ? panel.open({ type: "signin" })
-              : navigate("/signin", { state: { from: location } })
+isAuthenticated ? setShowAddForm(true) : openSignIn()
         }
         query={query}
         onQueryChange={(q) => {

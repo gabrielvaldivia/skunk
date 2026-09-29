@@ -72,19 +72,26 @@ export function SignInView({ onDone, preview: previewProp = false }: { onDone?: 
       <button className="sign-in-close-button" onClick={handleClose} aria-label="Close">
         <CloseIcon size={20} />
       </button>
-      <div className="sign-in-content">
-        <div className="sign-in-mark" aria-hidden><img src="/brand/logo.png" alt="" /></div>
-        <h1>Skunk</h1>
-        <p>Track every game night. Sign in to log matches, games and players.</p>
-        <div className="sign-in-actions">
-          <Button onClick={handleSignIn} disabled={isLoading} size="lg" className="w-full">
-            {isLoading ? "Signing in..." : "Continue with Google"}
-          </Button>
-          {error && <p className="error-message">{error}</p>}
-          <p className="sign-in-legal">
-            By continuing you agree to the <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.
-          </p>
-        </div>
+      <SignInContent onSignIn={handleSignIn} isLoading={isLoading} error={error} />
+    </div>
+  );
+}
+
+/** The mark, pitch and Google button: the sign-in screen, and the dialog that asks for it mid-action */
+export function SignInContent({ onSignIn, isLoading, error }: { onSignIn: () => void; isLoading: boolean; error: string | null }) {
+  return (
+    <div className="sign-in-content">
+      <div className="sign-in-mark" aria-hidden><img src="/brand/logo.png" alt="" /></div>
+      <h1>Skunk</h1>
+      <p>Track every game night. Sign in to log matches, games and players.</p>
+      <div className="sign-in-actions">
+        <Button onClick={onSignIn} disabled={isLoading} size="lg" className="w-full">
+          {isLoading ? "Signing in..." : "Continue with Google"}
+        </Button>
+        {error && <p className="error-message">{error}</p>}
+        <p className="sign-in-legal">
+          By continuing you agree to the <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.
+        </p>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
+import { openSignIn } from "@/lib/signInPrompt";
 import { lazy, Suspense, useRef, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useGames } from "../hooks/useGames";
 import { useActivity } from "../hooks/useActivity";
 import { usePlayersData } from "../context/DataCacheContext";
@@ -44,7 +45,6 @@ const GameBoxPreview = lazy(() =>
 
 export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProps = {}) {
   const navigate = useNavigate();
-  const location = useLocation();
   const params = useParams<{ id: string }>();
   const id = gameId ?? params.id;
   // The title, which the panel's header picks up once it scrolls away
@@ -82,7 +82,7 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
 
     // Require sign-in before creating a session
     if (!isAuthenticated) {
-      navigate("/signin", { state: { from: location }, replace: true });
+      openSignIn();
       return;
     }
 
@@ -196,13 +196,14 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
         // Full-screen on phones, the edit button joins the close button in the corners
         actionInCorner={!!onClose && !isDesktop}
         action={
-          (heart.canHeart || isAdmin) && (
+          (heart.canHeart || !isAuthenticated || isAdmin) && (
             <>
-              {heart.canHeart && (
+              {(heart.canHeart || !isAuthenticated) && (
                 <Button
                   variant="secondary"
                   size="icon"
-                  onClick={heart.toggle}
+                  // Signed out, the heart asks you to sign in first
+                  onClick={heart.canHeart ? heart.toggle : openSignIn}
                   aria-pressed={heart.hearted}
                   aria-label={heart.hearted ? "Remove from My Games" : "Add to My Games"}
                   className={heart.hearted ? "text-red-500 hover:text-red-500" : undefined}

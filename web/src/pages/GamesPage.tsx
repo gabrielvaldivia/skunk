@@ -1,3 +1,4 @@
+import { openSignIn } from "@/lib/signInPrompt";
 import { isAdminEmail } from "@/lib/admin";
 import { Fragment, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -91,7 +92,7 @@ export function GamesPage() {
         query={searchQuery}
         onQueryChange={setSearchQuery}
         cornerHidden={showAddForm}
-        onAdd={() => (isAuthenticated ? setShowAddForm(true) : navigate("/signin"))}
+        onAdd={() => (isAuthenticated ? setShowAddForm(true) : openSignIn())}
       />
       {isAuthenticated && (
         <AddGameForm open={showAddForm} onOpenChange={setShowAddForm} onSubmit={handleSubmitGame} />
