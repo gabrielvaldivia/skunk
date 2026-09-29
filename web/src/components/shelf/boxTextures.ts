@@ -237,16 +237,17 @@ function drawTraditionalCover(title: string, box: ShelfBox, kind: TraditionalKin
 
 async function buildBoxArt(
   title: string,
-  coverUrl: string | undefined,
+  image: Promise<HTMLImageElement | null>,
   box: ShelfBox,
   kind: TraditionalKind | undefined
 ): Promise<BoxArt> {
   let drawn: { canvas: HTMLCanvasElement; color: THREE.Color } | null = null;
-  if (coverUrl) {
+  const img = await image;
+  if (img) {
     try {
-      drawn = drawCover(await loadImage(coverUrl), box);
+      drawn = drawCover(img, box);
     } catch {
-      // Broken URL, or a host without CORS headers: fall through to a generated cover
+      // e.g. a tainted canvas: fall through to a generated cover
     }
   }
   drawn ??= kind ? drawTraditionalCover(title, box, kind) : drawGeneratedCover(title, box);
@@ -287,12 +288,16 @@ export function requestBoxArt(
   onError?: (error: unknown) => void
 ) {
   let art: BoxArt | null = null;
+  // Download and decode now, in parallel with every other box; only the
+  // canvas drawing waits its turn in the queue. Broken URLs or hosts without
+  // CORS headers resolve to null and get a generated cover.
+  const image = coverUrl ? loadImage(coverUrl).catch(() => null) : Promise.resolve(null);
   const job: Job = {
     cancelled: false,
     run: async () => {
       let built: BoxArt;
       try {
-        built = await buildBoxArt(title, coverUrl, box, kind);
+        built = await buildBoxArt(title, image, box, kind);
       } catch (error) {
         // e.g. no 2D canvas under memory pressure; the box keeps its plain body
         if (!job.cancelled) onError?.(error);
@@ -306,8 +311,13 @@ export function requestBoxArt(
       onReady(built);
     },
   };
-  queue.push(job);
-  requestAnimationFrame(pump);
+  // Join the drawing queue once the image is in hand, so a slow download
+  // never holds a slot other covers could use
+  void image.then(() => {
+    if (job.cancelled) return;
+    queue.push(job);
+    requestAnimationFrame(pump);
+  });
   return () => {
     job.cancelled = true;
     art?.cover.dispose();

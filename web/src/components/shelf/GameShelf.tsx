@@ -190,7 +190,9 @@ function GameBox({
 
   // Stepping to the next or previous game: the new box glides in from that
   // side while the old one goes straight back to the shelf behind the scrim
-  const wasSelected = useRef(selected);
+  // Starts false so a box that mounts already selected (stepped to from far
+  // down the shelf) still gets its slide-in
+  const wasSelected = useRef(false);
   const enterFrom = useRef(0);
 
   useFrame((state, dt) => {
@@ -721,13 +723,31 @@ function ShelfScene({
   // empty shelf instead of leaving the previous frame's boxes on screen.
   useEffect(() => invalidate(), [games, invalidate]);
 
+  // Lazy shelf: only boxes within a couple of screens of the camera exist, so
+  // a library of hundreds of games costs about as much as one screenful.
+  // The window moves in half-screen steps as you scroll.
+  const step = viewH / 2;
+  const [band, setBand] = useState(() => Math.round(cam.position.y / step));
+  const bandRef = useRef(band);
+  useFrame(({ camera }) => {
+    const next = Math.round(camera.position.y / step);
+    if (next !== bandRef.current) {
+      bandRef.current = next;
+      setBand(next);
+    }
+  });
+  const shown = useMemo(() => {
+    const centre = band * step;
+    return placed.filter((p) => p.game.id === selectedId || Math.abs(p.y * S - centre) < viewH * 2);
+  }, [placed, band, step, viewH, selectedId]);
+
   return (
     <>
       <CameraRig totalHeight={totalHeight} fitDist={fitDist} viewH={viewH} enabled={!selectedId} resetKey={resetKey} />
       <KeyLight width={shelfWidth + 6} viewH={viewH} dark={dark} />
       <Shelves planks={planks} width={shelfWidth} wood={wood} viewH={viewH} />
       <Scrim active={selectedId !== null} dark={dark} solid={!!focus.solidBackdrop} onDismiss={() => onSelect(null)} />
-      {placed.map((p) => (
+      {shown.map((p) => (
         <GameBox
           key={p.game.id}
           placed={p}
