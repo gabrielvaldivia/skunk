@@ -59,6 +59,22 @@
         ".write": "auth != null && (!data.exists() || !newData.exists())",
         ".validate": "!newData.exists() || newData.isString()"
       }
+    },
+    "scanUsage": {
+      "_all": {
+        "$day": {
+          ".read": "auth != null",
+          ".write": "auth != null && newData.exists()",
+          ".validate": "newData.isNumber() && newData.val() == (data.exists() ? data.val() + 1 : 1) && newData.val() <= 1000"
+        }
+      },
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        "$day": {
+          ".write": "auth != null && auth.uid == $uid && newData.exists()",
+          ".validate": "newData.isNumber() && newData.val() == (data.exists() ? data.val() + 1 : 1) && newData.val() <= 30"
+        }
+      }
     }
   }
 }

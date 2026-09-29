@@ -5,7 +5,12 @@
  * `Authorization: Bearer <token>`. Returns { title, libraryMatch }: the title
  * as printed on the box, and the library title it is (or null).
  *
- * Requires ANTHROPIC_API_KEY and VITE_FIREBASE_PROJECT_ID in the environment.
+ * Requires ANTHROPIC_API_KEY, VITE_FIREBASE_PROJECT_ID and VITE_FIREBASE_DATABASE_URL
+ * in the environment.
+ *
+ * Each scan is counted in the database with the caller's own token, before
+ * any model call; the database rules cap the counts (per player and overall,
+ * per UTC day), so the limits hold even if this endpoint is called directly.
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { createRemoteJWKSet, jwtVerify } from "jose";
@@ -20,6 +25,25 @@ const firebaseKeys = createRemoteJWKSet(
 );
 
 const client = new Anthropic();
+
+// Must match the caps in database.rules.json (scanUsage)
+const DAILY_PER_PLAYER = 30;
+
+// Add one to a counter under scanUsage, as the caller. False once the rules
+// refuse (the cap is reached); retried when another scan raced us.
+async function bumpCounter(path: string, token: string): Promise<boolean> {
+  const url = `${process.env.VITE_FIREBASE_DATABASE_URL}/scanUsage/${path}.json?auth=${token}`;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const current = await fetch(url, { headers: { "X-Firebase-ETag": "true" } });
+    if (!current.ok) return false;
+    const etag = current.headers.get("etag") ?? "";
+    const count = ((await current.json()) as number | null) ?? 0;
+    const res = await fetch(url, { method: "PUT", headers: { "if-match": etag }, body: JSON.stringify(count + 1) });
+    if (res.ok) return true;
+    if (res.status !== 412) return false;
+  }
+  return false;
+}
 
 const SCHEMA = {
   type: "object",
@@ -46,13 +70,23 @@ export async function POST(request: Request) {
   const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
   const token = request.headers.get("authorization")?.match(/^Bearer (.+)$/)?.[1];
   if (!token || !projectId) return json({ error: "Sign in to scan" }, 401);
+  let uid: string;
   try {
-    await jwtVerify(token, firebaseKeys, {
+    const { payload } = await jwtVerify(token, firebaseKeys, {
       issuer: `https://securetoken.google.com/${projectId}`,
       audience: projectId,
     });
+    uid = payload.sub!;
   } catch {
     return json({ error: "Sign in to scan" }, 401);
+  }
+
+  const day = new Date().toISOString().slice(0, 10);
+  if (!(await bumpCounter(`${uid}/${day}`, token))) {
+    return json({ error: `You've used today's ${DAILY_PER_PLAYER} scans. Try again tomorrow, or add the game by name.` }, 429);
+  }
+  if (!(await bumpCounter(`_all/${day}`, token))) {
+    return json({ error: "Scanning is resting for today. Add the game by name instead." }, 429);
   }
 
   let image: unknown, titles: unknown;
