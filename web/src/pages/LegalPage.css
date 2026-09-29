@@ -1,0 +1,36 @@
+.legal-content {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding-bottom: 4rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.legal-content h2 {
+  margin: 1.75rem 0 0.5rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.legal-content p,
+.legal-content ul {
+  margin: 0 0 0.75rem;
+}
+
+.legal-content ul {
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.legal-content li {
+  margin-bottom: 0.375rem;
+}
+
+.legal-content a {
+  text-decoration: underline;
+}
+
+.legal-updated {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.8125rem;
+}

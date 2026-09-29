@@ -221,6 +221,7 @@ export function ProfilePage() {
 
     try {
       // Anonymize rather than delete so other players' match history stays intact
+      if (photoInReview) await rejectImage(photoInReview);
       await anonymizePlayer(player.id);
 
       // Sign out and redirect to sign in page
@@ -362,6 +363,9 @@ export function ProfilePage() {
           <p className="form-hint profile-delete-hint">
             Deleting your account removes your name, photo and profile. Your past
             matches stay, credited to "Deleted player".
+          </p>
+          <p className="form-hint profile-delete-hint">
+            <a href="/terms" className="underline">Terms</a> · <a href="/privacy" className="underline">Privacy Policy</a>
           </p>
         </section>
       </div>

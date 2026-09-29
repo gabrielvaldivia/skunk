@@ -70,6 +70,9 @@ export function SignInView({ onDone }: { onDone?: () => void } = {}) {
             {isLoading ? "Signing in..." : "Continue with Google"}
           </Button>
           {error && <p className="error-message">{error}</p>}
+          <p className="sign-in-legal">
+            By continuing you agree to the <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.
+          </p>
         </div>
       </div>
     </div>
