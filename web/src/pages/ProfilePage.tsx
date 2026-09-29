@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { usePlayersData } from "../context/DataCacheContext";
 import {
   updatePlayer,
   anonymizePlayer,
@@ -26,6 +27,7 @@ import { squarePhotoBase64 } from "@/lib/photo";
 export function ProfilePage() {
   const navigate = useNavigate();
   const { user, player, isAuthenticated, refreshPlayer, signOut } = useAuth();
+  const { refreshPlayers } = usePlayersData();
   const isAdmin = isAdminEmail(user?.email);
   const [name, setName] = useState(player?.name || "");
   const [location, setLocation] = useState(player?.location || "");
@@ -106,6 +108,7 @@ export function ProfilePage() {
       }
 
       await updatePlayer(player.id, updates);
+      await refreshPlayers();
       toast.success("Profile saved successfully!");
 
       // Clear the file input

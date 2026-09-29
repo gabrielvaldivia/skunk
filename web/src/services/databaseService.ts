@@ -1,8 +1,22 @@
 import {
-  ref, get, set, push, remove, update, runTransaction, onValue,
-  query, orderByChild, equalTo, type DataSnapshot, type Unsubscribe,
+  ref, push, query, orderByChild, equalTo, type DataSnapshot, type Unsubscribe, type DatabaseReference, type Query,
+  get as sdkGet, set as sdkSet, remove as sdkRemove, update as sdkUpdate,
+  runTransaction as sdkRunTransaction, onValue as sdkOnValue,
 } from 'firebase/database';
 import { database } from './firebase';
+import { withConnection, holdConnection } from './connection';
+import { fetchList } from './publicData';
+
+// Every socket operation goes through the connection manager, so the
+// database connection is only open while it's actually in use
+const get = (q: Query) => withConnection(() => sdkGet(q));
+const set = (r: DatabaseReference, value: unknown) => withConnection(() => sdkSet(r, value));
+const remove = (r: DatabaseReference) => withConnection(() => sdkRemove(r));
+const update = (r: DatabaseReference, values: object) => withConnection(() => sdkUpdate(r, values));
+const runTransaction = <T>(r: DatabaseReference, apply: (current: T) => unknown) =>
+  withConnection(() => sdkRunTransaction(r, apply));
+const onValue = (q: Query, onChange: (snapshot: DataSnapshot) => void, onError?: (error: Error) => void): Unsubscribe =>
+  holdConnection(sdkOnValue(q, onChange, onError));
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
 import type { Match } from '../models/Match';
@@ -24,30 +38,26 @@ const MATCHES_PATH = 'matches';
 const SESSIONS_PATH = 'sessions';
 const SESSIONS_BY_CODE_PATH = 'sessionsByCode';
 const PENDING_IMAGES_PATH = 'pendingImages';
+/** Window event fired when your own pending uploads change, so views re-read them */
+export const PENDING_IMAGES_CHANGED = 'skunk:pending-images-changed';
+const pendingImagesChanged = () => window.dispatchEvent(new Event(PENDING_IMAGES_CHANGED));
 
 // ==================== Games ====================
 
-export async function getGames(): Promise<Game[]> {
-  const gamesRef = ref(database, GAMES_PATH);
-  const snapshot = await get(gamesRef);
-  
-  if (!snapshot.exists()) {
-    return [];
-  }
-  
-  const gamesData = snapshot.val();
+export async function getGames({ fresh = false } = {}): Promise<Game[]> {
+  const gamesData = await fetchList<Omit<Game, 'id'>>('games', { fresh });
   const games: Game[] = [];
-  
+
   for (const gameId in gamesData) {
     // A write to a single field of a deleted game recreates a partial record
     // with no title; skip those rather than let them break sorting and search
     if (typeof gamesData[gameId]?.title !== 'string') continue;
     games.push({
+      ...gamesData[gameId],
       id: gameId,
-      ...gamesData[gameId]
     });
   }
-  
+
   return games.sort((a, b) => a.title.localeCompare(b.title));
 }
 
@@ -79,8 +89,14 @@ export async function deleteGame(gameId: string): Promise<void> {
 // ==================== Players ====================
 
 /** Live list of every player, so ones added on another phone (e.g. mid-session) show up by name */
-export function subscribeToPlayers(onChange: (players: Player[]) => void, onError?: (error: Error) => void): Unsubscribe {
-  return onValue(ref(database, PLAYERS_PATH), (snapshot) => onChange(snapshotToList<Player>(snapshot)), onError);
+export async function getPlayers({ fresh = false } = {}): Promise<Player[]> {
+  const data = await fetchList<Omit<Player, 'id'>>('players', { fresh });
+  return Object.entries(data).map(([id, player]) => ({ ...player, id }));
+}
+
+export async function getMatches({ fresh = false } = {}): Promise<Match[]> {
+  const data = await fetchList<Omit<Match, 'id'>>('matches', { fresh });
+  return Object.entries(data).map(([id, match]) => ({ ...match, id }));
 }
 
 export async function getPlayerByGoogleUserID(googleUserID: string): Promise<Player | null> {
@@ -471,13 +487,12 @@ export async function submitImage(
   await set(ref(database, `${PENDING_IMAGES_PATH}/${id}`), {
     id, kind, targetId, image, uploadedBy, createdAt: Date.now(), ...extra,
   });
+  pendingImagesChanged();
 }
 
-export function subscribeToMyPendingImages(uid: string, onChange: (images: PendingImage[]) => void): Unsubscribe {
-  return onValue(
-    query(ref(database, PENDING_IMAGES_PATH), orderByChild('uploadedBy'), equalTo(uid)),
-    (snapshot) => onChange(snapshotToList<PendingImage>(snapshot)),
-    () => onChange([])
+export async function getMyPendingImages(uid: string): Promise<PendingImage[]> {
+  return snapshotToList<PendingImage>(
+    await get(query(ref(database, PENDING_IMAGES_PATH), orderByChild('uploadedBy'), equalTo(uid)))
   );
 }
 
@@ -504,6 +519,7 @@ export async function approveImage(image: PendingImage): Promise<void> {
 
 export async function rejectImage(image: PendingImage): Promise<void> {
   await remove(ref(database, `${PENDING_IMAGES_PATH}/${image.id}`));
+  pendingImagesChanged();
 }
 
 export async function approveGame(gameId: string): Promise<void> {

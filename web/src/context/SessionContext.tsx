@@ -19,6 +19,7 @@ import {
 } from "../services/databaseService";
 import type { Session } from "../models/Session";
 import { useAuth } from "./AuthContext";
+import { usePlayersData } from "./DataCacheContext";
 
 const STORAGE_KEY = "skunk_current_session";
 
@@ -35,6 +36,12 @@ const SessionContext = createContext<SessionContextType | undefined>(undefined);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const { user, player, refreshPlayer } = useAuth();
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
+  // Players who join after the cached player list was read get fetched fresh
+  const { ensurePlayers } = usePlayersData();
+  const participantKey = currentSession?.participantIDs.join(",") ?? "";
+  useEffect(() => {
+    if (participantKey) ensurePlayers(participantKey.split(","));
+  }, [participantKey, ensurePlayers]);
   const [isLoading, setIsLoading] = useState(true);
   const pendingAutoFollows = useRef(new Set<string>());
 

@@ -1,22 +1,26 @@
 import type { Match } from '../models/Match';
 import { createMatch, updateMatch, deleteMatch, type FieldUpdates } from '../services/databaseService';
+import { refreshActivity } from './useActivity';
 
 const addMatch = (match: Omit<Match, 'id'>) =>
-  createMatch(match).catch((err) => {
+  createMatch(match).then((created) => {
+    void refreshActivity();
+    return created;
+  }).catch((err) => {
     throw err instanceof Error ? err : new Error('Failed to create match');
   });
 
 const editMatch = (matchId: string, updates: FieldUpdates<Match>) =>
-  updateMatch(matchId, updates).catch((err) => {
+  updateMatch(matchId, updates).then(() => void refreshActivity()).catch((err) => {
     throw err instanceof Error ? err : new Error('Failed to update match');
   });
 
 const removeMatch = (matchId: string) =>
-  deleteMatch(matchId).catch((err) => {
+  deleteMatch(matchId).then(() => void refreshActivity()).catch((err) => {
     throw err instanceof Error ? err : new Error('Failed to delete match');
   });
 
-// Match writes; the match lists themselves are live (see useActivity)
+// Match writes; each one re-reads match history (see useActivity)
 export function useMatches() {
   return { addMatch, editMatch, removeMatch };
 }

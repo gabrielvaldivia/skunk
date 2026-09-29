@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CloseIcon, PlusIcon } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
+import { usePlayersData } from "../context/DataCacheContext";
 import { updatePlayer, submitImage } from "../services/databaseService";
 import { isAdminEmail } from "@/lib/admin";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const routerLocation = useLocation();
   const { user, player, refreshPlayer } = useAuth();
+  const { refreshPlayers } = usePlayersData();
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [bio, setBio] = useState("");
@@ -106,6 +108,7 @@ export function OnboardingPage() {
       }
 
       await updatePlayer(player.id, updates);
+      await refreshPlayers();
       await refreshPlayer();
 
       // Redirect to intended destination or home

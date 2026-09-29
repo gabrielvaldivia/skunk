@@ -18,7 +18,10 @@ import {
   getPlayerByGoogleUserID,
   createPlayer,
   updatePlayer,
+  submitImage,
+  getMyPendingImages,
 } from "../services/databaseService";
+import { isAdminEmail } from "@/lib/admin";
 import type { Player } from "../models/Player";
 import { squarePhotoBase64 } from "../lib/photo";
 
@@ -84,8 +87,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const playerId = currentPlayer.id;
           importGooglePhoto(firebaseUser.photoURL)
             .then(async (photoData) => {
-              await updatePlayer(playerId, { photoData });
-              setPlayer((p) => (p && p.id === playerId ? { ...p, photoData } : p));
+              if (isAdminEmail(firebaseUser.email)) {
+                await updatePlayer(playerId, { photoData });
+                setPlayer((p) => (p && p.id === playerId ? { ...p, photoData } : p));
+                return;
+              }
+              // Everyone else's photos go through review; don't replace one
+              // they've already uploaded
+              const pending = await getMyPendingImages(firebaseUser.uid);
+              if (!pending.some((image) => image.kind === "player" && image.targetId === playerId)) {
+                await submitImage("player", playerId, photoData, firebaseUser.uid);
+              }
             })
             .catch((err) => console.warn("Couldn't copy Google photo:", err));
         }
