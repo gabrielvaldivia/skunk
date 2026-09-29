@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerFooter,
   DrawerHeader,
@@ -22,6 +23,7 @@ import {
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { GameFormContent } from "./AddGameForm";
 import { BoxSizeField } from "./BoxSizeField";
+import { CloseIcon } from "./icons";
 
 type ScoreCalculation = "all" | "winnerOnly" | "losersSum";
 
@@ -336,8 +338,18 @@ export function EditGameForm({
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="h-[95vh] flex flex-col">
-          <DrawerHeader className="shrink-0">
-            <DrawerTitle>Edit Game</DrawerTitle>
+          <DrawerHeader className="relative shrink-0">
+            <DrawerTitle className="text-center">Edit Game</DrawerTitle>
+            <DrawerClose asChild>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full"
+                aria-label="Close"
+              >
+                <CloseIcon className="size-5" />
+              </Button>
+            </DrawerClose>
           </DrawerHeader>
           <div className="px-4 pb-4 overflow-y-auto flex-1 min-h-0">
             <GameFormContent
