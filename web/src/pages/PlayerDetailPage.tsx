@@ -1,3 +1,4 @@
+import { ReportLink } from "../components/ReportLink";
 import { useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { usePlayers } from "../hooks/usePlayers";
@@ -123,6 +124,7 @@ export function PlayerDetailPage({ playerId }: { playerId?: string } = {}) {
           </div>
         )}
         {player.bio && <p className="player-bio">{player.bio}</p>}
+        <ReportLink kind="player" targetId={player.id} label={player.name} />
       </div>
 
       <div className="page-content">

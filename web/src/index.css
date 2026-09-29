@@ -304,3 +304,14 @@
     color: hsl(var(--destructive));
   }
 }
+
+.report-link {
+  display: block;
+  margin: 1.5rem auto 0;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}

@@ -509,3 +509,32 @@ export async function rejectImage(image: PendingImage): Promise<void> {
 export async function approveGame(gameId: string): Promise<void> {
   await update(ref(database, `${GAMES_PATH}/${gameId}`), { pending: null });
 }
+
+// ==================== Reports and bans ====================
+
+export type Report = {
+  id: string;
+  kind: 'game' | 'player';
+  targetId: string;
+  reportedBy: string;
+  reason: string;
+  createdAt: number;
+};
+
+export async function reportContent(kind: Report['kind'], targetId: string, reportedBy: string, reason: string): Promise<void> {
+  const reportRef = push(ref(database, 'reports'));
+  await set(reportRef, { id: reportRef.key, kind, targetId, reportedBy, reason: reason.slice(0, 500), createdAt: Date.now() });
+}
+
+export function subscribeToReports(onChange: (reports: Report[]) => void): Unsubscribe {
+  return onValue(ref(database, 'reports'), (snapshot) => onChange(snapshotToList<Report>(snapshot)), () => onChange([]));
+}
+
+export async function dismissReport(reportId: string): Promise<void> {
+  await remove(ref(database, `reports/${reportId}`));
+}
+
+/** Banned accounts can still read, but the database rules refuse all their writes */
+export async function banUser(uid: string): Promise<void> {
+  await set(ref(database, `banned/${uid}`), true);
+}

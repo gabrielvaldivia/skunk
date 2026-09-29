@@ -21,6 +21,7 @@ import type { Game } from "../models/Game";
 import type { FieldUpdates } from "../services/databaseService";
 import "./GameDetailPage.css";
 import { isAdminEmail } from "@/lib/admin";
+import { ReportLink } from "../components/ReportLink";
 import { getFirstName } from "@/lib/player";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { AppLink } from "../components/AppLink";
@@ -299,6 +300,8 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
             </div>
           )}
         </div>
+
+        <ReportLink kind="game" targetId={game.id} label={game.title} />
 
         {/* BGG's API terms require this credit in public apps; covers and box sizes come from there */}
         <a

@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useGamesData, usePlayersData, useReviewQueue } from "../context/DataCacheContext";
-import { approveGame, approveImage, deleteGame, rejectImage, type PendingImage } from "../services/databaseService";
+import {
+  approveGame, approveImage, banUser, deleteGame, dismissReport, rejectImage, subscribeToReports, updatePlayer,
+  type PendingImage, type Report,
+} from "../services/databaseService";
 import type { Game } from "../models/Game";
 
 const asSrc = (image: PendingImage) => (image.kind === "player" ? `data:image/jpeg;base64,${image.image}` : image.image);
@@ -13,6 +16,8 @@ export function ReviewQueue() {
   const { players } = usePlayersData();
   const { allPending } = useReviewQueue();
   const [busy, setBusy] = useState<string | null>(null);
+  const [reports, setReports] = useState<Report[]>([]);
+  useEffect(() => subscribeToReports(setReports), []);
 
   const pendingGames = games.filter((g) => g.pending);
   const coverFor = (gameId: string) => allPending.find((p) => p.kind === "game" && p.targetId === gameId);
@@ -40,12 +45,55 @@ export function ReviewQueue() {
       await approveGame(game.id);
     }, `${game.title} is on the shelf`);
 
-  if (!pendingGames.length && !otherImages.length) {
+  const reportItems = reports.map((report) => {
+    const game = report.kind === "game" ? games.find((g) => g.id === report.targetId) : undefined;
+    const player = report.kind === "player" ? players.find((p) => p.id === report.targetId) : undefined;
+    const ownerUid = game?.createdByID ?? player?.ownerID;
+    const name = game?.title ?? player?.name ?? "Already removed";
+    return (
+      <li key={report.id} className="review-item">
+        <span className="review-thumb review-thumb-empty">Report</span>
+        <div className="review-text">
+          <strong>
+            <a href={report.kind === "game" ? `/games/${report.targetId}` : `/players/${report.targetId}`}>{name}</a>
+          </strong>
+          <span>{report.reason ? `"${report.reason}"` : "No reason given"} · reported by {byUser(report.reportedBy)}</span>
+        </div>
+        <div className="review-actions">
+          <Button size="sm" variant="secondary" disabled={busy === report.id}
+            onClick={() => run(report.id, () => dismissReport(report.id), "Dismissed")}>Dismiss</Button>
+          {game && (
+            <Button size="sm" variant="destructive" disabled={busy === report.id}
+              onClick={() => window.confirm(`Delete ${game.title}?`) &&
+                run(report.id, async () => { await deleteGame(game.id); await dismissReport(report.id); }, `${game.title} deleted`)}>
+              Delete game
+            </Button>
+          )}
+          {player?.photoData && (
+            <Button size="sm" variant="destructive" disabled={busy === report.id}
+              onClick={() => run(report.id, async () => { await updatePlayer(player.id, { photoData: null }); await dismissReport(report.id); }, "Photo removed")}>
+              Remove photo
+            </Button>
+          )}
+          {ownerUid && (
+            <Button size="sm" variant="destructive" disabled={busy === report.id}
+              onClick={() => window.confirm(`Ban ${byUser(ownerUid)}? They won't be able to add or change anything.`) &&
+                run(report.id, () => banUser(ownerUid), "Banned")}>
+              Ban {report.kind === "game" ? "creator" : "player"}
+            </Button>
+          )}
+        </div>
+      </li>
+    );
+  });
+
+  if (!pendingGames.length && !otherImages.length && !reports.length) {
     return <p className="form-hint">Nothing waiting for review.</p>;
   }
 
   return (
     <ul className="review-list">
+      {reportItems}
       {pendingGames.map((game) => {
         const cover = coverFor(game.id);
         return (
