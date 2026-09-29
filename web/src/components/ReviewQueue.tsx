@@ -1,23 +1,30 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useGamesData, usePlayersData, useReviewQueue } from "../context/DataCacheContext";
 import {
-  approveGame, approveImage, banUser, deleteGame, dismissReport, rejectImage, subscribeToReports, updatePlayer,
-  type PendingImage, type Report,
+  approveGame, approveImage, banUser, deleteGame, dismissReport, rejectImage, updatePlayer,
+  type PendingImage,
 } from "../services/databaseService";
 import type { Game } from "../models/Game";
 
 const asSrc = (image: PendingImage) => (image.kind === "player" ? `data:image/jpeg;base64,${image.image}` : image.image);
 
+/** How many items are waiting: new games, uploads not tied to one, and reports */
+export function useReviewCount() {
+  const { games } = useGamesData();
+  const { allPending, reports } = useReviewQueue();
+  const pendingGameIds = new Set(games.filter((g) => g.pending).map((g) => g.id));
+  const looseImages = allPending.filter((p) => p.kind === "player" || !pendingGameIds.has(p.targetId));
+  return pendingGameIds.size + looseImages.length + reports.length;
+}
+
 /** Admin: games and photos people added, waiting to be shown to everyone */
 export function ReviewQueue() {
   const { games, refreshGames } = useGamesData();
   const { players } = usePlayersData();
-  const { allPending } = useReviewQueue();
+  const { allPending, reports } = useReviewQueue();
   const [busy, setBusy] = useState<string | null>(null);
-  const [reports, setReports] = useState<Report[]>([]);
-  useEffect(() => subscribeToReports(setReports), []);
 
   const pendingGames = games.filter((g) => g.pending);
   const coverFor = (gameId: string) => allPending.find((p) => p.kind === "game" && p.targetId === gameId);

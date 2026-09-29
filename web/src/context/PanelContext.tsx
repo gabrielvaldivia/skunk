@@ -12,7 +12,9 @@ export type PanelEntry =
   | { type: "player"; id: string }
   | { type: "game"; id: string }
   | { type: "profile" }
-  | { type: "signin" };
+  | { type: "review" }
+  // preview: the admin looking at the screen a signed-out visitor gets
+  | { type: "signin"; preview?: boolean };
 
 /** The panel entry for an in-app path, if that page can live in the panel */
 export function entryFromPath(path: string): PanelEntry | null {
@@ -20,6 +22,7 @@ export function entryFromPath(path: string): PanelEntry | null {
   if (extra) return null;
   if (first === "activity" && !id) return { type: "activity" };
   if (first === "profile" && !id) return { type: "profile" };
+  if (first === "review" && !id) return { type: "review" };
   if (first === "players") return id ? { type: "player", id } : { type: "players" };
   if (first === "games" && id && id !== "list" && id !== "shelf") return { type: "game", id };
   return null;

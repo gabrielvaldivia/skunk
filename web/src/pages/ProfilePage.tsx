@@ -9,7 +9,8 @@ import {
   rejectImage,
 } from "../services/databaseService";
 import { useReviewQueue } from "../context/DataCacheContext";
-import { ReviewQueue } from "../components/ReviewQueue";
+import { useReviewCount } from "../components/ReviewQueue";
+import { usePanelFrame } from "../context/PanelContext";
 import type { FieldUpdates } from "../services/databaseService";
 import type { Player } from "../models/Player";
 import { CameraIcon } from "../components/icons";
@@ -28,6 +29,8 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const { user, player, isAuthenticated, refreshPlayer, signOut } = useAuth();
   const { refreshPlayers } = usePlayersData();
+  const frame = usePanelFrame();
+  const reviewCount = useReviewCount();
   const isAdmin = isAdminEmail(user?.email);
   const [name, setName] = useState(player?.name || "");
   const [location, setLocation] = useState(player?.location || "");
@@ -330,22 +333,27 @@ export function ProfilePage() {
 
         {isAdmin && (
           <section className="profile-group">
-            <h2 className="profile-group-title">Review</h2>
-            <ReviewQueue />
-          </section>
-        )}
-
-        {isAdmin && (
-          <section className="profile-group">
             <div>
               <h2 className="profile-group-title">Admin tools</h2>
-              <p className="form-hint">Tools for testing and development</p>
             </div>
             <div className="profile-actions">
-              <Button variant="secondary" onClick={() => navigate("/onboarding")}>
+              <Button variant="secondary" onClick={() => (frame ? frame.open({ type: "review" }) : navigate("/review"))}>
+                Review{reviewCount ? ` · ${reviewCount} waiting` : ""}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  // New players get onboarding full screen, on desktop too
+                  frame?.close();
+                  navigate("/onboarding");
+                }}
+              >
                 Replay onboarding
               </Button>
-              <Button variant="secondary" onClick={() => navigate("/signin?admin=true")}>
+              <Button
+                variant="secondary"
+                onClick={() => (frame ? frame.open({ type: "signin", preview: true }) : navigate("/signin?admin=true"))}
+              >
                 View sign-in screen
               </Button>
             </div>

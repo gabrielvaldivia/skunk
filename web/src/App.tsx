@@ -9,6 +9,7 @@ import { Layout } from "./components/Layout";
 import { PanelProvider } from "./context/PanelContext";
 import { PanelHost } from "./components/PanelHost";
 import { SignInView } from "./components/SignInView";
+const ReviewPage = lazy(() => import("./pages/ReviewPage").then((m) => ({ default: m.ReviewPage })));
 const LegalPage = lazy(() => import("./pages/LegalPage").then((m) => ({ default: m.LegalPage })));
 import "./App.css";
 import { isAdminEmail } from "@/lib/admin";
@@ -66,6 +67,10 @@ function AppRoutes() {
     <Suspense fallback={<div className="loading">Loading...</div>}>
     <Routes>
       <Route path="/signin" element={<SignInView />} />
+      <Route
+        path="/review"
+        element={isAdmin ? <ProtectedRoute><Layout><ReviewPage /></Layout></ProtectedRoute> : <Navigate to="/" replace />}
+      />
       <Route path="/privacy" element={<Layout><LegalPage doc="privacy" /></Layout>} />
       <Route path="/terms" element={<Layout><LegalPage doc="terms" /></Layout>} />
       <Route

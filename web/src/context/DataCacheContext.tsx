@@ -2,8 +2,8 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo, u
 import type { Game } from '../models/Game';
 import type { Player } from '../models/Player';
 import {
-  getGames, getPlayers, updateGame, getMyPendingImages, subscribeToAllPendingImages, PENDING_IMAGES_CHANGED,
-  type PendingImage,
+  getGames, getPlayers, updateGame, getMyPendingImages, subscribeToAllPendingImages, subscribeToReports,
+  PENDING_IMAGES_CHANGED, type PendingImage, type Report,
 } from '../services/databaseService';
 import { useAuth } from './AuthContext';
 import { isAdminEmail } from '../lib/admin';
@@ -31,13 +31,15 @@ interface ReviewData {
   myPending: PendingImage[];
   /** Everything waiting for review; only filled in for the admin */
   allPending: PendingImage[];
+  /** Reports from players; only filled in for the admin */
+  reports: Report[];
 }
 
 // Separate contexts, so a player update (a heart, a follow, anyone's) doesn't
 // re-render everything that only shows games, like the 3D shelf
 const GamesContext = createContext<GamesData | undefined>(undefined);
 const PlayersContext = createContext<PlayersData | undefined>(undefined);
-const ReviewContext = createContext<ReviewData>({ myPending: [], allPending: [] });
+const ReviewContext = createContext<ReviewData>({ myPending: [], allPending: [], reports: [] });
 
 export function DataCacheProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -50,6 +52,7 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
   const migratedCoversForUser = useRef<string | null>(null);
   const [myPending, setMyPending] = useState<PendingImage[]>([]);
   const [allPending, setAllPending] = useState<PendingImage[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
   const isAdmin = isAdminEmail(user?.email);
 
   // Your own uploads waiting for review: read once, and again whenever you
@@ -72,9 +75,15 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isAdmin) {
       setAllPending([]);
+      setReports([]);
       return;
     }
-    return subscribeToAllPendingImages(setAllPending);
+    const stopImages = subscribeToAllPendingImages(setAllPending);
+    const stopReports = subscribeToReports(setReports);
+    return () => {
+      stopImages();
+      stopReports();
+    };
   }, [isAdmin]);
 
   // Only the first load shows as loading; later refreshes (after an add or
@@ -184,7 +193,7 @@ export function DataCacheProvider({ children }: { children: ReactNode }) {
     () => ({ players: shownPlayers, playersLoading, playersError, refreshPlayers, ensurePlayers }),
     [shownPlayers, playersLoading, playersError, refreshPlayers, ensurePlayers]
   );
-  const reviewValue = useMemo(() => ({ myPending, allPending }), [myPending, allPending]);
+  const reviewValue = useMemo(() => ({ myPending, allPending, reports }), [myPending, allPending, reports]);
 
   return (
     <GamesContext.Provider value={gamesValue}>

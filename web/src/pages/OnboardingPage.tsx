@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CloseIcon, PlusIcon } from "../components/icons";
+import { CameraIcon, CloseIcon } from "../components/icons";
 import { useAuth } from "../context/AuthContext";
 import { usePlayersData } from "../context/DataCacheContext";
 import { updatePlayer, submitImage } from "../services/databaseService";
@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { squarePhotoBase64 } from "@/lib/photo";
+import "./ProfilePage.css";
+import "../components/SignInView.css";
 import "./OnboardingPage.css";
 
 export function OnboardingPage() {
@@ -118,7 +120,7 @@ export function OnboardingPage() {
       navigate(from, { replace: true });
     } catch (err) {
       console.error("Error saving profile:", err);
-      setError("Error saving profile. Please try again.");
+      setError("Couldn't save your profile. Try again.");
     } finally {
       setIsSaving(false);
     }
@@ -133,111 +135,98 @@ export function OnboardingPage() {
   }
 
   const displayName = name.trim() || player.name || "Player";
+  const isAdmin = isAdminEmail(user?.email);
 
   return (
     <div className="onboarding-page">
+      {/* Same round corner button as the sign-in screen */}
+      <button type="button" className="sign-in-close-button" onClick={() => navigate("/")} aria-label="Close">
+        <CloseIcon size={20} />
+      </button>
       <div className="onboarding-container">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="onboarding-close-button"
-          onClick={() => navigate("/")}
-          aria-label="Close"
-        >
-          <CloseIcon className="h-5 w-5" />
-        </Button>
         <div className="onboarding-header">
-          <h1>Welcome to Skunk!</h1>
-          <p>Let's set up your profile</p>
+          <div className="sign-in-mark" aria-hidden><img src="/brand/logo.png" alt="" /></div>
+          <h1>Welcome to Skunk</h1>
+          <p>Set up your profile so friends can find you.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="onboarding-form">
-          <div className="onboarding-avatar-section">
-            <div className="onboarding-avatar-container">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                style={{ display: "none" }}
-                id="photo-upload"
-              />
-              <button
-                type="button"
-                className="onboarding-avatar-button"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {photoPreview ? (
-                  <img src={photoPreview} alt={displayName} />
-                ) : (
-                  <div className="onboarding-avatar-placeholder">
-                    <PlusIcon className="onboarding-plus-icon" />
-                  </div>
-                )}
-              </button>
-              {photoPreview && (
-                <div className="avatar-actions">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRemovePhoto}
-                  >
-                    Remove Photo
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <Label htmlFor="name">
-              Name <span className="required">*</span>
-            </Label>
-            <Input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your name"
-              required
+          <div className="profile-avatar-container">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              style={{ display: "none" }}
+              id="photo-upload"
             />
-          </div>
-
-          <div className="form-group">
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="City, Country"
-            />
-          </div>
-
-          <div className="form-group">
-            <Label htmlFor="bio">Bio</Label>
-            <Textarea
-              id="bio"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="Tell us about yourself..."
-              rows={4}
-            />
-          </div>
-
-          {error && <div className="error-message">{error}</div>}
-
-          <div className="form-actions">
-            <Button
-              type="submit"
-              disabled={isSaving || !name.trim()}
-              size="lg"
-              className="submit-button"
+            <button
+              type="button"
+              className="profile-avatar-button"
+              onClick={() => fileInputRef.current?.click()}
+              aria-label={photoPreview ? "Change photo" : "Add photo"}
             >
-              {isSaving ? "Creating Account..." : "Create Account"}
-            </Button>
+              {photoPreview ? (
+                <img src={photoPreview} alt={displayName} />
+              ) : (
+                <span className="profile-avatar-placeholder">
+                  <CameraIcon className="profile-plus-icon" />
+                </span>
+              )}
+            </button>
+            {photoPreview ? (
+              <button type="button" className="text-button" onClick={handleRemovePhoto}>
+                Remove photo
+              </button>
+            ) : (
+              <span className="form-hint">Add a photo</span>
+            )}
+            {photoPreview && !isAdmin && (
+              <p className="form-hint onboarding-photo-hint">Others see your photo once it's reviewed.</p>
+            )}
           </div>
+
+          <section className="profile-group">
+            <div className="form-group">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Brooklyn, NY"
+              />
+            </div>
+
+            <div className="form-group">
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea
+                id="bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Favorite games, house rules, rivalries"
+                rows={3}
+              />
+            </div>
+          </section>
+
+          {error && <p className="error-message">{error}</p>}
+
+          <Button type="submit" disabled={isSaving || !name.trim()} size="lg" className="w-full">
+            {isSaving ? "Saving..." : "Get started"}
+          </Button>
         </form>
       </div>
     </div>

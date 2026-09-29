@@ -2,12 +2,16 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { CloseIcon } from "./icons";
 import "./SignInView.css";
 import { isAdminEmail } from "@/lib/admin";
 
-/** onDone: shown in the desktop panel, which it closes once you're signed in (instead of navigating) */
-export function SignInView({ onDone }: { onDone?: () => void } = {}) {
+/**
+ * onDone: shown in the desktop panel, which it closes once you're signed in (instead of navigating).
+ * preview: the admin looking at what a signed-out visitor sees; nothing signs in or redirects.
+ */
+export function SignInView({ onDone, preview: previewProp = false }: { onDone?: () => void; preview?: boolean } = {}) {
   const { signIn, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -22,17 +26,22 @@ export function SignInView({ onDone }: { onDone?: () => void } = {}) {
   const searchParams = new URLSearchParams(location.search);
   const isAdminView = searchParams.get("admin") === "true";
   const isAdmin = isAdminEmail(user?.email);
+  const preview = isAdmin && (previewProp || isAdminView);
 
   useEffect(() => {
     // Don't redirect if admin is viewing the sign-in screen intentionally
-    if (isAuthenticated && !(isAdminView && isAdmin)) {
+    if (isAuthenticated && !preview) {
       // Redirect to the intended destination (or home)
       if (onDone) onDone();
       else navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate, from, isAdminView, isAdmin, onDone]);
+  }, [isAuthenticated, navigate, from, preview, onDone]);
 
   const handleSignIn = async () => {
+    if (preview) {
+      toast("Preview: this is what signed-out visitors see");
+      return;
+    }
     try {
       setIsLoading(true);
       setError(null);
@@ -48,7 +57,9 @@ export function SignInView({ onDone }: { onDone?: () => void } = {}) {
   };
 
   const handleClose = () => {
-    if (isAdminView && isAdmin) {
+    if (onDone) {
+      onDone();
+    } else if (preview) {
       navigate("/profile", { replace: true });
     } else {
       navigate(from || "/", { replace: true });
@@ -58,7 +69,7 @@ export function SignInView({ onDone }: { onDone?: () => void } = {}) {
   return (
     <div className={`sign-in-container${onDone ? " in-panel" : ""}`}>
       {/* In the panel, pinned to the panel's corner (it's the containing block) */}
-      <button className="sign-in-close-button" onClick={onDone ?? handleClose} aria-label="Close">
+      <button className="sign-in-close-button" onClick={handleClose} aria-label="Close">
         <CloseIcon size={20} />
       </button>
       <div className="sign-in-content">
