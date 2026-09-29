@@ -317,8 +317,8 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
           onOpenChange={setIsEditDialogOpen}
           game={game}
           onSubmit={handleEditGame}
-          // Only the game's creator can delete it
-          onDelete={user && game.createdByID === user.uid ? handleDeleteGame : undefined}
+          // The game's creator can delete it, and the admin can delete any game
+          onDelete={user && (game.createdByID === user.uid || isAdmin) ? handleDeleteGame : undefined}
         />
       )}
     </div>

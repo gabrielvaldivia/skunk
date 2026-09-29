@@ -241,7 +241,7 @@ export function EditGameForm({
     return (
       <>
         <Dialog open={open} onOpenChange={onOpenChange}>
-          <DialogContent className="sm:max-w-[525px] max-h-[90vh] overflow-hidden !grid grid-rows-[auto_1fr_auto] gap-4">
+          <DialogContent closeSide="left" className="sm:max-w-[525px] max-h-[90vh] overflow-hidden !grid grid-rows-[auto_1fr_auto] gap-4">
             <DialogHeader className="shrink-0 text-center">
               <DialogTitle>Edit Game</DialogTitle>
             </DialogHeader>
@@ -344,7 +344,7 @@ export function EditGameForm({
               <Button
                 variant="secondary"
                 size="icon"
-                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full"
+                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full"
                 aria-label="Close"
               >
                 <CloseIcon className="size-5" />

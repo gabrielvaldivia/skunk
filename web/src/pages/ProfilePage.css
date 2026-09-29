@@ -136,3 +136,21 @@
   text-align: center;
   padding: 0 1rem;
 }
+
+.profile-email {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.profile-admin-badge {
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  font-size: 0.75rem;
+  font-weight: 600;
+}

@@ -253,6 +253,12 @@ export function ProfilePage() {
               Remove photo
             </button>
           )}
+          {user?.email && (
+            <p className="profile-email">
+              {user.email}
+              {isAdmin && <span className="profile-admin-badge">Admin</span>}
+            </p>
+          )}
         </div>
 
         <section className="profile-group">
