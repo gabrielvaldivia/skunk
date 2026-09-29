@@ -106,8 +106,20 @@ async function bgg(path: string): Promise<any> {
 }
 
 const attr = (node: any, key = "value") => (node && typeof node === "object" ? node[key] : undefined);
-const primaryName = (item: any) =>
-  (item.name ?? []).find((n: any) => n.type === "primary")?.value ?? item.name?.[0]?.value;
+// BGG escapes names twice, so apostrophes arrive as "&#039;" after XML parsing
+const decodeEntities = (s: string) =>
+  s
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+const primaryName = (item: any): string | undefined => {
+  const name = (item.name ?? []).find((n: any) => n.type === "primary")?.value ?? item.name?.[0]?.value;
+  return name === undefined ? undefined : decodeEntities(String(name));
+};
 
 type Candidate = { id: number; name: string; year?: number; ratings: number };
 
@@ -347,6 +359,8 @@ const titleKey = (title: string) =>
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/\([^)]*\)/g, " ")
+    // Re-editions count as the same game ("Dominion: Second Edition")
+    .replace(/\s*[:\-–]\s*(first|second|third|fourth|revised|deluxe|2nd|3rd|4th)\s+edition.*$/, "")
     .replace(/&/g, " and ")
     .replace(/^the\s+/, "")
     .replace(/[^a-z0-9]+/g, "");
@@ -388,15 +402,16 @@ function scoringFor(item: any) {
   const mech = (v: string) => has("boardgamemechanic", v);
   const cat = (v: string) => has("boardgamecategory", v);
   const coop = mech("Cooperative Game");
-  const team = coop || mech("Team-Based Game");
+  // "Team-Based" is often just a variant (a 6-player mode); trust it when
+  // the game needs 4+ players or is a party game, where teams are the point
+  const minPlayers = Number(attr(item.minplayers)) || 2;
+  const team = coop || (mech("Team-Based Game") && (minPlayers >= 4 || cat("Party Game")));
   const noScore =
     coop ||
     cat("Party Game") ||
     cat("Deduction") ||
     cat("Wargame") ||
-    mech("Hidden Roles") ||
-    mech("Race") ||
-    mech("Player Elimination");
+    mech("Hidden Roles");
   return {
     isBinaryScore: noScore,
     isTeamBased: team,
