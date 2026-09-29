@@ -70,14 +70,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: displayName,
             googleUserID: googleUserID,
             ownerID: googleUserID,
-            email: firebaseUser.email || undefined,
             needsOnboarding: true,
           });
-        } else if (currentPlayer.googleUserID && !currentPlayer.email && firebaseUser.email) {
-          // Update existing player with email if missing
-          await updatePlayer(currentPlayer.id, { email: firebaseUser.email });
-          currentPlayer = { ...currentPlayer, email: firebaseUser.email };
         }
+        // Emails aren't stored on player records: players are publicly
+        // readable. The signed-in user's own email comes from Firebase Auth.
 
         setPlayer(currentPlayer);
 

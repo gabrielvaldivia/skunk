@@ -35,11 +35,7 @@ export function PlayerCard({ player, onClick, rightAction, subtitle, shortName }
       <Avatar player={player} size={44} />
       <div className="player-info">
         <div className="player-name">{shortName ? getFirstName(player.name) : player.name}</div>
-        {subtitle ? (
-          <p className="player-subtitle">{subtitle}</p>
-        ) : (
-          player.email && <p className="player-subtitle">{player.email}</p>
-        )}
+        {subtitle && <p className="player-subtitle">{subtitle}</p>}
       </div>
       {rightAction && <div className="player-actions">{rightAction}</div>}
     </div>

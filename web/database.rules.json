@@ -3,30 +3,62 @@
     "games": {
       ".read": true,
       "$gameId": {
-        ".write": "auth != null && (!data.exists() || data.child('createdByID').val() == auth.uid || ((auth.token.email == 'valdivia.gabriel@gmail.com' || auth.token.email == 'gabe@valdivia.works') && auth.token.email_verified == true))"
+        ".write": "auth != null && ((!data.exists() && newData.child('createdByID').val() == auth.uid) || (data.exists() && data.child('createdByID').val() == auth.uid) || ((auth.token.email == 'valdivia.gabriel@gmail.com' || auth.token.email == 'gabe@valdivia.works') && auth.token.email_verified == true))",
+        ".validate": "!newData.exists() || (newData.child('title').isString() && newData.child('title').val().length > 0 && newData.child('title').val().length <= 120)",
+        "coverArt": {
+          ".validate": "newData.isString() && newData.val().length <= 600000"
+        },
+        "createdByID": {
+          ".validate": "!data.exists() || newData.val() == data.val() || ((auth.token.email == 'valdivia.gabriel@gmail.com' || auth.token.email == 'gabe@valdivia.works') && auth.token.email_verified == true)"
+        }
       }
     },
     "players": {
       ".read": true,
-      "$playerId": {
-        ".write": "auth != null && (!data.exists() || data.child('ownerID').val() == auth.uid || data.child('linkedGoogleUserIDs').child(auth.uid).exists() || ((auth.token.email == 'valdivia.gabriel@gmail.com' || auth.token.email == 'gabe@valdivia.works') && auth.token.email_verified == true))"
-      },
       ".indexOn": [
         "googleUserID"
-      ]
+      ],
+      "$playerId": {
+        ".write": "auth != null && (!data.exists() || data.child('ownerID').val() == auth.uid || data.child('linkedGoogleUserIDs').child(auth.uid).exists() || ((auth.token.email == 'valdivia.gabriel@gmail.com' || auth.token.email == 'gabe@valdivia.works') && auth.token.email_verified == true))",
+        "email": {
+          ".validate": "false"
+        },
+        "name": {
+          ".validate": "newData.isString() && newData.val().length <= 80"
+        },
+        "bio": {
+          ".validate": "newData.isString() && newData.val().length <= 500"
+        },
+        "location": {
+          ".validate": "newData.isString() && newData.val().length <= 100"
+        },
+        "photoData": {
+          ".validate": "newData.isString() && newData.val().length <= 600000"
+        }
+      }
     },
     "matches": {
       ".read": true,
-      ".write": "auth != null",
-      ".indexOn": ["date", "sessionCode"]
+      ".indexOn": [
+        "date",
+        "sessionCode"
+      ],
+      "$matchId": {
+        ".write": "auth != null && ((!data.exists() && newData.child('createdByID').val() == auth.uid) || (data.exists() && (data.child('createdByID').val() == auth.uid || ((data.child('playerIDs/0').isString() && (root.child('players').child(data.child('playerIDs/0').val()).child('ownerID').val() == auth.uid || root.child('players').child(data.child('playerIDs/0').val()).child('googleUserID').val() == auth.uid || root.child('players').child(data.child('playerIDs/0').val()).child('linkedGoogleUserIDs').child(auth.uid).exists())) || (data.child('playerIDs/1').isString() && (root.child('players').child(data.child('playerIDs/1').val()).child('ownerID').val() == auth.uid || root.child('players').child(data.child('playerIDs/1').val()).child('googleUserID').val() == auth.uid || root.child('players').child(data.child('playerIDs/1').val()).child('linkedGoogleUserIDs').child(auth.uid).exists())) || (data.child('playerIDs/2').isString() && (root.child('players').child(data.child('playerIDs/2').val()).child('ownerID').val() == auth.uid || root.child('players').child(data.child('playerIDs/2').val()).child('googleUserID').val() == auth.uid || root.child('players').child(data.child('playerIDs/2').val()).child('linkedGoogleUserIDs').child(auth.uid).exists())) || (data.child('playerIDs/3').isString() && (root.child('players').child(data.child('playerIDs/3').val()).child('ownerID').val() == auth.uid || root.child('players').child(data.child('playerIDs/3').val()).child('googleUserID').val() == auth.uid || root.child('players').child(data.child('playerIDs/3').val()).child('linkedGoogleUserIDs').child(auth.uid).exists())) || (data.child('playerIDs/4').isString() && (root.child('players').child(data.child('playerIDs/4').val()).child('ownerID').val() == auth.uid || root.child('players').child(data.child('playerIDs/4').val()).child('googleUserID').val() == auth.uid || root.child('players').child(data.child('playerIDs/4').val()).child('linkedGoogleUserIDs').child(auth.uid).exists())) || (data.child('playerIDs/5').isString() && (root.child('players').child(data.child('playerIDs/5').val()).child('ownerID').val() == auth.uid || root.child('players').child(data.child('playerIDs/5').val()).child('googleUserID').val() == auth.uid || root.child('players').child(data.child('playerIDs/5').val()).child('linkedGoogleUserIDs').child(auth.uid).exists())) || (data.child('playerIDs/6').isString() && (root.child('players').child(data.child('playerIDs/6').val()).child('ownerID').val() == auth.uid || root.child('players').child(data.child('playerIDs/6').val()).child('googleUserID').val() == auth.uid || root.child('players').child(data.child('playerIDs/6').val()).child('linkedGoogleUserIDs').child(auth.uid).exists())) || (data.child('playerIDs/7').isString() && (root.child('players').child(data.child('playerIDs/7').val()).child('ownerID').val() == auth.uid || root.child('players').child(data.child('playerIDs/7').val()).child('googleUserID').val() == auth.uid || root.child('players').child(data.child('playerIDs/7').val()).child('linkedGoogleUserIDs').child(auth.uid).exists())) || (data.child('playerIDs/8').isString() && (root.child('players').child(data.child('playerIDs/8').val()).child('ownerID').val() == auth.uid || root.child('players').child(data.child('playerIDs/8').val()).child('googleUserID').val() == auth.uid || root.child('players').child(data.child('playerIDs/8').val()).child('linkedGoogleUserIDs').child(auth.uid).exists())) || (data.child('playerIDs/9').isString() && (root.child('players').child(data.child('playerIDs/9').val()).child('ownerID').val() == auth.uid || root.child('players').child(data.child('playerIDs/9').val()).child('googleUserID').val() == auth.uid || root.child('players').child(data.child('playerIDs/9').val()).child('linkedGoogleUserIDs').child(auth.uid).exists())) || (data.child('playerIDs/10').isString() && (root.child('players').child(data.child('playerIDs/10').val()).child('ownerID').val() == auth.uid || root.child('players').child(data.child('playerIDs/10').val()).child('googleUserID').val() == auth.uid || root.child('players').child(data.child('playerIDs/10').val()).child('linkedGoogleUserIDs').child(auth.uid).exists())) || (data.child('playerIDs/11').isString() && (root.child('players').child(data.child('playerIDs/11').val()).child('ownerID').val() == auth.uid || root.child('players').child(data.child('playerIDs/11').val()).child('googleUserID').val() == auth.uid || root.child('players').child(data.child('playerIDs/11').val()).child('linkedGoogleUserIDs').child(auth.uid).exists()))))) || ((auth.token.email == 'valdivia.gabriel@gmail.com' || auth.token.email == 'gabe@valdivia.works') && auth.token.email_verified == true))"
+      }
     },
     "sessions": {
       ".read": true,
-      ".write": "auth != null"
+      "$sessionId": {
+        ".write": "auth != null"
+      }
     },
     "sessionsByCode": {
       ".read": true,
-      ".write": "auth != null"
+      "$code": {
+        ".write": "auth != null && (!data.exists() || !newData.exists())",
+        ".validate": "!newData.exists() || newData.isString()"
+      }
     }
   }
 }
