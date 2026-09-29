@@ -56,8 +56,14 @@
   height: 4.5rem;
   margin-bottom: 1.25rem;
   border-radius: 1.375rem;
-  background: hsl(var(--secondary));
-  font-size: 2.25rem;
+  /* The mark's black body needs a light tile, in dark mode too */
+  background: #f4efe6;
+}
+
+.sign-in-mark img {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
 }
 
 .sign-in-content h1 {

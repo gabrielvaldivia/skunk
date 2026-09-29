@@ -62,7 +62,7 @@ export function SignInView({ onDone }: { onDone?: () => void } = {}) {
         <CloseIcon size={20} />
       </button>
       <div className="sign-in-content">
-        <div className="sign-in-mark" aria-hidden>🦨</div>
+        <div className="sign-in-mark" aria-hidden><img src="/brand/logo.png" alt="" /></div>
         <h1>Skunk</h1>
         <p>Track every game night. Sign in to log matches, games and players.</p>
         <div className="sign-in-actions">
