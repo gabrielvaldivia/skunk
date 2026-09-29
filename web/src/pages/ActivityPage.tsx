@@ -56,8 +56,8 @@ export function ActivityPage() {
             <p>{audience === 'friends' && player ? 'No friend activity yet' : 'No matches yet'}</p>
             <p className="empty-hint">
               {audience === 'friends' && player
-                ? 'Follow players or share a session to see their matches here.'
-                : 'Start a session from any game to record one.'}
+                ? 'Follow players or share a game night to see their matches here.'
+                : 'Start a game night from any game to record one.'}
             </p>
           </div>
         ) : (

@@ -108,7 +108,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const handleCreateSession = useCallback(async (gameID?: string): Promise<Session> => {
     if (!user || !player) {
-      throw new Error("User must be authenticated to create a session");
+      throw new Error("Sign in to start a game night");
     }
 
     const session = await createSession(user.uid, gameID);
@@ -127,13 +127,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const handleJoinSession = useCallback(
     async (code: string): Promise<void> => {
       if (!player) {
-        throw new Error("Player must be loaded to join a session");
+        throw new Error("Player must be loaded to join a game night");
       }
 
       // Check the code first, so a bad one doesn't cost you your current session
       const session = await getSessionByCode(code);
       if (!session) {
-        throw new Error("Session not found or has expired");
+        throw new Error("Game night not found or has expired");
       }
 
       // Leave current session if in one

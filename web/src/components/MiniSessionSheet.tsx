@@ -91,7 +91,7 @@ export function MiniSessionSheet({ bottom, compact }: { bottom?: string; compact
       onTouchEnd={onTouchEnd}
       onClick={onClick}
       role="button"
-      aria-label="Open active session"
+      aria-label="Open active game night"
       tabIndex={0}
       onKeyDown={(e) => {
         // Keys on a face's own button open that player, not the session

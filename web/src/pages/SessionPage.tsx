@@ -71,7 +71,7 @@ export function SessionPage() {
         await joinSession(code);
       } catch (err) {
         const errorMessage =
-          err instanceof Error ? err.message : "Failed to join session";
+          err instanceof Error ? err.message : "Failed to join game night";
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -189,7 +189,7 @@ export function SessionPage() {
   // A manual title always wins; otherwise use the newest match's game.
   const latestMatch = sessionMatches.reduce<Match | undefined>((a, m) => (!a || m.date > a.date ? m : a), undefined);
   const sessionGameId = latestMatch?.gameID ?? currentSession?.gameID;
-  const automaticSessionTitle = games.find((g) => g.id === sessionGameId)?.title ?? `Session ${code}`;
+  const automaticSessionTitle = games.find((g) => g.id === sessionGameId)?.title ?? `Game Night ${code}`;
   const sessionTitle = currentSession?.title?.trim() || automaticSessionTitle;
 
   useEffect(() => {
@@ -228,7 +228,7 @@ export function SessionPage() {
 
     const nextTitle = titleDraft.trim();
     if (!nextTitle) {
-      toast.error("Session title can't be empty");
+      toast.error("Game night title can't be empty");
       setTitleDraft(sessionTitle);
       setIsEditingTitle(false);
       return;
@@ -244,7 +244,7 @@ export function SessionPage() {
       setIsEditingTitle(false);
     } catch (err) {
       console.error("Error naming session:", err);
-      toast.error("Couldn't rename session");
+      toast.error("Couldn't rename game night");
       setTitleDraft(sessionTitle);
       setIsEditingTitle(false);
     } finally {
@@ -260,7 +260,7 @@ export function SessionPage() {
       try {
         await navigator.share({
           title: sessionTitle,
-          text: "Join my session on Skunk",
+          text: "Join my game night on Skunk",
           url,
         });
       } catch {
@@ -269,7 +269,7 @@ export function SessionPage() {
     } else {
       try {
         await navigator.clipboard.writeText(url);
-        toast.success("Session link copied");
+        toast.success("Game night link copied");
       } catch {
         toast.error("Failed to share link");
       }
@@ -282,12 +282,12 @@ export function SessionPage() {
     setIsLeaving(true);
     try {
       await leaveSession();
-      toast.success("Left session");
+      toast.success("Left game night");
       // Back to the shelf; replace, since going back to the session page would rejoin it
       navigate("/games", { replace: true });
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to leave session";
+        err instanceof Error ? err.message : "Failed to leave game night";
       toast.error(errorMessage);
     } finally {
       setIsLeaving(false);
@@ -319,7 +319,7 @@ export function SessionPage() {
   if (!code) {
     return (
       <div className="session-page">
-        <div className="error">Invalid session code</div>
+        <div className="error">Invalid game night code</div>
       </div>
     );
   }
@@ -327,7 +327,7 @@ export function SessionPage() {
   if (!isAuthenticated) {
     return (
       <div className="session-page">
-        <div className="error">Please sign in to join a session</div>
+        <div className="error">Please sign in to join a game night</div>
       </div>
     );
   }
@@ -335,7 +335,7 @@ export function SessionPage() {
   if (isJoining || sessionContextLoading) {
     return (
       <div className="session-page">
-        <div className="loading">Joining session...</div>
+        <div className="loading">Joining game night...</div>
       </div>
     );
   }
@@ -354,7 +354,7 @@ export function SessionPage() {
   if (!currentSession || currentSession.code !== code) {
     return (
       <div className="session-page">
-        <div className="loading">Loading session...</div>
+        <div className="loading">Loading game night...</div>
       </div>
     );
   }
@@ -370,7 +370,7 @@ export function SessionPage() {
               value={titleDraft}
               maxLength={60}
               disabled={isSavingTitle}
-              aria-label="Session title"
+              aria-label="Game night title"
               onChange={(event) => setTitleDraft(event.target.value)}
               onBlur={finishEditingTitle}
               onKeyDown={(event) => {
@@ -400,7 +400,7 @@ export function SessionPage() {
             variant="secondary"
             size="icon"
             onClick={handleShare}
-            aria-label="Share session link"
+            aria-label="Share game night link"
           >
             <ShareIcon />
           </Button>

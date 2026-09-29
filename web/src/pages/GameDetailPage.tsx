@@ -92,14 +92,14 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
       const url = `${window.location.origin}/session/${session.code}`;
       try {
         await navigator.clipboard.writeText(url);
-        toast.success("Session created! URL copied to clipboard.");
+        toast.success("Game night started! Link copied to clipboard.");
       } catch {
-        toast.success("Session created!");
+        toast.success("Game night started!");
       }
       navigate(`/session/${session.code}`);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to create session";
+        err instanceof Error ? err.message : "Failed to start game night";
       toast.error(errorMessage);
     } finally {
       setIsCreatingSession(false);
@@ -279,7 +279,7 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
             className="floating-cta"
             size="lg"
           >
-            {isCreatingSession ? "Creating..." : "Start Session"}
+            {isCreatingSession ? "Starting..." : "Start Game Night"}
           </Button>
         )}
         {currentSession && <MiniSessionSheet />}
@@ -290,7 +290,7 @@ export function GameDetailPage({ gameId, onClose, navTitle }: GameDetailPageProp
             <div className="empty-state">
               <p>{audience === "friends" && player ? "No friend matches yet" : "No matches yet"}</p>
               <p className="empty-hint">
-                Start a session to invite others to play.
+                Start a game night to invite others to play.
               </p>
             </div>
           ) : (

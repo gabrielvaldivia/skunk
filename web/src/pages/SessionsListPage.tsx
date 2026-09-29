@@ -49,12 +49,12 @@ export function SessionsListPage() {
 
   return (
     <div className="sessions-list-page">
-      <NavBar title="My Sessions" />
+      <NavBar title="My Game Nights" />
 
       <div className="page-content">
         {sessions.length === 0 ? (
           <div className="empty-state">
-            <p>You're not in any sessions</p>
+            <p>You're not in any game nights</p>
           </div>
         ) : (
           <div className="sessions-list list">

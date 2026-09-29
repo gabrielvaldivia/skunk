@@ -22,7 +22,7 @@ function Privacy() {
           <strong>Your profile:</strong> the name, photo, location and bio you choose to add.
         </li>
         <li>
-          <strong>What you record:</strong> games you add, matches and scores, sessions, and the games and players
+          <strong>What you record:</strong> games you add, matches and scores, game nights, and the games and players
           you follow.
         </li>
         <li>

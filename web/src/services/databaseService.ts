@@ -356,11 +356,11 @@ export async function getSession(sessionId: string): Promise<Session | null> {
 export async function joinSession(sessionId: string, playerId: string): Promise<void> {
   const session = await getSession(sessionId);
   if (!session) {
-    throw new Error('Session not found');
+    throw new Error('Game night not found');
   }
 
   if (isSessionExpired(session)) {
-    throw new Error('Session has expired');
+    throw new Error('Game night has expired');
   }
 
   // Transaction so concurrent joins don't overwrite each other's participant list
