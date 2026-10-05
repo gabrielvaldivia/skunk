@@ -76,6 +76,19 @@ export async function createGame(game: Omit<Game, 'id'>): Promise<Game> {
   return gameWithId;
 }
 
+/** Stable BGG keys make concurrent imports and retries safe. Existing games win. */
+export async function createBggGame(game: Omit<Game, 'id'>): Promise<Game> {
+  if (!Number.isSafeInteger(game.bggId) || !game.bggId || game.bggId < 1) throw new Error('Invalid BGG game.');
+  const id = `bgg-${game.bggId}`;
+  const gameRef = ref(database, `${GAMES_PATH}/${id}`);
+  const result = await runTransaction<Game | null>(gameRef, (current) => current ? undefined : {
+    ...game, id, creationDate: Date.now(),
+  });
+  const saved = result.snapshot.val() as Game | null;
+  if (!saved) throw new Error('Could not save the game. Try again.');
+  return { ...saved, id };
+}
+
 export async function updateGame(gameId: string, game: FieldUpdates<Game>): Promise<void> {
   const gameRef = ref(database, `${GAMES_PATH}/${gameId}`);
   await update(gameRef, game);
@@ -481,13 +494,14 @@ export async function submitImage(
   targetId: string,
   image: string,
   uploadedBy: string,
-  extra: { coverArtEnhancementVersion?: number } = {}
+  extra: { coverArtEnhancementVersion?: number } = {},
+  { notify = true }: { notify?: boolean } = {}
 ): Promise<void> {
   const id = `${kind}_${targetId}`;
   await set(ref(database, `${PENDING_IMAGES_PATH}/${id}`), {
     id, kind, targetId, image, uploadedBy, createdAt: Date.now(), ...extra,
   });
-  pendingImagesChanged();
+  if (notify) pendingImagesChanged();
 }
 
 export async function getMyPendingImages(uid: string): Promise<PendingImage[]> {

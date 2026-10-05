@@ -10,7 +10,7 @@ import { useKeyboardInsets } from "../hooks/useKeyboardInsets";
 import { useGameScope, useMyGameIds } from "../hooks/useGameScope";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { AddGameForm } from "../components/AddGameForm";
+import { AddGamesDialog } from "../components/AddGamesDialog";
 import { PanelFrameProvider, usePanel, type PanelEntry } from "../context/PanelContext";
 import { useGames } from "../hooks/useGames";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -92,9 +92,9 @@ export function ShelfPage() {
   const sorted = useMemo(
     () =>
       games
-        .filter((g) => !g.pending || canSeePending || (!!user && g.createdByID === user.uid))
+        .filter((g) => !g.pending || canSeePending || (!!user && g.createdByID === user.uid) || myIds.has(g.id))
         .sort((a, b) => a.title.localeCompare(b.title)),
-    [games, canSeePending, user]
+    [games, canSeePending, user, myIds]
   );
   // Card games fold into a single deck on the shelf. Search looks through
   // every game, whichever tab is showing.
@@ -359,9 +359,10 @@ isAuthenticated ? setShowAddForm(true) : openSignIn()
       {!isLoading && shown.length === 0 && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-[var(--page-gutter)]">
           {searching ? (
-            <p className="text-sm font-medium text-white [text-shadow:0_1px_8px_rgb(0_0_0/0.6)]">
-              No games match "{query.trim()}"
-            </p>
+            <div className="pointer-events-auto flex max-w-xs flex-col items-center gap-3 rounded-3xl border border-border/60 bg-background/90 p-6 text-center shadow-lg">
+              <p className="text-pretty text-sm font-medium">No games match "{query.trim()}"</p>
+              <Button variant="outline" onClick={() => isAuthenticated ? setShowAddForm(true) : openSignIn()}>Find it on BoardGameGeek</Button>
+            </div>
           ) : needsSignIn ? (
             <div className="pointer-events-auto flex max-w-xs flex-col items-center gap-3 rounded-3xl border border-border/60 bg-background/85 p-6 text-center shadow-[0_24px_64px_-24px_rgb(0_0_0/0.45)] backdrop-blur-xl">
               <p className="text-lg font-semibold">Your shelf starts here</p>
@@ -377,6 +378,7 @@ isAuthenticated ? setShowAddForm(true) : openSignIn()
             <div className="pointer-events-auto flex max-w-xs flex-col items-center gap-3 rounded-3xl border border-border/60 bg-background/85 p-6 text-center shadow-[0_24px_64px_-24px_rgb(0_0_0/0.45)] backdrop-blur-xl">
               <p className="text-lg font-semibold">No games yet</p>
               <p className="text-sm text-muted-foreground">Games you play or add will show up here.</p>
+              <Button onClick={() => setShowAddForm(true)}>Add games</Button>
             </div>
           ) : null}
         </div>
@@ -403,9 +405,10 @@ isAuthenticated ? setShowAddForm(true) : openSignIn()
 
 
       {isAuthenticated && (
-        <AddGameForm
+        <AddGamesDialog
           open={showAddForm}
           onOpenChange={setShowAddForm}
+          initialQuery={query}
           onSubmit={async (game) => {
             await addGame(game);
           }}

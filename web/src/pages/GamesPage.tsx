@@ -8,7 +8,8 @@ import { useGameChampions } from "../hooks/useGameChampions";
 import { useActivity } from "../hooks/useActivity";
 import { useSession } from "../context/SessionContext";
 import { MiniSessionSheet } from "../components/MiniSessionSheet";
-import { AddGameForm } from "../components/AddGameForm";
+import { AddGamesDialog } from "../components/AddGamesDialog";
+import { Button } from "../components/ui/button";
 import { ChevronRightIcon, TrophyIcon } from "../components/icons";
 import type { Game } from "../models/Game";
 import "./GamesPage.css";
@@ -49,7 +50,7 @@ export function GamesPage() {
   // Sort games by latest match date (most recent first), then alphabetically for games with no matches
   const sortedGames = useMemo(() => {
     // Games waiting for review show only to their creator and the admin
-    const visible = games.filter((g) => !g.pending || isAdminEmail(user?.email) || (!!user && g.createdByID === user.uid));
+    const visible = games.filter((g) => !g.pending || isAdminEmail(user?.email) || (!!user && g.createdByID === user.uid) || myIds.has(g.id));
     const sorted = [...visible].sort((a, b) => {
       const aDate = gameLatestMatchDate.get(a.id) || 0;
       const bDate = gameLatestMatchDate.get(b.id) || 0;
@@ -66,7 +67,7 @@ export function GamesPage() {
     });
 
     return sorted;
-  }, [games, gameLatestMatchDate, user]);
+  }, [games, gameLatestMatchDate, user, myIds]);
 
   // Filter games based on search query
   const filteredGames = useMemo(() => {
@@ -95,7 +96,7 @@ export function GamesPage() {
         onAdd={() => (isAuthenticated ? setShowAddForm(true) : openSignIn())}
       />
       {isAuthenticated && (
-        <AddGameForm open={showAddForm} onOpenChange={setShowAddForm} onSubmit={handleSubmitGame} />
+        <AddGamesDialog open={showAddForm} onOpenChange={setShowAddForm} onSubmit={handleSubmitGame} initialQuery={searchQuery} />
       )}
 
       {currentSession && <MiniSessionSheet />}
@@ -116,7 +117,7 @@ export function GamesPage() {
         ) : filteredGames.length === 0 ? (
           <div className="empty-state">
             <p>No games found matching "{searchQuery}"</p>
-            <p className="empty-hint">Try a different search term</p>
+            <Button variant="outline" onClick={() => isAuthenticated ? setShowAddForm(true) : openSignIn()}>Find it on BoardGameGeek</Button>
           </div>
         ) : (
           <div className="games-list list">

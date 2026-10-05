@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": { "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.bgg.tsbuildinfo", "lib": ["ES2023", "DOM"] },
+  "include": ["api/bgg.ts", "api/bgg-cover.ts", "server/bgg.ts", "tests/bgg.test.ts", "src/services/bggService.ts", "src/lib/importBggGames.ts"]
+}

@@ -29,8 +29,8 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { closeSide?: "left" | "right" }
->(({ className, children, closeSide = "right", ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { closeSide?: "left" | "right"; showCloseButton?: boolean }
+>(({ className, children, closeSide = "right", showCloseButton = true, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -42,10 +42,10 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className={cn("absolute top-4 flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground ring-offset-background transition-colors hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none", closeSide === "left" ? "left-4" : "right-4")}>
+      {showCloseButton && <DialogPrimitive.Close className={cn("absolute top-4 flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground ring-offset-background transition-colors hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none", closeSide === "left" ? "left-4" : "right-4")}>
         <CloseIcon className="size-5" />
         <span className="sr-only">Close</span>
-      </DialogPrimitive.Close>
+      </DialogPrimitive.Close>}
     </DialogPrimitive.Content>
   </DialogPortal>
 ))

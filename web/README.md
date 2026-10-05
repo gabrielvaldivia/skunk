@@ -85,6 +85,29 @@ npm run build
 
 ## Deployment to Vercel
 
+### BoardGameGeek search and collection import
+
+The Add games panel searches BGG by title or game link and previews the owned
+board games in a public BGG collection. Users choose what to import into My Games;
+this is a one-time import, not a sync, and never changes the BGG account. Expansions
+are excluded from collection imports. Individual expansion links are supported.
+
+Set `BGG_TOKEN` in `web/.env` locally and in the Vercel project's server environment.
+Use an approved application token from [BGG applications](https://boardgamegeek.com/applications).
+Do **not** name it `VITE_BGG_TOKEN`: it must never be exposed to the browser.
+`npm run dev` serves the BGG endpoints locally; Vercel serves `web/api` in production.
+
+Metadata is cached, with retry support for queued collections and busy responses.
+The cover endpoint only accepts HTTPS images from BGG's image CDN and serves them
+from the app's own origin so the 3D shelf can use them as textures.
+Imports reuse BGG IDs (or exact titles for legacy entries without an ID), use
+stable IDs for new records, and add hearts without overwriting other games.
+New games retain the existing moderation rules: non-admin imports and covers
+await review, while the importer can use the games immediately. Scoring defaults
+to win/loss because BGG does not provide authoritative scoring rules.
+
+Run `npm run test:bgg` and `npm run check:bgg` to verify the integration.
+
 ### Option 1: Deploy via Vercel CLI
 
 1. Install Vercel CLI globally:
