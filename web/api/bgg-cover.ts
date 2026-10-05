@@ -1,4 +1,4 @@
-import { BggError, bggErrorResponse, bggImageUrl } from '../server/bgg';
+import { BggError, bggErrorResponse, bggImageUrl } from '../server/bgg.js';
 
 /** Same-origin covers work as WebGL textures; BGG's image CDN has no CORS headers. */
 export async function GET(request: Request) {

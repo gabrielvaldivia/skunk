@@ -1,5 +1,5 @@
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
-import type { BggGame, BggResult } from '../src/lib/bgg';
+import type { BggGame, BggResult } from '../src/lib/bgg.js';
 
 type XmlNode = Record<string, unknown>;
 const node = (value: unknown): XmlNode => value && typeof value === 'object' ? value as XmlNode : {};

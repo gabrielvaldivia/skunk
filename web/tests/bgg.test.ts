@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { bggIdFromInput, bggUsername, findBggMatch, gameFromBgg, type BggGame } from '../src/lib/bgg';
 import { importBggGames } from '../src/lib/importBggGames';
 import { loadBggCollection, requestBgg } from '../src/services/bggService';
@@ -10,6 +14,35 @@ import { GET as cover } from '../api/bgg-cover';
 const thing = `<items><item type="boardgame" id="13"><name type="alternate" value="Die Siedler"/><name type="primary" value="Catan &amp; Friends"/><yearpublished value="1995"/><minplayers value="3"/><maxplayers value="4"/><image>https://cf.geekdo-images.com/catan.png</image><thumbnail>https://cf.geekdo-images.com/small.png</thumbnail></item></items>`;
 const detail: BggGame = { bggId: 13, title: 'Catan', minPlayers: 3, maxPlayers: 4, cooperative: false, image: 'https://cf.geekdo-images.com/catan.png' };
 const existing = { ...gameFromBgg(detail, 'someone'), id: 'old-catan' };
+
+test('production handlers compile and load in native Node ESM without a TypeScript loader', () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const temp = join(root, 'node_modules/.tmp');
+  mkdirSync(temp, { recursive: true });
+  const output = mkdtempSync(join(temp, 'bgg-runtime-'));
+  try {
+    const compiled = spawnSync(process.execPath, [
+      join(root, 'node_modules/typescript/bin/tsc'),
+      '--target', 'ES2023', '--module', 'NodeNext', '--moduleResolution', 'NodeNext',
+      '--skipLibCheck', '--strict', '--outDir', output,
+      'api/bgg.ts', 'api/bgg-cover.ts',
+    ], { cwd: root, encoding: 'utf8' });
+    assert.equal(compiled.status, 0, compiled.stdout + compiled.stderr);
+    writeFileSync(join(output, 'package.json'), '{"type":"module"}');
+    const script = `
+      const { GET: metadata } = await import(${JSON.stringify(pathToFileURL(join(output, 'api/bgg.js')).href)});
+      const { GET: cover } = await import(${JSON.stringify(pathToFileURL(join(output, 'api/bgg-cover.js')).href)});
+      for (const handler of [metadata, cover]) {
+        const response = await handler(new Request('https://skunk.test/api/bgg'));
+        if (response.status !== 400) throw new Error('Expected input validation response');
+      }
+    `;
+    const runtime = spawnSync(process.execPath, ['--input-type=module', '-e', script], { cwd: root, encoding: 'utf8' });
+    assert.equal(runtime.status, 0, runtime.stdout + runtime.stderr);
+  } finally {
+    rmSync(output, { recursive: true, force: true });
+  }
+});
 
 test('game IDs accept real BGG links and reject lookalikes and unrelated URLs', () => {
   for (const value of ['13', 'https://boardgamegeek.com/boardgame/13/catan?foo=1', 'www.boardgamegeek.com/boardgame/13', 'http://boardgamegeek.com/boardgameexpansion/13/example']) assert.equal(bggIdFromInput(value), 13);

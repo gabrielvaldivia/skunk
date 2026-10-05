@@ -1,5 +1,5 @@
-import { BggError, bggErrorResponse, fetchBgg, parseGames, parseResults } from '../server/bgg';
-import { bggUsername } from '../src/lib/bgg';
+import { BggError, bggErrorResponse, fetchBgg, parseGames, parseResults } from '../server/bgg.js';
+import { bggUsername } from '../src/lib/bgg.js';
 
 /** Public metadata only. The BGG application token never leaves the server. */
 export async function GET(request: Request) {

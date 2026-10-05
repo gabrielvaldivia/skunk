@@ -1,4 +1,4 @@
-import type { Game } from '../models/Game';
+import type { Game } from '../models/Game.js';
 
 export interface BggResult {
   bggId: number;
